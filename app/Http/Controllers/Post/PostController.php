@@ -13,6 +13,11 @@ class PostController extends Controller
         return view('post.show', compact('serial'));
     }
 
+    public function create()
+    {
+        return view('post.create');
+    }
+
     public function rank($serial)
     {
         return view('post.rank', compact('serial'));

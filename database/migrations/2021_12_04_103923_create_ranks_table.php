@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\RankType;
 
 class CreateRanksTable extends Migration
 {
@@ -17,7 +18,10 @@ class CreateRanksTable extends Migration
             $table->id();
             $table->foreignId('post_id')->constrained();
             $table->foreignId('element_id')->constrained();
-            $table->string('rank_type');
+            $table->enum('rank_type', [
+                RankType::PK_KING,
+                RankType::CHAMPION
+            ]);
             $table->date('record_date');
             $table->unsignedBigInteger('win_count')->default(0);
             $table->unsignedBigInteger('round_count')->default(0);

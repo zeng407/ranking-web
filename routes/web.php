@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Post\PostController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,8 +23,9 @@ use App\Http\Controllers\HomeController;
 Auth::routes();
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('post/{serial}', [\App\Http\Controllers\Post\PostController::class, 'show'])->name('post.show');
-Route::get('rank/{serial}', [\App\Http\Controllers\Post\PostController::class, 'rank'])->name('post.rank');
+Route::get('post/create', [PostController::class, 'create'])->name('post.create');
+Route::get('post/{serial}', [PostController::class, 'show'])->name('post.show');
+Route::get('rank/{serial}', [PostController::class, 'rank'])->name('post.rank');
 
 
 

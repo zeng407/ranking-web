@@ -11,6 +11,9 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 
+/**
+ * @mixin IdeHelperRank
+ */
 class Rank extends Model
 {
     use HasFactory;
@@ -24,6 +27,7 @@ class Rank extends Model
         'post_id',
         'element_id',
         'rank_type',
+        'record_date',
         'win_count',
         'round_count',
         'win_rate'

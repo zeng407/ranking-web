@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-	<example-component
-		index-posts-endpoint="{{route('public-post.index')}}"
+	<post
+		index-posts-endpoint="{{route('api.public-post.index')}}"
         show-post-endpoint="{{route('post.show', '_serial')}}"
-	></example-component>
+	></post>
 @endsection

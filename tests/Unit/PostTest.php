@@ -82,7 +82,7 @@ class PostTest extends TestCase
                 'access_policy' => PostAccessPolicy::PUBLIC,
             ]
         ];
-        $this->put(route('post.update', $postSerial), $body);
+        $this->put(route('api.post.update', $postSerial), $body);
 
         /** @var Post $post */
         $post = $user->posts()->first();
@@ -109,7 +109,7 @@ class PostTest extends TestCase
             'file' => $file,
         ];
 
-        $res = $this->post(route('element.create-image'), $data);
+        $res = $this->post(route('api.element.create-image'), $data);
 
         $path = $res->json('path');
         Storage::disk()->assertExists($path);
@@ -134,7 +134,7 @@ class PostTest extends TestCase
             'video_end_second' => $element->video_end_second
         ];
 
-        $res = $this->post(route('element.create-video'), $data);
+        $res = $this->post(route('api.element.create-video'), $data);
         $this->assertEquals($post->elements()->first()->id, $res->json('id'));
         $this->assertEquals($res->json('type'), ElementType::VIDEO);
         $this->assertEquals($res->json('video_start_second'), $element->video_start_second);

@@ -62,6 +62,7 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Element[] $elements
+ * @property-read int|null $elements_count
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Game1V1Round[] $game_1v1_rounds
  * @property-read int|null $game_1v1_rounds_count
  * @property-read \App\Models\Post $post
@@ -118,12 +119,22 @@ namespace App\Models{
 /**
  * App\Models\GameElement
  *
- * @mixin IdeHelperGame
+ * @mixin IdeHelperGameElement
+ * @property int $id
+ * @property int $game_id
+ * @property int $element_id
+ * @property int $win_count
+ * @property int $is_eliminated
  * @property-read \App\Models\Element $element
  * @property-read \App\Models\Game $game
  * @method static \Illuminate\Database\Eloquent\Builder|GameElement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|GameElement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|GameElement query()
+ * @method static \Illuminate\Database\Eloquent\Builder|GameElement whereElementId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|GameElement whereGameId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|GameElement whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|GameElement whereIsEliminated($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|GameElement whereWinCount($value)
  */
 	class IdeHelperGameElement extends \Eloquent {}
 }
@@ -142,6 +153,7 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Element[] $elements
+ * @property-read int|null $elements_count
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Game[] $games
  * @property-read int|null $games_count
  * @property-read \App\Models\PostPolicy|null $post_policy
@@ -190,6 +202,40 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|PostPolicy whereUpdatedAt($value)
  */
 	class IdeHelperPostPolicy extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * App\Models\Rank
+ *
+ * @property int $id
+ * @property int $post_id
+ * @property int $element_id
+ * @property string $rank_type
+ * @property string $record_date
+ * @property int $win_count
+ * @property int $round_count
+ * @property string $win_rate
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Element $element
+ * @property-read \App\Models\Post $post
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank query()
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereElementId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank wherePostId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereRankType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereRecordDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereRoundCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereWinCount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank whereWinRate($value)
+ * @mixin \Eloquent
+ */
+	class IdeHelperRank extends \Eloquent {}
 }
 
 namespace App\Models{

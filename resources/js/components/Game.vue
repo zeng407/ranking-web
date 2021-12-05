@@ -82,7 +82,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" @click="createGame" data-dismiss="modal">開戰!</button>
+            <button type="button" class="btn btn-primary" @click="createGame">開戰!</button>
           </div>
         </div>
       </div>
@@ -129,6 +129,7 @@
             this.gameSerial = res.data.game_serial;
             this.nextRound();
           });
+        $('#gameSettingPanel').modal('hide');
       },
       nextRound: function () {
         const url = this.showGameEndpoint.replace('_serial', this.gameSerial);

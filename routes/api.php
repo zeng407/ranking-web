@@ -22,20 +22,19 @@ use App\Http\Controllers\Api\RankController;
 //     return $request->user();
 // });
 
-Route::get('/', [PublicPostController::class, 'index'])->name('public-post.index');
+Route::get('/', [PublicPostController::class, 'index'])->name('api.public-post.index');
 
-Route::get('game/{serial}', [GameController::class, 'show'])->name('game.show');
-Route::post('game', [GameController::class, 'create'])->name('game.create');
-Route::post('game/vote', [GameController::class, 'vote'])->name('game.vote');
+Route::get('game/{serial}', [GameController::class, 'show'])->name('api.game.show');
+Route::post('game', [GameController::class, 'create'])->name('api.game.create');
+Route::post('game/vote', [GameController::class, 'vote'])->name('api.game.vote');
+
+Route::get('rank/{serial}', [RankController::class, 'show'])->name('api.rank.show');
 
 
-Route::get('posts', [PostController::class, 'index'])->name('post.index');
-Route::post('post', [PostController::class, 'create'])->name('post.create');
-Route::put('post/{serial}', [PostController::class, 'update'])->name('post.update');
-
-Route::get('rank/{serial}', [RankController::class, 'show'])->name('rank.show');
-
-Route::post('elements/image', [ElementController::class, 'createImage'])->name('element.create-image');
-Route::post('elements/video', [ElementController::class, 'createVideo'])->name('element.create-video');
+Route::get('posts', [PostController::class, 'index'])->name('api.post.index');
+Route::post('post', [PostController::class, 'create'])->name('api.post.create');
+Route::put('post/{serial}', [PostController::class, 'update'])->name('api.post.update');
+Route::post('elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');
+Route::post('elements/video', [ElementController::class, 'createVideo'])->name('api.element.create-video');
 
 

@@ -27,7 +27,7 @@ class GameTest extends TestCase
     {
         $post = $this->seedPost();
 
-        $res = $this->get(route('public-post.index'));
+        $res = $this->get(route('api.public-post.index'));
         $res->assertOk();
 
         $json = $res->decodeResponseJson();
@@ -48,7 +48,7 @@ class GameTest extends TestCase
     {
         $post = $this->seedPost();
 
-        $res = $this->post(route('game.create'), [
+        $res = $this->post(route('api.game.create'), [
             'post_serial' => $post->serial,
             'element_count' => 8
         ]);
@@ -66,7 +66,7 @@ class GameTest extends TestCase
         $post = $this->seedPost();
         $game = $this->seedGame($post, 8);
 
-        $res = $this->get(route('game.show', $game->serial));
+        $res = $this->get(route('api.game.show', $game->serial));
         $res->assertOk();
 
         $this->assertEquals(1, $res->json('data.current_round'));
@@ -82,7 +82,7 @@ class GameTest extends TestCase
         $post->post_policy->access_policy = PostAccessPolicy::PRIVATE;
         $post->post_policy->save();
 
-        $res = $this->get(route('game.show', $game->serial));
+        $res = $this->get(route('api.game.show', $game->serial));
         $res->assertStatus(401);
     }
 
@@ -170,7 +170,7 @@ class GameTest extends TestCase
 //        $post = $this->seedPost();
 //        $game = $this->seedGame($post, 1);
 //
-//        $res = $this->get(route('game.show', $game->serial));
+//        $res = $this->get(route('api.game.show', $game->serial));
 //        return $res->assertStatus(404);
 //    }
 
@@ -183,7 +183,7 @@ class GameTest extends TestCase
             $log['loser'] = [];
         }
 
-        $res = $this->get(route('game.show', $game->serial));
+        $res = $this->get(route('api.game.show', $game->serial));
         $elements = $res->json('data.elements');
         $winner = $elements[0]['id'];
         $loser = $elements[1]['id'];
@@ -203,7 +203,7 @@ class GameTest extends TestCase
             'winner_id' => $winner,
             'loser_id' => $loser,
         ];
-        $res = $this->post(route('game.vote', $data));
+        $res = $this->post(route('api.game.vote', $data));
         $res->assertOk();
 
         $this->assertDatabaseHas('game_elements', [
