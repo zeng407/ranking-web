@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Post\PostController;
+use App\Http\Controllers\Post\GameController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,9 +24,12 @@ use App\Http\Controllers\Post\PostController;
 Auth::routes();
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('post/create', [PostController::class, 'create'])->name('post.create');
-Route::get('post/{serial}', [PostController::class, 'show'])->name('post.show');
-Route::get('rank/{serial}', [PostController::class, 'rank'])->name('post.rank');
+Route::get('post', [PostController::class, 'index'])->name('post.index');
+Route::get('post/{serial}', [PostController::class, 'edit'])->name('post.edit');
+
+
+Route::get('game/{serial}', [GameController::class, 'show'])->name('game.show');
+Route::get('game/{serial}/rank', [GameController::class, 'rank'])->name('game.rank');
 
 
 

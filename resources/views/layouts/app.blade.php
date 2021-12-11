@@ -56,7 +56,7 @@
                     @else
                         @auth
                             <li class="nav-item">
-                                <a class="nav-link" href="{{route('post.create')}}">發佈比賽</a>
+                                <a class="nav-link" href="{{route('post.index')}}">查看我的比賽</a>
                             </li>
                         @endauth
                         <li class="nav-item dropdown">

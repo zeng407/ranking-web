@@ -24,6 +24,7 @@ class PostResource extends JsonResource
             'title' => $this->title,
             'serial' => $this->serial,
             'description' => $this->description,
+            'policy' => $this->post_policy->access_policy
         ];
     }
 }

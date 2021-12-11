@@ -56,7 +56,7 @@ class PostTest extends TestCase
 
         $this->be($user);
 
-        $res = $this->post(route('post.create'));
+        $res = $this->post(route('api.post.create'));
 
         $serial = $res->json('serial');
 

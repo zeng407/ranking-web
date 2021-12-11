@@ -45,10 +45,13 @@
     },
     props: [
       'indexPostsEndpoint',
-      'showPostEndpoint'
+      'playGameRoute'
     ],
     data: function () {
       return {
+        posts: [
+
+        ]
       }
     },
     methods: {
@@ -60,7 +63,7 @@
           })
       },
       showPost: function (serial) {
-        const url = this.showPostEndpoint.replace('_serial',serial);
+        const url = this.playGameRoute.replace('_serial',serial);
         window.open(url, '_blank');
       }
     }

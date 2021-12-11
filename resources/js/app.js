@@ -26,7 +26,22 @@ files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(
  * the page. Then, you may begin adding components to this application
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
+import { ValidationProvider, ValidationObserver, extend, localize } from 'vee-validate';
+import en from 'vee-validate/dist/locale/en.json';
+import zh_TW from 'vee-validate/dist/locale/zh_TW';
+localize({en, zh_TW});
+
+import {required} from 'vee-validate/dist/rules';
+Vue.component('ValidationProvider', ValidationProvider);
+Vue.component('ValidationObserver', ValidationObserver);
+extend('required', required);
+
+import moment from 'moment';
+Vue.prototype.moment = moment;
+
+import VueCookies from 'vue-cookies';
+Vue.use(VueCookies);
 
 const app = new Vue({
-    el: '#app',
+    el: '#app'
 });

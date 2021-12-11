@@ -19,20 +19,24 @@ $teal: #4dc0b5;
 $cyan: #6cb2eb;
 
 .post-left-image {
-  float: left;
-  width: 50%;
-  height: 200px;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center top;
-  display: flex;
+    float: left;
+    width: 50%;
+    height: 200px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center top;
+    display: flex;
 }
 
 .post-right-image {
-  width: 50%;
-  height: 200px;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center top;
-  display: flex;
+    width: 50%;
+    height: 200px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center top;
+    display: flex;
+}
+
+.cursor-pointer {
+    cursor: pointer;
 }

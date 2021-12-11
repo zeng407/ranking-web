@@ -32,9 +32,11 @@ Route::get('rank/{serial}', [RankController::class, 'show'])->name('api.rank.sho
 
 
 Route::get('posts', [PostController::class, 'index'])->name('api.post.index');
+Route::get('post/{serial}', [PostController::class, 'show'])->name('api.post.show');
 Route::post('post', [PostController::class, 'create'])->name('api.post.create');
 Route::put('post/{serial}', [PostController::class, 'update'])->name('api.post.update');
 Route::post('elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');
 Route::post('elements/video', [ElementController::class, 'createVideo'])->name('api.element.create-video');
+Route::put('element/{id}', [ElementController::class, 'update'])->name('api.element.update');
 
 

@@ -8,19 +8,14 @@ use App\Http\Controllers\Controller;
 
 class PostController extends Controller
 {
-    public function show($serial)
+    public function index()
     {
-        return view('post.show', compact('serial'));
+        return view('post.index');
     }
 
-    public function create()
+    public function edit($serial)
     {
-        return view('post.create');
-    }
-
-    public function rank($serial)
-    {
-        return view('post.rank', compact('serial'));
+        return view('post.edit', compact('serial'));
     }
 
 }
