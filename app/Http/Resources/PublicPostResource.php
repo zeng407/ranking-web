@@ -8,7 +8,7 @@ use App\Models\Post;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class GameResource
+ * Class PublicPostResource
  * @package App\Http\Resources
  * @mixin Post
  */
@@ -37,6 +37,8 @@ class PublicPostResource extends JsonResource
                 'url' => optional($image2)->thumb_url,
                 'title' => optional($image2)->title
             ],
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
         ];
     }
 

@@ -18,7 +18,7 @@
         <tr>
           <th scope="col">標題</th>
           <th scope="col">描述</th>
-          <th scope="col">公開</th>
+          <th scope="col">發佈</th>
           <th scope="col"></th>
         </tr>
         </thead>
@@ -57,11 +57,11 @@
               <form @submit.prevent>
                 <div class="form-group row">
                   <label class="col-sm-2 col-md-1 col-form-label-lg pt-0" for="title">
-                    標題
+                    比賽標題 (40字內)
                   </label>
                   <div class="col-sm-10 col-md-11">
                     <ValidationProvider rules="required" v-slot="{ errors }">
-                      <input type="text" class="form-control" id="title" v-model="createPostForm.title" required>
+                      <input type="text" class="form-control" id="title" v-model="createPostForm.title" required maxlength="40">
                       <span class="text-danger">{{ errors[0] }}</span>
                     </ValidationProvider>
                   </div>
@@ -71,35 +71,35 @@
                     描述
                   </label>
                   <div class="col-sm-10 col-md-11">
-                  <textarea class="form-control" id="description" v-model="createPostForm.description" rows="3"
-                            style="resize: none"
-                            maxlength="200"
-                            aria-describedby="description-help"
-                            required></textarea>
-                    <small id="description-help" class="form-text text-muted">
-                      簡單描述這個比賽內容
-                    </small>
+                    <ValidationProvider rules="required" v-slot="{ errors }">
+                      <textarea class="form-control" id="description" v-model="createPostForm.description" rows="3"
+                                style="resize: none"
+                                maxlength="100"
+                                aria-describedby="description-help"
+                                required></textarea>
+                      <small id="description-help" class="form-text text-muted">
+                        簡單描述這個比賽內容 (100字內)
+                      </small>
+                    </ValidationProvider>
                   </div>
                 </div>
                 <div class="form-group row">
                   <label class="col-sm-2 col-md-1 col-form-label-lg pt-0">
-                    權限
+                    發佈
                   </label>
                   <div class="col-sm-10 col-md-11">
-                    <div>
+                    <ValidationProvider rules="required" v-slot="{ errors }">
                       <label class="btn btn-outline-dark" for="post-privacy-public">
                         <input type="radio" id="post-privacy-public" v-model="createPostForm.policy.access_policy"
                                value="public" checked>
-                        所有人都可以看到
+                        公開
                       </label>
-                    </div>
-                    <div>
                       <label class="btn btn-outline-dark" for="post-privacy-private">
                         <input type="radio" id="post-privacy-private" v-model="createPostForm.policy.access_policy"
                                value="private">
-                        只有自己可以看到
+                        私人
                       </label>
-                    </div>
+                    </ValidationProvider>
                   </div>
                 </div>
               </form>
@@ -107,7 +107,7 @@
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
               <button type="submit" class="btn btn-primary float-right" @click="createPost"
-                     :disabled="invalid || loading[CREATING_POST]">
+                      :disabled="invalid || loading[CREATING_POST]">
                 新增
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
                       v-if="loading[CREATING_POST]"></span>

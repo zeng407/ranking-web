@@ -9,7 +9,7 @@ use App\Models\GameElement;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class GameResource
+ * Class GameElementResource
  * @package App\Http\Resources
  * @mixin Element
  */
@@ -29,8 +29,11 @@ class GameElementResource extends JsonResource
             'thumb_url' => $this->thumb_url,
             'title' => $this->title,
             'type' => $this->type,
-            'video_start_second' => $this->video_end_second,
-            'video_end_second' => $this->video_end_second
+            'video_start_second' => $this->video_start_second,
+            'video_end_second' => $this->video_end_second,
+            'video_source' => $this->video_source,
+            'video_id' => $this->video_id,
+            'video_duration_second' => $this->video_duration_second,
         ];
     }
 }

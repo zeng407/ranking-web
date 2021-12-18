@@ -8,7 +8,7 @@ use App\Models\Post;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class GameResource
+ * Class RankResource
  * @package App\Http\Resources
  * @mixin Post
  */

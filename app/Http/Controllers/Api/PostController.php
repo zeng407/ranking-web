@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\PostAccessPolicy;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PostElementResource;
 use App\Http\Resources\PostResource;
+use App\Models\Element;
 use App\Models\Post;
 use App\Models\PostPolicy;
 use App\Models\User;
@@ -14,6 +16,8 @@ use Illuminate\Validation\Rule;
 
 class PostController extends Controller
 {
+    const ELEMENTS_PER_PAGE = 50;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -36,6 +40,17 @@ class PostController extends Controller
         return PostResource::make($post);
     }
 
+    public function elements($serial)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        /** @var Post $post */
+        $post = $user->posts()->where('serial', $serial)->firstOrFail();
+
+        return PostElementResource::collection($post->elements()->paginate(self::ELEMENTS_PER_PAGE));
+    }
+
     public function create(Request $request)
     {
         /** @var User $user */
@@ -49,8 +64,8 @@ class PostController extends Controller
 
         /** @var Post $post */
         $post = $user->posts()->create([
-           'serial' => bin2hex(random_bytes(3)) // todo give a unique key
-        ] + $data);
+                'serial' => bin2hex(random_bytes(3)) // todo give a unique key
+            ] + $data);
 
         $post->post_policy()->updateOrCreate(data_get($data, 'policy', []));
 
@@ -64,22 +79,16 @@ class PostController extends Controller
         $data = $request->validate([
             'title' => 'sometimes|required',
             'description' => 'sometimes|required',
-            'policy.access_policy' => ['sometimes','required', Rule::in([
-                PostAccessPolicy::PUBLIC,PostAccessPolicy::PRIVATE])],
+            'policy.access_policy' => ['sometimes', 'required',
+                Rule::in([PostAccessPolicy::PUBLIC, PostAccessPolicy::PRIVATE])],
             'policy.password' => 'sometimes|required',
         ]);
         \Log::debug($data);
-        \Log::debug(data_get($data, 'policy', []));
         /** @var Post $post */
         $post = Post::where('user_id', Auth::id())->where('serial', $serial)->firstOrFail();
 
         $post->update($data);
-        $post->post_policy()->updateOrCreate(data_get($data, 'policy', []));
-        return response()->json([
-            'title' => $post->title,
-            'description' => $post->description,
-            'policy' => $post->post_policy->access_policy,
-            'policy_password' => $post->post_policy->password
-        ]);
+        $post->post_policy()->update(data_get($data, 'policy', []));
+        return PostResource::make($post);
     }
 }

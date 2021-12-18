@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\GameResource;
+use App\Http\Resources\GameRoundResource;
 use App\Http\Resources\GameResultResource;
+use App\Http\Resources\GameSettingResource;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Game1V1Round;
@@ -25,7 +26,14 @@ class GameController extends Controller
         $this->gameService = $gameService;
     }
 
-    public function show($serial)
+    public function getSetting($serial)
+    {
+        $post = $this->getPost($serial);
+
+        return GameSettingResource::make($post);
+    }
+
+    public function nextRound($serial)
     {
         /** @var Game $game */
         $game = $this->getGame($serial);
@@ -45,7 +53,7 @@ class GameController extends Controller
 
         $elements = $this->gameService->takeGameElements($game, 2);
 
-        return GameResource::make($game, $elements);
+        return GameRoundResource::make($game, $elements);
     }
 
     public function create(Request $request)

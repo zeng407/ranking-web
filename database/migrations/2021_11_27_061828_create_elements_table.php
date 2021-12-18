@@ -24,6 +24,9 @@ class CreateElementsTable extends Migration
                 ElementType::IMAGE,
                 ElementType::VIDEO
             ]);
+            $table->string('video_source')->nullable();
+            $table->string('video_id')->nullable();
+            $table->unsignedInteger('video_duration_second')->nullable();
             $table->unsignedInteger('video_start_second')->nullable();
             $table->unsignedInteger('video_end_second')->nullable();
             $table->timestamps();

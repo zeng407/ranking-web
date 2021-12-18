@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\ElementType;
+use App\Enums\VideoSource;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PostElementResource;
 use App\Models\Element;
 use App\Models\Post;
+use App\Service\YoutubeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -14,11 +16,14 @@ use Illuminate\Validation\Rule;
 
 class ElementController extends Controller
 {
-    const TITLE_SIZE = 40;
+    const TITLE_SIZE = 100;
 
-    public function __construct()
+    protected $youtube;
+
+    public function __construct(YoutubeService $service)
     {
         $this->middleware('auth');
+        $this->youtube = $service;
     }
 
     public function createImage(Request $request)
@@ -66,17 +71,40 @@ class ElementController extends Controller
 
         $post = $this->getPost($request->post_serial);
 
-        //todo get thumb from youtube
-        $thumb = '';
+        try {
+            $video = $this->youtube->query($request->url);
+            if(!$video){
+                return response()->json([
+                    'msg' => '網址錯誤'
+                ], 400);
+            }
 
-        //todo get title from youtube
-        $title = '';
+            $thumb = $video->getSnippet()->getThumbnails()->getStandard()->getUrl();
+            $title = $video->getSnippet()->getTitle();
+            $id = $video->getId();
+            $duration = $video->getContentDetails()->getDuration();
+            preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $parts);
+
+            $hourPart = (int)$parts[1];
+            $minutePart = (int)$parts[2];
+            $secondPart = (int)$parts[3];
+            $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
+        } catch (\Exception $exception) {
+            report($exception);
+
+            return response()->json([
+                'msg' => '網址錯誤'
+            ], 400);
+        }
 
         $element = $post->elements()->create([
             'source_url' => $request->url,
             'thumb_url' => $thumb,
             'title' => $title,
             'type' => ElementType::VIDEO,
+            'video_source' => VideoSource::YOUTUBE,
+            'video_id' => $id,
+            'video_duration_second' => $second,
             'video_start_second' => $request->video_start_second,
             'video_end_second' => $request->video_end_second
         ]);
@@ -98,6 +126,17 @@ class ElementController extends Controller
         $element->update($data);
 
         return PostElementResource::make($element);
+    }
+
+    public function delete(Request $request, $id)
+    {
+        $element = Element::findOrFail($id);
+        $this->authorize('delete', $element);
+
+        $element->posts()->detach();
+        $element->delete();
+
+        return response()->json();
     }
 
     protected function getPost($serial): Post

@@ -6,13 +6,14 @@
     "license": "MIT",
     "require": {
         "php": "^7.3|^8.0",
+        "ext-bcmath": "*",
         "fruitcake/laravel-cors": "^2.0",
+        "google/apiclient": "^2.12.1",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^8.65",
         "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
-        "laravel/ui": "^3.3",
-        "ext-bcmath": "*"
+        "laravel/ui": "^3.3"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.10",
@@ -36,6 +37,9 @@
         }
     },
     "scripts": {
+        "pre-autoload-dump": [
+            "Google\\Task\\Composer::cleanup"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
@@ -54,7 +58,10 @@
         "laravel": {
             "dont-discover": [
             ]
-        }
+        },
+        "google/apiclient-services": [
+            "YouTube"
+        ]
     },
     "config": {
         "optimize-autoloader": true,

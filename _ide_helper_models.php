@@ -21,6 +21,9 @@ namespace App\Models{
  * @property string|null $thumb_url
  * @property string|null $title
  * @property string $type
+ * @property string|null $video_source
+ * @property string|null $video_id
+ * @property int|null $video_duration_second
  * @property int|null $video_start_second
  * @property int|null $video_end_second
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -42,7 +45,10 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereTitle($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Element whereVideoDurationSecond($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereVideoEndSecond($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Element whereVideoId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Element whereVideoSource($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereVideoStartSecond($value)
  * @method static \Illuminate\Database\Query\Builder|Element withTrashed()
  * @method static \Illuminate\Database\Query\Builder|Element withoutTrashed()
@@ -208,6 +214,7 @@ namespace App\Models{
 /**
  * App\Models\Rank
  *
+ * @mixin IdeHelperRank
  * @property int $id
  * @property int $post_id
  * @property int $element_id
@@ -233,7 +240,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereWinCount($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereWinRate($value)
- * @mixin \Eloquent
  */
 	class IdeHelperRank extends \Eloquent {}
 }

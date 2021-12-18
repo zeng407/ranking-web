@@ -29,6 +29,9 @@ class Element extends Model
         'thumb_url',
         'title',
         'type',
+        'video_source',
+        'video_id',
+        'video_duration_second',
         'video_start_second',
         'video_end_second'
     ];

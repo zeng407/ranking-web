@@ -1,0 +1,10 @@
+<?php
+
+
+namespace App\Enums;
+
+
+class VideoSource
+{
+    const YOUTUBE = 'youtube';
+}

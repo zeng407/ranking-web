@@ -7,7 +7,7 @@ use App\Models\Game1V1Round;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class GameResource
+ * Class GameResultResource
  * @package App\Http\Resources
  * @mixin Game
  */

@@ -66,7 +66,7 @@ class GameTest extends TestCase
         $post = $this->seedPost();
         $game = $this->seedGame($post, 8);
 
-        $res = $this->get(route('api.game.show', $game->serial));
+        $res = $this->get(route('api.game.next-round', $game->serial));
         $res->assertOk();
 
         $this->assertEquals(1, $res->json('data.current_round'));
@@ -82,7 +82,7 @@ class GameTest extends TestCase
         $post->post_policy->access_policy = PostAccessPolicy::PRIVATE;
         $post->post_policy->save();
 
-        $res = $this->get(route('api.game.show', $game->serial));
+        $res = $this->get(route('api.game.next-round', $game->serial));
         $res->assertStatus(401);
     }
 
@@ -183,7 +183,7 @@ class GameTest extends TestCase
             $log['loser'] = [];
         }
 
-        $res = $this->get(route('api.game.show', $game->serial));
+        $res = $this->get(route('api.game.next-round', $game->serial));
         $elements = $res->json('data.elements');
         $winner = $elements[0]['id'];
         $loser = $elements[1]['id'];
