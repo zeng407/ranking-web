@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PostElementResource;
 use App\Models\Element;
 use App\Models\Post;
-use App\Service\YoutubeService;
+use App\Services\YoutubeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;

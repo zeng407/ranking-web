@@ -10,7 +10,7 @@ use App\Models\Element;
 use App\Models\Game;
 use App\Models\Game1V1Round;
 use App\Models\Post;
-use App\Service\GameService;
+use App\Services\GameService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 

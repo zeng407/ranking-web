@@ -28,7 +28,7 @@
           <td>{{post.description}}</td>
           <td>{{post.policy}}</td>
           <td>
-            <a :href="getEditLink(post.serial)"><i class="fas fa-edit">編輯</i></a>
+            <a :href="getEditLink(post.serial)"><i class="fas fa-edit"></i></a>
           </td>
         </tr>
         </tbody>
@@ -158,7 +158,7 @@
           [LOADING_POSTS]: true,
           [CREATING_POST]: false
         },
-        posts: null
+        posts: null,
       }
     },
     methods: {

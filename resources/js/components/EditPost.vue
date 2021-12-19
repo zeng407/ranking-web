@@ -20,7 +20,7 @@
 
     <!-- tabs -->
     <div class="row">
-      <div class="col-3">
+      <div class="col-2">
         <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
           <a class="nav-link active" id="v-pills-home-tab" data-toggle="pill" href="#v-pills-home" role="tab"
              aria-controls="v-pills-home" aria-selected="true">基本資訊</a>
@@ -33,7 +33,7 @@
         </div>
       </div>
 
-      <div class="col-9">
+      <div class="col-10">
         <div class="tab-content" id="v-pills-tabContent">
 
           <!-- info -->
@@ -66,7 +66,7 @@
                              :disabled="!isEditing || loading[SAVING_POST]" maxlength="40"
                       >
                       <small id="title-help" class="form-text text-muted">
-                         比賽標題 (40字內)
+                        比賽標題 (40字內)
                       </small>
                       <span class="text-danger">{{ errors[0] }}</span>
                     </ValidationProvider>
@@ -173,8 +173,18 @@
 
             <!-- edit -->
             <h2 class="mt-5 mb-3">編輯素材</h2>
+
+            <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
+              <form class="form-inline">
+                <input class="form-control mr-sm-2" v-model="filters.title_like" type="search" placeholder="Search"
+                       aria-label="Search">
+                <i class="fas fa-filter" v-if="filters.title_like"></i>
+              </form>
+            </nav>
+
+
             <div class="row">
-              <template v-for="(element, index) in elements">
+              <template v-for="(element, index) in filteredElements">
                 <div class="col-lg-4 col-md-6" v-show="element.type==='video' && isElementInPage(index)">
                   <div class="card mb-3">
                     <!-- video -->
@@ -194,7 +204,8 @@
                          v-if="element.type==='video' && !element.loadedVideo">
 
                     <div class="card-body">
-                      <input class="form-control-plaintext" type="text" :value="element.title" maxlength="100"
+                      <input class="form-control-plaintext bg-light cursor-pointer" type="text" :value="element.title"
+                             maxlength="100"
                              @change="updateElementTitle(element.id, $event)">
                       <div class="row mb-3">
                         <div class="col-10">
@@ -235,7 +246,8 @@
                          v-if="element.type==='image'">
 
                     <div class="card-body">
-                      <input class="form-control-plaintext" type="text" :value="element.title" maxlength="100"
+                      <input class="form-control-plaintext bg-light cursor-pointer" type="text" :value="element.title"
+                             maxlength="100"
                              @change="updateElementTitle(element.id, $event)">
                       <span class="card-text"><small
                         class="text-muted">{{moment(element.created_at).format('lll')}}</small></span>
@@ -320,25 +332,39 @@
 
         currentPage: 1,
         perPage: 50,
-        elementsPagination: [],
         uploadVideoUrl: "https://www.youtube.com/watch?v=j1hft9Wjq9U",
 
         // Alert
         dismissSecs: 5,
         dismissCountDown: 0,
         alertLevel: 'success',
-        alertText: ''
+        alertText: '',
+
+        // search elements
+        filters: {
+          title_like: null
+        }
 
       }
     },
     computed: {
       totalRow: function () {
         return this.elements.length;
+      },
+      filteredElements: function () {
+        return _.filter(this.elements, (element) => {
+          if (this.filters.title_like) {
+            return element.title.includes(this.filters.title_like.toUpperCase())
+              || element.title.includes(this.filters.title_like.toLowerCase());
+          }
+          return true;
+        });
       }
+
     },
     methods: {
 
-      // Alert
+      /** Alert **/
       showAlert(text) {
         this.alertText = text;
         this.dismissCountDown = this.dismissSecs;
@@ -347,22 +373,13 @@
         this.dismissCountDown = 0;
       },
 
+      /** Loading **/
       uploadLoadingStatus(key, status) {
         this.$set(this.loading, key, status);
       },
+
+      /** Post **/
       loadPost: function () {
-        // if(this.$cookies.isKey('creating_post_serial')){
-        //   this.serial = this.$cookies.get('creating_post_serial');
-        //   const url = this.showPostEndpoint.replace('_serial', this.serial);
-        //   axios.get(url)
-        //     .then(res => {
-        //       const data = res.data.data;
-        //       this.title = data.title;
-        //       this.serial = data.serial;
-        //       this.description = data.description;
-        //       this.policy = data.policy;
-        //     });
-        // }
         this.uploadLoadingStatus(LOADING_POST, true);
         const url = this.showPostEndpoint;
         axios.get(url)
@@ -373,30 +390,6 @@
             this.uploadLoadingStatus(LOADING_POST, false);
           });
 
-      },
-      loadElements: function (page = 1) {
-        const params = {
-          per_page: page
-        };
-        axios.get(this.getElementsEndpoint, {params: params})
-          .then(res => {
-            this.postElements = res.data;
-            let counter = 1;
-            _.each(this.postElements.data, (element) => {
-              setTimeout(() => {
-                this.elements.push(element);
-              }, 100 * counter++);
-              // this.elements.push(element);
-            });
-
-            if (this.postElements.current_page < this.postElements.last_page) {
-              this.loadElements(this.postElements(this.postElements.current_page + 1));
-            }
-          })
-      },
-      isElementInPage(index) {
-        return (this.currentPage - 1) * this.perPage <= index
-          && this.currentPage * this.perPage > index;
       },
       clickEdit: function () {
         this.isEditing = true;
@@ -420,40 +413,30 @@
             this.uploadLoadingStatus(SAVING_POST, false);
           });
       },
-      uploadImages: function (event) {
-        Array.from(event.target.files).forEach(file => {
-          let form = new FormData();
-          form.append('file', file);
-          form.append('post_serial', this.post.serial);
-          axios.post(this.createImageElementEndpoint, form, {
-            onUploadProgress: progressEvent => {
-              console.log(progressEvent.loaded / progressEvent.total * 100);
-              this.updateProgressBarValue(file, progressEvent);
+
+      /** Elements **/
+      loadElements: function (page = 1) {
+        const params = {
+          page: page
+        };
+        axios.get(this.getElementsEndpoint, {params: params})
+          .then(res => {
+            this.postElements = res.data;
+            let counter = 1;
+            _.each(this.postElements.data, (element) => {
+              setTimeout(() => {
+                this.elements.push(element);
+              }, 100 * counter++);
+            });
+
+            if (this.postElements.current_page < this.postElements.last_page) {
+              this.loadElements(this.postElements.current_page + 1);
             }
           })
-            .then(res => {
-              console.log(res.data);
-              this.elements.unshift(res.data.data);
-              this.deleteProgressBarValue(file);
-            });
-        });
       },
-      uploadVideo: function () {
-
-        this.uploadLoadingStatus(UPLOADING_VIDEO, true);
-        const data = {
-          post_serial: this.post.serial,
-          url: this.uploadVideoUrl
-        };
-        axios.post(this.createVideoElementEndpoint, data)
-          .then(res => {
-            console.log(res.data);
-            this.elements.unshift(res.data.data);
-          })
-          .finally(() => {
-            this.uploadLoadingStatus(UPLOADING_VIDEO, false);
-          });
-
+      isElementInPage: function (index) {
+        return (this.currentPage - 1) * this.perPage <= index
+          && this.currentPage * this.perPage > index;
       },
       updateElementTitle: function (id, event) {
         console.log(id);
@@ -467,22 +450,6 @@
         axios.put(url, data)
           .then((res) => {
             console.log('updateElementTitle');
-          })
-      },
-      updateVideoScope: function (index, element, event) {
-        let key = event.target.name;
-        let seconds = this.toSeconds(event.target.value);
-        if(!Number.isInteger(seconds)){
-          return ;
-        }
-        const data = {
-          [key]: seconds
-        };
-        const url = this.updateElementEndpoint.replace('_id', element.id);
-        axios.put(url, data)
-          .then((res) => {
-            element[key] = seconds;
-            this.$set(this.elements, index, element);
           })
       },
       deleteElement: function (element, event) {
@@ -504,6 +471,60 @@
           .finally(() => {
             trashcan.setAttribute('class', originClass);
           });
+      },
+
+      /** Image **/
+      uploadImages: function (event) {
+        Array.from(event.target.files).forEach(file => {
+          let form = new FormData();
+          form.append('file', file);
+          form.append('post_serial', this.post.serial);
+          axios.post(this.createImageElementEndpoint, form, {
+            onUploadProgress: progressEvent => {
+              console.log(progressEvent.loaded / progressEvent.total * 100);
+              this.updateProgressBarValue(file, progressEvent);
+            }
+          })
+            .then(res => {
+              console.log(res.data);
+              this.elements.push(res.data.data);
+              this.deleteProgressBarValue(file);
+            });
+        });
+      },
+
+      /** Video **/
+      uploadVideo: function () {
+        this.uploadLoadingStatus(UPLOADING_VIDEO, true);
+        const data = {
+          post_serial: this.post.serial,
+          url: this.uploadVideoUrl
+        };
+        axios.post(this.createVideoElementEndpoint, data)
+          .then(res => {
+            console.log(res.data);
+            this.elements.push(res.data.data);
+          })
+          .finally(() => {
+            this.uploadLoadingStatus(UPLOADING_VIDEO, false);
+          });
+
+      },
+      updateVideoScope: function (index, element, event) {
+        let key = event.target.name;
+        let seconds = this.toSeconds(event.target.value);
+        if (!Number.isInteger(seconds)) {
+          return;
+        }
+        const data = {
+          [key]: seconds
+        };
+        const url = this.updateElementEndpoint.replace('_id', element.id);
+        axios.put(url, data)
+          .then((res) => {
+            element[key] = seconds;
+            this.$set(this.elements, index, element);
+          })
       },
       updateProgressBarValue: function (file, progressEvent) {
         let filename = file.name;
@@ -531,6 +552,9 @@
           hours: timeGroup[1],
         }).asSeconds();
       },
+
+
+      /** Player **/
       getPlayer(element) {
         return _.get(this.$refs, element.id + '.0.player', null);
       },
@@ -538,11 +562,13 @@
         this.playingVideo = element.id;
         element.loadedVideo = true;
         this.$set(this.elements, index, element);
+
+        this.doPlay(element);
       },
       doPlay(element) {
         const player = this.getPlayer(element);
         if (player) {
-
+          window.player = player;
           player.loadVideoById({
             videoId: element.video_id,
             startSeconds: element.video_start_second,

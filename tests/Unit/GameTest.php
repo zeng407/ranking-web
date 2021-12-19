@@ -10,7 +10,7 @@ use App\Models\Game;
 use App\Models\Post;
 use App\Models\PostPolicy;
 use App\Models\User;
-use App\Service\GameService;
+use App\Services\GameService;
 use Faker\Factory;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\Testing\File;
