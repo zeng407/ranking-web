@@ -24,7 +24,7 @@
                    :disabled="!isEditing || loading[SAVING_POST]" maxlength="40"
             >
             <small id="title-help" class="form-text text-muted">
-              比賽標題 (40字內)
+              標題
             </small>
             <span class="text-danger">{{ errors[0] }}</span>
           </ValidationProvider>

@@ -64,7 +64,7 @@ class ElementController extends Controller
 
         $request->validate([
             'post_serial' => 'required',
-            'url' => 'required|url',
+            'url' => 'required|string',
             'video_start_second' => 'nullable|integer',
             'video_end_second' => 'nullable|integer'
         ]);

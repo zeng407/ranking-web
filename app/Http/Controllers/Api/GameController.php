@@ -11,6 +11,7 @@ use App\Models\Game;
 use App\Models\Game1V1Round;
 use App\Models\Post;
 use App\Services\GameService;
+use App\Services\RankService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -20,10 +21,12 @@ class GameController extends Controller
     const PROCESSING = 'processing';
 
     protected $gameService;
+    protected $rankService;
 
-    public function __construct(GameService $gameService)
+    public function __construct(GameService $gameService, RankService $rankService)
     {
         $this->gameService = $gameService;
+        $this->rankService = $rankService;
     }
 
     public function getSetting($serial)
@@ -135,6 +138,11 @@ class GameController extends Controller
             ->updateExistingPivot($request->loser_id, [
                 'is_eliminated' => true
             ]);
+
+        // update rank when game complete
+        if($this->gameService->isGameComplete($game)){
+            $this->rankService->createRankReport($game->post);
+        }
 
         return response()->json([
             'status' => $this->getStatus($game)

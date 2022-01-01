@@ -1,36 +1,46 @@
 <template>
-  <div class="container">
+  <!--  Main -->
+  <div class="container-fluid">
+
+    <table class="table table-hover">
+      <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col"></th>
+        <th scope="col">決賽勝率</th>
+        <th scope="col">2選1勝率</th>
+      </tr>
+      </thead>
+      <tbody v-if="rankReportData">
+      <tr v-for="(rank, index) in rankReportData.data">
+        <th scope="row">{{ (index+1) + (currentPage-1)*rankReportData.meta.per_page}}</th>
+        <td>
+          <div>
+            <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
+
+            <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
+              <p>{{ rank.element.title }}</p>
+            </a>
+            <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
+          </div>
+        </td>
+        <td>{{toPercentString(rank.final_win_rate)}}</td>
+        <td>{{toPercentString(rank.win_rate)}}</td>
+      </tr>
+      </tbody>
+    </table>
 
     <div class="row">
-      <div class="col-auto"><h1>{{post.title}}</h1></div>
-    </div>
-    <div class="row mb-2">
-      <div class="col-auto"><p>{{post.description}}</p></div>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="position-relative">
-            <img src="https://via.placeholder.com/640x480.png/005544?text=qui" class="card-img-top" alt="">
-            <h3 class="position-absolute text-white fixed-top m-3 bg-dark bg-opacity-30 shadow p-3 mb-5 rounded">position-absolute</h3>
-          </div>
-          <div class="card-body">
-            <h5 class="card-title">card-title</h5>
-            <p class="card-text">card-text</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card">
-          <div class="position-relative">
-            <img src="https://via.placeholder.com/640x480.png/331144?text=quimoiqw" class="card-img-top" alt="">
-            <h3 class="position-absolute text-white fixed-top m-3 bg-dark bg-opacity-30 shadow p-3 mb-5 rounded">position-absolute</h3>
-          </div>
-          <div class="card-body">
-            <h5 class="card-title">card-title</h5>
-            <p class="card-text">card-text</p>
-          </div>
-        </div>
+      <div class="col-12">
+        <b-pagination
+          v-model="currentPage"
+          :total-rows="rankReportData.meta.total"
+          :per-page="rankReportData.meta.per_page"
+          first-number
+          last-number
+          @change="handlePageChange"
+          align="center"
+        ></b-pagination>
       </div>
     </div>
 
@@ -42,24 +52,48 @@
   export default {
     mounted() {
       this.loadRankData();
+      this.loadRankReport();
     },
     props: {
       postSerial: String,
-      showRankEndpoint: String
+      getRankEndpoint: String,
+      getRankReportEndpoint: String,
 
     },
     data: function () {
       return {
-        post: null
+        rankInfo: null,
+        rankReportData: null,
+        currentPage: 1,
       }
     },
     methods: {
       loadRankData: function () {
-        axios.get(this.showRankEndpoint)
+        axios.get(this.getRankEndpoint)
           .then(res => {
-            this.post = res.data.data;
-          })
+            this.rankInfo = res.data;
+          });
+      },
+      loadRankReport: function (page = 1){
+        const filter = {
+          'page': page
+        };
+        axios.get(this.getRankReportEndpoint, {params: filter})
+          .then(res => {
+            this.rankReportData = res.data;
+            this.currentPage = res.data.meta.current_page;
+          });
+      },
+      handlePageChange: function(page) {
+        this.loadRankReport(page);
+      },
+      toPercentString: function (value) {
+        if (value) {
+          return value + '%';
+        }
+        return null;
       }
+
     }
   }
 

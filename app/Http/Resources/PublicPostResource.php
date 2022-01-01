@@ -44,11 +44,25 @@ class PublicPostResource extends JsonResource
 
     protected function getImage1():?Element
     {
-        return $this->elements()->first();
+        $top = $this->rank_reports()
+            ->orderByRaw('ifnull(final_win_position,9999)')
+            ->first();
+        if ($top) {
+            return $top->element;
+        }
+
+        return $this->elements()->inRandomOrder()->first();
     }
 
     protected function getImage2():?Element
     {
-        return $this->elements()->skip(1)->first();
+        $top = $this->rank_reports()
+            ->orderByRaw('ifnull(final_win_position,9999)')
+            ->skip(1)->first();
+        if ($top) {
+            return $top->element;
+        }
+
+        return $this->elements()->inRandomOrder()->first();
     }
 }

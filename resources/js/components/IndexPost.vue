@@ -57,7 +57,7 @@
               <form @submit.prevent>
                 <div class="form-group row">
                   <label class="col-sm-2 col-md-1 col-form-label-lg pt-0" for="title">
-                    比賽標題 (40字內)
+                    標題
                   </label>
                   <div class="col-sm-10 col-md-11">
                     <ValidationProvider rules="required" v-slot="{ errors }">
@@ -78,7 +78,7 @@
                                 aria-describedby="description-help"
                                 required></textarea>
                       <small id="description-help" class="form-text text-muted">
-                        簡單描述這個比賽內容 (100字內)
+                        簡單描述這個比賽內容
                       </small>
                     </ValidationProvider>
                   </div>

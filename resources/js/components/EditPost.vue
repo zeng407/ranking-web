@@ -5,10 +5,11 @@
 
     <!-- Alert -->
     <div class="position-fixed"
-         style="top: 20px; right: 15px">
+         style="top: 20px; right: 15px; z-index: 10">
       <span class="cursor-pointer" @click="dismissAlert">
         <b-alert
           :show="dismissCountDown"
+          @dismissed="dismissCountDown=0"
           dismissible
           fade
           :variant="alertLevel"
@@ -66,7 +67,7 @@
                              :disabled="!isEditing || loading[SAVING_POST]" maxlength="40"
                       >
                       <small id="title-help" class="form-text text-muted">
-                        比賽標題 (40字內)
+                        標題
                       </small>
                       <span class="text-danger">{{ errors[0] }}</span>
                     </ValidationProvider>
@@ -233,7 +234,7 @@
                       <span class="card-text"><small
                         class="text-muted">{{moment(element.created_at).format('lll')}}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element, $event)">
-                        <i class="fas fa-trash"></i>
+                        <i :id="'trash'+element.id" class="fas fa-trash"></i>
                       </a>
                     </div>
                   </div>
@@ -251,8 +252,9 @@
                              @change="updateElementTitle(element.id, $event)">
                       <span class="card-text"><small
                         class="text-muted">{{moment(element.created_at).format('lll')}}</small></span>
-                      <a class="btn btn-danger float-right" @click="deleteElement(element, $event)"><i
-                        class="fas fa-trash"></i></a>
+                      <a class="btn btn-danger float-right" @click="deleteElement(element, $event)">
+                        <i class="fas fa-trash"></i>
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -452,10 +454,9 @@
             console.log('updateElementTitle');
           })
       },
-      deleteElement: function (element, event) {
+      deleteElement: function (element) {
         //spin button
-        const trashcan = event.target.getElementsByTagName('i')[0];
-        const originClass = trashcan.getAttribute('class');
+        const trashcan = document.getElementById('trash' + element.id);
         trashcan.setAttribute('class', 'spinner-border spinner-border-sm');
 
         const url = this.deleteElementEndpoint.replace('_id', element.id);
@@ -466,7 +467,6 @@
               id: element.id
             });
             this.$delete(this.elements, index);
-            console.log(event.target.name + " deleted");
           })
           .finally(() => {
             trashcan.setAttribute('class', originClass);
@@ -504,6 +504,7 @@
           .then(res => {
             console.log(res.data);
             this.elements.push(res.data.data);
+            this.showAlert(res.data.data.title);
           })
           .finally(() => {
             this.uploadLoadingStatus(UPLOADING_VIDEO, false);

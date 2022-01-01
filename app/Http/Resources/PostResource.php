@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\PostAccessPolicy;
 use App\Models\Post;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,7 +25,7 @@ class PostResource extends JsonResource
             'title' => $this->title,
             'serial' => $this->serial,
             'description' => $this->description,
-            'policy' => $this->post_policy->access_policy
+            'policy' => PostAccessPolicy::trans($this->post_policy->access_policy)
         ];
     }
 }

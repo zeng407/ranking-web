@@ -163,6 +163,8 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Game[] $games
  * @property-read int|null $games_count
  * @property-read \App\Models\PostPolicy|null $post_policy
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Rank[] $ranks
+ * @property-read int|null $ranks_count
  * @property-read \App\Models\User|null $user
  * @method static \Database\Factories\PostFactory factory(...$parameters)
  * @method static \Illuminate\Database\Eloquent\Builder|Post newModelQuery()
@@ -220,6 +222,7 @@ namespace App\Models{
  * @property int $element_id
  * @property string $rank_type
  * @property string $record_date
+ * @property int|null $position
  * @property int $win_count
  * @property int $round_count
  * @property string $win_rate
@@ -233,6 +236,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereElementId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Rank wherePosition($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank wherePostId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereRankType($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereRecordDate($value)
@@ -242,6 +246,38 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereWinRate($value)
  */
 	class IdeHelperRank extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * App\Models\RankReport
+ *
+ * @property int $id
+ * @property int $post_id
+ * @property int $element_id
+ * @property int $final_win_position
+ * @property string $final_win_rate
+ * @property int $win_position
+ * @property string $win_rate
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Element $element
+ * @property-read \App\Models\Post $post
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport query()
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereElementId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereFinalWinPosition($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereFinalWinRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport wherePostId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereWinPosition($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereWinRate($value)
+ * @mixin \Eloquent
+ */
+	class IdeHelperRankReport extends \Eloquent {}
 }
 
 namespace App\Models{

@@ -31,6 +31,10 @@ class Post extends Model
     ];
 
 
+    /**
+     * relations
+     */
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -38,12 +42,7 @@ class Post extends Model
 
     public function elements()
     {
-        return $this->belongsToMany(
-            Element::class,
-            'post_elements',
-            'post_id',
-            'element_id'
-        );
+        return $this->belongsToMany(Element::class, 'post_elements', 'post_id', 'element_id');
     }
 
     public function post_policy()
@@ -56,10 +55,28 @@ class Post extends Model
         return $this->hasMany(Game::class);
     }
 
+    public function ranks()
+    {
+        return $this->hasMany(Rank::class);
+    }
+
+    public function rank_reports()
+    {
+        return $this->hasMany(RankReport::class);
+    }
+
+    /**
+     * functions
+     */
+
     public function isPublic()
     {
         return $this->post_policy->access_policy === PostAccessPolicy::PUBLIC;
     }
+
+    /**
+     * scope
+     */
 
     public function scopePublic($query)
     {

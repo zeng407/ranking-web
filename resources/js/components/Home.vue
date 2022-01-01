@@ -33,7 +33,7 @@
             </div>
             <div class="card-body pt-0 text-center">
               <h3 class="card-title">
-                <a href="#" @click="showPost(post.serial)">{{post.title}}</a>
+                <a :href="getGameUrl(post.serial)" target="_blank">{{post.title}}</a>
               </h3>
               <p>{{post.description}}</p>
               <span class="card-text float-right">
@@ -75,6 +75,9 @@
       showPost: function (serial) {
         const url = this.playGameRoute.replace('_serial', serial);
         window.open(url, '_blank');
+      },
+      getGameUrl: function(serial) {
+        return this.playGameRoute.replace('_serial', serial);
       }
     }
   }

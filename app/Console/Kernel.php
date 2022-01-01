@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\ScheduleExecutor\RankScheduleExecutor;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -16,7 +17,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-//        $schedule->call(fn() => \Log::debug("schedule call"))->everyMinute();
+        $schedule->call(fn() => \Log::debug("schedule call"))->everyMinute();
+        $schedule->call(function(){
+           app(RankScheduleExecutor::class)->createRankReport();
+        })->everyFiveMinutes();
     }
 
     /**
