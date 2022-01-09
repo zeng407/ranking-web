@@ -54,4 +54,11 @@ class GameService
             ->where('remain_elements', 1)
             ->exists();
     }
+
+    public function getWinner(Game $game)
+    {
+        return optional($game->game_1v1_rounds()
+            ->where('remain_elements', 1)
+            ->first())->winner;
+    }
 }

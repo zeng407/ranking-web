@@ -8,6 +8,7 @@ use App\Http\Resources\Rank\PostRankResource;
 use App\Http\Resources\Rank\RankReportResource;
 use App\Models\Post;
 use App\Models\RankReport;
+use App\Policies\PostPolicy;
 use App\Services\GameService;
 use App\Services\RankService;
 use Illuminate\Http\Request;
@@ -24,36 +25,25 @@ class RankController extends Controller
         $this->rankService = $rankService;
     }
 
-    public function index($serial)
+    public function index(Post $post)
     {
-        $post = Post::where('serial',$serial)->firstOrFail();
+        /**
+         * @see PostPolicy::publicRead()
+         */
+        $this->authorize('public-read', $post);
 
         return PostRankResource::make($post);
     }
 
-    public function update(Request $request, $serial)
+    public function report(Post $post)
     {
-        $post = Post::where('serial', $serial)->firstOrFail();
+        /**
+         * @see PostPolicy::publicRead()
+         */
+        $this->authorize('public-read', $post);
 
-        if($gameSerial = $request->input('g')){
-            $game = $post->games()->where('serial', $gameSerial)->first();
-            if($game && $this->gameService->isGameComplete($game)){
-                $this->rankService->createRankReport($post);
-            }
-        }
+        $reports = $this->rankService->getRankReports($post, 10);
 
-        return response();
-    }
-
-    public function report($serial)
-    {
-        $post = Post::where('serial',$serial)->firstOrFail();
-
-        $report = RankReport::where('post_id', $post->id)
-            ->orderByDesc('final_win_rate')
-            ->orderByDesc('win_rate')
-            ->paginate(10);
-
-        return RankReportResource::collection($report);
+        return RankReportResource::collection($reports);
     }
 }

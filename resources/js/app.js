@@ -61,10 +61,11 @@ Vue.use(VueCookies);
  * BootstrapVue
  */
 
-import { PaginationPlugin, AlertPlugin } from 'bootstrap-vue';
+import { PaginationPlugin, AlertPlugin, TabsPlugin} from 'bootstrap-vue';
 // Make BootstrapVue available throughout your project
 Vue.use(PaginationPlugin);
 Vue.use(AlertPlugin);
+Vue.use(TabsPlugin);
 // Optionally install the BootstrapVue icon components plugin
 // Vue.use(IconsPlugin);
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PostElementResource;
 use App\Models\Element;
 use App\Models\Post;
+use App\Policies\ElementPolicy;
 use App\Services\YoutubeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,7 @@ class ElementController extends Controller
 
     public function createImage(Request $request)
     {
+        /** @see ElementPolicy::create() */
         $this->authorize('create', Element::class);
 
         $request->validate([
@@ -60,6 +62,7 @@ class ElementController extends Controller
 
     public function createVideo(Request $request)
     {
+        /** @see ElementPolicy::create() */
         $this->authorize('create', Element::class);
 
         $request->validate([
@@ -112,9 +115,9 @@ class ElementController extends Controller
         return PostElementResource::make($element);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Element $element)
     {
-        $element = Element::findOrFail($id);
+        /** @see ElementPolicy::update() */
         $this->authorize('update', $element);
 
         $data = $request->validate([
@@ -128,9 +131,9 @@ class ElementController extends Controller
         return PostElementResource::make($element);
     }
 
-    public function delete(Request $request, $id)
+    public function delete(Request $request, Element $element)
     {
-        $element = Element::findOrFail($id);
+        /** @see ElementPolicy::delete() */
         $this->authorize('delete', $element);
 
         $element->posts()->detach();

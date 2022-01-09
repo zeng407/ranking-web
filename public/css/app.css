@@ -6132,10 +6132,24 @@ readers do not read off random characters that represent icons */
   background-size: cover;
   background-position: center center;
   display: flex;
+  transition: 0.5s;
+}
+
+.game-image:hover {
+  /* IE 9 */
+  /* Safari 3-8 */
+  transform: scale(0.95);
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
 }
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.game-player {
+  top: 0;
+  left: 0;
+  position: relative;
 }
 
 /*!

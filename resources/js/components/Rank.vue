@@ -1,48 +1,105 @@
 <template>
   <!--  Main -->
-  <div class="container-fluid">
+  <div class="container">
 
-    <table class="table table-hover">
-      <thead>
-      <tr>
-        <th scope="col">#</th>
-        <th scope="col"></th>
-        <th scope="col">決賽勝率</th>
-        <th scope="col">2選1勝率</th>
-      </tr>
-      </thead>
-      <tbody v-if="rankReportData">
-      <tr v-for="(rank, index) in rankReportData.data">
-        <th scope="row">{{ (index+1) + (currentPage-1)*rankReportData.meta.per_page}}</th>
-        <td>
-          <div>
-            <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
-
-            <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
-              <p>{{ rank.element.title }}</p>
-            </a>
-            <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
-          </div>
-        </td>
-        <td>{{toPercentString(rank.final_win_rate)}}</td>
-        <td>{{toPercentString(rank.win_rate)}}</td>
-      </tr>
-      </tbody>
-    </table>
-
-    <div class="row">
-      <div class="col-12">
-        <b-pagination
-          v-model="currentPage"
-          :total-rows="rankReportData.meta.total"
-          :per-page="rankReportData.meta.per_page"
-          first-number
-          last-number
-          @change="handlePageChange"
-          align="center"
-        ></b-pagination>
-      </div>
+    <div class="fa-3x text-center" v-if="isLoading">
+      <i class="fas fa-spinner fa-spin"></i>
     </div>
+    <b-tabs content-class="mt-3" v-if="!isLoading">
+      <b-tab title="我的排名" v-if="gameResult">
+        <table class="table table-hover" style="table-layout: fixed">
+          <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col" class="w-75"></th>
+            <th scope="col">世界排名</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <th scope="row">1</th>
+            <td>
+              <div>
+                <img :src="gameResult.winner.thumb_url" height="300px" alt="gameResult.winner.title">
+
+                <a v-if="gameResult.winner.type === 'video'" :href="gameResult.winner.source_url" target="_blank">
+                  <p>{{ gameResult.winner.title }}</p>
+                </a>
+                <p v-if="gameResult.winner.type === 'image'">{{ gameResult.winner.title }}</p>
+              </div>
+            </td>
+            <td>{{gameResult.winner_rank}}</td>
+          </tr>
+          <tr v-for="(rank, index) in gameResult.data">
+            <th scope="row">{{ index+2 }}</th>
+            <td>
+              <div>
+                <img :src="rank.loser.thumb_url" height="300px" alt="rank.element.title">
+
+                <a v-if="rank.loser.type === 'video'" :href="rank.loser.source_url" target="_blank">
+                  <p>{{ rank.loser.title }}</p>
+                </a>
+                <p v-if="rank.loser.type === 'image'">{{ rank.loser.title }}</p>
+              </div>
+            </td>
+            <td>{{rank.rank}}</td>
+          </tr>
+          </tbody>
+        </table>
+      </b-tab>
+      <b-tab title="世界排名">
+        <table class="table table-hover" style="table-layout: fixed">
+          <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col" class="w-75"></th>
+            <th scope="col">決賽勝率</th>
+            <th scope="col">一般勝率</th>
+          </tr>
+          </thead>
+          <tbody v-if="loadingPage">
+            <tr>
+              <td colspan="4">
+                <div class="fa-3x text-center">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tbody v-if="rankReportData && !loadingPage">
+            <tr v-for="(rank, index) in rankReportData.data">
+            <th scope="row">{{ rank.rank }}</th>
+            <td style="overflow: scroll">
+              <div>
+                <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
+
+                <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
+                  <p>{{ rank.element.title }}</p>
+                </a>
+                <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
+              </div>
+            </td>
+            <td>{{toPercentString(rank.final_win_rate)}}</td>
+            <td>{{toPercentString(rank.win_rate)}}</td>
+          </tr>
+          </tbody>
+        </table>
+
+        <div class="row">
+          <div class="col-12" v-if="rankReportData">
+            <b-pagination
+              v-model="currentPage"
+              :total-rows="rankReportData.meta.total"
+              :per-page="rankReportData.meta.per_page"
+              first-number
+              last-number
+              @change="handlePageChange"
+              align="center"
+            ></b-pagination>
+          </div>
+        </div>
+      </b-tab>
+    </b-tabs>
 
 
   </div>
@@ -51,20 +108,34 @@
 <script>
   export default {
     mounted() {
-      this.loadRankData();
+      this.loadGameResult();
       this.loadRankReport();
+      this.loadRankData();
     },
     props: {
       postSerial: String,
       getRankEndpoint: String,
       getRankReportEndpoint: String,
+      getGameResultEndpoint: String
 
+    },
+    computed: {
+      isLoading: function () {
+        return this.loadingGameResult || this.loadingGameReport;
+      }
     },
     data: function () {
       return {
         rankInfo: null,
-        rankReportData: null,
+        rankReportData: {
+          data: {},
+          meta: {}
+        },
         currentPage: 1,
+        gameResult: null,
+        loadingGameResult: true,
+        loadingGameReport: true,
+        loadingPage: true
       }
     },
     methods: {
@@ -74,7 +145,22 @@
             this.rankInfo = res.data;
           });
       },
-      loadRankReport: function (page = 1){
+      loadGameResult: function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('g')) {
+          this.loadingGameResult = false;
+          return;
+        }
+        const api = this.getGameResultEndpoint.replace('_serial', urlParams.get('g'));
+        axios.get(api)
+          .then(res => {
+            this.gameResult = res.data;
+          })
+          .finally(() => {
+            this.loadingGameResult = false;
+          });
+      },
+      loadRankReport: function (page = 1) {
         const filter = {
           'page': page
         };
@@ -82,9 +168,14 @@
           .then(res => {
             this.rankReportData = res.data;
             this.currentPage = res.data.meta.current_page;
+          })
+          .finally(() => {
+            this.loadingGameReport = false;
+            this.loadingPage = false;
           });
       },
-      handlePageChange: function(page) {
+      handlePageChange: function (page) {
+        this.loadingPage = true;
         this.loadRankReport(page);
       },
       toPercentString: function (value) {

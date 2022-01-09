@@ -26,6 +26,7 @@ class RankReport extends Model
     protected $fillable = [
         'post_id',
         'element_id',
+        'rank',
         'final_win_position',
         'final_win_rate',
         'win_position',

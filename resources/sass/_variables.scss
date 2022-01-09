@@ -26,8 +26,22 @@ $cyan: #6cb2eb;
     background-size: cover;
     background-position: center center;
     display: flex;
+    transition: .5s;
+}
+
+.game-image:hover {
+    -ms-transform: scale(1.2); /* IE 9 */
+    -webkit-transform: scale(1.2); /* Safari 3-8 */
+    transform: scale(0.95);
+    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
 }
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+.game-player {
+    top: 0;
+    left: 0;
+    position: relative;
 }

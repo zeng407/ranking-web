@@ -16,7 +16,7 @@ class PostResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
     public function toArray($request)
@@ -25,7 +25,10 @@ class PostResource extends JsonResource
             'title' => $this->title,
             'serial' => $this->serial,
             'description' => $this->description,
-            'policy' => PostAccessPolicy::trans($this->post_policy->access_policy)
+            'policy' => $this->post_policy->access_policy,
+            '_' => [
+                'policy' => PostAccessPolicy::trans($this->post_policy->access_policy)
+            ]
         ];
     }
 }

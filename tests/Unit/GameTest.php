@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Enums\ElementType;
 use App\Enums\PostAccessPolicy;
-use App\Http\Resources\GameElementResource;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Post;

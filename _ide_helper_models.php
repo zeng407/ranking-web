@@ -163,6 +163,8 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Game[] $games
  * @property-read int|null $games_count
  * @property-read \App\Models\PostPolicy|null $post_policy
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\RankReport[] $rank_reports
+ * @property-read int|null $rank_reports_count
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Rank[] $ranks
  * @property-read int|null $ranks_count
  * @property-read \App\Models\User|null $user
@@ -252,13 +254,15 @@ namespace App\Models{
 /**
  * App\Models\RankReport
  *
+ * @mixin IdeHelperRankReport
  * @property int $id
  * @property int $post_id
  * @property int $element_id
- * @property int $final_win_position
- * @property string $final_win_rate
- * @property int $win_position
- * @property string $win_rate
+ * @property int|null $rank
+ * @property int|null $final_win_position
+ * @property string|null $final_win_rate
+ * @property int|null $win_position
+ * @property string|null $win_rate
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Element $element
@@ -272,10 +276,10 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereFinalWinRate($value)
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport wherePostId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereRank($value)
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereWinPosition($value)
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereWinRate($value)
- * @mixin \Eloquent
  */
 	class IdeHelperRankReport extends \Eloquent {}
 }

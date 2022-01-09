@@ -1,13 +1,19 @@
 <template>
 
   <div class="container-fluid">
-    <div class="text-center" v-if="game">
-      <h2>{{game.title}}</h2>
-      <h2>{{game.current_round}} / {{game.of_round}}</h2>
+    <div v-if="game">
+      <h2 class="text-center">{{game.title}}</h2>
+      <div class="d-flex" style="flex-flow: row wrap">
+        <h5 style="width: 20%"></h5>
+        <h5 class="text-center align-self-center" style="width: 60%">{{game.current_round}} of TOP
+          {{game.of_round}} </h5>
+        <h5 class="text-right align-self-center" style="width: 20%">REMAIN：{{game.remain_elements}} <br>(TOTAL：{{game.total_elements}})
+        </h5>
+      </div>
     </div>
     <div class="row" v-if="game">
       <div class="col-md-6 pr-md-0">
-        <div class="card">
+        <div class="card game-player" id="left-player">
           <div v-if="le.type === 'image'"
                @click="clickImage"
                :style="{backgroundImage: 'url('+le.source_url+')' }"
@@ -33,13 +39,13 @@
             <div style="height: 50px">
               <h5 class="card-title">{{le.title}}</h5>
             </div>
-            <label class="btn btn-primary btn-lg btn-block"
-                   @click="vote(le, re)">Vote</label>
+            <button class="btn btn-primary btn-lg btn-block" :disabled="isVoting"
+                   @click="leftWin()">Vote</button>
           </div>
         </div>
       </div>
       <div class="col-md-6 pl-md-0">
-        <div class="card">
+        <div class="card game-player" id="right-player">
           <div v-if="re.type === 'image'"
                @click="clickImage"
                :style="{backgroundImage: 'url('+re.source_url+')' }"
@@ -65,8 +71,8 @@
             <div style="height: 50px">
               <h5 class="card-title">{{re.title}}</h5>
             </div>
-            <label class="btn btn-danger btn-lg btn-block"
-                   @click="vote(re, le)">Vote</label>
+            <button class="btn btn-danger btn-lg btn-block" :disabled="isVoting"
+                   @click="rightWin()">Vote</button>
           </div>
         </div>
       </div>
@@ -129,6 +135,43 @@
     mounted() {
       this.loadGameSetting();
       this.showGameSettingPanel();
+      //
+      // $('#left-player').on('lose', () => {
+      //   console.log('left-player lose');
+      //   return $('#left-player').animate({top: '2000'}, 500, () => {
+      //     $('#left-player').hide();
+      //     $('#left-player').css('top', '0');
+      //   }).promise();
+      // });
+      // $('#left-player').on('win', () => {
+      //   console.log('left-player win');
+      //   return $('#left-player').animate({left: '50%'}, 500).promise();
+      // });
+      // $('#left-player').on('reset', () => {
+      //   console.log('left-player reset');
+      //   $('#left-player').show();
+      //   $('#left-player').css('left', '0');
+      //   $('#left-player').css('top', '0');
+      // });
+      //
+      // $('#right-player').on('lose', () => {
+      //   console.log('right-player lose');
+      //   return $('#right-player').animate({top: '2000'}, 500, () => {
+      //     $('#right-player').hide();
+      //     $('#right-player').css('top', '0');
+      //   }).promise();
+      // });
+      // $('#right-player').on('win', () => {
+      //   console.log('right-player win');
+      //   return $('#right-player').animate({left: '-50%'}, 500).promise();
+      // });
+      // $('#right-player').on('reset', () => {
+      //   console.log('right-player reset');
+      //   $('#right-player').show();
+      //   $('#right-player').css('left', '0');
+      //   $('#right-player').css('top', '0');
+      // });
+
     },
     props: {
       postSerial: String,
@@ -144,7 +187,8 @@
         game: null,
         status: null,
         setting: null,
-        elementsCount: ""
+        elementsCount: "",
+        isVoting: false
       }
     },
     computed: {
@@ -205,7 +249,52 @@
             this.game = res.data.data;
             this.doPlay(this.le);
             this.doPlay(this.re);
+          })
+          .then(() => {
+            this.resetPlayerPosition();
           });
+      },
+      leftWin() {
+        this.isVoting = true;
+        let winAnimate = $('#left-player').animate({left: '50%'}, 500, () => {
+          $('#left-player').delay(500).animate({top: '-2000'}, 500, () => {
+            $('#left-player').hide();
+          });
+        }).promise();
+        let loseAnimate = $('#right-player').animate({top: '2000'}, 500, () => {
+          $('#right-player').hide();
+        }).promise();
+
+        $.when(winAnimate, loseAnimate).then(() => {
+          this.vote(this.le, this.re);
+        });
+      },
+      rightWin() {
+        this.isVoting = true;
+        let winAnimate = $('#right-player').animate({left: '-50%'}, 500, () => {
+          $('#right-player').delay(500).animate({top: '-2000'}, 500, () => {
+            $('#right-player').hide();
+          });
+
+        }).promise();
+        let loseAnimate = $('#left-player').animate({top: '2000'}, 500, () => {
+          $('#left-player').hide();
+        }).promise();
+
+        $.when(winAnimate, loseAnimate).then(() => {
+          this.vote(this.le, this.re);
+        });
+      },
+      resetPlayerPosition() {
+        $('#left-player').hide();
+        $('#left-player').css('left', '0');
+        $('#left-player').css('top', '0');
+        $('#left-player').show();
+
+        $('#right-player').hide();
+        $('#right-player').css('left', '0');
+        $('#right-player').css('top', '0');
+        $('#right-player').show();
       },
       vote: function (winner, loser) {
         const data = {
@@ -213,8 +302,21 @@
           'winner_id': winner.id,
           'loser_id': loser.id
         };
-        axios.post(this.voteGameEndpoint, data)
+
+        // let loseAnimation = $('#' + loseObj).animate({top: '2000px'}, 500, () => {
+        //   $('#' + loseObj).hide();
+        //   $('#' + loseObj).css('top', '0');
+        // }).promise();
+        // let winAnimation = $('#' + winObj).animate({left: '50%'}, 500, () => {
+        //   $('#' + winObj).hide();
+        //   $('#' + winObj).css('left', '0');
+        // }).promise();
+        // let loseAnimation = $('#' + winObj).trigger('win');
+        // let winAnimation = $('#' + loseObj).trigger('lose');
+
+        return axios.post(this.voteGameEndpoint, data)
           .then(res => {
+            this.isVoting = false;
             this.status = res.data.status;
             if (this.status === 'end_game') {
               this.$cookies.remove(this.postSerial);
@@ -224,12 +326,13 @@
               this.nextRound();
             }
           })
+
       },
       showGameSettingPanel: function () {
         $('#gameSettingPanel').modal('show');
       },
       showGameResult: function () {
-        const url = this.getRankRoute.replace('_serial', this.postSerial) + '?g='+this.gameSerial;
+        const url = this.getRankRoute.replace('_serial', this.postSerial) + '?g=' + this.gameSerial;
         window.open(url, '_self');
       },
       getPlayer(element) {
@@ -296,6 +399,9 @@
           obj.css('background-size', 'contain');
         }
       },
+      handleLeftPlayerWin() {
+        return $('#left-player').animate({left: '50%'}, 500).promise();
+      }
     }
   }
 

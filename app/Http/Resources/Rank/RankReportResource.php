@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Rank;
 
-use App\Http\Resources\GameElementResource;
+use App\Http\Resources\Game\GameElementResource;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Game1V1Round;
@@ -37,6 +37,7 @@ class RankReportResource extends JsonResource
             'final_win_rate' => (int)$this->final_win_rate,
             'win_position' => $this->win_position,
             'win_rate' => (int)$this->win_rate,
+            'rank' => $this->rank
         ];
     }
 }

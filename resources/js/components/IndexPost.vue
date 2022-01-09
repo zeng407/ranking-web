@@ -26,7 +26,7 @@
         <tr v-for="post in posts.data">
           <td>{{post.title}}</td>
           <td>{{post.description}}</td>
-          <td>{{post.policy}}</td>
+          <td>{{post._.policy}}</td>
           <td>
             <a :href="getEditLink(post.serial)"><i class="fas fa-edit"></i></a>
           </td>

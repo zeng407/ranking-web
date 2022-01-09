@@ -3,8 +3,11 @@
     <div class="row justify-content-center pt-sm-4">
       <div class="col-xl-4 pt-2" v-for="post in posts.data">
         <div class="card">
+          <div class="card-header text-center">
+            <h3>{{post.title}}</h3>
+          </div>
           <div class="row no-gutters">
-            <div class="col-6 pr-1">
+            <div class="col-6">
               <!--              <img class="bd-placeholder-img card-img-top" :src="post.image1.url" :alt="post.image1.title">-->
               <!--              <p class="text-center">{{post.image1.title}}</p>-->
               <div :style="{
@@ -16,9 +19,9 @@
                 'background-position': 'center center',
                 'display': 'flex'}"></div>
               <!--                <img class="bd-placeholder-img card-img-top" :src="post.image1.url" :alt="post.image1.title">-->
-              <h3 class="text-center">{{post.image1.title}}</h3>
+              <h5 class="text-center">{{post.image1.title}}</h5>
             </div>
-            <div class="col-6 pl-1">
+            <div class="col-6">
               <div :style="{
                     'background': 'url('+post.image2.url+')',
                     'width': '100%',
@@ -28,14 +31,26 @@
                     'background-position': 'center center',
                     'display': 'flex'}"></div>
 
-              <h3 class="text-center">{{post.image2.title}}</h3>
+              <h5 class="text-center">{{post.image2.title}}</h5>
 
             </div>
             <div class="card-body pt-0 text-center">
-              <h3 class="card-title">
-                <a :href="getGameUrl(post.serial)" target="_blank">{{post.title}}</a>
-              </h3>
+<!--              <h3 class="card-title">-->
+<!--                <a :href="getGameUrl(post.serial)" target="_blank">{{post.title}}</a>-->
+<!--              </h3>-->
               <p>{{post.description}}</p>
+              <div class="row">
+                <div class="col-6">
+                  <a class="btn btn-primary btn-block" :href="getGameUrl(post.serial)" target="_blank">
+                    <i class="fas fa-play"></i> Play
+                  </a>
+                </div>
+                <div class="col-6">
+                  <a class="btn btn-secondary btn-block" :href="getRankUrl(post.serial)" target="_blank">
+                    <i class="fas fa-trophy"></i> Rank
+                  </a>
+                </div>
+              </div>
               <span class="card-text float-right">
                 <small
                   class="text-muted">{{moment(post.created_at).format('lll')}}
@@ -57,7 +72,8 @@
     },
     props: [
       'indexPostsEndpoint',
-      'playGameRoute'
+      'playGameRoute',
+      'gameRankRoute',
     ],
     data: function () {
       return {
@@ -78,7 +94,10 @@
       },
       getGameUrl: function(serial) {
         return this.playGameRoute.replace('_serial', serial);
-      }
+      },
+      getRankUrl: function(serial) {
+        return this.gameRankRoute.replace('_serial', serial);
+      },
     }
   }
 

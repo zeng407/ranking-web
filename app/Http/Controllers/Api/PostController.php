@@ -37,11 +37,12 @@ class PostController extends Controller
         return PostResource::collection($user->posts()->paginate());
     }
 
-    public function show($serial)
+    public function show(Post $post)
     {
-        /** @var User $user */
-        $user = Auth::user();
-        $post = $user->posts()->where('serial', $serial)->firstOrFail();
+        /**
+         * @see \App\Policies\PostPolicy::edit()
+         */
+        $this->authorize('edit', $post);
 
         return PostResource::make($post);
     }

@@ -10,51 +10,27 @@ use App\Models\Game;
 use App\Models\Post;
 use App\Models\Rank;
 use App\Models\RankReport;
+use DB;
 
 class RankService
 {
-    public function takeGameElements(Game $game, $count = 2)
+    public function getRankReports(Post $post, $limit = 10)
     {
-        $elements = $game->elements()
-            ->wherePivot('is_eliminated', false)
-            ->orderByPivot('win_count')
-            ->take($count)
-            ->get();
+        $reports = RankReport::where('post_id', $post->id)
+            ->orderByDesc('final_win_rate')
+            ->orderByDesc('win_rate')
+            ->paginate($limit);
 
-        return $elements;
+        return $reports;
     }
 
-    public function createGame(Post $post, $elementCount): Game
+    public function getRankPosition(Post $post, Element $element)
     {
-        /** @var Game $game */
-        $game = $post->games()->create([
-            'serial' => \Str::random(8),
-            'element_count' => $elementCount
-        ]);
+        $report = RankReport::where('post_id', $post->id)
+            ->where('element_id', $element->id)
+            ->first();
 
-        // pick random elements
-        $elements = $post->elements()
-            ->inRandomOrder()
-            ->take($game->element_count)
-            ->get();
-
-        $elements->each(function (Element $element) use ($game) {
-            $game->elements()->attach($element);
-        });
-
-        return $game;
-    }
-
-    public function isGamePublic(Game $game)
-    {
-        return $game->post->isPublic();
-    }
-
-    public function isGameComplete(Game $game)
-    {
-        return $game->game_1v1_rounds()
-            ->where('remain_elements', 1)
-            ->exists();
+        return $report->rank;
     }
 
     public function createRankReport(Post $post)
@@ -119,17 +95,28 @@ class RankService
                         'round_count' => $pkCounts,
                         'win_rate' => $winCount / $pkCounts * 100
                     ]);
+                } else {
+                    Rank::updateOrCreate([
+                        'post_id' => $post->id,
+                        'element_id' => $element->id,
+                        'rank_type' => RankType::PK_KING,
+                        'record_date' => today(),
+                    ], [
+                        'win_count' => 0,
+                        'round_count' => $pkCounts,
+                        'win_rate' => 0
+                    ]);
                 }
             }
         });
 
+        \Log::debug("update post [{$post->id}] CHAMPION rank");
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
             ->where('record_date', today())
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
             ->eachById(function (Rank $rank, $count) {
-                \Log::debug("update CHAMPION rank position [$count] {$rank->id}");
                 RankReport::updateOrCreate([
                     'post_id' => $rank->post_id,
                     'element_id' => $rank->element_id
@@ -139,19 +126,29 @@ class RankService
                 ]);
             });
 
+        \Log::debug("update post [{$post->id}] PK_KING rank");
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::PK_KING)
             ->where('record_date', today())
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
             ->eachById(function (Rank $rank, $count) {
-                \Log::debug("update PK_KING rank position [$count] {$rank->id}");
                 RankReport::updateOrCreate([
                     'post_id' => $rank->post_id,
                     'element_id' => $rank->element_id
                 ], [
                     'win_position' => $count + 1,
                     'win_rate' => $rank->win_rate,
+                ]);
+            });
+
+        \Log::debug("update post [{$post->id}] rank report");
+        RankReport::where('post_id', $post->id)
+            ->orderByDesc('final_win_rate')
+            ->orderByDesc('win_rate')
+            ->eachById(function (RankReport $rankReport, $index) use($post){
+                $rankReport->update([
+                    'rank' => $index + 1
                 ]);
             });
     }

@@ -25,10 +25,10 @@ Auth::routes();
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('post', [PostController::class, 'index'])->name('post.index');
-Route::get('post/{serial}/edit', [PostController::class, 'edit'])->name('post.edit');
+Route::get('post/{post:serial}/edit', [PostController::class, 'edit'])->name('post.edit');
 
-Route::get('post/{serial}/game', [GameController::class, 'show'])->name('game.show');
-Route::get('post/{serial}/rank', [GameController::class, 'rank'])->name('game.rank');
+Route::get('post/{post:serial}/game', [GameController::class, 'show'])->name('game.show');
+Route::get('post/{post:serial}/rank', [GameController::class, 'rank'])->name('game.rank');
 
 
 

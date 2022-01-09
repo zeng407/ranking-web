@@ -12,9 +12,7 @@ class PublicPostController extends Controller
 {
     public function index()
     {
-        $query = Post::whereHas('post_policy', function($query){
-            $query->where('access_policy', PostAccessPolicy::PUBLIC);
-        });
+        $query = Post::public()->whereHas('elements', null, '>=', 8);
 
         return PublicPostResource::collection($query->paginate());
     }

@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Post;
+use App\Services\RankService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -17,13 +18,21 @@ class PublicPostResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
-        $image1 = $this->getImage1();
-        $image2 = $this->getImage2();
+        $ranks = collect(app(RankService::class)->getRankReports($this->resource, 5)->items());
+        if($ranks->count() >= 2) {
+            $ranks = $ranks->shuffle();
+            $image1 = $ranks->pop()->element;
+            $image2 = $ranks->pop()->element;
+        }else{
+            $elements = $this->elements()->inRandomOrder()->take(2)->get();
+            $image1 = $elements->pop();
+            $image2 = $elements->pop();
+        }
 
         return [
             'title' => $this->title,
@@ -40,29 +49,5 @@ class PublicPostResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];
-    }
-
-    protected function getImage1():?Element
-    {
-        $top = $this->rank_reports()
-            ->orderByRaw('ifnull(final_win_position,9999)')
-            ->first();
-        if ($top) {
-            return $top->element;
-        }
-
-        return $this->elements()->inRandomOrder()->first();
-    }
-
-    protected function getImage2():?Element
-    {
-        $top = $this->rank_reports()
-            ->orderByRaw('ifnull(final_win_position,9999)')
-            ->skip(1)->first();
-        if ($top) {
-            return $top->element;
-        }
-
-        return $this->elements()->inRandomOrder()->first();
     }
 }

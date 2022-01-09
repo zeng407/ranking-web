@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Post;
 
 use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Policies\PostPolicy;
 use Illuminate\Http\Request;
 
 class PostController extends Controller
@@ -20,12 +21,14 @@ class PostController extends Controller
         return view('post.index');
     }
 
-    public function edit($serial)
+    public function edit(Post $post)
     {
-        $p = Post::where('serial', $serial)->firstOrFail();
-        $this->authorize('update', $p);
+        /** @see PostPolicy::update() */
+        $this->authorize('update', $post);
 
-        return view('post.edit', compact('serial'));
+        return view('post.edit', [
+            'serial' => $post->serial
+        ]);
     }
 
 }
