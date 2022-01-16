@@ -163,6 +163,8 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Game[] $games
  * @property-read int|null $games_count
  * @property-read \App\Models\PostPolicy|null $post_policy
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\PostTrend[] $post_trends
+ * @property-read int|null $post_trends_count
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\RankReport[] $rank_reports
  * @property-read int|null $rank_reports_count
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Rank[] $ranks
@@ -212,6 +214,35 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|PostPolicy whereUpdatedAt($value)
  */
 	class IdeHelperPostPolicy extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * App\Models\PostTrend
+ *
+ * @property int $id
+ * @property int $post_id
+ * @property string $trend_type
+ * @property string $time_range
+ * @property string|null $start_date
+ * @property int $position
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Post $post
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend query()
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend wherePosition($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend wherePostId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereStartDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereTimeRange($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereTrendType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	class IdeHelperPostTrend extends \Eloquent {}
 }
 
 namespace App\Models{

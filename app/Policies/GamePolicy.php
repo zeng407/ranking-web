@@ -20,8 +20,13 @@ class GamePolicy
         $this->gameService = $gameService;
     }
 
+
     public function play(?User $user, Game $game)
     {
+        if($user && $user->id === $game->post->user_id){
+            return true;
+        }
+
         return $this->gameService->isGamePublic($game)
             && !$this->gameService->isGameComplete($game);
     }

@@ -47,7 +47,8 @@ class PublicPostResource extends JsonResource
                 'title' => optional($image2)->title
             ],
             'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at
+            'updated_at' => $this->updated_at,
+            'play_count' => $this->games()->count()
         ];
     }
 }

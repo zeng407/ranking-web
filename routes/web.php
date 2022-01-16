@@ -23,6 +23,8 @@ use App\Http\Controllers\Post\GameController;
 
 Auth::routes();
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/hot', [HomeController::class, 'hot'])->name('home.hot');
+Route::get('/new', [HomeController::class, 'new'])->name('home.new');
 
 Route::get('post', [PostController::class, 'index'])->name('post.index');
 Route::get('post/{post:serial}/edit', [PostController::class, 'edit'])->name('post.edit');

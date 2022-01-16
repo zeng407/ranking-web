@@ -110,7 +110,7 @@ class RankService
             }
         });
 
-        \Log::debug("update post [{$post->id}] CHAMPION rank");
+//        \Log::debug("update post [{$post->id}] CHAMPION rank");
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
             ->where('record_date', today())
@@ -126,7 +126,7 @@ class RankService
                 ]);
             });
 
-        \Log::debug("update post [{$post->id}] PK_KING rank");
+//        \Log::debug("update post [{$post->id}] PK_KING rank");
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::PK_KING)
             ->where('record_date', today())
@@ -142,7 +142,7 @@ class RankService
                 ]);
             });
 
-        \Log::debug("update post [{$post->id}] rank report");
+//        \Log::debug("update post [{$post->id}] rank report");
         RankReport::where('post_id', $post->id)
             ->orderByDesc('final_win_rate')
             ->orderByDesc('win_rate')

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\MyPostController;
 use App\Http\Controllers\Api\ElementController;
 use App\Http\Controllers\Api\GameController;
 use App\Http\Controllers\Api\PublicPostController;
@@ -37,14 +37,18 @@ Route::get('post/{post:serial}/rank', [RankController::class, 'index'])->name('a
 Route::get('post/{post:serial}/rank/report', [RankController::class, 'report'])->name('api.rank.report');
 
 
-Route::get('posts', [PostController::class, 'index'])->name('api.post.index');
-Route::get('post/{post:serial}', [PostController::class, 'show'])->name('api.post.show');
-Route::post('post', [PostController::class, 'create'])->name('api.post.create');
-Route::put('post/{post:serial}', [PostController::class, 'update'])->name('api.post.update');
-Route::get('post/{post:serial}/elements', [PostController::class, 'elements'])->name('api.post.elements');
-Route::post('elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');
-Route::post('elements/video', [ElementController::class, 'createVideo'])->name('api.element.create-video');
-Route::put('element/{element}', [ElementController::class, 'update'])->name('api.element.update');
-Route::delete('element/{element}', [ElementController::class, 'delete'])->name('api.element.delete');
+/**
+ * Auth
+ */
+Route::get('account/posts', [MyPostController::class, 'index'])->name('api.post.index');
+Route::get('account/post/{post:serial}', [MyPostController::class, 'show'])->name('api.post.show');
+Route::post('account/post', [MyPostController::class, 'create'])->name('api.post.create');
+Route::put('account/post/{post:serial}', [MyPostController::class, 'update'])->name('api.post.update');
+Route::get('account/post/{post:serial}/elements', [MyPostController::class, 'elements'])->name('api.post.elements');
+Route::get('account/post/{post:serial}/rank', [MyPostController::class, 'rank'])->name('api.post.rank');
+Route::post('account/elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');
+Route::post('account/elements/video', [ElementController::class, 'createVideo'])->name('api.element.create-video');
+Route::put('account/element/{element}', [ElementController::class, 'update'])->name('api.element.update');
+Route::delete('account/element/{element}', [ElementController::class, 'delete'])->name('api.element.delete');
 
 

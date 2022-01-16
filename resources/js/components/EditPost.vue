@@ -19,112 +19,155 @@
       </span>
     </div>
 
-
     <!-- tabs -->
     <div class="row">
 
       <div class="col-2">
         <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-          <a class="nav-link active" id="v-pills-home-tab" data-toggle="pill" href="#v-pills-home" role="tab"
-             aria-controls="v-pills-home" aria-selected="true">基本資訊</a>
-          <a class="nav-link" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-profile" role="tab"
-             aria-controls="v-pills-profile" aria-selected="false">素材</a>
+
+          <a class="nav-link active" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
+             aria-controls="v-pills-post-info" aria-selected="true">
+            <span class="d-inline-block text-center" style="width: 30px">
+              <i class="fas fa-info-circle"></i>
+            </span>
+            &nbsp;基本資訊
+          </a>
+          <a class="nav-link" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
+             aria-controls="v-pills-elements" aria-selected="false">
+            <span class="d-inline-block text-center" style="width: 30px">
+              <i class="fas fa-photo-video"></i>
+            </span>
+            &nbsp;素材
+          </a>
+          <a class="nav-link" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
+             aria-controls="v-pills-rank" aria-selected="false">
+            <span class="d-inline-block text-center" style="width: 30px">
+              <i class="fas fa-trophy"></i>
+            </span>
+            &nbsp;排行
+          </a>
         </div>
       </div>
 
       <div class="col-10">
         <div class="tab-content" id="v-pills-tabContent">
 
-          <!-- info -->
-          <div class="tab-pane fade show active" id="v-pills-home" role="tabpanel" aria-labelledby="v-pills-home-tab">
+          <!-- tab info -->
+          <div class="tab-pane fade show active" id="v-pills-post-info" role="tabpanel"
+               aria-labelledby="v-pills-post-info-tab">
             <!-- Loading -->
-            <div class="col-9 fa-3x text-center" v-if="loading[LOADING_POST]">
+            <div class="col-9 fa-3x text-center" v-if="loading['LOADING_POST']">
               <i class="fas fa-spinner fa-spin"></i>
             </div>
 
             <ValidationObserver v-slot="{ invalid }" v-if="post">
-              <h2 class="mt-3 mb-3">比賽基本資訊
-                <button class="btn btn-primary float-right" v-if="!isEditing" @click="clickEdit">
-                  <i class="fas fa-edit"></i>編輯
-                </button>
-                <button class="btn btn-primary float-right" v-else
-                        @click="savePost" :disabled="invalid || loading[SAVING_POST]">
-                  <i class="fas fa-save" v-if="!loading[SAVING_POST]"></i>
-                  <i class="fas fa-spinner fa-spin" v-if="loading[SAVING_POST]"></i>
-                  儲存
-                </button>
-              </h2>
+              <div class="row">
+                <div class="col-6">
+                  <h2 class="mt-3 mb-3">比賽基本資訊</h2>
+                </div>
+                <div class="col-6">
+                <h2 class="mt-3 mb-3">
+                  <span class="d-flex justify-content-end">
+                    <a class="btn btn-danger mr-3" :href="playGameRoute" target="_blank">
+                      <i class="fas fa-play"></i> Play
+                    </a>
+
+                    <button class="btn btn-primary" v-if="!isEditing" @click="clickEdit">
+                      <i class="fas fa-edit"></i>編輯
+                    </button>
+                    <button class="btn btn-primary" v-else
+                            @click="savePost" :disabled="invalid || loading['SAVING_POST']">
+                      <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
+                      <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
+                      儲存
+                    </button>
+                  </span>
+                </h2>
+                </div>
+              </div>
               <form @submit.prevent>
-                <div class="form-group row">
-                  <label class="col-sm-2 col-md-1 col-form-label-lg pt-0" for="title">
-                    標題
-                  </label>
-                  <div class="col-sm-10 col-md-11">
-                    <ValidationProvider rules="required" v-slot="{ errors }">
-                      <input type="text" class="form-control" id="title" v-model="post.title" required
-                             :disabled="!isEditing || loading[SAVING_POST]" maxlength="40"
-                      >
-                      <small id="title-help" class="form-text text-muted">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg" for="title">
                         標題
-                      </small>
-                      <span class="text-danger">{{ errors[0] }}</span>
-                    </ValidationProvider>
+                      </label>
+                      <ValidationProvider rules="required" v-slot="{ errors }">
+                        <input type="text" class="form-control" id="title" v-model="post.title" required
+                               :disabled="!isEditing || loading['SAVING_POST']" maxlength="40"
+                        >
+                        <span class="text-danger">{{ errors[0] }}</span>
+                      </ValidationProvider>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group row">
-                  <label class="col-sm-2 col-md-1 col-form-label-lg pt-0" for="description">
-                    描述
-                  </label>
-                  <div class="col-sm-10 col-md-11">
-                    <ValidationProvider rules="required" v-slot="{ errors }">
-                      <textarea class="form-control" id="description" v-model="post.description" rows="3"
-                                style="resize: none"
-                                maxlength="100"
-                                aria-describedby="description-help"
-                                required
-                                :disabled="!isEditing || loading[SAVING_POST]">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg" for="description">
+                        描述
+                      </label>
+                      <ValidationProvider rules="required" v-slot="{ errors }">
+                        <textarea class="form-control" id="description" v-model="post.description" rows="3"
+                                  style="resize: none"
+                                  maxlength="100"
+                                  aria-describedby="description-help"
+                                  required
+                                  :disabled="!isEditing || loading['SAVING_POST']">
 
-                      </textarea>
-                      <small id="description-help" class="form-text text-muted">
-                        簡單描述這個比賽內容 (100字內)
-                      </small>
-                      <span class="text-danger">{{ errors[0] }}</span>
-                    </ValidationProvider>
+                        </textarea>
+                        <small id="description-help" class="form-text text-muted">
+                          簡單描述這個比賽內容 (100字內)
+                        </small>
+                        <span class="text-danger">{{ errors[0] }}</span>
+                      </ValidationProvider>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group row">
-                  <label class="col-sm-2 col-md-1 col-form-label-lg pt-0">
-                    發佈
-                  </label>
-                  <div class="col-sm-10 col-md-11" v-if="isEditing">
-                    <ValidationProvider rules="required" v-slot="{ errors }">
-                      <label class="btn btn-outline-dark" for="post-privacy-public">
-                        <input type="radio" id="post-privacy-public" v-model="post.policy" value="public"
-                               :disabled="loading[SAVING_POST]"
-                        >
-
-                        公開
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg">
+                        發佈
                       </label>
+                      <ValidationProvider rules="required" v-slot="{ errors }" v-if="isEditing">
+                        <label class="form-control btn btn-outline-dark" for="post-privacy-public">
+                          <input type="radio" id="post-privacy-public" v-model="post.policy" value="public"
+                                 :disabled="loading['SAVING_POST']"
+                          >
 
-                      <label class="btn btn-outline-dark" for="post-privacy-private">
-                        <input type="radio" id="post-privacy-private" v-model="post.policy" value="private"
-                               :disabled="loading[SAVING_POST]"
-                        >
-                        私人
-                      </label>
-                      <span class="text-danger">{{ errors[0] }}</span>
-                    </ValidationProvider>
-                  </div>
-                  <div class="col-sm-10 col-md-11" v-else>
-                    <label>{{post._.policy}}</label>
+                          公開
+                        </label>
+
+                        <label class="form-control btn btn-outline-dark" for="post-privacy-private">
+                          <input type="radio" id="post-privacy-private" v-model="post.policy" value="private"
+                                 :disabled="loading['SAVING_POST']"
+                          >
+                          私人
+                        </label>
+                        <span class="text-danger">{{ errors[0] }}</span>
+                      </ValidationProvider>
+                      <div v-else>
+                        <input class="form-control" disabled="disabled" :value="post._.policy">
+                        <small class="form-text text-muted" v-if="post.policy==='public'">至少上傳8個素材才會對外公開</small>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </form>
             </ValidationObserver>
+            <div class="row" v-if="post">
+              <div class="col-3">
+                <div class="form-group">
+                  <label class="col-form-label-lg">建立時間</label>
+                  <input class="form-control" disabled :value="post.created_at | date">
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- elements -->
-          <div class="tab-pane fade" id="v-pills-profile" role="tabpanel" aria-labelledby="v-pills-profile-tab">
+          <!-- tab elements -->
+          <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
             <!-- upload image -->
             <h2 class="mt-3 mb-3">上傳圖片</h2>
             <div class="row">
@@ -158,9 +201,9 @@
                          placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"
-                            :disabled="loading[UPLOADING_VIDEO]">
-                      <span v-show="!loading[UPLOADING_VIDEO]">新增</span>
-                      <i v-show="loading[UPLOADING_VIDEO]" class="fas fa-spinner fa-spin"></i>
+                            :disabled="loading['UPLOADING_VIDEO']">
+                      <span v-show="!loading['UPLOADING_VIDEO']">新增</span>
+                      <i v-show="loading['UPLOADING_VIDEO']" class="fas fa-spinner fa-spin"></i>
 
                       <!--                      <i class="fas fa-spinner"></i>-->
                     </button>
@@ -173,11 +216,11 @@
             <h2 class="mt-5 mb-3">編輯素材</h2>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
-              <form class="form-inline">
+              <div class="form-inline">
                 <input class="form-control mr-sm-2" v-model="filters.title_like" type="search" placeholder="Search"
                        aria-label="Search">
                 <i class="fas fa-filter" v-if="filters.title_like"></i>
-              </form>
+              </div>
             </nav>
 
 
@@ -229,9 +272,10 @@
                         </div>
                       </div>
                       <span class="card-text"><small
-                        class="text-muted">{{moment(element.created_at).format('lll')}}</small></span>
-                      <a class="btn btn-danger float-right" @click="deleteElement(element, $event)">
-                        <i :id="'trash'+element.id" class="fas fa-trash"></i>
+                        class="text-muted">{{element.created_at | datetime}}</small></span>
+                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
                       </a>
                     </div>
                   </div>
@@ -244,13 +288,15 @@
                          v-if="element.type==='image'">
 
                     <div class="card-body">
-                      <input class="form-control-plaintext bg-light cursor-pointer mb-2" type="text" :value="element.title"
+                      <input class="form-control-plaintext bg-light cursor-pointer mb-2" type="text"
+                             :value="element.title"
                              maxlength="100"
                              @change="updateElementTitle(element.id, $event)">
                       <span class="card-text"><small
-                        class="text-muted">{{moment(element.created_at).format('lll')}}</small></span>
-                      <a class="btn btn-danger float-right" @click="deleteElement(element, $event)">
-                        <i class="fas fa-trash"></i>
+                        class="text-muted">{{element.created_at | datetime}}</small></span>
+                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
                       </a>
                     </div>
                   </div>
@@ -267,6 +313,68 @@
               align="center"
             ></b-pagination>
           </div>
+
+          <!-- tab rank -->
+          <div class="tab-pane fade" id="v-pills-rank" role="tabpanel" aria-labelledby="v-pills-rank-tab">
+            <div class="row" v-if="!loading['LOADING_POST']">
+              <div class="col-3">
+                <div class="form-group">
+                  <label>遊戲次數</label>
+                  <input class="form-control" disabled :value="post.play_count">
+                </div>
+              </div>
+            </div>
+            <table class="table table-hover" style="table-layout: fixed">
+              <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col" class="w-75"></th>
+                <th scope="col">決賽勝率</th>
+                <th scope="col">一般勝率</th>
+              </tr>
+              </thead>
+              <tbody v-if="loading['LOADING_RANK']">
+              <tr>
+                <td colspan="4">
+                  <div class="fa-3x text-center">
+                    <i class="fas fa-spinner fa-spin"></i>
+                  </div>
+                </td>
+              </tr>
+              </tbody>
+              <tbody v-if="rank.rankReportData && !loading['LOADING_RANK']">
+              <tr v-for="(rank, index) in rank.rankReportData.data">
+                <th scope="row">{{ rank.rank }}</th>
+                <td style="overflow: scroll">
+                  <div>
+                    <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
+
+                    <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
+                      <p>{{ rank.element.title }}</p>
+                    </a>
+                    <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
+                  </div>
+                </td>
+                <td>{{rank.final_win_rate | percent}}</td>
+                <td>{{rank.win_rate | percent}}</td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div class="row">
+              <div class="col-12" v-if="rank.rankReportData">
+                <b-pagination
+                  v-model="rank.currentPage"
+                  :total-rows="rank.rankReportData.meta.total"
+                  :per-page="rank.rankReportData.meta.per_page"
+                  first-number
+                  last-number
+                  @change="handleRankPageChange"
+                  align="center"
+                ></b-pagination>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -279,21 +387,13 @@
   import bsCustomFileInput from 'bs-custom-file-input';
   import moment from 'moment';
 
-  const LOADING_POST = 0;
-  const SAVING_POST = 1;
-  const UPLOADING_VIDEO = 2;
-
   // import { localize } from 'vee-validate';
   export default {
-    created() {
-      this.LOADING_POST = LOADING_POST;
-      this.SAVING_POST = SAVING_POST;
-      this.UPLOADING_VIDEO = UPLOADING_VIDEO;
-    },
     mounted() {
       bsCustomFileInput.init();
       this.loadPost();
       this.loadElements();
+      this.loadRankReport();
 
       // localize('zh_TW');
       //debug
@@ -301,7 +401,9 @@
     },
     props: {
       showPostEndpoint: String,
+      playGameRoute: String,
       getElementsEndpoint: String,
+      getRankEndpoint: String,
       updatePostEndpoint: String,
       updateElementEndpoint: String,
       deleteElementEndpoint: String,
@@ -311,9 +413,10 @@
     data: function () {
       return {
         loading: {
-          LOADING_POSTS: true,
+          LOADING_POST: true,
           SAVING_POST: false,
-          UPLOADING_VIDEO: false
+          UPLOADING_VIDEO: false,
+          LOADING_RANK: false
         },
         uploadingFiles: {},
         post: null,
@@ -322,6 +425,7 @@
         elements: [],
         stashElement: [],
         playingVideo: null,
+        deletingElement: [],
 
         currentPage: 1,
         perPage: 50,
@@ -336,7 +440,10 @@
         // search elements
         filters: {
           title_like: null
-        }
+        },
+
+        //rank
+        rank: {}
 
       }
     },
@@ -352,7 +459,7 @@
           }
           return true;
         });
-      }
+      },
 
     },
     methods: {
@@ -373,14 +480,14 @@
 
       /** Post **/
       loadPost: function () {
-        this.uploadLoadingStatus(LOADING_POST, true);
+        this.uploadLoadingStatus('LOADING_POST', true);
         const url = this.showPostEndpoint;
         axios.get(url)
           .then(res => {
             this.post = res.data.data;
           })
           .finally(() => {
-            this.uploadLoadingStatus(LOADING_POST, false);
+            this.uploadLoadingStatus('LOADING_POST', false);
           });
 
       },
@@ -388,7 +495,7 @@
         this.isEditing = true;
       },
       savePost: function () {
-        this.uploadLoadingStatus(SAVING_POST, true);
+        this.uploadLoadingStatus('SAVING_POST', true);
         const data = {
           title: this.post.title,
           description: this.post.description,
@@ -403,7 +510,7 @@
             this.isEditing = false;
           })
           .finally(() => {
-            this.uploadLoadingStatus(SAVING_POST, false);
+            this.uploadLoadingStatus('SAVING_POST', false);
           });
       },
 
@@ -446,9 +553,7 @@
           })
       },
       deleteElement: function (element) {
-        //spin button
-        const trashcan = document.getElementById('trash' + element.id);
-        trashcan.setAttribute('class', 'spinner-border spinner-border-sm');
+        this.pushDeleting(element);
 
         const url = this.deleteElementEndpoint.replace('_id', element.id);
         axios.delete(url)
@@ -460,8 +565,19 @@
             this.$delete(this.elements, index);
           })
           .finally(() => {
-            trashcan.setAttribute('class', originClass);
+            this.removeDeleting(element);
           });
+      },
+      pushDeleting(element){
+        this.deletingElement.push(element.id);
+      },
+      removeDeleting(element){
+        _.remove(this.deletingElement, (v) => {
+          return v === element.id;
+        });
+      },
+      isDeleting: function (element) {
+        return this.deletingElement.includes(element.id);
       },
 
       /** Image **/
@@ -486,7 +602,7 @@
 
       /** Video **/
       uploadVideo: function () {
-        this.uploadLoadingStatus(UPLOADING_VIDEO, true);
+        this.uploadLoadingStatus('UPLOADING_VIDEO', true);
         const data = {
           post_serial: this.post.serial,
           url: this.uploadVideoUrl
@@ -498,7 +614,7 @@
             this.showAlert(res.data.data.title);
           })
           .finally(() => {
-            this.uploadLoadingStatus(UPLOADING_VIDEO, false);
+            this.uploadLoadingStatus('UPLOADING_VIDEO', false);
           });
 
       },
@@ -545,7 +661,6 @@
         }).asSeconds();
       },
 
-
       /** Player **/
       getPlayer(element) {
         return _.get(this.$refs, element.id + '.0.player', null);
@@ -567,6 +682,25 @@
             endSeconds: element.video_end_second
           });
         }
+      },
+
+      /** Rank **/
+      loadRankReport: function (page = 1) {
+        this.uploadLoadingStatus('LOADING_RANK', true);
+        const filter = {
+          'page': page
+        };
+        axios.get(this.getRankEndpoint, {params: filter})
+          .then(res => {
+            this.$set(this.rank, 'rankReportData', res.data);
+            this.$set(this.rank, 'currentPage', res.data.meta.current_page);
+          })
+          .finally(() => {
+            this.uploadLoadingStatus('LOADING_RANK', false);
+          });
+      },
+      handleRankPageChange: function (page) {
+        this.loadRankReport(page);
       }
 
     }

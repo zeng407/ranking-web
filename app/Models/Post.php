@@ -34,7 +34,6 @@ class Post extends Model
     /**
      * relations
      */
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -65,6 +64,11 @@ class Post extends Model
         return $this->hasMany(RankReport::class);
     }
 
+    public function post_trends()
+    {
+        return $this->hasMany(PostTrend::class);
+    }
+
     /**
      * functions
      */
@@ -77,7 +81,6 @@ class Post extends Model
     /**
      * scope
      */
-
     public function scopePublic($query)
     {
         return $query->whereHas('post_policy', function ($query) {

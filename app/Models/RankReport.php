@@ -40,7 +40,7 @@ class RankReport extends Model
 
     public function element()
     {
-        return $this->belongsTo(Element::class);
+        return $this->belongsTo(Element::class)->withTrashed();
     }
 
 

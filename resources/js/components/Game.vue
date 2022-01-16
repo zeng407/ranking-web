@@ -106,7 +106,7 @@
                         </div>
                         <select v-model="elementsCount" class="custom-select" id="elementsCount" required>
                           <option value="" disabled selected="selected">請選擇</option>
-                          <option v-for="count in [4,8,16,32,64,128,256,512,1024]"
+                          <option v-for="count in [8,16,32,64,128,256,512,1024]"
                                   :value="count" v-if="setting.elements_count >= count">
                             {{count}}
                           </option>
@@ -282,7 +282,7 @@
         }).promise();
 
         $.when(winAnimate, loseAnimate).then(() => {
-          this.vote(this.le, this.re);
+          this.vote(this.re, this.le);
         });
       },
       resetPlayerPosition() {

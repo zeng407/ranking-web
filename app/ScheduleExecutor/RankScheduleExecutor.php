@@ -22,10 +22,10 @@ class RankScheduleExecutor
         $this->rankService = $rankService;
     }
 
-    public function createRankReport()
+    public function createRankReports()
     {
         Post::eachById(function (Post $post, $count) {
-            \Log::debug("post[$count] {$post->id} {$post->serial}");
+            \Log::debug("[createRankReport] post {$post->id} {$post->serial}");
             $this->rankService->createRankReport($post);
         });
 

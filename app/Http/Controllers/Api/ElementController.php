@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ElementType;
 use App\Enums\VideoSource;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\PostElementResource;
+use App\Http\Resources\MyPost\PostElementResource;
 use App\Models\Element;
 use App\Models\Post;
 use App\Policies\ElementPolicy;
@@ -17,8 +17,6 @@ use Illuminate\Validation\Rule;
 
 class ElementController extends Controller
 {
-    const TITLE_SIZE = 100;
-
     protected $youtube;
 
     public function __construct(YoutubeService $service)
@@ -54,7 +52,7 @@ class ElementController extends Controller
             'source_url' => $url,
             'thumb_url' => $thumb,
             'type' => ElementType::IMAGE,
-            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, self::TITLE_SIZE)
+            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('post.title_size'))
         ]);
 
         return PostElementResource::make($element);
@@ -121,7 +119,7 @@ class ElementController extends Controller
         $this->authorize('update', $element);
 
         $data = $request->validate([
-            'title' => ['sometimes', 'string', 'max:' . self::TITLE_SIZE],
+            'title' => ['sometimes', 'string', 'max:' . config('post.title_size')],
             'video_start_second' => 'sometimes|integer',
             'video_end_second' => 'sometimes|integer',
         ]);

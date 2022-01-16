@@ -46,19 +46,6 @@ class GameController extends Controller
         /** @see GamePolicy::play() */
         $this->authorize('play', $game);
 
-//        if (!$this->gameService->isGamePublic($game)) {
-//            return response()->json([
-//                'msg' => 'the game is private'
-//            ], 401);
-//        }
-
-        // check game is complete
-//        if ($this->gameService->isGameComplete($game)) {
-//            return response()->json([
-//                'msg' => 'the game has completed'
-//            ], 404);
-//        }
-
         $elements = $this->gameService->takeGameElements($game, 2);
 
         return GameRoundResource::make($game, $elements);
@@ -68,10 +55,16 @@ class GameController extends Controller
     {
         $request->validate([
             'post_serial' => 'required',
-            'element_count' => 'required|integer|min:4'
+            'element_count' => ['required', 'integer', 'min:' . config('post.post_min_element_count'),
+                'max:'.config('post.post_max_element_count')
+            ]
         ]);
 
         $post = $this->getPost($request->post_serial);
+        /**
+         * @see PostPolicy::newGame()
+         */
+        $this->authorize('new-game', $post);
 
         $game = $this->gameService->createGame($post, $request->element_count);
 
@@ -87,24 +80,13 @@ class GameController extends Controller
             'winner_id' => 'required',
             'loser_id' => 'required',
         ]);
-
-        //todo validate element id
-
         /** @var Game $game */
         $game = $this->getGame($request->game_serial);
 
-        if (!$this->gameService->isGamePublic($game)) {
-            return response()->json([
-                'msg' => 'the game is private'
-            ], 401);
-        }
-
-        // check game is complete
-        if ($this->gameService->isGameComplete($game)) {
-            return response()->json([
-                'msg' => 'the game has completed'
-            ], 404);
-        }
+        /**
+         * @see GamePolicy::play()
+         */
+        $this->authorize('play', $game);
 
         /** @var Game1V1Round $lastRound */
         $lastRound = $game->game_1v1_rounds()->latest('id')->first();
@@ -168,7 +150,7 @@ class GameController extends Controller
 
     public function result(Game $game)
     {
-        if(!$this->gameService->isGameComplete($game)){
+        if (!$this->gameService->isGameComplete($game)) {
             return response()->json([], 404);
         }
 
@@ -197,9 +179,7 @@ class GameController extends Controller
     protected function getPost($serial): Post
     {
         /** @var Post $post */
-        $post = Post::where('serial', $serial)
-            ->public()
-            ->firstOrFail();
+        $post = Post::where('serial', $serial)->firstOrFail();
 
         return $post;
     }

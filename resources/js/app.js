@@ -75,6 +75,38 @@ Vue.use(TabsPlugin);
 import VueYoutube from 'vue-youtube'
 Vue.use(VueYoutube);
 
+/**
+ * Filter
+ */
+Vue.filter('percent', function(value){
+    if (value) {
+        return value + '%';
+    }
+    return null;
+});
+Vue.filter('date', function(value){
+    return moment(value).format('Y/M/D');
+});
+Vue.filter('datetime', function(value){
+    return moment(value).format('Y/M/D H:m:s');
+});
+
+// Vue.directive('tooltip', function(el, binding){
+//     $(el).tooltip({
+//         title: binding.value,
+//         placement: binding.arg || 'top',
+//         trigger: 'hover'
+//     });
+// });
+//
+// Vue.directive('popover', function(el, binding){
+//     $(el).popover().click(() => {
+//         setTimeout(() => {
+//             $(el).blur();
+//             $(el).popover('hide');
+//         }, 1000);
+//     });
+// });
 
 const app = new Vue({
     el: '#app'

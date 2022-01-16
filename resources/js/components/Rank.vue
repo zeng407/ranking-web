@@ -79,8 +79,8 @@
                 <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
               </div>
             </td>
-            <td>{{toPercentString(rank.final_win_rate)}}</td>
-            <td>{{toPercentString(rank.win_rate)}}</td>
+            <td>{{rank.final_win_rate | percent}}</td>
+            <td>{{rank.win_rate | percent}}</td>
           </tr>
           </tbody>
         </table>
@@ -161,6 +161,7 @@
           });
       },
       loadRankReport: function (page = 1) {
+        this.loadingPage = true;
         const filter = {
           'page': page
         };
@@ -175,14 +176,7 @@
           });
       },
       handlePageChange: function (page) {
-        this.loadingPage = true;
         this.loadRankReport(page);
-      },
-      toPercentString: function (value) {
-        if (value) {
-          return value + '%';
-        }
-        return null;
       }
 
     }
