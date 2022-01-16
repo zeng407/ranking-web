@@ -32,10 +32,17 @@ class ElementController extends Controller
 
         $request->validate([
             'post_serial' => 'required',
-            'file' => 'required|image',
+            'file' => 'required|image|max:8192',
         ]);
 
         $post = $this->getPost($request->post_serial);
+
+        // check elements count
+        if($post->elements()->count() > config('post.post_max_element_count')){
+            return response()->json([
+                'message' => 'upload the limit numbers of images/videos'
+            ], 400);
+        }
 
         $saveDir = Auth::id() . '/' . $request->post_serial;
         $file = $request->file('file');
@@ -71,6 +78,13 @@ class ElementController extends Controller
         ]);
 
         $post = $this->getPost($request->post_serial);
+
+        // check elements count
+        if($post->elements()->count() > config('post.post_max_element_count')){
+            return response()->json([
+                'message' => 'upload the limit numbers of images/videos'
+            ], 400);
+        }
 
         try {
             $video = $this->youtube->query($request->url);

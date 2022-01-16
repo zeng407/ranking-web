@@ -92,15 +92,10 @@
                   </a>
                 </div>
               </div>
-              <span class="mt-2 card-text float-left" data-toggle="tooltip" data-placement="right"
-                    :title="getGameUrl(post.serial)">
+              <span class="mt-2 card-text float-left">
                 <button type="button"
                         class="btn btn-outline-dark btn-sm"
-                        data-container="body"
-                        data-trigger="click"
-                        data-toggle="popover"
-                        data-placement="right"
-                        data-content="Copied"
+                        v-b-popover.right.click="'Copied'"
                         @click="copyGameUrl(post.serial, $event)"
                 >
                   Link &nbsp;<i class="fas fa-share-square"></i>
@@ -204,14 +199,14 @@
             this.posts = res.data;
             this.currentPage = res.data.meta.current_page;
             this.lastPage = res.data.meta.last_page;
-            Vue.nextTick(() => {
-              $('[data-toggle="popover"]').popover().click(() => {
-                setTimeout(() => {
-                  $('[data-toggle="popover"]').blur();
-                  $('[data-toggle="popover"]').popover('hide');
-                }, 1000);
-              });
-            });
+            // Vue.nextTick(() => {
+            //   $('[data-toggle="popover"]').popover().click(() => {
+            //     setTimeout(() => {
+            //       $('[data-toggle="popover"]').blur();
+            //       $('[data-toggle="popover"]').popover('hide');
+            //     }, 1000);
+            //   });
+            // });
           })
           .finally(() => {
             this.isLoading = false;
@@ -229,6 +224,10 @@
       },
       copyGameUrl: function (serial, event) {
         navigator.clipboard.writeText(this.getGameUrl(serial));
+        setTimeout(() => {
+          this.$root.$emit('bv::hide::popover');
+        },1000);
+
       },
       search: function () {
         this.isLoading = true;

@@ -465,8 +465,9 @@
     methods: {
 
       /** Alert **/
-      showAlert(text) {
+      showAlert(text, level = 'success') {
         this.alertText = text;
+        this.alertLevel = level;
         this.dismissCountDown = this.dismissSecs;
       },
       dismissAlert() {
@@ -539,17 +540,13 @@
           && this.currentPage * this.perPage > index;
       },
       updateElementTitle: function (id, event) {
-        console.log(id);
-        console.log(event.target.value);
-        console.log(this.toSeconds(event.target.value));
-
         const data = {
           title: event.target.value
         };
         const url = this.updateElementEndpoint.replace('_id', id);
         axios.put(url, data)
           .then((res) => {
-            console.log('updateElementTitle');
+
           })
       },
       deleteElement: function (element) {
@@ -588,14 +585,15 @@
           form.append('post_serial', this.post.serial);
           axios.post(this.createImageElementEndpoint, form, {
             onUploadProgress: progressEvent => {
-              console.log(progressEvent.loaded / progressEvent.total * 100);
               this.updateProgressBarValue(file, progressEvent);
             }
           })
             .then(res => {
-              console.log(res.data);
               this.elements.push(res.data.data);
               this.deleteProgressBarValue(file);
+            })
+            .catch((err) => {
+              this.showAlert(err.response.data.message, 'danger');
             });
         });
       },
@@ -609,9 +607,11 @@
         };
         axios.post(this.createVideoElementEndpoint, data)
           .then(res => {
-            console.log(res.data);
             this.elements.push(res.data.data);
             this.showAlert(res.data.data.title);
+          })
+          .catch((err) => {
+            this.showAlert(err.response.data.message, 'danger');
           })
           .finally(() => {
             this.uploadLoadingStatus('UPLOADING_VIDEO', false);

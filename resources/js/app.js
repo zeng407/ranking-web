@@ -61,11 +61,12 @@ Vue.use(VueCookies);
  * BootstrapVue
  */
 
-import { PaginationPlugin, AlertPlugin, TabsPlugin} from 'bootstrap-vue';
+import { PaginationPlugin, AlertPlugin, TabsPlugin, VBPopover} from 'bootstrap-vue';
 // Make BootstrapVue available throughout your project
 Vue.use(PaginationPlugin);
 Vue.use(AlertPlugin);
 Vue.use(TabsPlugin);
+Vue.use(VBPopover);
 // Optionally install the BootstrapVue icon components plugin
 // Vue.use(IconsPlugin);
 
@@ -91,22 +92,7 @@ Vue.filter('datetime', function(value){
     return moment(value).format('Y/M/D H:m:s');
 });
 
-// Vue.directive('tooltip', function(el, binding){
-//     $(el).tooltip({
-//         title: binding.value,
-//         placement: binding.arg || 'top',
-//         trigger: 'hover'
-//     });
-// });
-//
-// Vue.directive('popover', function(el, binding){
-//     $(el).popover().click(() => {
-//         setTimeout(() => {
-//             $(el).blur();
-//             $(el).popover('hide');
-//         }, 1000);
-//     });
-// });
+Vue.directive('b-popover', VBPopover);
 
 const app = new Vue({
     el: '#app'
