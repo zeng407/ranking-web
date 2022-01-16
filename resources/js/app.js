@@ -30,15 +30,17 @@ files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(
 /**
  * validation lang
  */
-import { ValidationProvider, ValidationObserver, extend, localize } from 'vee-validate';
-import en from 'vee-validate/dist/locale/en.json';
+import {ValidationProvider, ValidationObserver, extend, localize} from 'vee-validate';
+import en from 'vee-validate/dist/locale/en';
 import zh_TW from 'vee-validate/dist/locale/zh_TW';
+
 localize({en, zh_TW});
 
 /**
  * register validation rule
  */
 import {required, min_value} from 'vee-validate/dist/rules';
+
 Vue.component('ValidationProvider', ValidationProvider);
 Vue.component('ValidationObserver', ValidationObserver);
 extend('required', required);
@@ -48,6 +50,7 @@ extend('min_value', min_value);
  * import datetime plugin
  */
 import moment from 'moment';
+
 Vue.prototype.moment = moment;
 window.moment = moment;
 
@@ -55,13 +58,14 @@ window.moment = moment;
  * Cookie Tool
  */
 import VueCookies from 'vue-cookies';
+
 Vue.use(VueCookies);
 
 /**
  * BootstrapVue
  */
 
-import { PaginationPlugin, AlertPlugin, TabsPlugin, VBPopover} from 'bootstrap-vue';
+import {PaginationPlugin, AlertPlugin, TabsPlugin, VBPopover} from 'bootstrap-vue';
 // Make BootstrapVue available throughout your project
 Vue.use(PaginationPlugin);
 Vue.use(AlertPlugin);
@@ -73,27 +77,36 @@ Vue.use(VBPopover);
 /**
  * YoutubeIframe
  */
-import VueYoutube from 'vue-youtube'
+import VueYoutube from 'vue-youtube';
+
 Vue.use(VueYoutube);
+
+/**
+ * i18n
+ */
+import {i18n} from './plugins/vue-i18n';
+
 
 /**
  * Filter
  */
-Vue.filter('percent', function(value){
+Vue.filter('percent', function (value) {
     if (value) {
         return value + '%';
     }
     return null;
 });
-Vue.filter('date', function(value){
+Vue.filter('date', function (value) {
     return moment(value).format('Y/M/D');
 });
-Vue.filter('datetime', function(value){
+Vue.filter('datetime', function (value) {
     return moment(value).format('Y/M/D H:m:s');
 });
+
 
 Vue.directive('b-popover', VBPopover);
 
 const app = new Vue({
-    el: '#app'
+    el: '#app',
+    i18n
 });

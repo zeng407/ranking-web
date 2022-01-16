@@ -22,6 +22,13 @@ use App\Http\Controllers\Post\GameController;
 // });
 
 Auth::routes();
+
+Route::get('/lang/{locale}', function($locale){
+    Session::put('locale', $locale);
+    return back();
+})->name('lang');
+
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/hot', [HomeController::class, 'hot'])->name('home.hot');
 Route::get('/new', [HomeController::class, 'new'])->name('home.new');

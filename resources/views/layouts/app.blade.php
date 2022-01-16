@@ -41,6 +41,16 @@
                 <!-- Right Side Of Navbar -->
                 <ul class="navbar-nav ml-auto">
                     <!-- Authentication Links -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link" href="#" id="dropdownLangButton" role="button" data-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-globe-asia"></i>
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="dropdownLangButton">
+                            <a class="dropdown-item" href="{{route('lang', 'zh_TW')}}">中文 (Chinese)</a>
+                            <a class="dropdown-item" href="{{route('lang', 'en')}}">English</a>
+                        </div>
+                    </li>
+
                     @guest
                         @if (Route::has('login'))
                             <li class="nav-item">
@@ -56,7 +66,7 @@
                     @else
                         @auth
                             <li class="nav-item">
-                                <a class="nav-link" href="{{route('post.index')}}">查看我的比賽</a>
+                                <a class="nav-link" href="{{route('post.index')}}">{{__('My Games')}}</a>
                             </li>
                         @endauth
                         <li class="nav-item dropdown">

@@ -30,21 +30,21 @@
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-info-circle"></i>
             </span>
-            &nbsp;基本資訊
+            {{$t('edit_post.tab.info')}}
           </a>
           <a class="nav-link" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
              aria-controls="v-pills-elements" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-photo-video"></i>
             </span>
-            &nbsp;素材
+            {{$t('edit_post.tab.element')}}
           </a>
           <a class="nav-link" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
              aria-controls="v-pills-rank" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-trophy"></i>
             </span>
-            &nbsp;排行
+            {{$t('edit_post.tab.rank')}}
           </a>
         </div>
       </div>
@@ -63,23 +63,23 @@
             <ValidationObserver v-slot="{ invalid }" v-if="post">
               <div class="row">
                 <div class="col-6">
-                  <h2 class="mt-3 mb-3">比賽基本資訊</h2>
+                  <h2 class="mt-3 mb-3">{{$t('edit_post.info.head')}}</h2>
                 </div>
                 <div class="col-6">
                 <h2 class="mt-3 mb-3">
                   <span class="d-flex justify-content-end">
                     <a class="btn btn-danger mr-3" :href="playGameRoute" target="_blank">
-                      <i class="fas fa-play"></i> Play
+                      <i class="fas fa-play"></i> {{$t('edit_post.info.play')}}
                     </a>
 
                     <button class="btn btn-primary" v-if="!isEditing" @click="clickEdit">
-                      <i class="fas fa-edit"></i>編輯
+                      <i class="fas fa-edit"></i> {{$t('edit_post.info.edit')}}
                     </button>
                     <button class="btn btn-primary" v-else
                             @click="savePost" :disabled="invalid || loading['SAVING_POST']">
                       <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
                       <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
-                      儲存
+                      {{$t('edit_post.info.save')}}
                     </button>
                   </span>
                 </h2>
@@ -90,7 +90,7 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg" for="title">
-                        標題
+                        {{ $t('Title') }}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="post.title" required
@@ -105,7 +105,7 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg" for="description">
-                        描述
+                        {{$t('Description')}}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="post.description" rows="3"
@@ -117,7 +117,7 @@
 
                         </textarea>
                         <small id="description-help" class="form-text text-muted">
-                          簡單描述這個比賽內容 (100字內)
+                          {{$t('create_game.description.hint')}}
                         </small>
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
@@ -128,7 +128,7 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg">
-                        發佈
+                        {{$t('Publish')}}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }" v-if="isEditing">
                         <label class="form-control btn btn-outline-dark" for="post-privacy-public">
@@ -136,20 +136,20 @@
                                  :disabled="loading['SAVING_POST']"
                           >
 
-                          公開
+                          {{$t('Public')}}
                         </label>
 
                         <label class="form-control btn btn-outline-dark" for="post-privacy-private">
                           <input type="radio" id="post-privacy-private" v-model="post.policy" value="private"
                                  :disabled="loading['SAVING_POST']"
                           >
-                          私人
+                          {{$t('Private')}}
                         </label>
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                       <div v-else>
                         <input class="form-control" disabled="disabled" :value="post._.policy">
-                        <small class="form-text text-muted" v-if="post.policy==='public'">至少上傳8個素材才會對外公開</small>
+                        <small class="form-text text-muted" v-if="post.policy==='public'">{{$t('edit_post.at_least_element_number_hint')}}</small>
                       </div>
                     </div>
                   </div>
@@ -159,7 +159,7 @@
             <div class="row" v-if="post">
               <div class="col-3">
                 <div class="form-group">
-                  <label class="col-form-label-lg">建立時間</label>
+                  <label class="col-form-label-lg">{{$t('edit_post.info.create_time')}}</label>
                   <input class="form-control" disabled :value="post.created_at | date">
                 </div>
               </div>
@@ -169,7 +169,7 @@
           <!-- tab elements -->
           <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
             <!-- upload image -->
-            <h2 class="mt-3 mb-3">上傳圖片</h2>
+            <h2 class="mt-3 mb-3">{{$t('edit_post.upload_image')}}</h2>
             <div class="row">
               <div class="col-12">
                 <label>從電腦上傳</label>
@@ -190,7 +190,7 @@
             </div>
 
             <!-- upload video -->
-            <h2 class="mt-5 mb-3">上傳影片</h2>
+            <h2 class="mt-5 mb-3">{{$t('edit_post.upload_video')}}</h2>
             <div class="row">
               <div class="col-12">
                 <label for="youtubeURL">Youtube</label>
@@ -202,7 +202,7 @@
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"
                             :disabled="loading['UPLOADING_VIDEO']">
-                      <span v-show="!loading['UPLOADING_VIDEO']">新增</span>
+                      <span v-show="!loading['UPLOADING_VIDEO']">{{$t('edit_post.add_video_button')}}</span>
                       <i v-show="loading['UPLOADING_VIDEO']" class="fas fa-spinner fa-spin"></i>
 
                       <!--                      <i class="fas fa-spinner"></i>-->
@@ -213,7 +213,7 @@
             </div>
 
             <!-- edit -->
-            <h2 class="mt-5 mb-3">編輯素材</h2>
+            <h2 class="mt-5 mb-3">{{$t('edit_post.edit_media')}}</h2>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
@@ -252,7 +252,7 @@
                         <div class="col-10">
                           <div class="input-group">
                             <div class="input-group-prepend d-lg-none d-xl-block">
-                              <span class="input-group-text">播放範圍</span>
+                              <span class="input-group-text">{{$t('edit_post.video_range')}}</span>
                             </div>
                             <input type="text" class="form-control" name="video_start_second"
                                    placeholder="0:00" aria-label="start"
@@ -319,7 +319,7 @@
             <div class="row" v-if="!loading['LOADING_POST']">
               <div class="col-3">
                 <div class="form-group">
-                  <label>遊戲次數</label>
+                  <label>{{$t('edit_post.rank.game_plays')}}</label>
                   <input class="form-control" disabled :value="post.play_count">
                 </div>
               </div>
@@ -328,9 +328,9 @@
               <thead>
               <tr>
                 <th scope="col">#</th>
-                <th scope="col" class="w-75"></th>
-                <th scope="col">決賽勝率</th>
-                <th scope="col">一般勝率</th>
+                <th scope="col" style="width: 70%"></th>
+                <th scope="col">{{$t('edit_post.rank.win_at_final')}}</th>
+                <th scope="col">{{$t('edit_post.rank.win_rate')}}</th>
               </tr>
               </thead>
               <tbody v-if="loading['LOADING_RANK']">

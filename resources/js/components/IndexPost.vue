@@ -3,8 +3,8 @@
   <!--  Main-->
   <div class="container">
     <div>
-      <h2 class="d-inline">管理我的比賽</h2>
-      <button class="btn btn-primary d-inline float-right" @click="openCreateFormModal">新增比賽</button>
+      <h2 class="d-inline">{{ $t('my_games.title') }}</h2>
+      <button class="btn btn-primary d-inline float-right" @click="openCreateFormModal">{{ $t('my_games.new')}}</button>
     </div>
 
     <!--        Loading-->
@@ -16,9 +16,9 @@
       <table class="table table-hover" v-if="posts.data.length > 0">
         <thead>
         <tr>
-          <th scope="col">標題</th>
-          <th scope="col">描述</th>
-          <th scope="col">發佈</th>
+          <th scope="col">{{ $t('my_games.table.title')}}</th>
+          <th scope="col">{{ $t('my_games.table.description')}}</th>
+          <th scope="col">{{ $t('my_games.table.publish') }}</th>
           <th scope="col"></th>
         </tr>
         </thead>
@@ -38,7 +38,7 @@
 
     <div class="mt-2" v-if="!loading[LOADING_POSTS]">
       <div class="alert alert-info" v-if="posts.data.length === 0">
-        無資料
+        {{ $t('my_games.table.no_data')}}
       </div>
     </div>
 
@@ -47,7 +47,7 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalLabel">比賽基本資訊</h5>
+            <h5 class="modal-title" id="modalLabel">{{ $t('create_game.title') }}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -55,60 +55,70 @@
           <ValidationObserver v-slot="{ invalid }">
             <div class="modal-body">
               <form @submit.prevent>
-                <div class="form-group row">
-                  <label class="col-sm-2 col-md-1 col-form-label-lg pt-0" for="title">
-                    標題
-                  </label>
-                  <div class="col-sm-10 col-md-11">
-                    <ValidationProvider rules="required" v-slot="{ errors }">
-                      <input type="text" class="form-control" id="title" v-model="createPostForm.title" required maxlength="40">
-                      <span class="text-danger">{{ errors[0] }}</span>
-                    </ValidationProvider>
+
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg" for="title">
+                        {{ $t('Title') }}
+                      </label>
+                      <ValidationProvider rules="required" v-slot="{ errors }">
+                        <input type="text" class="form-control" id="title" v-model="createPostForm.title" required
+                               maxlength="40">
+                        <span class="text-danger">{{ errors[0] }}</span>
+                      </ValidationProvider>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group row">
-                  <label class="col-sm-2 col-md-1 col-form-label-lg pt-0" for="description">
-                    描述
-                  </label>
-                  <div class="col-sm-10 col-md-11">
-                    <ValidationProvider rules="required" v-slot="{ errors }">
+
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg" for="description">
+                        {{ $t('Description') }}
+                      </label>
+                      <ValidationProvider rules="required" v-slot="{ errors }">
                       <textarea class="form-control" id="description" v-model="createPostForm.description" rows="3"
                                 style="resize: none"
                                 maxlength="100"
                                 aria-describedby="description-help"
                                 required></textarea>
-                      <small id="description-help" class="form-text text-muted">
-                        簡單描述這個比賽內容
-                      </small>
-                    </ValidationProvider>
+                        <small id="description-help" class="form-text text-muted">
+                          {{ $t('create_game.description.hint')}}
+                        </small>
+                      </ValidationProvider>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group row">
-                  <label class="col-sm-2 col-md-1 col-form-label-lg pt-0">
-                    發佈
-                  </label>
-                  <div class="col-sm-10 col-md-11">
-                    <ValidationProvider rules="required" v-slot="{ errors }">
-                      <label class="btn btn-outline-dark" for="post-privacy-public">
-                        <input type="radio" id="post-privacy-public" v-model="createPostForm.policy.access_policy"
-                               value="public" checked>
-                        公開
+
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg">
+                        {{ $t('create_game.publish') }}
                       </label>
-                      <label class="btn btn-outline-dark" for="post-privacy-private">
-                        <input type="radio" id="post-privacy-private" v-model="createPostForm.policy.access_policy"
-                               value="private">
-                        私人
-                      </label>
-                    </ValidationProvider>
+                      <ValidationProvider rules="required" v-slot="{ errors }">
+                        <label class="btn btn-outline-dark" for="post-privacy-public">
+                          <input type="radio" id="post-privacy-public" v-model="createPostForm.policy.access_policy"
+                                 value="public" checked>
+                          {{$t('Public')}}
+                        </label>
+                        <label class="btn btn-outline-dark" for="post-privacy-private">
+                          <input type="radio" id="post-privacy-private" v-model="createPostForm.policy.access_policy"
+                                 value="private">
+                          {{$t('Private')}}
+                        </label>
+                      </ValidationProvider>
+                    </div>
                   </div>
                 </div>
               </form>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">{{$t('create_game.cancel')}}</button>
               <button type="submit" class="btn btn-primary float-right" @click="createPost"
                       :disabled="invalid || loading[CREATING_POST]">
-                新增
+                {{$t('create_game.submit')}}
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
                       v-if="loading[CREATING_POST]"></span>
               </button>
