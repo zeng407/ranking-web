@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# git
+git reset --hard
+git fetch --all
+git checkout master
+git reset --hard origin/master
+
+# backend
+composer install
+sudo chown -R $(whoami):www-data .
+sudo chgrp -R www-data storage bootstrap/cache
+sudo chmod -R ug+rwx storage bootstrap/cache
+php artisan migrate
+php artisan route:cache
+php artisan queue:restart
+php artisan up

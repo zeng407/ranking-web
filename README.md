@@ -18,14 +18,15 @@ cp .env.example .env
 # enter container
 docker exec -ti bash rk-web
 
+# install package
+compsoer install
+
 # init project
 php artisan key:generate
 
 # migrate table (seed for testing)
 php artisan migrate --seed
 
-# install package
-compsoer install
 ```
 
 # s3 bucket

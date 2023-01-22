@@ -42,7 +42,7 @@ class ElementController extends Controller
         $post = $this->getPost($request->post_serial);
 
         // check elements count
-        if($post->elements()->count() > config('post.post_max_element_count')){
+        if ($post->elements()->count() > config('post.post_max_element_count')) {
             return response()->json([
                 'message' => 'upload the limit numbers of images/videos'
             ], 400);
@@ -68,7 +68,7 @@ class ElementController extends Controller
         $post = $this->getPost($request->post_serial);
 
         // check elements count
-        if($post->elements()->count() > config('post.post_max_element_count')){
+        if ($post->elements()->count() > config('post.post_max_element_count')) {
             return response()->json([
                 'message' => 'upload the limit numbers of images/videos'
             ], 400);
@@ -76,13 +76,18 @@ class ElementController extends Controller
 
         try {
             $video = $this->youtube->query($request->url);
-            if(!$video){
+            if (!$video) {
                 return response()->json([
                     'msg' => '網址錯誤'
                 ], 400);
             }
 
-            $thumb = $video->getSnippet()->getThumbnails()->getStandard()->getUrl();
+            $thumb = $video->getSnippet()->getThumbnails()->getStandard() ?:
+                    $video->getSnippet()->getThumbnails()->getMedium() ?:
+                    $video->getSnippet()->getThumbnails()->getHigh() ?:
+                    $video->getSnippet()->getThumbnails()->getMaxres() ?:
+                    $video->getSnippet()->getThumbnails()->getDefault();
+            $thumbUrl = $thumb->getUrl();
             $title = $video->getSnippet()->getTitle();
             $id = $video->getId();
             $duration = $video->getContentDetails()->getDuration();
@@ -102,7 +107,7 @@ class ElementController extends Controller
 
         $element = $post->elements()->create([
             'source_url' => $request->url,
-            'thumb_url' => $thumb,
+            'thumb_url' => $thumbUrl,
             'title' => $title,
             'type' => ElementType::VIDEO,
             'video_source' => VideoSource::YOUTUBE,
