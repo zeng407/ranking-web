@@ -4,9 +4,13 @@ namespace App\Listeners;
 
 use App\Events\GameComplete;
 use App\Services\RankService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdatePostRank
+class UpdatePostRank implements ShouldQueue
 {
+    use Queueable;
+
     protected $rankService;
 
     /**

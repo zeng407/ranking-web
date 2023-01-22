@@ -1,0 +1,16 @@
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+alias ff='find . -type f -name'
+alias fd='find . -type d -name'
+
+alias now='date +%T'
+
+alias art='php artisan'
+
+alias gc='git commit'
+alias gp='git push'
+alias gpu='git pull'
+alias gs='git stash'
+alias gsp='git stash pop'

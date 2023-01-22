@@ -53,6 +53,16 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
         ],
 
+        'minio' => [
+            'driver' => 'minio',
+            'key' => env('MINIO_KEY'),
+            'secret' => env('MINIO_SECRET'),
+            'region' => 'us-east-1',
+            'bucket' => env('MINIO_BUCKET'),
+            'endpoint' => env('MINIO_ENDPOINT','http://localhost:9000'),
+            'url' => env('MINIO_URL','http://localhost:9000'),
+        ]
+
     ],
 
     /*

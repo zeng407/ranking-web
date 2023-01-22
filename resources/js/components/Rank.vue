@@ -12,7 +12,7 @@
           <tr>
             <th scope="col">#</th>
             <th scope="col" class="w-75"></th>
-            <th scope="col">世界排名</th>
+            <th scope="col">全體排名</th>
           </tr>
           </thead>
           <tbody>
@@ -47,14 +47,14 @@
           </tbody>
         </table>
       </b-tab>
-      <b-tab title="世界排名">
+      <b-tab title="全體排名">
         <table class="table table-hover" style="table-layout: fixed">
           <thead>
           <tr>
             <th scope="col">#</th>
             <th scope="col" class="w-75"></th>
-            <th scope="col">決賽勝率</th>
-            <th scope="col">一般勝率</th>
+            <th scope="col">決賽%</th>
+            <th scope="col">勝率%</th>
           </tr>
           </thead>
           <tbody v-if="loadingPage">

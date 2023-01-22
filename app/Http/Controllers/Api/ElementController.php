@@ -9,6 +9,7 @@ use App\Http\Resources\MyPost\PostElementResource;
 use App\Models\Element;
 use App\Models\Post;
 use App\Policies\ElementPolicy;
+use App\Services\ElementService;
 use App\Services\YoutubeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,10 +20,13 @@ class ElementController extends Controller
 {
     protected $youtube;
 
-    public function __construct(YoutubeService $service)
+    protected $elementService;
+
+    public function __construct(YoutubeService $service, ElementService $elementService)
     {
         $this->middleware('auth');
         $this->youtube = $service;
+        $this->elementService = $elementService;
     }
 
     public function createImage(Request $request)
@@ -44,24 +48,8 @@ class ElementController extends Controller
             ], 400);
         }
 
-        $saveDir = Auth::id() . '/' . $request->post_serial;
-        $file = $request->file('file');
-        $path = $file->store($saveDir, 'public');
-
-        //todo sign path
-        $url = Storage::url($path);
-
-        //todo make thumb
-        $thumb = $url;
-
-        $element = $post->elements()->create([
-            'path' => $path,
-            'source_url' => $url,
-            'thumb_url' => $thumb,
-            'type' => ElementType::IMAGE,
-            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('post.title_size'))
-        ]);
-
+        $path = Auth::id() . '/' . $request->post_serial;
+        $element = $this->elementService->storePublic($request->file('file'), $path, $post);
         return PostElementResource::make($element);
     }
 

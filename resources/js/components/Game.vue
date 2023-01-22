@@ -84,16 +84,16 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="gameSettingPanelLabel">比賽設定</h5>
+            <h5 class="modal-title" id="gameSettingPanelLabel">Rank設定</h5>
           </div>
           <ValidationObserver v-slot="{ invalid }" v-if="setting">
             <form @submit.prevent>
               <div class="modal-body">
                 <div class="alert alert-danger" v-if="processingGameSerial">
-                  有未完成的比賽，是否繼續？
+                  有未完成的Rank，是否繼續？
                   <span class="btn btn-outline-danger" @click="continueGame">
                     <i class="fas fa-play"></i>
-                    繼續比賽
+                    繼續Rank
                   </span>
                 </div>
                 <h2>{{setting.title}}</h2>

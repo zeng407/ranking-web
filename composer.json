@@ -7,6 +7,7 @@
     "require": {
         "php": "^7.3|^8.0",
         "ext-bcmath": "*",
+        "ext-json": "*",
         "fruitcake/laravel-cors": "^2.0",
         "google/apiclient": "^2.12.1",
         "guzzlehttp/guzzle": "^7.0.1",
@@ -14,7 +15,7 @@
         "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
         "laravel/ui": "^3.3",
-        "ext-json": "*"
+        "league/flysystem-aws-s3-v3": "^1.0"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.10",

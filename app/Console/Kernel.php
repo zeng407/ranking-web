@@ -20,7 +20,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')->hourly();
 //        $schedule->call(fn() => \Log::debug("schedule call"))->everyMinute();
         $schedule->call(function(){
-           app(RankScheduleExecutor::class)->createRankReports();
+//           app(RankScheduleExecutor::class)->createRankReports();
         })->name('createRankReport')->everyFiveMinutes()->withoutOverlapping();
 
         $schedule->call(function(){
