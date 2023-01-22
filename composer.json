@@ -15,7 +15,8 @@
         "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
         "laravel/ui": "^3.3",
-        "league/flysystem-aws-s3-v3": "^1.0"
+        "league/flysystem-aws-s3-v3": "^1.0",
+        "spatie/laravel-google-cloud-storage": "^1.1"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.10",

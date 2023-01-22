@@ -40,6 +40,7 @@ class ElementService
     {
         $saveDir = $path;
         $path = $file->store($saveDir);
+        Storage::setVisibility($path, 'public');
 
         //todo sign path
         $url = Storage::url($path);

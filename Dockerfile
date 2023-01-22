@@ -3,7 +3,7 @@ FROM ubuntu:22.04
 ENV TZ=Asia/Taipei
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
     echo $TZ > /etc/timezone
-ENV USER_NAME robo
+ENV USER_NAME ranker
 
 RUN apt-get update && apt-get install -y \
     software-properties-common
