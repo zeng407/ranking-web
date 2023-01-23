@@ -14,7 +14,7 @@
           fade
           :variant="alertLevel"
         >
-          {{alertText}}
+          {{ alertText }}
         </b-alert>
       </span>
     </div>
@@ -30,21 +30,21 @@
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-info-circle"></i>
             </span>
-            {{$t('edit_post.tab.info')}}
+            {{ $t('edit_post.tab.info') }}
           </a>
           <a class="nav-link" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
              aria-controls="v-pills-elements" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-photo-video"></i>
             </span>
-            {{$t('edit_post.tab.element')}}
+            {{ $t('edit_post.tab.element') }}
           </a>
           <a class="nav-link" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
              aria-controls="v-pills-rank" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-trophy"></i>
             </span>
-            {{$t('edit_post.tab.rank')}}
+            {{ $t('edit_post.tab.rank') }}
           </a>
         </div>
       </div>
@@ -63,26 +63,26 @@
             <ValidationObserver v-slot="{ invalid }" v-if="post">
               <div class="row">
                 <div class="col-6">
-                  <h2 class="mt-3 mb-3">{{$t('edit_post.info.head')}}</h2>
+                  <h2 class="mt-3 mb-3">{{ $t('edit_post.info.head') }}</h2>
                 </div>
                 <div class="col-6">
-                <h2 class="mt-3 mb-3">
+                  <h2 class="mt-3 mb-3">
                   <span class="d-flex justify-content-end">
                     <a class="btn btn-danger mr-3" :href="playGameRoute" target="_blank">
-                      <i class="fas fa-play"></i> {{$t('edit_post.info.play')}}
+                      <i class="fas fa-play"></i> {{ $t('edit_post.info.play') }}
                     </a>
 
                     <button class="btn btn-primary" v-if="!isEditing" @click="clickEdit">
-                      <i class="fas fa-edit"></i> {{$t('edit_post.info.edit')}}
+                      <i class="fas fa-edit"></i> {{ $t('edit_post.info.edit') }}
                     </button>
                     <button class="btn btn-primary" v-else
                             @click="savePost" :disabled="invalid || loading['SAVING_POST']">
                       <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
                       <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
-                      {{$t('edit_post.info.save')}}
+                      {{ $t('edit_post.info.save') }}
                     </button>
                   </span>
-                </h2>
+                  </h2>
                 </div>
               </div>
               <form @submit.prevent>
@@ -105,7 +105,7 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg" for="description">
-                        {{$t('Description')}}
+                        {{ $t('Description') }}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="post.description" rows="3"
@@ -117,7 +117,7 @@
 
                         </textarea>
                         <small id="description-help" class="form-text text-muted">
-                          {{$t('create_game.description.hint')}}
+                          {{ $t('create_game.description.hint') }}
                         </small>
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
@@ -128,7 +128,7 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg">
-                        {{$t('Publish')}}
+                        {{ $t('Publish') }}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }" v-if="isEditing">
                         <label class="form-control btn btn-outline-dark" for="post-privacy-public">
@@ -136,20 +136,21 @@
                                  :disabled="loading['SAVING_POST']"
                           >
 
-                          {{$t('Public')}}
+                          {{ $t('Public') }}
                         </label>
 
                         <label class="form-control btn btn-outline-dark" for="post-privacy-private">
                           <input type="radio" id="post-privacy-private" v-model="post.policy" value="private"
                                  :disabled="loading['SAVING_POST']"
                           >
-                          {{$t('Private')}}
+                          {{ $t('Private') }}
                         </label>
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                       <div v-else>
                         <input class="form-control" disabled="disabled" :value="post._.policy">
-                        <small class="form-text text-muted" v-if="post.policy==='public'">{{$t('edit_post.at_least_element_number_hint')}}</small>
+                        <small class="form-text text-muted"
+                               v-if="post.policy==='public'">{{ $t('edit_post.at_least_element_number_hint') }}</small>
                       </div>
                     </div>
                   </div>
@@ -159,7 +160,7 @@
             <div class="row" v-if="post">
               <div class="col-3">
                 <div class="form-group">
-                  <label class="col-form-label-lg">{{$t('edit_post.info.create_time')}}</label>
+                  <label class="col-form-label-lg">{{ $t('edit_post.info.create_time') }}</label>
                   <input class="form-control" disabled :value="post.created_at | date">
                 </div>
               </div>
@@ -168,11 +169,11 @@
 
           <!-- tab elements -->
           <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
-            <!-- upload image -->
-            <h2 class="mt-3 mb-3">{{$t('edit_post.upload_image')}}</h2>
+            <!-- upload image from device -->
+            <h2 class="mt-3 mb-3">{{ $t('edit_post.upload_image') }}</h2>
             <div class="row">
               <div class="col-12">
-                <label>從電腦上傳</label>
+                <label for="image-upload">從電腦上傳</label>
                 <div class="custom-file form-group">
                   <input type="file" class="custom-file-input" id="image-upload" multiple
                          @change="uploadImages">
@@ -185,24 +186,41 @@
               <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0"
                    aria-valuemax="100"
                    :aria-valuenow="progress" :style="{'width': progress+'%'}">
-                {{name}}
+                {{ name }}
+              </div>
+            </div>
+            <!-- upload image from url -->
+            <div class="row mt-3">
+              <div class="col-12">
+                <label for="image-url-upload">從url上傳</label>
+                <div class="input-group">
+                  <input class="form-control" type="text" id="image-url-upload" name="image-url-upload"
+                         v-model="imageUrl"
+                         placeholder="https://imgur.com/gallery/YdaUbzZ">
+                  <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" @click="uploadImageUrl">
+                      <span v-show="!loading['UPLOADING_IMAGE']">{{ $t('edit_post.add_image_button') }}</span>
+                      <i v-show="loading['UPLOADING_IMAGE']" class="fas fa-spinner fa-spin"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- upload video -->
-            <h2 class="mt-5 mb-3">{{$t('edit_post.upload_video')}}</h2>
+            <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_video') }}</h2>
             <div class="row">
               <div class="col-12">
                 <label for="youtubeURL">Youtube</label>
                 <div class="input-group">
                   <input class="form-control" type="text" id="youtubeURL" name="youtubeURL"
-                         v-model="uploadVideoUrl"
+                         v-model="videoUrl"
                          aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="youtubeUpload"
                          placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"
                             :disabled="loading['UPLOADING_VIDEO']">
-                      <span v-show="!loading['UPLOADING_VIDEO']">{{$t('edit_post.add_video_button')}}</span>
+                      <span v-show="!loading['UPLOADING_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
                       <i v-show="loading['UPLOADING_VIDEO']" class="fas fa-spinner fa-spin"></i>
 
                       <!--                      <i class="fas fa-spinner"></i>-->
@@ -213,7 +231,7 @@
             </div>
 
             <!-- edit -->
-            <h2 class="mt-5 mb-3">{{$t('edit_post.edit_media')}}</h2>
+            <h2 class="mt-5 mb-3">{{ $t('edit_post.edit_media') }}</h2>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
@@ -252,7 +270,7 @@
                         <div class="col-10">
                           <div class="input-group">
                             <div class="input-group-prepend d-lg-none d-xl-block">
-                              <span class="input-group-text">{{$t('edit_post.video_range')}}</span>
+                              <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
                             </div>
                             <input type="text" class="form-control" name="video_start_second"
                                    placeholder="0:00" aria-label="start"
@@ -271,8 +289,9 @@
                           </a>
                         </div>
                       </div>
+
                       <span class="card-text"><small
-                        class="text-muted">{{element.created_at | datetime}}</small></span>
+                        class="text-muted">{{ element.created_at | datetime }}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
@@ -293,7 +312,7 @@
                              maxlength="100"
                              @change="updateElementTitle(element.id, $event)">
                       <span class="card-text"><small
-                        class="text-muted">{{element.created_at | datetime}}</small></span>
+                        class="text-muted">{{ element.created_at | datetime }}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
@@ -319,7 +338,7 @@
             <div class="row" v-if="!loading['LOADING_POST']">
               <div class="col-3">
                 <div class="form-group">
-                  <label>{{$t('edit_post.rank.game_plays')}}</label>
+                  <label>{{ $t('edit_post.rank.game_plays') }}</label>
                   <input class="form-control" disabled :value="post.play_count">
                 </div>
               </div>
@@ -329,8 +348,8 @@
               <tr>
                 <th scope="col">#</th>
                 <th scope="col" style="width: 70%"></th>
-                <th scope="col">{{$t('edit_post.rank.win_at_final')}}</th>
-                <th scope="col">{{$t('edit_post.rank.win_rate')}}</th>
+                <th scope="col">{{ $t('edit_post.rank.win_at_final') }}</th>
+                <th scope="col">{{ $t('edit_post.rank.win_rate') }}</th>
               </tr>
               </thead>
               <tbody v-if="loading['LOADING_RANK']">
@@ -355,8 +374,8 @@
                     <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
                   </div>
                 </td>
-                <td>{{rank.final_win_rate | percent}}</td>
-                <td>{{rank.win_rate | percent}}</td>
+                <td>{{ rank.final_win_rate | percent }}</td>
+                <td>{{ rank.win_rate | percent }}</td>
               </tr>
               </tbody>
             </table>
@@ -384,326 +403,355 @@
 </template>
 
 <script>
-  import bsCustomFileInput from 'bs-custom-file-input';
-  import moment from 'moment';
+import bsCustomFileInput from 'bs-custom-file-input';
+import moment from 'moment';
 
-  // import { localize } from 'vee-validate';
-  export default {
-    mounted() {
-      bsCustomFileInput.init();
-      this.loadPost();
-      this.loadElements();
-      this.loadRankReport();
+// import { localize } from 'vee-validate';
+export default {
+  mounted() {
+    bsCustomFileInput.init();
+    this.loadPost();
+    this.loadElements();
+    this.loadRankReport();
 
-      // localize('zh_TW');
-      //debug
-      // this.serial = 'a14b32';
-    },
-    props: {
-      showPostEndpoint: String,
-      playGameRoute: String,
-      getElementsEndpoint: String,
-      getRankEndpoint: String,
-      updatePostEndpoint: String,
-      updateElementEndpoint: String,
-      deleteElementEndpoint: String,
-      createImageElementEndpoint: String,
-      createVideoElementEndpoint: String
-    },
-    data: function () {
-      return {
-        loading: {
-          LOADING_POST: true,
-          SAVING_POST: false,
-          UPLOADING_VIDEO: false,
-          LOADING_RANK: false
-        },
-        uploadingFiles: {},
-        post: null,
-        isEditing: false,
-        postElements: [],
-        elements: [],
-        stashElement: [],
-        playingVideo: null,
-        deletingElement: [],
-
-        currentPage: 1,
-        perPage: 50,
-        uploadVideoUrl: "",
-
-        // Alert
-        dismissSecs: 5,
-        dismissCountDown: 0,
-        alertLevel: 'success',
-        alertText: '',
-
-        // search elements
-        filters: {
-          title_like: null
-        },
-
-        //rank
-        rank: {}
-
-      }
-    },
-    computed: {
-      totalRow: function () {
-        return this.elements.length;
+    // localize('zh_TW');
+    //debug
+    // this.serial = 'a14b32';
+  },
+  props: {
+    showPostEndpoint: String,
+    playGameRoute: String,
+    getElementsEndpoint: String,
+    getRankEndpoint: String,
+    updatePostEndpoint: String,
+    updateElementEndpoint: String,
+    deleteElementEndpoint: String,
+    createImageElementEndpoint: String,
+    createImageUrlElementEndpoint: String,
+    createVideoElementEndpoint: String
+  },
+  data: function () {
+    return {
+      loading: {
+        LOADING_POST: true,
+        SAVING_POST: false,
+        UPLOADING_VIDEO: false,
+        LOADING_RANK: false,
+        UPLOADING_IMAGE: false
       },
-      filteredElements: function () {
-        return _.filter(this.elements, (element) => {
-          if (this.filters.title_like) {
-            return element.title.includes(this.filters.title_like.toUpperCase())
-              || element.title.includes(this.filters.title_like.toLowerCase());
+      uploadingFiles: {},
+      post: null,
+      isEditing: false,
+      postElements: [],
+      elements: [],
+      stashElement: [],
+      playingVideo: null,
+      deletingElement: [],
+
+      currentPage: 1,
+      perPage: 50,
+      videoUrl: "",
+      imageUrl: "",
+
+      // Alert
+      dismissSecs: 5,
+      dismissCountDown: 0,
+      alertLevel: 'success',
+      alertText: '',
+
+      // search elements
+      filters: {
+        title_like: null
+      },
+
+      //rank
+      rank: {}
+
+    }
+  },
+  computed: {
+    totalRow: function () {
+      return this.elements.length;
+    },
+    filteredElements: function () {
+      return _.filter(this.elements, (element) => {
+        if (this.filters.title_like) {
+          return element.title.includes(this.filters.title_like.toUpperCase())
+            || element.title.includes(this.filters.title_like.toLowerCase());
+        }
+        return true;
+      });
+    },
+
+  },
+  methods: {
+
+    /** Alert **/
+    showAlert(text, level = 'success') {
+      this.alertText = text;
+      this.alertLevel = level;
+      this.dismissCountDown = this.dismissSecs;
+    },
+    dismissAlert() {
+      this.dismissCountDown = 0;
+    },
+
+    /** Loading **/
+    uploadLoadingStatus(key, status) {
+      this.$set(this.loading, key, status);
+    },
+
+    /** Post **/
+    loadPost: function () {
+      this.uploadLoadingStatus('LOADING_POST', true);
+      const url = this.showPostEndpoint;
+      axios.get(url)
+        .then(res => {
+          this.post = res.data.data;
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('LOADING_POST', false);
+        });
+
+    },
+    clickEdit: function () {
+      this.isEditing = true;
+    },
+    savePost: function () {
+      this.uploadLoadingStatus('SAVING_POST', true);
+      const data = {
+        title: this.post.title,
+        description: this.post.description,
+        policy: {
+          access_policy: this.post.policy
+        }
+      };
+
+      axios.put(this.updatePostEndpoint, data)
+        .then(res => {
+          this.post = res.data.data;
+          this.isEditing = false;
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('SAVING_POST', false);
+        });
+    },
+
+    /** Elements **/
+    loadElements: function (page = 1) {
+      const params = {
+        page: page
+      };
+      axios.get(this.getElementsEndpoint, {params: params})
+        .then(res => {
+          this.postElements = res.data;
+          let counter = 1;
+          _.each(this.postElements.data, (element) => {
+            setTimeout(() => {
+              this.elements.push(element);
+            }, 100 * counter++);
+          });
+
+          if (this.postElements.current_page < this.postElements.last_page) {
+            this.loadElements(this.postElements.current_page + 1);
           }
-          return true;
-        });
-      },
-
+        })
     },
-    methods: {
+    isElementInPage: function (index) {
+      return (this.currentPage - 1) * this.perPage <= index
+        && this.currentPage * this.perPage > index;
+    },
+    updateElementTitle: function (id, event) {
+      const data = {
+        title: event.target.value
+      };
+      const url = this.updateElementEndpoint.replace('_id', id);
+      axios.put(url, data)
+        .then((res) => {
 
-      /** Alert **/
-      showAlert(text, level = 'success') {
-        this.alertText = text;
-        this.alertLevel = level;
-        this.dismissCountDown = this.dismissSecs;
-      },
-      dismissAlert() {
-        this.dismissCountDown = 0;
-      },
+        })
+    },
+    deleteElement: function (element) {
+      this.pushDeleting(element);
 
-      /** Loading **/
-      uploadLoadingStatus(key, status) {
-        this.$set(this.loading, key, status);
-      },
-
-      /** Post **/
-      loadPost: function () {
-        this.uploadLoadingStatus('LOADING_POST', true);
-        const url = this.showPostEndpoint;
-        axios.get(url)
-          .then(res => {
-            this.post = res.data.data;
-          })
-          .finally(() => {
-            this.uploadLoadingStatus('LOADING_POST', false);
+      const url = this.deleteElementEndpoint.replace('_id', element.id);
+      axios.delete(url)
+        .then((res) => {
+          this.stashElement.push(element);
+          const index = _.findIndex(this.elements, {
+            id: element.id
           });
+          this.$delete(this.elements, index);
+        })
+        .finally(() => {
+          this.removeDeleting(element);
+        });
+    },
+    pushDeleting(element) {
+      this.deletingElement.push(element.id);
+    },
+    removeDeleting(element) {
+      _.remove(this.deletingElement, (v) => {
+        return v === element.id;
+      });
+    },
+    isDeleting: function (element) {
+      return this.deletingElement.includes(element.id);
+    },
 
-      },
-      clickEdit: function () {
-        this.isEditing = true;
-      },
-      savePost: function () {
-        this.uploadLoadingStatus('SAVING_POST', true);
-        const data = {
-          title: this.post.title,
-          description: this.post.description,
-          policy: {
-            access_policy: this.post.policy
+    /** Image **/
+    uploadImages: function (event) {
+      Array.from(event.target.files).forEach(file => {
+        let form = new FormData();
+        form.append('file', file);
+        form.append('post_serial', this.post.serial);
+        axios.post(this.createImageElementEndpoint, form, {
+          onUploadProgress: progressEvent => {
+            this.updateProgressBarValue(file, progressEvent);
           }
-        };
-
-        axios.put(this.updatePostEndpoint, data)
-          .then(res => {
-            this.post = res.data.data;
-            this.isEditing = false;
-          })
-          .finally(() => {
-            this.uploadLoadingStatus('SAVING_POST', false);
-          });
-      },
-
-      /** Elements **/
-      loadElements: function (page = 1) {
-        const params = {
-          page: page
-        };
-        axios.get(this.getElementsEndpoint, {params: params})
-          .then(res => {
-            this.postElements = res.data;
-            let counter = 1;
-            _.each(this.postElements.data, (element) => {
-              setTimeout(() => {
-                this.elements.push(element);
-              }, 100 * counter++);
-            });
-
-            if (this.postElements.current_page < this.postElements.last_page) {
-              this.loadElements(this.postElements.current_page + 1);
-            }
-          })
-      },
-      isElementInPage: function (index) {
-        return (this.currentPage - 1) * this.perPage <= index
-          && this.currentPage * this.perPage > index;
-      },
-      updateElementTitle: function (id, event) {
-        const data = {
-          title: event.target.value
-        };
-        const url = this.updateElementEndpoint.replace('_id', id);
-        axios.put(url, data)
-          .then((res) => {
-
-          })
-      },
-      deleteElement: function (element) {
-        this.pushDeleting(element);
-
-        const url = this.deleteElementEndpoint.replace('_id', element.id);
-        axios.delete(url)
-          .then((res) => {
-            this.stashElement.push(element);
-            const index = _.findIndex(this.elements, {
-              id: element.id
-            });
-            this.$delete(this.elements, index);
-          })
-          .finally(() => {
-            this.removeDeleting(element);
-          });
-      },
-      pushDeleting(element){
-        this.deletingElement.push(element.id);
-      },
-      removeDeleting(element){
-        _.remove(this.deletingElement, (v) => {
-          return v === element.id;
-        });
-      },
-      isDeleting: function (element) {
-        return this.deletingElement.includes(element.id);
-      },
-
-      /** Image **/
-      uploadImages: function (event) {
-        Array.from(event.target.files).forEach(file => {
-          let form = new FormData();
-          form.append('file', file);
-          form.append('post_serial', this.post.serial);
-          axios.post(this.createImageElementEndpoint, form, {
-            onUploadProgress: progressEvent => {
-              this.updateProgressBarValue(file, progressEvent);
-            }
-          })
-            .then(res => {
-              this.elements.push(res.data.data);
-              this.deleteProgressBarValue(file);
-            })
-            .catch((err) => {
-              this.showAlert(err.response.data.message, 'danger');
-            });
-        });
-      },
-
-      /** Video **/
-      uploadVideo: function () {
-        this.uploadLoadingStatus('UPLOADING_VIDEO', true);
-        const data = {
-          post_serial: this.post.serial,
-          url: this.uploadVideoUrl
-        };
-        axios.post(this.createVideoElementEndpoint, data)
+        })
           .then(res => {
             this.elements.push(res.data.data);
-            this.showAlert(res.data.data.title);
+            this.deleteProgressBarValue(file);
           })
           .catch((err) => {
             this.showAlert(err.response.data.message, 'danger');
-          })
-          .finally(() => {
-            this.uploadLoadingStatus('UPLOADING_VIDEO', false);
           });
-
-      },
-      updateVideoScope: function (index, element, event) {
-        let key = event.target.name;
-        let seconds = this.toSeconds(event.target.value);
-        if (!Number.isInteger(seconds)) {
-          return;
-        }
-        const data = {
-          [key]: seconds
-        };
-        const url = this.updateElementEndpoint.replace('_id', element.id);
-        axios.put(url, data)
-          .then((res) => {
-            element[key] = seconds;
-            this.$set(this.elements, index, element);
-          })
-      },
-      updateProgressBarValue: function (file, progressEvent) {
-        let filename = file.name;
-        this.$set(this.uploadingFiles, filename, Math.round(progressEvent.loaded / progressEvent.total * 100));
-      },
-      deleteProgressBarValue: function (file) {
-        delete this.uploadingFiles[file.name];
-        this.uploadingFiles = Object.assign({}, this.uploadingFiles);
-      },
-      toTimeFormat: function (seconds) {
-        if (seconds === null || seconds === '') {
-          return null;
-        }
-        if (seconds >= 3600) {
-          return moment.utc(seconds * 1000).format('HH:mm:ss');
-        } else {
-          return moment.utc(seconds * 1000).format('mm:ss');
-        }
-      },
-      toSeconds: function (time) {
-        let timeGroup = time.match(/^(?:(?:([01]?\d|2[0-3]):)?([0-5]?\d):)?([0-5]?\d)$/);
-        return moment.duration({
-          seconds: timeGroup[3],
-          minutes: timeGroup[2],
-          hours: timeGroup[1],
-        }).asSeconds();
-      },
-
-      /** Player **/
-      getPlayer(element) {
-        return _.get(this.$refs, element.id + '.0.player', null);
-      },
-      clickPlayButton(index, element) {
-        this.playingVideo = element.id;
-        element.loadedVideo = true;
-        this.$set(this.elements, index, element);
-
-        this.doPlay(element);
-      },
-      doPlay(element) {
-        const player = this.getPlayer(element);
-        if (player) {
-          window.player = player;
-          player.loadVideoById({
-            videoId: element.video_id,
-            startSeconds: element.video_start_second,
-            endSeconds: element.video_end_second
-          });
-        }
-      },
-
-      /** Rank **/
-      loadRankReport: function (page = 1) {
-        this.uploadLoadingStatus('LOADING_RANK', true);
-        const filter = {
-          'page': page
-        };
-        axios.get(this.getRankEndpoint, {params: filter})
-          .then(res => {
-            this.$set(this.rank, 'rankReportData', res.data);
-            this.$set(this.rank, 'currentPage', res.data.meta.current_page);
-          })
-          .finally(() => {
-            this.uploadLoadingStatus('LOADING_RANK', false);
-          });
-      },
-      handleRankPageChange: function (page) {
-        this.loadRankReport(page);
+      });
+    },
+    uploadImageUrl: function () {
+      if (this.loading['UPLOADING_IMAGE']) {
+        return;
       }
+      this.uploadLoadingStatus('UPLOADING_IMAGE', true);
+      const data = {
+        post_serial: this.post.serial,
+        url: this.imageUrl
+      };
+      this.imageUrl = "";
+      axios.post(this.createImageUrlElementEndpoint, data)
+        .then(res => {
+          this.elements.push(res.data.data);
+          this.showAlert(res.data.data.title);
+        })
+        .catch((err) => {
+          this.showAlert(err.response.data.message, 'danger');
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('UPLOADING_IMAGE', false);
+        });
+    },
 
+    /** Video **/
+    uploadVideo: function () {
+      if (this.loading['UPLOADING_VIDEO']) {
+        return;
+      }
+      this.uploadLoadingStatus('UPLOADING_VIDEO', true);
+      const data = {
+        post_serial: this.post.serial,
+        url: this.videoUrl
+      };
+      this.videoUrl = "";
+      axios.post(this.createVideoElementEndpoint, data)
+        .then(res => {
+          this.elements.push(res.data.data);
+          this.showAlert(res.data.data.title);
+        })
+        .catch((err) => {
+          this.showAlert(err.response.data.message, 'danger');
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('UPLOADING_VIDEO', false);
+        });
+
+    },
+    updateVideoScope: function (index, element, event) {
+      let key = event.target.name;
+      let seconds = this.toSeconds(event.target.value);
+      if (!Number.isInteger(seconds)) {
+        return;
+      }
+      const data = {
+        [key]: seconds
+      };
+      const url = this.updateElementEndpoint.replace('_id', element.id);
+      axios.put(url, data)
+        .then((res) => {
+          element[key] = seconds;
+          this.$set(this.elements, index, element);
+        })
+    },
+    updateProgressBarValue: function (file, progressEvent) {
+      let filename = file.name;
+      this.$set(this.uploadingFiles, filename, Math.round(progressEvent.loaded / progressEvent.total * 100));
+    },
+    deleteProgressBarValue: function (file) {
+      delete this.uploadingFiles[file.name];
+      this.uploadingFiles = Object.assign({}, this.uploadingFiles);
+    },
+    toTimeFormat: function (seconds) {
+      if (seconds === null || seconds === '') {
+        return null;
+      }
+      if (seconds >= 3600) {
+        return moment.utc(seconds * 1000).format('HH:mm:ss');
+      } else {
+        return moment.utc(seconds * 1000).format('mm:ss');
+      }
+    },
+    toSeconds: function (time) {
+      let timeGroup = time.match(/^(?:(?:([01]?\d|2[0-3]):)?([0-5]?\d):)?([0-5]?\d)$/);
+      return moment.duration({
+        seconds: timeGroup[3],
+        minutes: timeGroup[2],
+        hours: timeGroup[1],
+      }).asSeconds();
+    },
+
+    /** Player **/
+    getPlayer(element) {
+      return _.get(this.$refs, element.id + '.0.player', null);
+    },
+    clickPlayButton(index, element) {
+      this.playingVideo = element.id;
+      element.loadedVideo = true;
+      this.$set(this.elements, index, element);
+
+      this.doPlay(element);
+    },
+    doPlay(element) {
+      const player = this.getPlayer(element);
+      if (player) {
+        window.player = player;
+        player.loadVideoById({
+          videoId: element.video_id,
+          startSeconds: element.video_start_second,
+          endSeconds: element.video_end_second
+        });
+      }
+    },
+
+    /** Rank **/
+    loadRankReport: function (page = 1) {
+      this.uploadLoadingStatus('LOADING_RANK', true);
+      const filter = {
+        'page': page
+      };
+      axios.get(this.getRankEndpoint, {params: filter})
+        .then(res => {
+          this.$set(this.rank, 'rankReportData', res.data);
+          this.$set(this.rank, 'currentPage', res.data.meta.current_page);
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('LOADING_RANK', false);
+        });
+    },
+    handleRankPageChange: function (page) {
+      this.loadRankReport(page);
     }
+
   }
+}
 
 </script>

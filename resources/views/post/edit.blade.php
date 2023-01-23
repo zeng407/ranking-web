@@ -12,6 +12,7 @@
         update-element-endpoint="{{route('api.element.update', '_id')}}"
         delete-element-endpoint="{{route('api.element.delete', '_id')}}"
         create-image-element-endpoint="{{route('api.element.create-image')}}"
+        create-image-url-element-endpoint="{{route('api.element.create-image-url')}}"
         create-video-element-endpoint="{{route('api.element.create-video')}}"
     >
     </edit-post>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ApiResponseCode;
 use App\Enums\ElementType;
 use App\Enums\VideoSource;
 use App\Http\Controllers\Controller;
@@ -43,13 +44,41 @@ class ElementController extends Controller
 
         // check elements count
         if ($post->elements()->count() > config('post.post_max_element_count')) {
-            return response()->json([
-                'message' => 'upload the limit numbers of images/videos'
-            ], 400);
+            return api_response(ApiResponseCode::OVER_ELEMENT_SIZE,422);
         }
 
         $path = Auth::id() . '/' . $request->post_serial;
         $element = $this->elementService->storePublic($request->file('file'), $path, $post);
+        return PostElementResource::make($element);
+    }
+
+    public function createImageUrl(Request $request)
+    {
+        /** @see ElementPolicy::create() */
+        $this->authorize('create', Element::class);
+
+        $request->validate([
+            'post_serial' => 'required',
+            'url' => 'required|url|string',
+        ]);
+
+        $post = $this->getPost($request->post_serial);
+
+        // check elements count
+        if ($post->elements()->count() > config('post.post_max_element_count')) {
+            return api_response(ApiResponseCode::OVER_ELEMENT_SIZE,422);
+        }
+
+        try {
+            $path = Auth::id() . '/' . $request->post_serial;
+            $element = $this->elementService->storePublicFromUrl($request->input('url'), $path, $post);
+            if(!$element){
+                return api_response(ApiResponseCode::INVALID_URL,422);
+            }
+        }catch (\Exception $exception){
+            report($exception);
+            return api_response(ApiResponseCode::INVALID_URL,422);
+        }
         return PostElementResource::make($element);
     }
 
@@ -69,22 +98,18 @@ class ElementController extends Controller
 
         // check elements count
         if ($post->elements()->count() > config('post.post_max_element_count')) {
-            return response()->json([
-                'message' => 'upload the limit numbers of images/videos'
-            ], 400);
+            return api_response(ApiResponseCode::OVER_ELEMENT_SIZE,422);
         }
 
         try {
             $video = $this->youtube->query($request->url);
             if (!$video) {
-                return response()->json([
-                    'msg' => '網址錯誤'
-                ], 400);
+                return api_response(ApiResponseCode::INVALID_URL,422);
             }
 
-            $thumb = $video->getSnippet()->getThumbnails()->getStandard() ?:
+            $thumb = $video->getSnippet()->getThumbnails()->getHigh() ?:
                     $video->getSnippet()->getThumbnails()->getMedium() ?:
-                    $video->getSnippet()->getThumbnails()->getHigh() ?:
+                    $video->getSnippet()->getThumbnails()->getStandard() ?:
                     $video->getSnippet()->getThumbnails()->getMaxres() ?:
                     $video->getSnippet()->getThumbnails()->getDefault();
             $thumbUrl = $thumb->getUrl();
@@ -100,9 +125,7 @@ class ElementController extends Controller
         } catch (\Exception $exception) {
             report($exception);
 
-            return response()->json([
-                'msg' => '網址錯誤'
-            ], 400);
+            return api_response(ApiResponseCode::INVALID_URL,422);
         }
 
         $element = $post->elements()->create([

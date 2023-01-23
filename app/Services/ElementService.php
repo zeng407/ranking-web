@@ -59,4 +59,44 @@ class ElementService
         return $element;
     }
 
+    public function storePublicFromUrl(string $sourceUrl, string $path, Post $post)
+    {
+        try {
+            //try check image validation
+            if(!@getimagesize($sourceUrl)){
+                return null;
+            };
+
+            $fileInfo = pathinfo($sourceUrl);
+            $basename = $fileInfo['basename'];
+            $content = file_get_contents($sourceUrl);
+
+            $path = rtrim($path,'/').'/'.$basename;
+            $isSuccess = Storage::put($path, $content, 'public');
+
+            if(!$isSuccess){
+                return null;
+            }
+        }catch (\Exception $exception){
+            report($exception);
+            return null;
+        }
+
+        //todo sign path
+        $url = Storage::url($path);
+
+        //todo make thumb
+        $thumb = $url;
+
+        $element = $post->elements()->create([
+            'path' => $path,
+            'source_url' => $url,
+            'thumb_url' => $thumb,
+            'type' => ElementType::IMAGE,
+            'title' => $fileInfo['filename']
+        ]);
+
+        return $element;
+    }
+
 }

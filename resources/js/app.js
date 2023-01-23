@@ -100,7 +100,7 @@ Vue.filter('date', function (value) {
     return moment(value).format('Y/M/D');
 });
 Vue.filter('datetime', function (value) {
-    return moment(value).format('Y/M/D H:m:s');
+    return moment(value).format('Y/M/D HH:mm:ss');
 });
 
 

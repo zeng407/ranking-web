@@ -14,7 +14,6 @@ namespace App\Models{
 /**
  * App\Models\Element
  *
- * @mixin IdeHelperElement
  * @property int $id
  * @property string|null $path
  * @property string|null $source_url
@@ -53,14 +52,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Query\Builder|Element withTrashed()
  * @method static \Illuminate\Database\Query\Builder|Element withoutTrashed()
  */
-	class IdeHelperElement extends \Eloquent {}
+	class IdeHelperElement {}
 }
 
 namespace App\Models{
 /**
  * App\Models\Game
  *
- * @mixin IdeHelperGame
  * @property int $id
  * @property string $serial
  * @property int $post_id
@@ -83,14 +81,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Game whereSerial($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Game whereUpdatedAt($value)
  */
-	class IdeHelperGame extends \Eloquent {}
+	class IdeHelperGame {}
 }
 
 namespace App\Models{
 /**
  * App\Models\Game1V1Round
  *
- * @mixin IdeHelperGame1V1Round
  * @property int $id
  * @property int $game_id
  * @property int $current_round
@@ -118,14 +115,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Game1V1Round whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Game1V1Round whereWinnerId($value)
  */
-	class IdeHelperGame1V1Round extends \Eloquent {}
+	class IdeHelperGame1V1Round {}
 }
 
 namespace App\Models{
 /**
  * App\Models\GameElement
  *
- * @mixin IdeHelperGameElement
  * @property int $id
  * @property int $game_id
  * @property int $element_id
@@ -142,14 +138,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|GameElement whereIsEliminated($value)
  * @method static \Illuminate\Database\Eloquent\Builder|GameElement whereWinCount($value)
  */
-	class IdeHelperGameElement extends \Eloquent {}
+	class IdeHelperGameElement {}
 }
 
 namespace App\Models{
 /**
  * App\Models\Post
  *
- * @mixin IdeHelperPost
  * @property int $id
  * @property int|null $user_id
  * @property string $serial
@@ -187,14 +182,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Query\Builder|Post withTrashed()
  * @method static \Illuminate\Database\Query\Builder|Post withoutTrashed()
  */
-	class IdeHelperPost extends \Eloquent {}
+	class IdeHelperPost {}
 }
 
 namespace App\Models{
 /**
  * App\Models\PostPolicy
  *
- * @mixin IdeHelperPostPolicy
  * @property int $id
  * @property int $post_id
  * @property string $access_policy
@@ -213,7 +207,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|PostPolicy wherePostId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|PostPolicy whereUpdatedAt($value)
  */
-	class IdeHelperPostPolicy extends \Eloquent {}
+	class IdeHelperPostPolicy {}
 }
 
 namespace App\Models{
@@ -240,22 +234,19 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereTimeRange($value)
  * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereTrendType($value)
  * @method static \Illuminate\Database\Eloquent\Builder|PostTrend whereUpdatedAt($value)
- * @mixin \Eloquent
  */
-	class IdeHelperPostTrend extends \Eloquent {}
+	class IdeHelperPostTrend {}
 }
 
 namespace App\Models{
 /**
  * App\Models\Rank
  *
- * @mixin IdeHelperRank
  * @property int $id
  * @property int $post_id
  * @property int $element_id
  * @property string $rank_type
  * @property string $record_date
- * @property int|null $position
  * @property int $win_count
  * @property int $round_count
  * @property string $win_rate
@@ -269,7 +260,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereElementId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rank wherePosition($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank wherePostId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereRankType($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereRecordDate($value)
@@ -278,14 +268,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereWinCount($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Rank whereWinRate($value)
  */
-	class IdeHelperRank extends \Eloquent {}
+	class IdeHelperRank {}
 }
 
 namespace App\Models{
 /**
  * App\Models\RankReport
  *
- * @mixin IdeHelperRankReport
  * @property int $id
  * @property int $post_id
  * @property int $element_id
@@ -312,14 +301,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereWinPosition($value)
  * @method static \Illuminate\Database\Eloquent\Builder|RankReport whereWinRate($value)
  */
-	class IdeHelperRankReport extends \Eloquent {}
+	class IdeHelperRankReport {}
 }
 
 namespace App\Models{
 /**
  * App\Models\User
  *
- * @mixin IdeHelperUser
  * @property int $id
  * @property string $name
  * @property string $email
@@ -347,6 +335,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|User whereRememberToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder|User whereUpdatedAt($value)
  */
-	class IdeHelperUser extends \Eloquent {}
+	class IdeHelperUser {}
 }
 
