@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid">
-    <nav class="navbar navbar-light bg-light">
+    <nav class="navbar navbar-light bg-light flex-nowrap">
       <div class="form-inline">
         <div class="btn-group btn-group-toggle" data-toggle="buttons">
 
@@ -16,8 +16,8 @@
         </div>
       </div>
       <div class="form-inline">
-        <form @submit.prevent>
-          <input class="form-control mr-sm-2" v-model="filters.any_like" type="search" placeholder="Search"
+        <form @submit.prevent class="d-flex">
+          <input class="form-control mr-2" v-model="filters.any_like" type="search" placeholder="Search"
                  aria-label="Search">
           <button class="btn btn-primary" type="submit" @click="search" :disabled="isLoading">
             <i class="fas fa-search"></i>
@@ -44,7 +44,7 @@
       </div>
     </nav>
 
-    <div class="row justify-content-center pt-sm-4">
+    <div class="row justify-content-center pt-4">
       <div class="fa-3x" v-if="isLoading">
         <i class="fas fa-spinner fa-spin"></i>
       </div>

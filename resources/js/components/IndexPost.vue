@@ -7,7 +7,7 @@
       <button class="btn btn-primary d-inline float-right" @click="openCreateFormModal">{{ $t('my_games.new')}}</button>
     </div>
 
-    <!--        Loading-->
+    <!-- Loading-->
     <div class="fa-3x text-center" v-if="loading[LOADING_POSTS]">
       <i class="fas fa-spinner fa-spin"></i>
     </div>

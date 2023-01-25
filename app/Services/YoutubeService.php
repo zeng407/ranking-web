@@ -8,6 +8,7 @@ use Google\Service\YouTube;
 
 class YoutubeService
 {
+    const YOUTUBE_VIDEO_ID_LENGTH = 11;
     protected $youtube;
 
     public function __construct()
@@ -22,16 +23,27 @@ class YoutubeService
     {
         $errors = [];
         try {
+            //try getting v={video_id} format
             parse_str(parse_url($url, PHP_URL_QUERY), $result);
             return $result['v'];
-        }catch (\Throwable $throwable){
+        } catch (\Throwable $throwable) {
             $errors[] = $throwable->getMessage();
         }
 
-        try{
+        try {
+            //try getting url?v={video_id} format
             preg_match("#(?<=v=)[a-zA-Z0-9-]+(?=&)|(?<=v\/)[^&\n]+(?=\?)|(?<=v=)[^&\n]+|(?<=youtu.be/)[^&\n]+#", $url, $matches);
             return $matches[0];
-        }catch (\Throwable $throwable){
+        } catch (\Throwable $throwable) {
+            $errors[] = $throwable->getMessage();
+        }
+
+        try {
+            //try getting {video_id} format
+            if (strlen($url) === self::YOUTUBE_VIDEO_ID_LENGTH) {
+                return $url;
+            }
+        } catch (\Throwable $throwable) {
             $errors[] = $throwable->getMessage();
         }
 
@@ -43,8 +55,8 @@ class YoutubeService
     {
         try {
             $id = $this->parseVideoId($url);
-        }catch (\Exception $exception){
-            \Log::error('not a valid youtube url:'.$url);
+        } catch (\Exception $exception) {
+            \Log::error('not a valid youtube url:' . $url);
             return null;
         }
 
