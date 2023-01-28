@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ElementType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -20,6 +21,8 @@ class PostFactory extends Factory
             'description' => $this->faker->words(10,true),
         ];
     }
+
+
 
 
 }

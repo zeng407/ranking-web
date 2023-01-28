@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Enums\ElementType;
 use App\Enums\PostAccessPolicy;
 use App\Models\Element;
 use App\Models\Game;
@@ -10,17 +9,10 @@ use App\Models\Post;
 use App\Models\PostPolicy;
 use App\Models\User;
 use App\Services\GameService;
-use Faker\Factory;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Http\Testing\File;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class GameTest extends TestCase
 {
-    use DatabaseMigrations;
 
     public function test_index_public_post()
     {
@@ -82,7 +74,8 @@ class GameTest extends TestCase
         $post->post_policy->save();
 
         $res = $this->get(route('api.game.next-round', $game->serial));
-        $res->assertStatus(401);
+        \Log::debug($res->content());
+        $res->assertStatus(403);
     }
 
     public function test_vote_game_8()

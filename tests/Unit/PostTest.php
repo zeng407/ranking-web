@@ -8,18 +8,15 @@ use App\Models\Element;
 use App\Models\Post;
 use App\Models\PostPolicy;
 use App\Models\User;
-use Faker\Factory;
+use Google\Service\YouTube\AccessPolicy;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+
 use Tests\TestCase;
 
 class PostTest extends TestCase
 {
-    use DatabaseMigrations;
-
     public function test_user_post()
     {
         /** @var User $user */
@@ -56,7 +53,13 @@ class PostTest extends TestCase
 
         $this->be($user);
 
-        $res = $this->post(route('api.post.create'));
+        $res = $this->post(route('api.post.create'), [
+            'title' => 'title',
+            'description' => 'description',
+            'policy' => [
+                'access_policy' => PostAccessPolicy::PUBLIC
+            ]
+        ]);
 
         $serial = $res->json('serial');
 
@@ -70,7 +73,11 @@ class PostTest extends TestCase
     public function test_post_update()
     {
         /** @var User $user */
-        $user = User::factory()->has(Post::factory())->create();
+        $user = User::factory()->has(
+            Post::factory()->has(
+                PostPolicy::factory()->public(), 'post_policy'
+            )
+        )->create();
 
         $this->be($user);
 
@@ -113,32 +120,38 @@ class PostTest extends TestCase
 
         $path = $res->json('path');
         Storage::disk()->assertExists($path);
-        $this->assertEquals($post->elements()->first()->id, $res->json('id'));
-        $this->assertEquals($res->json('type'), ElementType::IMAGE);
+        \Log::debug($res->content());
+        $this->assertEquals($post->elements()->first()->id, $res->json('data.id'));
+        $this->assertEquals($res->json('data.type'), ElementType::IMAGE);
     }
 
     public function test_create_video_element()
     {
         /** @var User $user */
-        $user = User::factory()->has(Post::factory())->create();
+        $user = User::factory()->has(
+            Post::factory()->has(
+                PostPolicy::factory(),'post_policy'
+            )
+        )->create();
 
         $this->be($user);
 
         /** @var Post $post */
         $post = $user->posts()->first();
-        $element = Element::factory()->video()->make();
+
         $data = [
             'post_serial' => $post->serial,
-            'url' => $element->source_url,
-            'video_start_second' => $element->video_start_second,
-            'video_end_second' => $element->video_end_second
+            'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'video_start_second' => '34',
+            'video_end_second' => '78'
         ];
 
-        $res = $this->post(route('api.element.create-video'), $data);
-        $this->assertEquals($post->elements()->first()->id, $res->json('id'));
-        $this->assertEquals($res->json('type'), ElementType::VIDEO);
-        $this->assertEquals($res->json('video_start_second'), $element->video_start_second);
-        $this->assertEquals($res->json('video_end_second'), $element->video_end_second);
-        $this->assertEquals($res->json('url'), $element->url);
+        $res = $this->post(route('api.element.create-video-youtube'), $data);
+        $res->assertCreated();
+        $this->assertEquals($post->elements()->first()->id, $res->json('data.id'));
+        $this->assertEquals($res->json('data.type'), ElementType::VIDEO);
+        $this->assertEquals($res->json('data.video_start_second'), '34');
+        $this->assertEquals($res->json('data.video_end_second'), '78');
+        $this->assertEquals($res->json('data.source_url'), 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     }
 }

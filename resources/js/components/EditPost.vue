@@ -196,7 +196,7 @@
                 <div class="input-group">
                   <input class="form-control" type="text" id="image-url-upload" name="image-url-upload"
                          v-model="imageUrl"
-                         placeholder="https://imgur.com/gallery/YdaUbzZ">
+                         placeholder="https://media3.giphy.com/media/11ISwbgCxEzMyY/giphy.gif">
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" @click="uploadImageUrl">
                       <span v-show="!loading['UPLOADING_IMAGE']">{{ $t('edit_post.add_image_button') }}</span>
@@ -207,21 +207,43 @@
               </div>
             </div>
 
-            <!-- upload video -->
+            <!-- upload video from youtube -->
             <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_video') }}</h2>
             <div class="row">
               <div class="col-12">
                 <label for="youtubeURL">Youtube</label>
                 <div class="input-group">
                   <input class="form-control" type="text" id="youtubeURL" name="youtubeURL"
-                         v-model="videoUrl"
+                         v-model="youtubeUrl"
                          aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="youtubeUpload"
                          placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"
-                            :disabled="loading['UPLOADING_VIDEO']">
-                      <span v-show="!loading['UPLOADING_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
-                      <i v-show="loading['UPLOADING_VIDEO']" class="fas fa-spinner fa-spin"></i>
+                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
+                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
+                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
+
+                      <!--                      <i class="fas fa-spinner"></i>-->
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- upload video from url -->
+            <div class="row mt-3">
+              <div class="col-12">
+                <label for="youtubeURL">從url上傳</label>
+                <div class="input-group">
+                  <input class="form-control" type="text" id="videoUrl" name="videoUrl"
+                         v-model="videoUrl"
+                         aria-label="https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="videoUrl"
+                         placeholder="https://giant.gfycat.com/GroundedLoathsomeHind.mp4">
+                  <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="videoUrlUpload" @click="uploadVideoUrl"
+                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
+                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
+                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
 
                       <!--                      <i class="fas fa-spinner"></i>-->
                     </button>
@@ -242,24 +264,17 @@
               </div>
             </nav>
 
+            <div class="row">
+              <template v-for="(element, index) in filteredElements">
+                <!-- show video card -->
+                <div class="col-lg-4 col-md-6" v-if="isVideoSource(element) && isElementInPage(index)">
 
-            <!--            <div class="row">-->
-            <!--              <div class="col-lg-4 col-md-6">-->
-            <!--                <div class="card mb-3">-->
-            <!--                  <video src="https://giant.gfycat.com/FaithfulLazyAmericanwarmblood.mp4" width="100%" height="270"-->
-            <!--                  autoplay playsinline preload="auto" muted loop controls>-->
-
-            <!--                  </video>-->
-            <!--                </div>-->
-            <!--              </div>-->
-            <template v-for="(element, index) in filteredElements">
-              <div class="col-lg-4 col-md-6" v-show="isVideoSource(element) && isElementInPage(index)">
-                <div class="card mb-3">
-                  <!-- video -->
-                  <youtube v-if="isVideoSource(element) && element.loadedVideo" width="100%" height="270"
-                           :ref="element.id"
-                           @ready="doPlay(element)"
-                           :player-vars="{
+                  <!-- youtube source -->
+                  <div class="card mb-3" v-if="isYoutubeSource(element)">
+                    <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
+                             :ref="element.id"
+                             @ready="doPlay(element)"
+                             :player-vars="{
                               controls:1,
                               autoplay:0,
                               start: element.video_start_second,
@@ -267,69 +282,93 @@
                               rel: 0,
                               host: 'https://www.youtube.com'
                               }"
-                  ></youtube>
-                  <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                       v-if="isVideoSource(element) && !element.loadedVideo">
-
-                  <div class="card-body">
-                    <input class="form-control-plaintext bg-light cursor-pointer" type="text" :value="element.title"
-                           maxlength="100"
-                           @change="updateElementTitle(element.id, $event)">
-                    <div class="row mb-3">
-                      <div class="col-10">
-                        <div class="input-group">
-                          <div class="input-group-prepend d-lg-none d-xl-block">
-                            <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
+                    ></youtube>
+                    <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                         v-if="isYoutubeSource(element) && !element.loadedVideo">
+                    <!-- youtube video editor -->
+                    <div class="card-body">
+                      <!--title edit-->
+                      <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text" :value="element.title"
+                             maxlength="100"
+                             @change="updateElementTitle(element.id, $event)">
+                      <!--play time range-->
+                      <div class="row mb-3">
+                        <div class="col-10">
+                          <div class="input-group">
+                            <div class="input-group-prepend d-lg-none d-xl-block">
+                              <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
+                            </div>
+                            <input type="text" class="form-control" name="video_start_second"
+                                   placeholder="0:00" aria-label="start"
+                                   @change="updateVideoScope(index, element, $event)"
+                                   :value="toTimeFormat(element.video_start_second)">
+                            <div class="input-group-prepend"><span class="input-group-text">~</span></div>
+                            <input type="text" class="form-control" name="video_end_second"
+                                   :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
+                                   :value="toTimeFormat(element.video_end_second)"
+                                   @change="updateVideoScope(index, element, $event)">
                           </div>
-                          <input type="text" class="form-control" name="video_start_second"
-                                 placeholder="0:00" aria-label="start"
-                                 @change="updateVideoScope(index, element, $event)"
-                                 :value="toTimeFormat(element.video_start_second)">
-                          <div class="input-group-prepend"><span class="input-group-text">~</span></div>
-                          <input type="text" class="form-control" name="video_end_second"
-                                 :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
-                                 :value="toTimeFormat(element.video_end_second)"
-                                 @change="updateVideoScope(index, element, $event)">
+                        </div>
+                        <!--play button-->
+                        <div class="col-2">
+                          <a class="btn btn-danger float-right" @click="clickPlayButton(index, element)">
+                            <i class="fas fa-play-circle"></i>
+                          </a>
                         </div>
                       </div>
-                      <div class="col-2">
-                        <a class="btn btn-danger float-right" @click="clickPlayButton(index, element)">
-                          <i class="fas fa-play-circle"></i>
-                        </a>
-                      </div>
+                      <!--create time-->
+                      <span class="card-text"><small
+                        class="text-muted">{{ element.created_at | datetime }}</small></span>
+                      <!--delete button-->
+                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- simple video source -->
+                  <div class="card mb-3" v-else>
+                    <!-- load the video player -->
+                    <video width="100%" height="270" loop autoplay muted :src="element.source_url"></video>
+                    <!-- editor -->
+                    <div class="card-body">
+                      <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
+                             :value="element.title"
+                             maxlength="100"
+                             @change="updateElementTitle(element.id, $event)">
+                      <span class="card-text"><small
+                        class="text-muted">{{ element.created_at | datetime }}</small></span>
+                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                      </a>
                     </div>
 
-                    <span class="card-text"><small
-                      class="text-muted">{{ element.created_at | datetime }}</small></span>
-                    <a class="btn btn-danger float-right" @click="deleteElement(element)">
-                      <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
-                      <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
-                    </a>
                   </div>
                 </div>
-              </div>
+                <!-- image player -->
+                <div class="col-lg-4 col-md-6" v-if="element.type==='image' && isElementInPage(index)">
+                  <div class="card mb-3">
+                    <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                         v-if="element.type==='image'">
 
-              <!-- image -->
-              <div class="col-lg-4" v-show="element.type==='image' && isElementInPage(index)">
-                <div class="card mb-3">
-                  <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                       v-if="element.type==='image'">
-
-                  <div class="card-body">
-                    <input class="form-control-plaintext bg-light cursor-pointer mb-2" type="text"
-                           :value="element.title"
-                           maxlength="100"
-                           @change="updateElementTitle(element.id, $event)">
-                    <span class="card-text"><small
-                      class="text-muted">{{ element.created_at | datetime }}</small></span>
-                    <a class="btn btn-danger float-right" @click="deleteElement(element)">
-                      <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
-                      <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
-                    </a>
+                    <div class="card-body">
+                      <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
+                             :value="element.title"
+                             maxlength="100"
+                             @change="updateElementTitle(element.id, $event)">
+                      <span class="card-text"><small
+                        class="text-muted">{{ element.created_at | datetime }}</small></span>
+                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </template>
+              </template>
+            </div>
           </div>
 
           <b-pagination
@@ -340,74 +379,73 @@
             last-number
             align="center"
           ></b-pagination>
-        </div>
 
-        <!-- tab rank -->
-        <div class="tab-pane fade" id="v-pills-rank" role="tabpanel" aria-labelledby="v-pills-rank-tab">
-          <div class="row" v-if="!loading['LOADING_POST']">
-            <div class="col-3">
-              <div class="form-group">
-                <label>{{ $t('edit_post.rank.game_plays') }}</label>
-                <input class="form-control" disabled :value="post.play_count">
+
+          <!-- tab rank -->
+          <div class="tab-pane fade" id="v-pills-rank" role="tabpanel" aria-labelledby="v-pills-rank-tab">
+            <div class="row" v-if="!loading['LOADING_POST']">
+              <div class="col-3">
+                <div class="form-group">
+                  <label>{{ $t('edit_post.rank.game_plays') }}</label>
+                  <input class="form-control" disabled :value="post.play_count">
+                </div>
+              </div>
+            </div>
+            <table class="table table-hover" style="table-layout: fixed">
+              <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col" style="width: 70%"></th>
+                <th scope="col">{{ $t('edit_post.rank.win_at_final') }}</th>
+                <th scope="col">{{ $t('edit_post.rank.win_rate') }}</th>
+              </tr>
+              </thead>
+              <tbody v-if="loading['LOADING_RANK']">
+              <tr>
+                <td colspan="4">
+                  <div class="fa-3x text-center">
+                    <i class="fas fa-spinner fa-spin"></i>
+                  </div>
+                </td>
+              </tr>
+              </tbody>
+              <tbody v-if="rank.rankReportData && !loading['LOADING_RANK']">
+              <tr v-for="(rank, index) in rank.rankReportData.data">
+                <th scope="row">{{ rank.rank }}</th>
+                <td style="overflow: scroll">
+                  <div>
+                    <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
+
+                    <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
+                      <p>{{ rank.element.title }}</p>
+                    </a>
+                    <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
+                  </div>
+                </td>
+                <td>{{ rank.final_win_rate | percent }}</td>
+                <td>{{ rank.win_rate | percent }}</td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div class="row">
+              <div class="col-12" v-if="rank.rankReportData">
+                <b-pagination
+                  v-model="rank.currentPage"
+                  :total-rows="rank.rankReportData.meta.total"
+                  :per-page="rank.rankReportData.meta.per_page"
+                  first-number
+                  last-number
+                  @change="handleRankPageChange"
+                  align="center"
+                ></b-pagination>
               </div>
             </div>
           </div>
-          <table class="table table-hover" style="table-layout: fixed">
-            <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col" style="width: 70%"></th>
-              <th scope="col">{{ $t('edit_post.rank.win_at_final') }}</th>
-              <th scope="col">{{ $t('edit_post.rank.win_rate') }}</th>
-            </tr>
-            </thead>
-            <tbody v-if="loading['LOADING_RANK']">
-            <tr>
-              <td colspan="4">
-                <div class="fa-3x text-center">
-                  <i class="fas fa-spinner fa-spin"></i>
-                </div>
-              </td>
-            </tr>
-            </tbody>
-            <tbody v-if="rank.rankReportData && !loading['LOADING_RANK']">
-            <tr v-for="(rank, index) in rank.rankReportData.data">
-              <th scope="row">{{ rank.rank }}</th>
-              <td style="overflow: scroll">
-                <div>
-                  <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
 
-                  <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
-                    <p>{{ rank.element.title }}</p>
-                  </a>
-                  <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
-                </div>
-              </td>
-              <td>{{ rank.final_win_rate | percent }}</td>
-              <td>{{ rank.win_rate | percent }}</td>
-            </tr>
-            </tbody>
-          </table>
-
-          <div class="row">
-            <div class="col-12" v-if="rank.rankReportData">
-              <b-pagination
-                v-model="rank.currentPage"
-                :total-rows="rank.rankReportData.meta.total"
-                :per-page="rank.rankReportData.meta.per_page"
-                first-number
-                last-number
-                @change="handleRankPageChange"
-                align="center"
-              ></b-pagination>
-            </div>
-          </div>
         </div>
       </div>
     </div>
-  </div>
-
-
   </div>
 </template>
 
@@ -437,16 +475,18 @@ export default {
     deleteElementEndpoint: String,
     createImageElementEndpoint: String,
     createImageUrlElementEndpoint: String,
-    createVideoElementEndpoint: String
+    createVideoYoutubeElementEndpoint: String,
+    createVideoUrlElementEndpoint: String
   },
   data: function () {
     return {
       loading: {
         LOADING_POST: true,
         SAVING_POST: false,
-        UPLOADING_VIDEO: false,
+        UPLOADING_YOUTUBE_VIDEO: false,
         LOADING_RANK: false,
-        UPLOADING_IMAGE: false
+        UPLOADING_IMAGE: false,
+        UPLOADING_VIDEO_URL: false
       },
       uploadingFiles: {},
       post: null,
@@ -459,6 +499,7 @@ export default {
 
       currentPage: 1,
       perPage: 50,
+      youtubeUrl: "",
       videoUrl: "",
       imageUrl: "",
 
@@ -649,6 +690,9 @@ export default {
     isVideoSource: function (element) {
       return element.type === 'video';
     },
+    isYoutubeSource: function (element) {
+      return element.type === 'video' && element.video_source === 'youtube';
+    },
     isElementInPage: function (index) {
       return (this.currentPage - 1) * this.perPage <= index
         && this.currentPage * this.perPage > index;
@@ -656,16 +700,16 @@ export default {
 
     /** Video **/
     uploadVideo: function () {
-      if (this.loading['UPLOADING_VIDEO']) {
+      if (this.loading['UPLOADING_YOUTUBE_VIDEO']) {
         return;
       }
-      this.uploadLoadingStatus('UPLOADING_VIDEO', true);
+      this.uploadLoadingStatus('UPLOADING_YOUTUBE_VIDEO', true);
       const data = {
         post_serial: this.post.serial,
-        url: this.videoUrl
+        url: this.youtubeUrl
       };
-      this.videoUrl = "";
-      axios.post(this.createVideoElementEndpoint, data)
+      this.youtubeUrl = "";
+      axios.post(this.createVideoYoutubeElementEndpoint, data)
         .then(res => {
           this.elements.push(res.data.data);
           this.showAlert(res.data.data.title);
@@ -674,10 +718,33 @@ export default {
           this.showAlert(err.response.data.message, 'danger');
         })
         .finally(() => {
-          this.uploadLoadingStatus('UPLOADING_VIDEO', false);
+          this.uploadLoadingStatus('UPLOADING_YOUTUBE_VIDEO', false);
         });
-
     },
+    uploadVideoUrl: function () {
+      if (this.loading['UPLOADING_VIDEO_URL']) {
+        return;
+      }
+      this.uploadLoadingStatus('UPLOADING_VIDEO_URL', true);
+      const data = {
+        post_serial: this.post.serial,
+        url: this.videoUrl
+      };
+      this.videoUrl = "";
+      axios.post(this.createVideoUrlElementEndpoint, data)
+        .then(res => {
+          this.elements.push(res.data.data);
+          this.showAlert(res.data.data.title);
+        })
+        .catch((err) => {
+          console.log(err);
+          this.showAlert(err.response.data.message, 'danger');
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('UPLOADING_VIDEO_URL', false);
+        });
+    },
+
     updateVideoScope: function (index, element, event) {
       let key = event.target.name;
       let seconds = this.toSeconds(event.target.value);

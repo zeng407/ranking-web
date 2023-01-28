@@ -27,7 +27,8 @@ class AddPostsIndex extends Migration
     public function down()
     {
         Schema::table('posts', function (Blueprint $table) {
-            $table->dropIndex(['title' , 'description']);
+            $table->dropIndex(['title']);
+            $table->dropIndex(['description']);
         });
     }
 }

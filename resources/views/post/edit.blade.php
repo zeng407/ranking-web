@@ -13,7 +13,8 @@
         delete-element-endpoint="{{route('api.element.delete', '_id')}}"
         create-image-element-endpoint="{{route('api.element.create-image')}}"
         create-image-url-element-endpoint="{{route('api.element.create-image-url')}}"
-        create-video-element-endpoint="{{route('api.element.create-video')}}"
+        create-video-youtube-element-endpoint="{{route('api.element.create-video-youtube')}}"
+        create-video-url-element-endpoint="{{route('api.element.create-video-url')}}"
     >
     </edit-post>
 @endsection

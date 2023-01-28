@@ -31,7 +31,8 @@ class PostPolicyFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'access_policy' => PostAccessPolicy::PUBLIC
+                'access_policy' => PostAccessPolicy::PUBLIC,
+                'password' => null
             ];
         });
     }

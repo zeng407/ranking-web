@@ -71,7 +71,7 @@ class ElementController extends Controller
 
         try {
             $path = Auth::id() . '/' . $request->post_serial;
-            $element = $this->elementService->storePublicFromUrl($request->input('url'), $path, $post);
+            $element = $this->elementService->storePublicFromImageUrl($request->input('url'), $path, $post);
             if(!$element){
                 return api_response(ApiResponseCode::INVALID_URL,422);
             }
@@ -82,7 +82,7 @@ class ElementController extends Controller
         return PostElementResource::make($element);
     }
 
-    public function createVideo(Request $request)
+    public function createVideoYoutube(Request $request)
     {
         /** @see ElementPolicy::create() */
         $this->authorize('create', Element::class);
@@ -140,6 +140,36 @@ class ElementController extends Controller
             'video_end_second' => $request->video_end_second
         ]);
 
+        return PostElementResource::make($element);
+    }
+
+    public function createVideoUrl(Request $request)
+    {
+        /** @see ElementPolicy::create() */
+        $this->authorize('create', Element::class);
+
+        $request->validate([
+            'post_serial' => 'required',
+            'url' => 'required|url|string',
+        ]);
+
+        $post = $this->getPost($request->post_serial);
+
+        // check elements count
+        if ($post->elements()->count() > config('post.post_max_element_count')) {
+            return api_response(ApiResponseCode::OVER_ELEMENT_SIZE,422);
+        }
+
+        try {
+            $path = Auth::id() . '/' . $request->post_serial;
+            $element = $this->elementService->storePublicFromVideoUrl($request->input('url'), $path, $post);
+            if(!$element){
+                return api_response(ApiResponseCode::INVALID_URL,422);
+            }
+        }catch (\Exception $exception){
+            report($exception);
+            return api_response(ApiResponseCode::INVALID_URL,422);
+        }
         return PostElementResource::make($element);
     }
 

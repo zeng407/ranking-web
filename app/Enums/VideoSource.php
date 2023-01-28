@@ -8,4 +8,5 @@ class VideoSource
 {
     const YOUTUBE = 'youtube';
     const URL = 'url';
+    const GFYCAT = 'gfycat';
 }
