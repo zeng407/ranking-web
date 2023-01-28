@@ -162,7 +162,7 @@ class ElementController extends Controller
 
         try {
             $path = Auth::id() . '/' . $request->post_serial;
-            $element = $this->elementService->storePublicFromVideoUrl($request->input('url'), $path, $post);
+            $element = $this->elementService->tryStorePublicVideoUrl($request->input('url'), $path, $post);
             if(!$element){
                 return api_response(ApiResponseCode::INVALID_URL,422);
             }

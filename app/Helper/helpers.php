@@ -5,7 +5,7 @@ if (!function_exists('api_response')) {
     {
         return response([
             'code' => $code,
-            'message' => config('api-response.'.$code)
+            'message' => config('api-response.' . $code)
         ], $httpState);
     }
 }
@@ -78,5 +78,16 @@ if (!function_exists('str_mask')) {
         }
 
         return $masked;
+    }
+}
+
+if (!function_exists('url_basename')) {
+    function url_basename($url)
+    {
+        try {
+            return pathinfo($url)['basename'];
+        } catch (Exception $exception) {
+            return '';
+        }
     }
 }

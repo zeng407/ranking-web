@@ -37,6 +37,24 @@ class ElementService
         return $query->paginate($perPage);
     }
 
+    public function tryStorePublicVideoUrl(string $sourceUrl, string $path, Post $post)
+    {
+        try {
+            if (!$this->isVideoUrl($sourceUrl)) {
+                if($this->guestVideoSource($sourceUrl) === VideoSource::GFYCAT){
+                    return $this->storeGfycat($sourceUrl, $path, $post);
+                }
+                \Log::debug("not video url");
+                return null;
+            }
+
+            return $this->storePublicFromVideoUrl($sourceUrl, $path, $post);
+        } catch (\Exception $exception) {
+            report($exception);
+            return null;
+        }
+    }
+
     public function storePublic(UploadedFile $file, string $path, Post $post)
     {
         $saveDir = $path;
@@ -141,6 +159,38 @@ class ElementService
 
         return $element;
     }
+
+    public function storeGfycat(string $sourceUrl, string $path, Post $post)
+    {
+        try {
+            //GFYCAT url validation
+            if ($this->guestVideoSource($sourceUrl) !== VideoSource::GFYCAT) {
+                \Log::debug("not GFYCAT url");
+                return null;
+            }
+
+            $gfycatService = app(GfycatService::class);
+            $id = $gfycatService->getId($sourceUrl);
+            $info = $gfycatService->getInfo($id);
+
+            $element = $post->elements()->create([
+                'path' => $path,
+                'source_url' => $info->gfyItem->mp4Url,
+                'thumb_url' => $info->gfyItem->posterUrl,
+                'type' => ElementType::VIDEO,
+                'title' => $info->gfyItem->title,
+                'video_source' => VideoSource::GFYCAT
+            ]);
+
+        } catch (\Exception $exception) {
+            report($exception);
+            return null;
+        }
+
+        return $element;
+    }
+
+
 
     protected function isVideoUrl(string $url)
     {

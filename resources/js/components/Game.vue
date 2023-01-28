@@ -15,12 +15,12 @@
     <div class="row" v-if="game">
       <div class="col-md-6 pr-md-0">
         <div class="card game-player" id="left-player">
-          <div v-if="le.type === 'image'"
+          <div v-if="isImageSource(le)"
                @click="clickImage"
                :style="{backgroundImage: 'url('+le.source_url+')' }"
                class="game-image"
           ></div>
-          <div class="d-flex" v-if="le.type === 'video'"
+          <div class="d-flex" v-if="isYoutubeSource(le)"
                @mouseover="videoHoverIn(le, re)"
                @mouseleave="videoHoverOut(le, re)"
           >
@@ -36,6 +36,9 @@
                      }"
             ></youtube>
           </div>
+          <div v-else-if="isVideoSource(le)">
+            <video width="100%" height="270" loop autoplay muted :src="le.source_url"></video>
+          </div>
           <div class="card-body text-center">
             <div style="min-height: 50px">
               <h5 class="card-title">{{ le.title }}</h5>
@@ -48,12 +51,12 @@
       </div>
       <div class="col-md-6 pl-md-0">
         <div class="card game-player" id="right-player">
-          <div v-if="re.type === 'image'"
+          <div v-if="isImageSource(re)"
                @click="clickImage"
                :style="{backgroundImage: 'url('+re.source_url+')' }"
                class="game-image"
           ></div>
-          <div class="d-flex" v-if="re.type === 'video'"
+          <div class="d-flex" v-else-if="isYoutubeSource(re)"
                @mouseover="videoHoverIn(re, le)"
                @mouseleave="videoHoverOut(re, le)"
           >
@@ -68,6 +71,9 @@
                       host: 'https://www.youtube.com'
                      }"
             ></youtube>
+          </div>
+          <div v-else-if="isVideoSource(re)">
+            <video width="100%" height="600" loop autoplay muted :src="re.source_url"></video>
           </div>
           <div class="card-body text-center">
             <div style="min-height: 50px">
@@ -376,11 +382,22 @@ export default {
         obj.css('background-size', 'contain');
       }
     },
+    isImageSource: function (element) {
+      return element.type === 'image';
+    },
+    isVideoSource: function (element) {
+      return element.type === 'video';
+    },
+    isYoutubeSource: function (element) {
+      return element.type === 'video' && element.video_source === 'youtube';
+    },
+    isGfycatSource: function (element) {
+      return element.type === 'video' && element.video_source === 'gfycat';
+    },
     handleLeftPlayerWin() {
       return $('#left-player').animate({left: '50%'}, 500).promise();
     },
     handleScroll(event) {
-      console.log(window.scrollY + window.screen.height);
       if (window.scrollY + window.screen.height >= $(document).height() * 0.8) {
         this.videoHoverIn(this.re, this.le);
       } else {

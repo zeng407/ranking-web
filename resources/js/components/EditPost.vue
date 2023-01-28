@@ -223,7 +223,6 @@
                       <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
                       <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
 
-                      <!--                      <i class="fas fa-spinner"></i>-->
                     </button>
                   </div>
                 </div>
@@ -244,8 +243,6 @@
                             :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
                       <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
                       <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
-
-                      <!--                      <i class="fas fa-spinner"></i>-->
                     </button>
                   </div>
                 </div>
@@ -327,6 +324,25 @@
                     </div>
                   </div>
 
+                  <!-- gfycat source -->
+<!--                  <div class="card mb-3" v-else-if="isGfycatSource(element)">-->
+<!--                    &lt;!&ndash; load the video player &ndash;&gt;-->
+<!--                    <iframe :src='element.source_url' frameborder='0' scrolling='no' height="270" width="100%"></iframe>-->
+<!--                    &lt;!&ndash; editor &ndash;&gt;-->
+<!--                    <div class="card-body">-->
+<!--                      <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"-->
+<!--                             :value="element.title"-->
+<!--                             maxlength="100"-->
+<!--                             @change="updateElementTitle(element.id, $event)">-->
+<!--                      <span class="card-text"><small-->
+<!--                        class="text-muted">{{ element.created_at | datetime }}</small></span>-->
+<!--                      <a class="btn btn-danger float-right" @click="deleteElement(element)">-->
+<!--                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>-->
+<!--                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>-->
+<!--                      </a>-->
+<!--                    </div>-->
+<!--                  </div>-->
+
                   <!-- simple video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
@@ -344,8 +360,8 @@
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
                       </a>
                     </div>
-
                   </div>
+
                 </div>
                 <!-- image player -->
                 <div class="col-lg-4 col-md-6" v-if="element.type==='image' && isElementInPage(index)">
@@ -692,6 +708,9 @@ export default {
     },
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
+    },
+    isGfycatSource: function (element) {
+      return element.type === 'video' && element.video_source === 'gfycat';
     },
     isElementInPage: function (index) {
       return (this.currentPage - 1) * this.perPage <= index
