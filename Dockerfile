@@ -35,10 +35,9 @@ RUN apt-get update && apt-get install -y \
     php8.0-mbstring \
     php8.0-pcov \
     php8.0-zip \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get install -y \
-    nodejs npm
 
 # conigure apache
 COPY dockerfiles/apache /etc/apache2/sites-available/

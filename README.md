@@ -16,7 +16,7 @@ cp .env.example .env
 # first deploy
 ```
 # enter container
-docker exec -ti bash rk-web
+docker exec -ti rk-web bash
 
 # install package
 compsoer install
