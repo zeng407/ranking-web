@@ -6,7 +6,7 @@ services:
         container_name: rk-web
         hostname: rk-web
         volumes:
-            - ./:/var/www/
+            - ./:/var/www/rk-web
         ports:
             - 18080:80
         environment:
