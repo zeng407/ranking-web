@@ -15,3 +15,6 @@ yarn-error.log
 /.vscode
 Dockerfile.example
 .rk-db
+docker-compose.yaml
+deploy.sh
+Dockerfile

@@ -1,62 +1,78 @@
-FROM php:8.0-fpm
+FROM ubuntu:22.04
 
-# Set working directory
-WORKDIR /var/www
+ENV TZ=Asia/Taipei
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone
+ENV USER_NAME ranker
 
-# Add docker php ext repo
-ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
-
-# Install php extensions
-RUN chmod +x /usr/local/bin/install-php-extensions && sync && \
-    install-php-extensions mbstring pdo_mysql zip exif pcntl gd memcached bcmath
-
-# Install dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    locales \
-    zip \
-    jpegoptim optipng pngquant gifsicle \
-    unzip \
+    software-properties-common
+
+RUN add-apt-repository main -y && \
+    add-apt-repository ppa:ondrej/php -y
+
+RUN apt-get update && apt-get install -y \
+    mysql-client \
+    apache2 \
     git \
-    curl \
-    lua-zlib-dev \
-    libmemcached-dev \
-    nginx
+    supervisor \
+    cron \
+    zsh \
+    sudo \
+    nano \
+    vim \
+    unzip \
+    php8.0-dev \
+    php8.0 \
+    php8.0-bcmath \
+    php8.0-xml \
+    php8.0-curl \
+    php8.0-iconv \
+    php8.0-gd \
+    php8.0-mysql \
+    php8.0-mcrypt \
+    php8.0-intl \
+    php8.0-mbstring \
+    php8.0-pcov \
+    php8.0-zip \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install supervisor
-RUN apt-get install -y supervisor
+# conigure apache
+COPY dockerfiles/apache /etc/apache2/sites-available/
+RUN a2dissite 000-default.conf && \
+    a2ensite rk-web && \
+    a2enmod php8.0 && \
+    a2enmod rewrite
 
-# Install composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# install composer
+COPY --from=composer /usr/bin/composer /usr/bin/composer
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# install phpredis
+RUN pecl install redis && \
+    echo "extension=redis.so" >> /etc/php/8.0/apache2/php.ini && \
+    echo "extension=redis.so" >> /etc/php/8.0/cli/php.ini
 
-# Add user for laravel application
-RUN groupadd -g 1000 www
-RUN useradd -u 1000 -ms /bin/bash -g www www
+# conigure supervisor
+COPY dockerfiles/supervisors/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Copy code to /var/www
-COPY --chown=www:www-data . /var/www
+# conigure crontab
+RUN echo '* * * * * php /var/www/rk-web/artisan schedule:run >> /dev/null 2>&1' > /var/spool/cron/crontabs/www-data && \
+    crontab -u www-data /var/spool/cron/crontabs/www-data
 
-# add root to www group
-RUN chmod -R ug+w /var/www/storage
+# switch user
+RUN useradd -ms /bin/bash -g www-data -G sudo $USER_NAME && \
+    echo "$USER_NAME ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    umask 002
+USER $USER_NAME
 
-# Copy nginx/php/supervisor configs
-RUN cp docker/supervisor.conf /etc/supervisord.conf
-RUN cp docker/php.ini /usr/local/etc/php/conf.d/app.ini
-RUN cp docker/nginx.conf /etc/nginx/sites-enabled/default
+# install zsh
+COPY dockerfiles/zsh/* /home/$USER_NAME/
+RUN curl -L git.io/antigen > ~/antigen.zsh && \
+    /bin/zsh ~/.zshrc && \
+    echo "exec zsh" >> ~/.bashrc
 
-# PHP Error Log Files
-RUN mkdir /var/log/php
-RUN touch /var/log/php/errors.log && chmod 777 /var/log/php/errors.log
+WORKDIR /var/www/rk-web
 
-# Deployment steps
-RUN composer install --optimize-autoloader --no-dev
-RUN chmod +x /var/www/docker/run.sh
-
-EXPOSE 80
-ENTRYPOINT ["/var/www/docker/run.sh"]
+CMD ["sudo", "/usr/bin/supervisord"]
