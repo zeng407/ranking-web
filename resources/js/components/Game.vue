@@ -5,11 +5,8 @@
       <h2 class="text-center">{{ game.title }}</h2>
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
-        <h5 class="text-center align-self-center" style="width: 60%">{{ game.current_round }} of TOP
-          {{ game.of_round }} </h5>
-        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} /
-          {{ game.total_elements }})
-        </h5>
+        <h5 class="text-center align-self-center" style="width: 60%">{{ game.current_round }} of TOP {{ game.of_round }} </h5>
+        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} / {{ game.total_elements }})</h5>
       </div>
     </div>
     <div class="row" v-if="game">
@@ -37,7 +34,7 @@
             ></youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
-            <video width="100%" height="270" loop autoplay muted :src="le.source_url"></video>
+            <video width="100%" height="600" loop autoplay muted :src="le.source_url"></video>
           </div>
           <div class="card-body text-center">
             <div style="min-height: 50px">
@@ -239,6 +236,21 @@ export default {
     },
     leftWin() {
       this.isVoting = true;
+      let sendWinnerData = () => {
+        this.vote(this.le, this.re);
+      }
+
+      if (this.isMobileScreen) {
+        let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
+        let loseAnimate = $('#right-player').animate({opacity: '0'}, 500, () => {
+          $('#right-player').hide();
+        }).promise();
+        $.when(winAnimate, loseAnimate).then(() => {
+          sendWinnerData();
+        });
+        return;
+      }
+
       let winAnimate = $('#left-player').animate({left: '50%'}, 500, () => {
         $('#left-player').delay(500).animate({top: '-2000'}, 500, () => {
           $('#left-player').hide();
@@ -249,34 +261,54 @@ export default {
       }).promise();
 
       $.when(winAnimate, loseAnimate).then(() => {
-        this.vote(this.le, this.re);
+        sendWinnerData();
       });
     },
     rightWin() {
       this.isVoting = true;
+      let sendWinnerData = () => {
+        this.vote(this.re, this.le);
+      }
+
+      if (this.isMobileScreen) {
+        let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
+        let loseAnimate = $('#left-player').animate({opacity: '0'}, 500, () => {
+          $('#right-player').hide();
+        }).promise();
+        $.when(winAnimate, loseAnimate).then(() => {
+          sendWinnerData();
+        });
+        return;
+      }
+
       let winAnimate = $('#right-player').animate({left: '-50%'}, 500, () => {
         $('#right-player').delay(500).animate({top: '-2000'}, 500, () => {
           $('#right-player').hide();
         });
-
       }).promise();
+
       let loseAnimate = $('#left-player').animate({top: '2000'}, 500, () => {
         $('#left-player').hide();
       }).promise();
 
       $.when(winAnimate, loseAnimate).then(() => {
-        this.vote(this.re, this.le);
+        sendWinnerData();
       });
     },
     resetPlayerPosition() {
       $('#left-player').hide();
       $('#left-player').css('left', '0');
       $('#left-player').css('top', '0');
+      $('#left-player').css('opacity', '1');
+      $('#left-player').css('scale', '1');
+      $('#left-player').removeClass('zoom-in');
       $('#left-player').show();
 
       $('#right-player').hide();
       $('#right-player').css('left', '0');
       $('#right-player').css('top', '0');
+      $('#right-player').css('opacity', '1');
+      $('#right-player').css('scale', '1');
       $('#right-player').show();
     },
     vote: function (winner, loser) {
@@ -393,9 +425,6 @@ export default {
     },
     isGfycatSource: function (element) {
       return element.type === 'video' && element.video_source === 'gfycat';
-    },
-    handleLeftPlayerWin() {
-      return $('#left-player').animate({left: '50%'}, 500).promise();
     },
     handleScroll(event) {
       if (window.scrollY + window.screen.height >= $(document).height() * 0.8) {
