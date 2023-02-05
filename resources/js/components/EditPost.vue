@@ -190,61 +190,91 @@
               </div>
             </div>
             <!-- upload image from url -->
-            <div class="row mt-3">
-              <div class="col-12">
-                <label for="image-url-upload">從url上傳</label>
-                <div class="input-group">
-                  <input class="form-control" type="text" id="image-url-upload" name="image-url-upload"
-                         v-model="imageUrl"
-                         placeholder="https://media3.giphy.com/media/11ISwbgCxEzMyY/giphy.gif">
-                  <div class="input-group-append">
-                    <button class="btn btn-outline-secondary" type="button" @click="uploadImageUrl">
-                      <span v-show="!loading['UPLOADING_IMAGE']">{{ $t('edit_post.add_image_button') }}</span>
-                      <i v-show="loading['UPLOADING_IMAGE']" class="fas fa-spinner fa-spin"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+<!--            <div class="row mt-3">-->
+<!--              <div class="col-12">-->
+<!--                <label for="image-url-upload">從url上傳</label>-->
+<!--                <div class="input-group">-->
+<!--                  <input class="form-control" type="text" id="image-url-upload" name="image-url-upload"-->
+<!--                         v-model="imageUrl"-->
+<!--                         placeholder="https://media3.giphy.com/media/11ISwbgCxEzMyY/giphy.gif">-->
+<!--                  <div class="input-group-append">-->
+<!--                    <button class="btn btn-outline-secondary" type="button" @click="uploadImageUrl">-->
+<!--                      <span v-show="!loading['UPLOADING_IMAGE']">{{ $t('edit_post.add_image_button') }}</span>-->
+<!--                      <i v-show="loading['UPLOADING_IMAGE']" class="fas fa-spinner fa-spin"></i>-->
+<!--                    </button>-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
 
             <!-- upload video from youtube -->
-            <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_video') }}</h2>
-            <div class="row">
-              <div class="col-12">
-                <label for="youtubeURL">Youtube</label>
-                <div class="input-group">
-                  <input class="form-control" type="text" id="youtubeURL" name="youtubeURL"
-                         v-model="youtubeUrl"
-                         aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="youtubeUpload"
-                         placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-                  <div class="input-group-append">
-                    <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"
-                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
-                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
-                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
+            <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_batch') }}</h2>
+<!--            <div class="row">-->
+<!--              <div class="col-12">-->
+<!--                <label for="youtubeURL">Youtube</label>-->
+<!--                <div class="input-group">-->
+<!--                  <input class="form-control" type="text" id="youtubeURL" name="youtubeURL"-->
+<!--                         v-model="youtubeUrl"-->
+<!--                         aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="youtubeUpload"-->
+<!--                         placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">-->
+<!--                  <div class="input-group-append">-->
+<!--                    <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"-->
+<!--                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">-->
+<!--                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>-->
+<!--                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>-->
 
+<!--                    </button>-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+
+            <!-- upload video from url -->
+<!--            <div class="row mt-3">-->
+<!--              <div class="col-12">-->
+<!--                <label for="youtubeURL">從url上傳</label>-->
+<!--                <div class="input-group">-->
+<!--                  <input class="form-control" type="text" id="videoUrl" name="videoUrl"-->
+<!--                         v-model="videoUrl"-->
+<!--                         aria-label="https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="videoUrl"-->
+<!--                         placeholder="https://giant.gfycat.com/GroundedLoathsomeHind.mp4">-->
+<!--                  <div class="input-group-append">-->
+<!--                    <button class="btn btn-outline-secondary" type="button" id="videoUrlUpload" @click="uploadVideoUrl"-->
+<!--                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">-->
+<!--                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>-->
+<!--                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>-->
+<!--                    </button>-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+
+            <!-- batch upload video -->
+            <div class="row mt-3">
+              <div class="col-12">
+                <label for="batchCreate">URL</label>
+                <div class="input-group">
+                  <textarea class="form-control" type="text" id="batchCreate" name="batchCreate"
+                            v-model="batchString"
+                            aria-label="用,分開多筆" aria-describedby="batchCreateVideo"
+                            placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ 用,分開多筆">
+                  </textarea>
+                  <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" @click="batchUpload"
+                            :disabled="loading['BATCH_UPLOADING']">
+                      <span v-show="!loading['BATCH_UPLOADING']">{{ $t('edit_post.add_video_button') }}</span>
+                      <i v-show="loading['BATCH_UPLOADING']" class="fas fa-spinner fa-spin"></i>
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- upload video from url -->
-            <div class="row mt-3">
-              <div class="col-12">
-                <label for="youtubeURL">從url上傳</label>
-                <div class="input-group">
-                  <input class="form-control" type="text" id="videoUrl" name="videoUrl"
-                         v-model="videoUrl"
-                         aria-label="https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="videoUrl"
-                         placeholder="https://giant.gfycat.com/GroundedLoathsomeHind.mp4">
-                  <div class="input-group-append">
-                    <button class="btn btn-outline-secondary" type="button" id="videoUrlUpload" @click="uploadVideoUrl"
-                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
-                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
-                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
-                    </button>
-                  </div>
+                <div class="mt-3">
+                  <img src="/storage/youtube-icon.jpg" height="48px">
+                  <img src="/storage/gfycat-icon.webp" height="48px">
+                  <img src="/storage/mp4-icon.png" height="48px">
+                  <img src="/storage/video-icon.png" height="48px">
+                  <img src="/storage/gif-icon.png" height="48px">
+                  <img src="/storage/jpg-icon.png" height="48px">
+                  <img src="/storage/image-icon.png" height="48px">
                 </div>
               </div>
             </div>
@@ -285,7 +315,8 @@
                     <!-- youtube video editor -->
                     <div class="card-body">
                       <!--title edit-->
-                      <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text" :value="element.title"
+                      <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text"
+                             :value="element.title"
                              maxlength="100"
                              @change="updateElementTitle(element.id, $event)">
                       <!--play time range-->
@@ -323,25 +354,6 @@
                       </a>
                     </div>
                   </div>
-
-                  <!-- gfycat source -->
-<!--                  <div class="card mb-3" v-else-if="isGfycatSource(element)">-->
-<!--                    &lt;!&ndash; load the video player &ndash;&gt;-->
-<!--                    <iframe :src='element.source_url' frameborder='0' scrolling='no' height="270" width="100%"></iframe>-->
-<!--                    &lt;!&ndash; editor &ndash;&gt;-->
-<!--                    <div class="card-body">-->
-<!--                      <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"-->
-<!--                             :value="element.title"-->
-<!--                             maxlength="100"-->
-<!--                             @change="updateElementTitle(element.id, $event)">-->
-<!--                      <span class="card-text"><small-->
-<!--                        class="text-muted">{{ element.created_at | datetime }}</small></span>-->
-<!--                      <a class="btn btn-danger float-right" @click="deleteElement(element)">-->
-<!--                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>-->
-<!--                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>-->
-<!--                      </a>-->
-<!--                    </div>-->
-<!--                  </div>-->
 
                   <!-- simple video source -->
                   <div class="card mb-3" v-else>
@@ -468,6 +480,7 @@
 <script>
 import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
+import {forEach} from "lodash";
 
 // import { localize } from 'vee-validate';
 export default {
@@ -492,7 +505,8 @@ export default {
     createImageElementEndpoint: String,
     createImageUrlElementEndpoint: String,
     createVideoYoutubeElementEndpoint: String,
-    createVideoUrlElementEndpoint: String
+    createVideoUrlElementEndpoint: String,
+    batchCreateEndpoint: String
   },
   data: function () {
     return {
@@ -502,7 +516,8 @@ export default {
         UPLOADING_YOUTUBE_VIDEO: false,
         LOADING_RANK: false,
         UPLOADING_IMAGE: false,
-        UPLOADING_VIDEO_URL: false
+        UPLOADING_VIDEO_URL: false,
+        BATCH_UPLOADING: false,
       },
       uploadingFiles: {},
       post: null,
@@ -517,6 +532,7 @@ export default {
       perPage: 50,
       youtubeUrl: "",
       videoUrl: "",
+      batchString: "",
       imageUrl: "",
 
       // Alert
@@ -709,9 +725,6 @@ export default {
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
     },
-    isGfycatSource: function (element) {
-      return element.type === 'video' && element.video_source === 'gfycat';
-    },
     isElementInPage: function (index) {
       return (this.currentPage - 1) * this.perPage <= index
         && this.currentPage * this.perPage > index;
@@ -763,7 +776,33 @@ export default {
           this.uploadLoadingStatus('UPLOADING_VIDEO_URL', false);
         });
     },
-
+    batchUpload: function () {
+      if (this.loading['BATCH_UPLOADING']) {
+        return;
+      }
+      this.uploadLoadingStatus('BATCH_UPLOADING', true);
+      const data = {
+        post_serial: this.post.serial,
+        url: this.batchString
+      };
+      const tempRollbackData = this.batchString;
+      this.batchString = "";
+      axios.post(this.batchCreateEndpoint, data)
+        .then(res => {
+          _.forEach(res.data.data, (data) => {
+            this.elements.push(data);
+            this.showAlert(res.data.data.title);
+          });
+        })
+        .catch((err) => {
+          this.batchString = tempRollbackData;
+          console.log(err);
+          this.showAlert(err.response.data.message, 'danger');
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('BATCH_UPLOADING', false);
+        });
+    },
     updateVideoScope: function (index, element, event) {
       let key = event.target.name;
       let seconds = this.toSeconds(event.target.value);

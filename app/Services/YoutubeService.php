@@ -19,6 +19,11 @@ class YoutubeService
         $this->youtube = new YouTube($client);
     }
 
+    /**
+     * @param $url
+     * @return mixed|string
+     * @throws \Exception
+     */
     public function parseVideoId($url)
     {
         $errors = [];
@@ -44,10 +49,9 @@ class YoutubeService
                 return $url;
             }
         } catch (\Throwable $throwable) {
-            $errors[] = $throwable->getMessage();
+
         }
 
-        \Log::warning($errors);;
         throw new \Exception("cannot parse youtube video id");
     }
 

@@ -15,6 +15,7 @@
         create-image-url-element-endpoint="{{route('api.element.create-image-url')}}"
         create-video-youtube-element-endpoint="{{route('api.element.create-video-youtube')}}"
         create-video-url-element-endpoint="{{route('api.element.create-video-url')}}"
+        batch-create-endpoint="{{route('api.element.batch-create')}}"
     >
     </edit-post>
 @endsection

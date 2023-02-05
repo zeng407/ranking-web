@@ -4,6 +4,7 @@
 namespace App\Services;
 
 
+use App\Enums\ApiResponseCode;
 use App\Enums\ElementType;
 use App\Enums\VideoSource;
 use App\Models\Element;
@@ -11,6 +12,7 @@ use App\Models\Game;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\ElementRepository;
+use Google\Service\YouTube\Video;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -37,25 +39,53 @@ class ElementService
         return $query->paginate($perPage);
     }
 
+    public function massStore(string $sourceUrl, string $path, Post $post)
+    {
+        \Log::debug("guess {$sourceUrl} ...");
+        $guess = new ElementSourceGuess($sourceUrl);
+        if ($guess->isImage) {
+            \Log::debug("got Image");
+            return $this->storeImage($sourceUrl, $path, $post);
+        }
+
+        if ($guess->isVideo) {
+            \Log::debug("got Video");
+            return $this->storeVideo($sourceUrl, $path, $post);
+        }
+
+        if ($guess->isYoutube) {
+            \Log::debug("got Youtube");
+            return $this->storeYoutubeVideo($sourceUrl, $post);
+        }
+
+        if ($guess->isGFY) {
+            \Log::debug("got GFY");
+            return $this->storeGfycat($sourceUrl, $post);
+        }
+    }
+
     public function tryStorePublicVideoUrl(string $sourceUrl, string $path, Post $post)
     {
         try {
+            $sourceType = $this->guestVideoSource($sourceUrl);
             if (!$this->isVideoUrl($sourceUrl)) {
-                if($this->guestVideoSource($sourceUrl) === VideoSource::GFYCAT){
-                    return $this->storeGfycat($sourceUrl, $path, $post);
+                if ($sourceType === VideoSource::GFYCAT) {
+                    return $this->storeGfycat($sourceUrl, $post);
+                } elseif ($sourceType === VideoSource::YOUTUBE) {
+                    return $this->storeYoutubeVideo($sourceUrl, $post);
                 }
                 \Log::debug("not video url");
                 return null;
             }
 
-            return $this->storePublicFromVideoUrl($sourceUrl, $path, $post);
+            return $this->storeVideo($sourceUrl, $path, $post);
         } catch (\Exception $exception) {
             report($exception);
             return null;
         }
     }
 
-    public function storePublic(UploadedFile $file, string $path, Post $post)
+    public function storePublicImage(UploadedFile $file, string $path, Post $post)
     {
         $saveDir = $path;
         $path = $file->store($saveDir);
@@ -78,11 +108,11 @@ class ElementService
         return $element;
     }
 
-    public function storePublicFromImageUrl(string $sourceUrl, string $path, Post $post)
+    public function storeImage(string $sourceUrl, string $path, Post $post)
     {
         try {
             //try check image validation
-            if (!@getimagesize($sourceUrl)) {
+            if (!$this->isImageUrl($sourceUrl)) {
                 return null;
             };
 
@@ -118,15 +148,9 @@ class ElementService
         return $element;
     }
 
-    public function storePublicFromVideoUrl(string $sourceUrl, string $path, Post $post)
+    public function storeVideo(string $sourceUrl, string $path, Post $post)
     {
         try {
-            //try check image validation
-            if (!$this->isVideoUrl($sourceUrl)) {
-                \Log::debug("not video url");
-                return null;
-            }
-
             $fileInfo = pathinfo($sourceUrl);
             $basename = $fileInfo['basename'] . '_' . random_str(8);
             $content = file_get_contents($sourceUrl);
@@ -154,27 +178,20 @@ class ElementService
             'thumb_url' => $thumb,
             'type' => ElementType::VIDEO,
             'title' => $fileInfo['filename'],
-            'video_source' => $this->guestVideoSource($sourceUrl)
+            'video_source' => VideoSource::URL
         ]);
 
         return $element;
     }
 
-    public function storeGfycat(string $sourceUrl, string $path, Post $post)
+    public function storeGfycat(string $sourceUrl, Post $post)
     {
         try {
-            //GFYCAT url validation
-            if ($this->guestVideoSource($sourceUrl) !== VideoSource::GFYCAT) {
-                \Log::debug("not GFYCAT url");
-                return null;
-            }
-
             $gfycatService = app(GfycatService::class);
             $id = $gfycatService->getId($sourceUrl);
             $info = $gfycatService->getInfo($id);
 
             $element = $post->elements()->create([
-                'path' => $path,
                 'source_url' => $info->gfyItem->mp4Url,
                 'thumb_url' => $info->gfyItem->posterUrl,
                 'type' => ElementType::VIDEO,
@@ -190,8 +207,65 @@ class ElementService
         return $element;
     }
 
+    public function storeYoutubeVideo($sourceUrl, Post $post, $startSec = null, $endSec = null)
+    {
+        $video = app(YoutubeService::class)->query($sourceUrl);
+        if (!$video) {
+            return api_response(ApiResponseCode::INVALID_URL, 422);
+        }
 
+        $thumb = $video->getSnippet()->getThumbnails()->getHigh() ?:
+            $video->getSnippet()->getThumbnails()->getMedium() ?:
+                $video->getSnippet()->getThumbnails()->getStandard() ?:
+                    $video->getSnippet()->getThumbnails()->getMaxres() ?:
+                        $video->getSnippet()->getThumbnails()->getDefault();
+        $thumbUrl = $thumb->getUrl();
+        $title = $video->getSnippet()->getTitle();
+        $id = $video->getId();
+        $duration = $video->getContentDetails()->getDuration();
+        preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $parts);
 
+        $hourPart = (int)$parts[1];
+        $minutePart = (int)$parts[2];
+        $secondPart = (int)$parts[3];
+        $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
+
+        $element = $post->elements()->create([
+            'source_url' => $sourceUrl,
+            'thumb_url' => $thumbUrl,
+            'title' => $title,
+            'type' => ElementType::VIDEO,
+            'video_source' => VideoSource::YOUTUBE,
+            'video_id' => $id,
+            'video_duration_second' => $second,
+            'video_start_second' => $startSec,
+            'video_end_second' => $endSec
+        ]);
+
+        return $element;
+    }
+
+    /**
+     * @param $sourceUrl
+     * @return bool
+     * @deprecated
+     */
+    protected function isImageUrl($sourceUrl)
+    {
+        try {
+            if (@getimagesize($sourceUrl)) {
+                return true;
+            };
+        } catch (\Exception $exception) {
+        }
+        return false;
+    }
+
+    /**
+     * @param string $url
+     * @return bool
+     * @deprecated
+     */
     protected function isVideoUrl(string $url)
     {
         try {
@@ -215,20 +289,39 @@ class ElementService
         }
     }
 
+    /**
+     * @param string $url
+     * @return string|null
+     * @deprecated
+     */
     protected function guestVideoSource(string $url)
     {
         try {
-            $schemas = parse_url($url);
-            $domain = $schemas['host'];
+            //youtube
+            try {
+                if (app(YoutubeService::class)->parseVideoId($url)) {
+                    return VideoSource::YOUTUBE;
+                }
+            } catch (\Exception $exception) {
 
-            //gfycat.com
-            $regex = '/(^|[^\.]+\.)gfycat\.com$/';
-            if(preg_match($regex, $domain) === 1){
-                return VideoSource::GFYCAT;
             }
 
+            //youtube
+            try {
+                //gfycat.com
+                $schemas = parse_url($source);
+                $domain = $schemas['host'];
+                $regex = '/(^|[^\.]+\.)gfycat\.com$/';
+                if(preg_match($regex, $domain) === 1){
+
+                };
+            } catch (\Exception $exception) {
+
+            }
+            return false;
+
             return VideoSource::URL;
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             report($exception);
             return null;
         }

@@ -50,6 +50,7 @@ Route::post('account/elements/image', [ElementController::class, 'createImage'])
 Route::post('account/elements/image-url', [ElementController::class, 'createImageUrl'])->name('api.element.create-image-url');
 Route::post('account/elements/video-youtube', [ElementController::class, 'createVideoYoutube'])->name('api.element.create-video-youtube');
 Route::post('account/elements/video-url', [ElementController::class, 'createVideoUrl'])->name('api.element.create-video-url');
+Route::post('account/elements/batch', [ElementController::class, 'batchCreate'])->name('api.element.batch-create');
 Route::put('account/element/{element}', [ElementController::class, 'update'])->name('api.element.update');
 Route::delete('account/element/{element}', [ElementController::class, 'delete'])->name('api.element.delete');
 

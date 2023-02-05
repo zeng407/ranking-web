@@ -1,11 +1,12 @@
 <?php
 
 if (!function_exists('api_response')) {
-    function api_response(string $code, $httpState = 200)
+    function api_response(string $code, $httpState = 200, $data = [])
     {
         return response([
             'code' => $code,
-            'message' => config('api-response.' . $code)
+            'message' => config('api-response.' . $code),
+            'data' => $data
         ], $httpState);
     }
 }
