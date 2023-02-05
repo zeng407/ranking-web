@@ -255,6 +255,7 @@
                 <label for="batchCreate">URL</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate"
+                            rows="5"
                             v-model="batchString"
                             aria-label="用,分開多筆" aria-describedby="batchCreateVideo"
                             placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ 用,分開多筆">
@@ -785,19 +786,34 @@ export default {
         post_serial: this.post.serial,
         url: this.batchString
       };
-      const tempRollbackData = this.batchString;
+      let tempRollbackData = this.batchString;
       this.batchString = "";
       axios.post(this.batchCreateEndpoint, data)
         .then(res => {
+          let waittime = 1000;
           _.forEach(res.data.data, (data) => {
             this.elements.push(data);
-            this.showAlert(res.data.data.title);
+            setTimeout(() => {
+              this.showAlert(data.title);
+            }, waittime);
+            waittime += 1000;
           });
         })
         .catch((err) => {
-          this.batchString = tempRollbackData;
-          console.log(err);
-          this.showAlert(err.response.data.message, 'danger');
+          console.log(err.response.data);
+          let errorUrl = '';
+          if(err.response.data.data.error_url){
+            errorUrl = err.response.data.data.error_url + " ";
+          }
+          if(err.response.data.data.elements){
+            _.forEach(err.response.data.data.elements, (data) => {
+              tempRollbackData = tempRollbackData.replace(data.original_url+',','')
+              tempRollbackData = tempRollbackData.replace(data.original_url,'')
+              this.elements.push(data);
+            });
+          }
+          this.showAlert(errorUrl + err.response.data.message, 'danger');
+          this.batchString = tempRollbackData.trim();
         })
         .finally(() => {
           this.uploadLoadingStatus('BATCH_UPLOADING', false);

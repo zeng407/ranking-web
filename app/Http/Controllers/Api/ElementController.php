@@ -172,7 +172,7 @@ class ElementController extends Controller
         } catch (\Exception $exception) {
             report($exception);
             return api_response(ApiResponseCode::INVALID_URL, 422, [
-                'error' => $url,
+                'error_url' => $url,
             ]);
         }
 
@@ -190,8 +190,9 @@ class ElementController extends Controller
                 $element = $this->elementService->massStore($url, $path, $post);
                 if (!$element) {
                     return api_response(ApiResponseCode::INVALID_URL, 422, [
-                        'error' => $url,
-                        'elements' => $elements
+                        'error_url' => $url,
+                        'elements' => $elements,
+                        'original_url' => $url
                     ]);
                 }
                 $elements[] = $element;

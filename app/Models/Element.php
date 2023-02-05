@@ -25,6 +25,7 @@ class Element extends Model
      */
     protected $fillable = [
         'path',
+        'original_url',
         'source_url',
         'thumb_url',
         'title',

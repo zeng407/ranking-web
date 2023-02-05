@@ -139,6 +139,7 @@ class ElementService
 
         $element = $post->elements()->create([
             'path' => $path,
+            'original_url' => $sourceUrl,
             'source_url' => $sourceUrl,
             'thumb_url' => $thumb,
             'type' => ElementType::IMAGE,
@@ -174,6 +175,7 @@ class ElementService
 
         $element = $post->elements()->create([
             'path' => $path,
+            'original_url' => $sourceUrl,
             'source_url' => $sourceUrl,
             'thumb_url' => $thumb,
             'type' => ElementType::VIDEO,
@@ -192,6 +194,7 @@ class ElementService
             $info = $gfycatService->getInfo($id);
 
             $element = $post->elements()->create([
+                'original_url' => $sourceUrl,
                 'source_url' => $info->gfyItem->mp4Url,
                 'thumb_url' => $info->gfyItem->posterUrl,
                 'type' => ElementType::VIDEO,
@@ -231,6 +234,7 @@ class ElementService
         $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
 
         $element = $post->elements()->create([
+            'original_url' => $sourceUrl,
             'source_url' => $sourceUrl,
             'thumb_url' => $thumbUrl,
             'title' => $title,
