@@ -41,7 +41,7 @@ class PostTrendScheduleExecutor
                 $startDate = today()->startOfMonth()->toDateString();
                 break;
             case TrendTimeRange::WEEK:
-                $startDate = today()->weekday(0)->toDateString();
+                $startDate = today()->startOfWeek()->toDateString();
                 break;
             case TrendTimeRange::TODAY:
                 $startDate = today()->toDateString();

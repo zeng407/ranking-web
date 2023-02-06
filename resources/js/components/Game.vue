@@ -34,7 +34,7 @@
             ></youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
-            <video width="100%" height="600" loop autoplay muted :src="le.source_url"></video>
+            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.source_url"></video>
           </div>
           <div class="card-body text-center">
             <div style="min-height: 50px">
@@ -58,7 +58,7 @@
                @mouseleave="videoHoverOut(re, le)"
           >
             <youtube :videoId="re.video_id"
-                     width="100%" height="600"
+                     width="100%" :height="elementHeight"
                      :ref="re.id"
                      @ready="doPlay(re)"
                      :player-vars="{
@@ -70,7 +70,7 @@
             ></youtube>
           </div>
           <div v-else-if="isVideoSource(re)">
-            <video width="100%" height="600" loop autoplay muted :src="re.source_url"></video>
+            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.source_url"></video>
           </div>
           <div class="card-body text-center">
             <div style="min-height: 50px">
@@ -160,6 +160,7 @@ export default {
   },
   data: function () {
     return {
+      elementHeight: 480,
       gameSerial: null,
       game: null,
       status: null,
@@ -169,9 +170,6 @@ export default {
     }
   },
   computed: {
-    isMobileScreen() {
-      return window.screen.width < MD_WIDTH_SIZE;
-    },
     isElementsPowerOfTwo: function () {
       if (!this.setting || !this.setting.elements_count) {
         return false;
@@ -240,7 +238,7 @@ export default {
         this.vote(this.le, this.re);
       }
 
-      if (this.isMobileScreen) {
+      if (this.isMobileScreen()) {
         let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#right-player').animate({opacity: '0'}, 500, () => {
           $('#right-player').hide();
@@ -270,10 +268,10 @@ export default {
         this.vote(this.re, this.le);
       }
 
-      if (this.isMobileScreen) {
+      if (this.isMobileScreen()) {
         let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#left-player').animate({opacity: '0'}, 500, () => {
-          $('#right-player').hide();
+          $('#left-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
@@ -309,6 +307,7 @@ export default {
       $('#right-player').css('top', '0');
       $('#right-player').css('opacity', '1');
       $('#right-player').css('scale', '1');
+      $('#right-player').removeClass('zoom-in');
       $('#right-player').show();
     },
     vote: function (winner, loser) {
@@ -426,12 +425,21 @@ export default {
     isGfycatSource: function (element) {
       return element.type === 'video' && element.video_source === 'gfycat';
     },
+    isMobileScreen() {
+      return window.screen.width < MD_WIDTH_SIZE;
+    },
     handleScroll(event) {
       if (window.scrollY + window.screen.height >= $(document).height() * 0.8) {
         this.videoHoverIn(this.re, this.le);
       } else {
         this.videoHoverIn(this.le, this.re);
       }
+    }
+  },
+
+  beforeMount() {
+    if(window.screen.availHeight < 800){
+      this.elementHeight = 400
     }
   }
 }

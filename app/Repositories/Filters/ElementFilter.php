@@ -33,6 +33,6 @@ class ElementFilter
 
     public static function title_like(Builder $query, $value)
     {
-        return $query->where('title', '%like%', $value);
+        return $query->where('title', 'like', "%$value%");
     }
 }

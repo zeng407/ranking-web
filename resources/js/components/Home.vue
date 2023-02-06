@@ -158,8 +158,8 @@
           any_like: ''
         },
         sortBy: this.sort,
-        timeRange: 'all',
-        timeRangeText: 'All Time',
+        timeRange: 'month',
+        timeRangeText: 'This Month',
         isLoading: false,
         currentPage: 1,
         lastPage: 1

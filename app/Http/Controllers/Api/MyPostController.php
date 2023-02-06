@@ -64,11 +64,15 @@ class MyPostController extends Controller
             'page' => 'integer',
             'filter' => 'json'
         ]);
+        \Log::debug($request->input());
 
         $paginationOptions = $this->parsePaginationOptions($input);
         $condition = $this->parseFilter($input, [
             'post_id' => $post->id
-        ], [ElementFilter::TITLE_LIKE]);
+        ], [
+            ElementFilter::TITLE_LIKE
+        ]);
+
         $data = $this->elementService->getLists($condition, $paginationOptions);
 
         return PostElementResource::collection($data);
@@ -145,10 +149,10 @@ class MyPostController extends Controller
 
     protected function parseFilter($input, $preCondition, $only = [])
     {
-        if(isset($input['filter'])) {
-            $filter = (array) json_decode($input['filter'], true);
+        if (isset($input['filter'])) {
+            $filter = (array)json_decode($input['filter'], true);
             $filter = array_filter($filter);
-            if(count($only)) {
+            if (count($only)) {
                 $filter = Arr::only($filter, $only);
             }
             $preCondition += $filter;

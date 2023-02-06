@@ -189,67 +189,9 @@
                 {{ name }}
               </div>
             </div>
-            <!-- upload image from url -->
-<!--            <div class="row mt-3">-->
-<!--              <div class="col-12">-->
-<!--                <label for="image-url-upload">從url上傳</label>-->
-<!--                <div class="input-group">-->
-<!--                  <input class="form-control" type="text" id="image-url-upload" name="image-url-upload"-->
-<!--                         v-model="imageUrl"-->
-<!--                         placeholder="https://media3.giphy.com/media/11ISwbgCxEzMyY/giphy.gif">-->
-<!--                  <div class="input-group-append">-->
-<!--                    <button class="btn btn-outline-secondary" type="button" @click="uploadImageUrl">-->
-<!--                      <span v-show="!loading['UPLOADING_IMAGE']">{{ $t('edit_post.add_image_button') }}</span>-->
-<!--                      <i v-show="loading['UPLOADING_IMAGE']" class="fas fa-spinner fa-spin"></i>-->
-<!--                    </button>-->
-<!--                  </div>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </div>-->
 
-            <!-- upload video from youtube -->
+            <!-- batch upload -->
             <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_batch') }}</h2>
-<!--            <div class="row">-->
-<!--              <div class="col-12">-->
-<!--                <label for="youtubeURL">Youtube</label>-->
-<!--                <div class="input-group">-->
-<!--                  <input class="form-control" type="text" id="youtubeURL" name="youtubeURL"-->
-<!--                         v-model="youtubeUrl"-->
-<!--                         aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="youtubeUpload"-->
-<!--                         placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">-->
-<!--                  <div class="input-group-append">-->
-<!--                    <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"-->
-<!--                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">-->
-<!--                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>-->
-<!--                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>-->
-
-<!--                    </button>-->
-<!--                  </div>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </div>-->
-
-            <!-- upload video from url -->
-<!--            <div class="row mt-3">-->
-<!--              <div class="col-12">-->
-<!--                <label for="youtubeURL">從url上傳</label>-->
-<!--                <div class="input-group">-->
-<!--                  <input class="form-control" type="text" id="videoUrl" name="videoUrl"-->
-<!--                         v-model="videoUrl"-->
-<!--                         aria-label="https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="videoUrl"-->
-<!--                         placeholder="https://giant.gfycat.com/GroundedLoathsomeHind.mp4">-->
-<!--                  <div class="input-group-append">-->
-<!--                    <button class="btn btn-outline-secondary" type="button" id="videoUrlUpload" @click="uploadVideoUrl"-->
-<!--                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">-->
-<!--                      <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>-->
-<!--                      <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>-->
-<!--                    </button>-->
-<!--                  </div>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </div>-->
-
-            <!-- batch upload video -->
             <div class="row mt-3">
               <div class="col-12">
                 <label for="batchCreate">URL</label>
@@ -287,16 +229,15 @@
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
                 <input class="form-control mr-sm-2" v-model="filters.title_like" type="search" placeholder="Search"
-                       aria-label="Search">
+                       aria-label="Search" @change="loadElements(1)">
                 <i class="fas fa-filter" v-if="filters.title_like"></i>
               </div>
             </nav>
 
             <div class="row">
-              <template v-for="(element, index) in filteredElements">
+              <template v-for="(element, index) in elements.data">
                 <!-- show video card -->
-                <div class="col-lg-4 col-md-6" v-if="isVideoSource(element) && isElementInPage(index)">
-
+                <div class="col-lg-4 col-md-6" v-if="isVideoSource(element)">
                   <!-- youtube source -->
                   <div class="card mb-3" v-if="isYoutubeSource(element)">
                     <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
@@ -359,7 +300,7 @@
                   <!-- simple video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
-                    <video width="100%" height="270" loop autoplay muted :src="element.source_url"></video>
+                    <video width="100%" height="270" loop autoplay muted playsinline :src="element.source_url"></video>
                     <!-- editor -->
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
@@ -377,7 +318,7 @@
 
                 </div>
                 <!-- image player -->
-                <div class="col-lg-4 col-md-6" v-if="element.type==='image' && isElementInPage(index)">
+                <div class="col-lg-4 col-md-6" v-if="element.type==='image'">
                   <div class="card mb-3">
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
                          v-if="element.type==='image'">
@@ -398,17 +339,17 @@
                 </div>
               </template>
             </div>
+
+            <b-pagination
+              v-model="currentPage"
+              :total-rows="totalRow"
+              :per-page="perPage"
+              first-number
+              last-number
+              @change="handleElementPageChange"
+              align="center"
+            ></b-pagination>
           </div>
-
-          <b-pagination
-            v-model="currentPage"
-            :total-rows="totalRow"
-            :per-page="perPage"
-            first-number
-            last-number
-            align="center"
-          ></b-pagination>
-
 
           <!-- tab rank -->
           <div class="tab-pane fade" id="v-pills-rank" role="tabpanel" aria-labelledby="v-pills-rank-tab">
@@ -483,7 +424,6 @@ import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
 import {forEach} from "lodash";
 
-// import { localize } from 'vee-validate';
 export default {
   mounted() {
     bsCustomFileInput.init();
@@ -491,9 +431,6 @@ export default {
     this.loadElements();
     this.loadRankReport();
 
-    // localize('zh_TW');
-    //debug
-    // this.serial = 'a14b32';
   },
   props: {
     showPostEndpoint: String,
@@ -523,9 +460,7 @@ export default {
       uploadingFiles: {},
       post: null,
       isEditing: false,
-      postElements: [],
       elements: [],
-      stashElement: [],
       playingVideo: null,
       deletingElement: [],
 
@@ -554,16 +489,11 @@ export default {
   },
   computed: {
     totalRow: function () {
-      return this.elements.length;
-    },
-    filteredElements: function () {
-      return _.filter(this.elements, (element) => {
-        if (this.filters.title_like) {
-          return element.title.includes(this.filters.title_like.toUpperCase())
-            || element.title.includes(this.filters.title_like.toLowerCase());
-        }
-        return true;
-      });
+      if (this.elements && this.elements.meta) {
+        return this.elements.meta.total;
+      }
+      return 0;
+
     },
 
   },
@@ -622,22 +552,16 @@ export default {
 
     /** Elements **/
     loadElements: function (page = 1) {
-      const params = {
-        page: page
+      const pagination = {
+        page: page,
       };
+      const params = {
+        ...pagination,
+        ...{filter: this.filters}
+      }
       axios.get(this.getElementsEndpoint, {params: params})
         .then(res => {
-          this.postElements = res.data;
-          let counter = 1;
-          _.each(this.postElements.data, (element) => {
-            setTimeout(() => {
-              this.elements.push(element);
-            }, 100 * counter++);
-          });
-
-          if (this.postElements.current_page < this.postElements.last_page) {
-            this.loadElements(this.postElements.current_page + 1);
-          }
+          this.elements = res.data;
         })
     },
     updateElementTitle: function (id, event) {
@@ -656,11 +580,10 @@ export default {
       const url = this.deleteElementEndpoint.replace('_id', element.id);
       axios.delete(url)
         .then((res) => {
-          this.stashElement.push(element);
-          const index = _.findIndex(this.elements, {
+          const index = _.findIndex(this.elements.data, {
             id: element.id
           });
-          this.$delete(this.elements, index);
+          this.$delete(this.elements.data, index);
         })
         .finally(() => {
           this.removeDeleting(element);
@@ -690,7 +613,7 @@ export default {
           }
         })
           .then(res => {
-            this.elements.push(res.data.data);
+            this.elements.data.push(res.data.data);
             this.deleteProgressBarValue(file);
           })
           .catch((err) => {
@@ -698,85 +621,14 @@ export default {
           });
       });
     },
-    uploadImageUrl: function () {
-      if (this.loading['UPLOADING_IMAGE']) {
-        return;
-      }
-      this.uploadLoadingStatus('UPLOADING_IMAGE', true);
-      const data = {
-        post_serial: this.post.serial,
-        url: this.imageUrl
-      };
-      this.imageUrl = "";
-      axios.post(this.createImageUrlElementEndpoint, data)
-        .then(res => {
-          this.elements.push(res.data.data);
-          this.showAlert(res.data.data.title);
-        })
-        .catch((err) => {
-          this.showAlert(err.response.data.message, 'danger');
-        })
-        .finally(() => {
-          this.uploadLoadingStatus('UPLOADING_IMAGE', false);
-        });
-    },
     isVideoSource: function (element) {
       return element.type === 'video';
     },
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
     },
-    isElementInPage: function (index) {
-      return (this.currentPage - 1) * this.perPage <= index
-        && this.currentPage * this.perPage > index;
-    },
 
     /** Video **/
-    uploadVideo: function () {
-      if (this.loading['UPLOADING_YOUTUBE_VIDEO']) {
-        return;
-      }
-      this.uploadLoadingStatus('UPLOADING_YOUTUBE_VIDEO', true);
-      const data = {
-        post_serial: this.post.serial,
-        url: this.youtubeUrl
-      };
-      this.youtubeUrl = "";
-      axios.post(this.createVideoYoutubeElementEndpoint, data)
-        .then(res => {
-          this.elements.push(res.data.data);
-          this.showAlert(res.data.data.title);
-        })
-        .catch((err) => {
-          this.showAlert(err.response.data.message, 'danger');
-        })
-        .finally(() => {
-          this.uploadLoadingStatus('UPLOADING_YOUTUBE_VIDEO', false);
-        });
-    },
-    uploadVideoUrl: function () {
-      if (this.loading['UPLOADING_VIDEO_URL']) {
-        return;
-      }
-      this.uploadLoadingStatus('UPLOADING_VIDEO_URL', true);
-      const data = {
-        post_serial: this.post.serial,
-        url: this.videoUrl
-      };
-      this.videoUrl = "";
-      axios.post(this.createVideoUrlElementEndpoint, data)
-        .then(res => {
-          this.elements.push(res.data.data);
-          this.showAlert(res.data.data.title);
-        })
-        .catch((err) => {
-          console.log(err);
-          this.showAlert(err.response.data.message, 'danger');
-        })
-        .finally(() => {
-          this.uploadLoadingStatus('UPLOADING_VIDEO_URL', false);
-        });
-    },
     batchUpload: function () {
       if (this.loading['BATCH_UPLOADING']) {
         return;
@@ -792,7 +644,9 @@ export default {
         .then(res => {
           let waittime = 1000;
           _.forEach(res.data.data, (data) => {
-            this.elements.push(data);
+            if(this.totalRow < this.perPage) {
+              this.elements.data.push(data);
+            }
             setTimeout(() => {
               this.showAlert(data.title);
             }, waittime);
@@ -802,13 +656,13 @@ export default {
         .catch((err) => {
           console.log(err.response.data);
           let errorUrl = '';
-          if(err.response.data.data.error_url){
+          if (err.response.data.data.error_url) {
             errorUrl = err.response.data.data.error_url + " ";
           }
-          if(err.response.data.data.elements){
+          if (err.response.data.data.elements) {
             _.forEach(err.response.data.data.elements, (data) => {
-              tempRollbackData = tempRollbackData.replace(data.original_url+',','')
-              tempRollbackData = tempRollbackData.replace(data.original_url,'')
+              tempRollbackData = tempRollbackData.replace(data.original_url + ',', '')
+              tempRollbackData = tempRollbackData.replace(data.original_url, '')
               this.elements.push(data);
             });
           }
@@ -832,7 +686,7 @@ export default {
       axios.put(url, data)
         .then((res) => {
           element[key] = seconds;
-          this.$set(this.elements, index, element);
+          this.$set(this.elements.data, index, element);
         })
     },
     updateProgressBarValue: function (file, progressEvent) {
@@ -861,6 +715,9 @@ export default {
         hours: timeGroup[1],
       }).asSeconds();
     },
+    handleElementPageChange: function (page) {
+      this.loadElements(page);
+    },
 
     /** Player **/
     getPlayer(element) {
@@ -869,7 +726,7 @@ export default {
     clickPlayButton(index, element) {
       this.playingVideo = element.id;
       element.loadedVideo = true;
-      this.$set(this.elements, index, element);
+      this.$set(this.elements.data, index, element);
 
       this.doPlay(element);
     },

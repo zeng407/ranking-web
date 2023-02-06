@@ -12,7 +12,6 @@ class ElementRepository
     public function filter(array $conditions)
     {
         $query = Element::getModel()->newQuery();
-
         $query = ElementFilter::apply($query, $conditions);
 
         return $query;
