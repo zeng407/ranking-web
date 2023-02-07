@@ -249,7 +249,7 @@
                               start: element.video_start_second,
                               end:element.video_end_second,
                               rel: 0,
-                              host: 'https://www.youtube.com'
+                              host: host
                               }"
                     ></youtube>
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
@@ -430,7 +430,7 @@ export default {
     this.loadPost();
     this.loadElements();
     this.loadRankReport();
-
+    this.host = window.location.origin;
   },
   props: {
     showPostEndpoint: String,
@@ -448,6 +448,7 @@ export default {
   },
   data: function () {
     return {
+      host: '',
       loading: {
         LOADING_POST: true,
         SAVING_POST: false,
@@ -493,7 +494,6 @@ export default {
         return this.elements.meta.total;
       }
       return 0;
-
     },
 
   },
@@ -584,6 +584,7 @@ export default {
             id: element.id
           });
           this.$delete(this.elements.data, index);
+          this.elements.meta.total --;
         })
         .finally(() => {
           this.removeDeleting(element);

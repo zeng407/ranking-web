@@ -14,7 +14,7 @@
         <div class="card game-player" id="left-player">
           <div v-if="isImageSource(le)"
                @click="clickImage"
-               :style="{backgroundImage: 'url('+le.source_url+')' }"
+               :style="{backgroundImage: 'url('+le.source_url+')', height: this.elementHeight+'px'}"
                class="game-image"
           ></div>
           <div class="d-flex" v-if="isYoutubeSource(le)"
@@ -22,14 +22,14 @@
                @mouseleave="videoHoverOut(le, re)"
           >
             <youtube :videoId="le.video_id"
-                     width="100%" height="600"
+                     width="100%" :height="elementHeight"
                      :ref="le.id"
                      @ready="doPlay(le)"
                      :player-vars="{
                       controls:1,
                       autoplay:1,
                       rel: 0,
-                      host: 'https://www.youtube.com'
+                      host: host
                      }"
             ></youtube>
           </div>
@@ -50,7 +50,7 @@
         <div class="card game-player" id="right-player">
           <div v-if="isImageSource(re)"
                @click="clickImage"
-               :style="{backgroundImage: 'url('+re.source_url+')' }"
+               :style="{backgroundImage: 'url('+re.source_url+')', height: this.elementHeight+'px'}"
                class="game-image"
           ></div>
           <div class="d-flex" v-else-if="isYoutubeSource(re)"
@@ -65,7 +65,7 @@
                       controls:1,
                       autoplay:1,
                       rel: 0,
-                      host: 'https://www.youtube.com'
+                      host: host
                      }"
             ></youtube>
           </div>
@@ -142,6 +142,7 @@ export default {
   mounted() {
     this.loadGameSetting();
     this.showGameSettingPanel();
+    this.host = window.location.origin;
   },
 
   created() {
@@ -160,6 +161,7 @@ export default {
   },
   data: function () {
     return {
+      host: '',
       elementHeight: 480,
       gameSerial: null,
       game: null,
@@ -356,7 +358,7 @@ export default {
       const player = this.getPlayer(element);
       if (player) {
         player.mute();
-        // reset when video is stop
+        // reset when video is stopped
         player.addEventListener('onStateChange', (event) => {
           if (event.target.getPlayerState() === 0) {
             player.stopVideo();

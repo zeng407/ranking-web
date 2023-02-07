@@ -5,114 +5,93 @@
     <div class="fa-3x text-center" v-if="isLoading">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
+    <h2 v-if="!isLoading">{{rankInfo.data.title}}</h2>
+    <p v-if="!isLoading">{{rankInfo.data.description}}</p>
     <b-tabs content-class="mt-3" v-if="!isLoading">
       <b-tab title="我的排名" v-if="gameResult">
-        <table class="table table-hover" style="table-layout: fixed">
-          <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col" class="w-75"></th>
-            <th scope="col">全體排名</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr>
-            <th scope="row">1</th>
-            <td class="text-center">
-              <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270"
-                       :ref="gameResult.winner.id"
-                       @ready="doPlay(gameResult.winner)"
-                       :player-vars="{
+        <div class="card my-1">
+          <div class="card-body text-center" style="height: 387px">
+            <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270"
+                     :ref="gameResult.winner.id"
+                     :videoId="gameResult.winner.video_id"
+                     :player-vars="{
                             controls:1,
                             autoplay:0,
-                            start: gameResult.winner.video_start_second,
-                            end:gameResult.winner.video_end_second,
-                            rel: 0,
-                            host: 'https://www.youtube.com'
+                            start:gameResult.winner.video_start_second,
+                            rel:0,
+                            host: host
                             }"
-              ></youtube>
-              <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted
-                     playsinline :src="gameResult.winner.source_url"></video>
-              <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="300px"
-                   alt="gameResult.winner.title">
-              <p>{{ gameResult.winner.title }}</p>
-            </td>
-            <td>{{ gameResult.winner_rank }}</td>
-          </tr>
-          <tr v-for="(rank, index) in gameResult.data">
-            <th scope="row">{{ index + 2 }}</th>
-            <td class="text-center">
-              <youtube v-if="isYoutubeSource(rank.loser)" width="100%" height="270"
-                       :ref="rank.loser.id"
-                       @ready="doPlay(rank.loser)"
-                       :player-vars="{
+            ></youtube>
+            <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted
+                   playsinline :src="gameResult.winner.source_url"></video>
+            <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270"
+                 class=""
+                 alt="gameResult.winner.title">
+            <div class="d-flex flex-column align-items-start">
+              <div class="align-self-center">{{ gameResult.winner.title }}</div>
+              <div class="align-self-end">
+                我的排名：1 <br>
+                世界排名：{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card my-1" v-for="(rank, index) in gameResult.data">
+          <div class="card-body text-center" style="height: 387px">
+            <youtube v-if="isYoutubeSource(rank.loser)" width="100%" height="270"
+                     :ref="rank.loser.id"
+                     :videoId="rank.loser.video_id"
+                     :player-vars="{
                             controls: 1,
                             autoplay: 0,
                             start: rank.loser.video_start_second,
                             end: rank.loser.video_end_second,
                             rel: 0,
-                            host: 'https://www.youtube.com'
+                            host: host
                             }"
-              ></youtube>
-              <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
-                     :src="rank.loser.source_url"></video>
-              <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="300px"
-                   alt="rank.element.title">
-              <p>{{ rank.loser.title }}</p>
-            </td>
-            <td>{{ rank.rank }}</td>
-          </tr>
-          </tbody>
-        </table>
+            ></youtube>
+            <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
+                   :src="rank.loser.source_url"></video>
+            <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="300px"
+                 alt="rank.element.title">
+            <div class="d-flex flex-column align-items-start">
+              <div class="align-self-center">{{ rank.loser.title }}</div>
+              <div class="align-self-end">
+                我的排名：{{ index + 2 }}<br>
+                世界排名：{{ rank.rank ? rank.rank : '無' }}
+              </div>
+            </div>
+          </div>
+        </div>
       </b-tab>
       <b-tab title="全體排名">
-        <table class="table table-hover d-sm-none d-md-block" style="table-layout: fixed">
-          <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col" class="w-50"></th>
-            <th scope="col" style="min-width: 10px">決賽%</th>
-            <th scope="col" style="min-width: 10px">勝率%</th>
-          </tr>
-          </thead>
-          <tbody v-if="loadingPage">
-          <tr>
-            <td colspan="4">
-              <div class="fa-3x text-center">
-                <i class="fas fa-spinner fa-spin"></i>
-              </div>
-            </td>
-          </tr>
-          </tbody>
-          <tbody v-if="rankReportData && !loadingPage">
-          <tr v-for="(rank, index) in rankReportData.data">
-            <th scope="row">{{ rank.rank }}</th>
-            <td style="overflow: scroll">
-              <div>
-                <img :src="rank.element.thumb_url" height="300" alt="rank.element.title"
-                     @click="handleClickElement(rank.element)">
-                <youtube v-if="isYoutubeSource(rank.element) && rank.element.isPlaying" width="100%" height="270"
-                         :ref="rank.element.id"
-                         @ready="doPlay(rank.element)"
-                         :player-vars="{
+        <div v-if="rankReportData && !loadingPage" class="card my-1" v-for="(rank, index) in rankReportData.data">
+          <div class="card-body text-center" style="height: 387px">
+            <youtube v-if="isYoutubeSource(rank.element)" width="100%" height="270"
+                     :ref="rank.element.id"
+                     :videoId="rank.element.video_id"
+                     :player-vars="{
                               controls:1,
                               autoplay:0,
                               start: rank.element.video_start_second,
                               end:rank.element.video_end_second,
                               rel: 0,
-                              host: 'https://www.youtube.com'
+                              host: host
                               }"
-                ></youtube>
-                <video v-else-if="isVideoSource(rank.element)" width="100%" height="300" loop autoplay muted playsinline
-                       :src="rank.element.source_url"></video>
-                {{ rank.element.title }}
+            ></youtube>
+            <video v-else-if="isVideoSource(rank.element)" width="100%" height="270" loop autoplay muted playsinline
+                   :src="rank.element.source_url"></video>
+            <img v-else-if="isImageSource(rank.element)" :src="rank.element.thumb_url" height="270"
+                 alt="rank.element.title">
+            <div class="d-flex flex-column align-items-start">
+              <div class="align-self-center">{{ rank.element.title }}</div>
+              <div class="align-self-end">
+                <span v-if="rank.final_win_rate">冠軍：{{ rank.final_win_rate | percent }}<br></span>
+                <span>勝率：{{ rank.win_rate | percent }}</span>
               </div>
-            </td>
-            <td>{{ rank.final_win_rate | percent }}</td>
-            <td>{{ rank.win_rate | percent }}</td>
-          </tr>
-          </tbody>
-        </table>
+            </div>
+          </div>
+        </div>
 
         <div class="row">
           <div class="col-12" v-if="rankReportData">
@@ -140,6 +119,7 @@ export default {
     this.loadGameResult();
     this.loadRankReport();
     this.loadRankData();
+    this.host = window.location.origin;
   },
   props: {
     postSerial: String,
@@ -155,7 +135,11 @@ export default {
   },
   data: function () {
     return {
-      rankInfo: null,
+      host: '',
+      currentTab: '',
+      rankInfo: {
+        data: {}
+      },
       rankReportData: {
         data: {},
         meta: {}
@@ -178,8 +162,10 @@ export default {
       const urlParams = new URLSearchParams(window.location.search);
       if (!urlParams.has('g')) {
         this.loadingGameResult = false;
+        this.currentTab = '1'
         return;
       }
+      this.currentTab = '0';
       const api = this.getGameResultEndpoint.replace('_serial', urlParams.get('g'));
       axios.get(api)
         .then(res => {
@@ -216,21 +202,20 @@ export default {
     isImageSource: function (element) {
       return element.type === 'image';
     },
-    handleClickElement: function (element) {
-      element.isPlaying = true;
+    getPlayer(element) {
+      return _.get(this.$refs, element.id + '.0.player', null);
     },
     doPlay(element) {
       const player = this.getPlayer(element);
       if (player) {
         window.player = player;
-        player.loadVideoById({
+        player.cueVideoById({
           videoId: element.video_id,
           startSeconds: element.video_start_second,
           endSeconds: element.video_end_second
         });
       }
-    },
-
+    }
   }
 }
 
