@@ -29,7 +29,7 @@
                       controls:1,
                       autoplay:1,
                       rel: 0,
-                      host: host
+                      origin: host
                      }"
             ></youtube>
           </div>

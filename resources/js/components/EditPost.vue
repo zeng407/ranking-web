@@ -249,7 +249,7 @@
                               start: element.video_start_second,
                               end:element.video_end_second,
                               rel: 0,
-                              host: host
+                              origin: host
                               }"
                     ></youtube>
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"

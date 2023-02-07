@@ -5,8 +5,8 @@
     <div class="fa-3x text-center" v-if="isLoading">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
-    <h2 v-if="!isLoading">{{rankInfo.data.title}}</h2>
-    <p v-if="!isLoading">{{rankInfo.data.description}}</p>
+    <h2 v-if="!isLoading">{{ rankInfo.data.title }}</h2>
+    <p v-if="!isLoading">{{ rankInfo.data.description }}</p>
     <b-tabs content-class="mt-3" v-if="!isLoading">
       <b-tab title="我的排名" v-if="gameResult">
         <div class="card my-1">
@@ -19,7 +19,7 @@
                             autoplay:0,
                             start:gameResult.winner.video_start_second,
                             rel:0,
-                            host: host
+                            origin: host
                             }"
             ></youtube>
             <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted
@@ -47,7 +47,7 @@
                             start: rank.loser.video_start_second,
                             end: rank.loser.video_end_second,
                             rel: 0,
-                            host: host
+                            origin: host
                             }"
             ></youtube>
             <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
@@ -76,7 +76,7 @@
                               start: rank.element.video_start_second,
                               end:rank.element.video_end_second,
                               rel: 0,
-                              host: host
+                              origin: host
                               }"
             ></youtube>
             <video v-else-if="isVideoSource(rank.element)" width="100%" height="270" loop autoplay muted playsinline

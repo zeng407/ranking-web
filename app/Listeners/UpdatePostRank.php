@@ -7,7 +7,7 @@ use App\Services\RankService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdatePostRank implements ShouldQueue
+class UpdatePostRank
 {
     use Queueable;
 
