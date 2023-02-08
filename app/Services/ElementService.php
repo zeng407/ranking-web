@@ -71,6 +71,8 @@ class ElementService
             \Log::debug("got GFY");
             return $this->storeGfycat($sourceUrl, $post);
         }
+
+        return null;
     }
 
     public function tryStorePublicVideoUrl(string $sourceUrl, string $path, Post $post)
@@ -120,9 +122,9 @@ class ElementService
     public function storeImage(string $sourceUrl, string $path, Post $post): ?Element
     {
         try {
+            $content = $this->getContent($sourceUrl);
             $fileInfo = pathinfo($sourceUrl);
             $basename = $fileInfo['basename'] . '_' . random_str(8);
-            $content = file_get_contents($sourceUrl);
 
             $path = rtrim($path, '/') . '/' . $basename;
             $isSuccess = Storage::put($path, $content, 'public');
@@ -151,6 +153,28 @@ class ElementService
         ]);
 
         return $element;
+    }
+
+    protected function getContent(string $sourceUrl)
+    {
+        $content = null;
+
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $sourceUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
+            $content = curl_exec($ch);
+            curl_close($ch);
+        } catch (\Exception $exception) {
+        }
+
+        try {
+            $content = file_get_contents($sourceUrl);
+        } catch (\Exception $exception) {
+        }
+
+        return $content;
     }
 
     public function storeVideo(string $sourceUrl, string $path, Post $post): ?Element
