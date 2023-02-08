@@ -5,25 +5,25 @@
     "Title": "Title",
     "Publish": "Publish",
 
-    "my_games.title": "My Games",
-    "my_games.new": "New Game",
+    "my_games.title": "My Votes",
+    "my_games.new": "New vote",
     "my_games.table.title": "Title",
     "my_games.table.description": "Description",
     "my_games.table.publish": "Publish",
     "my_games.table.no_data": "No Data",
 
     "create_game.publish" :"Publish",
-    "create_game.title" :"New Game",
+    "create_game.title" :"New Vote",
     "create_game.cancel" :"Cancel",
     "create_game.submit" :"Submit",
 
-    "create_game.description.hint": "This game is about?",
+    "create_game.description.hint": "This vote is about?",
 
     "edit_post.tab.info": "Information",
     "edit_post.tab.element": "Media",
     "edit_post.tab.rank": "Rank",
 
-    "edit_post.info.head": "The Game Information",
+    "edit_post.info.head": "The Vote Information",
     "edit_post.info.play": "Play",
     "edit_post.info.edit": "Edit",
     "edit_post.info.save": "Save",
@@ -34,7 +34,7 @@
     "edit_post.add_video_button": "Add",
     "edit_post.edit_media": "Edit",
     "edit_post.video_range": "Range",
-    "edit_post.rank.game_plays": "Game Plays",
+    "edit_post.rank.game_plays": "Vote count",
     "edit_post.rank.win_at_final": "Win (Final)",
     "edit_post.rank.win_rate": "Win (All)"
 
