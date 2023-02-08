@@ -17,8 +17,7 @@ class RankService
     public function getRankReports(Post $post, $limit = 10)
     {
         $reports = RankReport::where('post_id', $post->id)
-            ->orderByDesc('final_win_rate')
-            ->orderByDesc('win_rate')
+            ->orderBy('rank')
             ->paginate($limit);
 
         return $reports;

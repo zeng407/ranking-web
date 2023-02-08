@@ -5,8 +5,10 @@
     <div class="fa-3x text-center" v-if="isLoading">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
-    <h2 v-if="!isLoading">{{ rankInfo.data.title }}</h2>
-    <p v-if="!isLoading">{{ rankInfo.data.description }}</p>
+    <div v-if="rankInfo">
+      <h2>{{ rankInfo.data.title }}</h2>
+      <p>{{ rankInfo.data.description }}</p>
+    </div>
     <b-tabs content-class="mt-3" v-if="!isLoading">
       <b-tab title="我的排名" v-if="gameResult">
         <div class="card my-1">
@@ -86,8 +88,10 @@
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.element.title }}</div>
               <div class="align-self-end">
-                <span v-if="rank.final_win_rate">冠軍：{{ rank.final_win_rate | percent }}<br></span>
-                <span>勝率：{{ rank.win_rate | percent }}</span>
+                <span>#{{ rank.rank }}</span><br>
+                <span v-if="rank.final_win_rate"> {{ $t('edit_post.rank.win_at_final') }}：{{rank.final_win_rate | percent }}<br></span>
+                <span v-if="rank.win_rate>0"> {{ $t('edit_post.rank.win_rate') }}：{{ rank.win_rate | percent }}</span>
+                <span v-else> {{ $t('edit_post.rank.win_rate') }}：{{ '0' | percent }}</span>
               </div>
             </div>
           </div>
@@ -131,15 +135,13 @@ export default {
   computed: {
     isLoading: function () {
       return this.loadingGameResult || this.loadingGameReport;
-    }
+    },
   },
   data: function () {
     return {
       host: '',
       currentTab: '',
-      rankInfo: {
-        data: {}
-      },
+      rankInfo: null,
       rankReportData: {
         data: {},
         meta: {}

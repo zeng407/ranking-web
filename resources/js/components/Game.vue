@@ -96,10 +96,10 @@
             <form @submit.prevent>
               <div class="modal-body">
                 <div class="alert alert-danger" v-if="processingGameSerial">
-                  有未完成的Rank，是否繼續？
+                  有未完成的Vote，是否繼續？
                   <span class="btn btn-outline-danger" @click="continueGame">
                     <i class="fas fa-play"></i>
-                    繼續Rank
+                    繼續Vote
                   </span>
                 </div>
                 <h2>{{ setting.title }}</h2>
@@ -428,10 +428,10 @@ export default {
       return element.type === 'video' && element.video_source === 'gfycat';
     },
     isMobileScreen() {
-      return window.screen.width < MD_WIDTH_SIZE;
+      return $(window).width() < MD_WIDTH_SIZE;
     },
     handleScroll(event) {
-      if (window.scrollY + window.screen.height >= $(document).height() * 0.8) {
+      if (window.scrollY + $(window).height() >= $(document).height() * 0.8) {
         this.videoHoverIn(this.re, this.le);
       } else {
         this.videoHoverIn(this.le, this.re);
@@ -440,7 +440,7 @@ export default {
   },
 
   beforeMount() {
-    if(window.screen.availHeight < 800){
+    if($(window).height() < 800){
       this.elementHeight = 400
     }
   }

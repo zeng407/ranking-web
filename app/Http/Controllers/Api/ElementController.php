@@ -48,100 +48,6 @@ class ElementController extends Controller
         return PostElementResource::make($element);
     }
 
-    public function createImageUrl(Request $request)
-    {
-        /** @see ElementPolicy::create() */
-        $this->authorize('create', Element::class);
-
-        $request->validate([
-            'post_serial' => 'required',
-            'url' => 'required|url|string',
-        ]);
-
-        $post = $this->getPost($request->input('post_serial'));
-
-        // check elements count
-        if ($post->elements()->count() > config('post.post_max_element_count')) {
-            return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
-        }
-
-        try {
-            $path = Auth::id() . '/' . $request->input('post_serial');
-            $element = $this->elementService->storeImage($request->input('url'), $path, $post);
-            if (!$element) {
-                return api_response(ApiResponseCode::INVALID_URL, 422);
-            }
-        } catch (\Exception $exception) {
-            report($exception);
-            return api_response(ApiResponseCode::INVALID_URL, 422);
-        }
-        return PostElementResource::make($element);
-    }
-
-    public function createVideoYoutube(Request $request)
-    {
-        /** @see ElementPolicy::create() */
-        $this->authorize('create', Element::class);
-
-        $request->validate([
-            'post_serial' => 'required',
-            'url' => 'required|string',
-            'video_start_second' => 'nullable|integer',
-            'video_end_second' => 'nullable|integer'
-        ]);
-
-        $post = $this->getPost($request->post_serial);
-
-        // check elements count
-        if ($post->elements()->count() > config('post.post_max_element_count')) {
-            return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
-        }
-
-        try {
-            $element = $this->elementService->storeYoutubeVideo(
-                $request->url,
-                $post,
-                $request->input('video_start_second'),
-                $request->input('video_end_second'));
-        } catch (\Exception $exception) {
-            report($exception);
-
-            return api_response(ApiResponseCode::INVALID_URL, 422);
-        }
-
-        return PostElementResource::make($element);
-    }
-
-    public function createVideoUrl(Request $request)
-    {
-        /** @see ElementPolicy::create() */
-        $this->authorize('create', Element::class);
-
-        $request->validate([
-            'post_serial' => 'required',
-            'url' => 'required|url|string',
-        ]);
-
-        $post = $this->getPost($request->post_serial);
-
-        // check elements count
-        if ($post->elements()->count() > config('post.post_max_element_count')) {
-            return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
-        }
-
-        try {
-            $path = Auth::id() . '/' . $request->post_serial;
-            $element = $this->elementService->tryStorePublicVideoUrl($request->input('url'), $path, $post);
-            if (!$element) {
-                return api_response(ApiResponseCode::INVALID_URL, 422);
-            }
-        } catch (\Exception $exception) {
-            report($exception);
-            return api_response(ApiResponseCode::INVALID_URL, 422);
-        }
-        return PostElementResource::make($element);
-    }
-
     public function batchCreate(Request $request)
     {
         /** @see ElementPolicy::create() */
@@ -156,7 +62,7 @@ class ElementController extends Controller
         try {
             //url string to array and trim url
             $urls = array_unique(explode(',', $urls));
-            $urls = array_filter(array_map(function($url){
+            $urls = array_filter(array_map(function ($url) {
                 return trim($url);
             }, $urls));
 
@@ -187,6 +93,11 @@ class ElementController extends Controller
             $path = Auth::id() . '/' . $request->post_serial;
             $elements = [];
             foreach ($urls as $url) {
+                if ($this->elementService->getExistsElement($url, $post)) {
+                    \Log::debug("skip exists source $url");
+                    continue;
+                }
+
                 $element = $this->elementService->massStore($url, $path, $post);
                 if (!$element) {
                     return api_response(ApiResponseCode::INVALID_URL, 422, [
