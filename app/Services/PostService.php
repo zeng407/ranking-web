@@ -22,7 +22,7 @@ class PostService
         $sorter = array_filter($sorter, fn($value) => !is_null($value) && $value !== '');
 
         $query = $this->repo->filter($conditions);
-
+        \Log::info($query->toSql());
         if($sortBy = data_get($sorter, 'sort_by')){
             $dir = data_get($sorter, 'sort_dir') === 'desc' ? 'desc' : 'asc';
             $query = $this->repo->sorter($query, $sortBy, $dir);
