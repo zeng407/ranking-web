@@ -5,8 +5,12 @@
       <h2 class="text-center">{{ game.title }}</h2>
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
-        <h5 class="text-center align-self-center" style="width: 60%">{{ game.current_round }} of TOP {{ game.of_round }} </h5>
-        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} / {{ game.total_elements }})</h5>
+        <h5 class="text-center align-self-center" style="width: 60%">{{ game.current_round }} of TOP {{
+            game.of_round
+          }} </h5>
+        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} / {{
+            game.total_elements
+          }})</h5>
       </div>
     </div>
     <div class="row" v-if="game">
@@ -90,9 +94,9 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="gameSettingPanelLabel">Rank設定</h5>
+            <h5 class="modal-title" id="gameSettingPanelLabel">Vote設定</h5>
           </div>
-          <ValidationObserver v-slot="{ invalid }" v-if="setting">
+          <ValidationObserver v-slot="{ invalid }" v-if="post">
             <form @submit.prevent>
               <div class="modal-body">
                 <div class="alert alert-danger" v-if="processingGameSerial">
@@ -102,8 +106,46 @@
                     繼續Vote
                   </span>
                 </div>
-                <h2>{{ setting.title }}</h2>
-                <div class="row">
+                <div class="card">
+                  <div class="card-header text-center">
+                    <h3>{{ post.title }}</h3>
+                  </div>
+                  <div class="row no-gutters">
+                    <div class="col-6">
+                      <div :style="{
+                      'background': 'url('+post.image1.url+')',
+                      'width': '100%',
+                      'height': '300px',
+                      'background-repeat': 'no-repeat',
+                      'background-size': 'cover',
+                      'background-position': 'center center',
+                      'display': 'flex'}"></div>
+                      <h5 class="text-center mt-1">{{ post.image1.title }}</h5>
+                    </div>
+                    <div class="col-6">
+                      <div :style="{
+                        'background': 'url('+post.image2.url+')',
+                        'width': '100%',
+                        'height': '300px',
+                        'background-repeat': 'no-repeat',
+                        'background-size': 'cover',
+                        'background-position': 'center center',
+                        'display': 'flex'}">
+                      </div>
+                      <h5 class="text-center mt-1">{{ post.image2.title }}</h5>
+                    </div>
+                    <div class="card-body pt-0 text-center">
+                      <p>{{ post.description }}</p>
+                      <span class="mt-2 card-text float-right">
+                      <span class="pr-2">
+                        <i class="fas fa-eye"></i>&nbsp;{{ post.play_count }}
+                      </span>
+                      <small class="text-muted">{{ post.created_at | datetime }}</small>
+                    </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="row mt-2">
                   <div class="col-12">
                     <ValidationProvider rules="required" v-slot="{ errors }">
                       <div class="input-group mb-3">
@@ -113,11 +155,11 @@
                         <select v-model="elementsCount" class="custom-select" id="elementsCount" required>
                           <option value="" disabled selected="selected">請選擇</option>
                           <option v-for="count in [8,16,32,64,128,256,512,1024]"
-                                  :value="count" v-if="setting.elements_count >= count">
+                                  :value="count" v-if="post.elements_count >= count">
                             {{ count }}
                           </option>
-                          <option :value="setting.elements_count" v-if="!isElementsPowerOfTwo">
-                            {{ setting.elements_count }}
+                          <option :value="post.elements_count" v-if="!isElementsPowerOfTwo">
+                            {{ post.elements_count }}
                           </option>
                         </select>
                       </div>
@@ -166,18 +208,18 @@ export default {
       gameSerial: null,
       game: null,
       status: null,
-      setting: null,
+      post: null,
       elementsCount: "",
       isVoting: false
     }
   },
   computed: {
     isElementsPowerOfTwo: function () {
-      if (!this.setting || !this.setting.elements_count) {
+      if (!this.post || !this.post.elements_count) {
         return false;
       }
 
-      return Number.isInteger(Math.log2(this.setting.elements_count));
+      return Number.isInteger(Math.log2(this.post.elements_count));
     },
     processingGameSerial: function () {
       return this.$cookies.get(this.postSerial);
@@ -199,7 +241,7 @@ export default {
     loadGameSetting: function () {
       axios.get(this.getGameSettingEndpoint)
         .then(res => {
-          this.setting = res.data.data;
+          this.post = res.data.data;
         });
     },
     createGame: function () {
@@ -440,7 +482,7 @@ export default {
   },
 
   beforeMount() {
-    if($(window).height() < 800){
+    if ($(window).height() < 800) {
       this.elementHeight = 400
     }
   }
