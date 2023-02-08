@@ -53,7 +53,7 @@ class ElementSourceGuess
     protected function isImageUrl($sourceUrl)
     {
         try {
-            if (@getimagesize($sourceUrl)) {
+            if (@getimagesize($sourceUrl) || in_array(pathinfo($sourceUrl)['extension'], ['jpg','png','gif'])) {
                 return true;
             };
         } catch (\Exception $exception) {
