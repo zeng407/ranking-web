@@ -194,13 +194,14 @@
             <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_batch') }}</h2>
             <div class="row mt-3">
               <div class="col-12">
-                <label for="batchCreate">URL</label>
+                <label for="batchCreate">URL(使用,分開多筆)</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate"
                             rows="5"
                             v-model="batchString"
-                            aria-label="用,分開多筆" aria-describedby="batchCreateVideo"
-                            placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ 用,分開多筆">
+                            aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ,
+                            https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="batchCreateVideo"
+                            placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ, https://giant.gfycat.com/GroundedLoathsomeHind.mp4">
                   </textarea>
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" @click="batchUpload"
@@ -441,9 +442,6 @@ export default {
     updateElementEndpoint: String,
     deleteElementEndpoint: String,
     createImageElementEndpoint: String,
-    createImageUrlElementEndpoint: String,
-    createVideoYoutubeElementEndpoint: String,
-    createVideoUrlElementEndpoint: String,
     batchCreateEndpoint: String
   },
   data: function () {

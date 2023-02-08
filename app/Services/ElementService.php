@@ -39,7 +39,16 @@ class ElementService
         return $query->paginate($perPage);
     }
 
-    public function massStore(string $sourceUrl, string $path, Post $post)
+    public function getExistsElement(string $sourceUrl, Post $post): ?Element
+    {
+        return $post->elements()->where(function ($query) use ($sourceUrl) {
+            $query->where('original_url', $sourceUrl)
+                ->orWhere('source_url', $sourceUrl);
+        })
+            ->first();
+    }
+
+    public function massStore(string $sourceUrl, string $path, Post $post): ?Element
     {
         \Log::debug("guess {$sourceUrl} ...");
         $guess = new ElementSourceGuess($sourceUrl);
@@ -108,14 +117,9 @@ class ElementService
         return $element;
     }
 
-    public function storeImage(string $sourceUrl, string $path, Post $post)
+    public function storeImage(string $sourceUrl, string $path, Post $post): ?Element
     {
         try {
-            //try check image validation
-            if (!$this->isImageUrl($sourceUrl)) {
-                return null;
-            };
-
             $fileInfo = pathinfo($sourceUrl);
             $basename = $fileInfo['basename'] . '_' . random_str(8);
             $content = file_get_contents($sourceUrl);
@@ -149,7 +153,7 @@ class ElementService
         return $element;
     }
 
-    public function storeVideo(string $sourceUrl, string $path, Post $post)
+    public function storeVideo(string $sourceUrl, string $path, Post $post): ?Element
     {
         try {
             $fileInfo = pathinfo($sourceUrl);
@@ -186,7 +190,7 @@ class ElementService
         return $element;
     }
 
-    public function storeGfycat(string $sourceUrl, Post $post)
+    public function storeGfycat(string $sourceUrl, Post $post): ?Element
     {
         try {
             $gfycatService = app(GfycatService::class);
@@ -210,7 +214,7 @@ class ElementService
         return $element;
     }
 
-    public function storeYoutubeVideo($sourceUrl, Post $post, $startSec = null, $endSec = null)
+    public function storeYoutubeVideo($sourceUrl, Post $post, $startSec = null, $endSec = null): ?Element
     {
         $video = app(YoutubeService::class)->query($sourceUrl);
         if (!$video) {
@@ -316,7 +320,7 @@ class ElementService
                 $schemas = parse_url($source);
                 $domain = $schemas['host'];
                 $regex = '/(^|[^\.]+\.)gfycat\.com$/';
-                if(preg_match($regex, $domain) === 1){
+                if (preg_match($regex, $domain) === 1) {
 
                 };
             } catch (\Exception $exception) {
