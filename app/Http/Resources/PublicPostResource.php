@@ -33,6 +33,7 @@ class PublicPostResource extends JsonResource
             $image1 = $elements->pop();
             $image2 = $elements->pop();
         }
+        $elementsCount = $this->elements()->count();
 
         return [
             'title' => $this->title,
@@ -48,7 +49,8 @@ class PublicPostResource extends JsonResource
             ],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'play_count' => $this->games()->count()
+            'play_count' => $this->games()->count(),
+            'elements_count' => $elementsCount
         ];
     }
 }

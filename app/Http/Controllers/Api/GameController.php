@@ -7,8 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Game\GameResultResource;
 use App\Http\Resources\Game\GameRoundResource;
 
-use App\Http\Resources\Game\GameSettingResource;
-use App\Models\Element;
+use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
 use App\Models\Game1V1Round;
 use App\Models\Post;
@@ -17,7 +16,6 @@ use App\Policies\PostPolicy;
 use App\Services\GameService;
 use App\Services\RankService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class GameController extends Controller
 {
@@ -38,7 +36,7 @@ class GameController extends Controller
         /** @see PostPolicy::publicRead() */
         $this->authorize('public-read', $post);
 
-        return GameSettingResource::make($post);
+        return PublicPostResource::make($post);
     }
 
     public function nextRound(Game $game)
@@ -56,7 +54,7 @@ class GameController extends Controller
         $request->validate([
             'post_serial' => 'required',
             'element_count' => ['required', 'integer', 'min:' . config('post.post_min_element_count'),
-                'max:'.config('post.post_max_element_count')
+                'max:' . config('post.post_max_element_count')
             ]
         ]);
 

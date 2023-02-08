@@ -33,7 +33,7 @@
               <div class="align-self-center">{{ gameResult.winner.title }}</div>
               <div class="align-self-end">
                 我的排名：1 <br>
-                世界排名：{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
+                全體排名：{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
               </div>
             </div>
           </div>
@@ -60,7 +60,7 @@
               <div class="align-self-center">{{ rank.loser.title }}</div>
               <div class="align-self-end">
                 我的排名：{{ index + 2 }}<br>
-                世界排名：{{ rank.rank ? rank.rank : '無' }}
+                全體排名：{{ rank.rank ? rank.rank : '無' }}
               </div>
             </div>
           </div>
