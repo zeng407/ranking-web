@@ -10,6 +10,7 @@
     "my_games.table.title": "標題",
     "my_games.table.description": "描述",
     "my_games.table.publish": "發佈",
+    "my_games.table.edit": "編輯",
     "my_games.table.no_data": "無資料",
 
     "create_game.publish": "發佈",
@@ -34,7 +35,7 @@
     "edit_post.add_video_button": "新增",
     "edit_post.add_image_button": "新增",
     "edit_post.edit_media": "編輯素材",
-    "edit_post.video_range": "播放範圍",
+    "edit_post.video_range": "範圍",
     "edit_post.rank.game_plays": "遊戲次數",
     "edit_post.rank.win_at_final": "決賽勝率",
     "edit_post.rank.win_rate": "一般勝率"

@@ -3,20 +3,6 @@
 
 namespace App\Services;
 
-
-use App\Enums\ElementType;
-use App\Enums\VideoSource;
-use App\Models\Element;
-use App\Models\Game;
-use App\Models\Post;
-use App\Models\User;
-use App\Repositories\ElementRepository;
-use AWS\CRT\Log;
-use Google\Service\YouTube\Video;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-
 class ElementSourceGuess
 {
     protected $source;
@@ -41,19 +27,17 @@ class ElementSourceGuess
             $this->isImage = true;
         } elseif ($this->isVideoUrl($this->source)) {
             $this->isVideo = true;
-        } else {
-            if ($this->isYoutube($this->source)) {
+        } elseif ($this->isYoutube($this->source)) {
                 $this->isYoutube = true;
-            } elseif ($this->isGfy($this->source)) {
+        } elseif ($this->isGfy($this->source)) {
                 $this->isGFY = true;
-            }
         }
     }
 
     protected function isImageUrl($sourceUrl)
     {
         try {
-            if (@getimagesize($sourceUrl) || in_array(pathinfo($sourceUrl)['extension'], ['jpg','png','gif'])) {
+            if (@getimagesize($sourceUrl) || in_array(pathinfo($sourceUrl)['extension'], ['jpg', 'png', 'gif'])) {
                 return true;
             };
         } catch (\Exception $exception) {
@@ -74,11 +58,17 @@ class ElementSourceGuess
             //video/webm
             //video/*
             $headers = get_headers($url, true);
-            return isset($headers['Content-Type'])
-                && explode('/', $headers['Content-Type'])[0] === 'video';
+            if (isset($headers['Content-Type'])) {
+                \Log::debug($headers['Content-Type']);
+                foreach ((array)$headers['Content-Type'] as $content) {
+                    if (explode('/', $content)[0] === 'video') {
+                        return true;
+                    }
+                }
+            }
         } catch (\Exception $exception) {
-            return false;
         }
+        return false;
     }
 
     protected function isYoutube($source)
@@ -88,6 +78,7 @@ class ElementSourceGuess
             $this->youtubeUrl = $url;
             return true;
         } catch (\Exception $exception) {
+
         }
         return false;
     }

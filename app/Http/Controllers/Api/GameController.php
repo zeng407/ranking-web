@@ -53,8 +53,8 @@ class GameController extends Controller
     {
         $request->validate([
             'post_serial' => 'required',
-            'element_count' => ['required', 'integer', 'min:' . config('post.post_min_element_count'),
-                'max:' . config('post.post_max_element_count')
+            'element_count' => ['required', 'integer', 'min:' . config('setting.post_min_element_count'),
+                'max:' . config('setting.post_max_element_count')
             ]
         ]);
 

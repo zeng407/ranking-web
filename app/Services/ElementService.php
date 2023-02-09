@@ -75,27 +75,6 @@ class ElementService
         return null;
     }
 
-    public function tryStorePublicVideoUrl(string $sourceUrl, string $path, Post $post)
-    {
-        try {
-            $sourceType = $this->guestVideoSource($sourceUrl);
-            if (!$this->isVideoUrl($sourceUrl)) {
-                if ($sourceType === VideoSource::GFYCAT) {
-                    return $this->storeGfycat($sourceUrl, $post);
-                } elseif ($sourceType === VideoSource::YOUTUBE) {
-                    return $this->storeYoutubeVideo($sourceUrl, $post);
-                }
-                \Log::debug("not video url");
-                return null;
-            }
-
-            return $this->storeVideo($sourceUrl, $path, $post);
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-    }
-
     public function storePublicImage(UploadedFile $file, string $path, Post $post)
     {
         $saveDir = $path;
@@ -113,7 +92,7 @@ class ElementService
             'source_url' => $url,
             'thumb_url' => $thumb,
             'type' => ElementType::IMAGE,
-            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('post.title_size'))
+            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'))
         ]);
 
         return $element;

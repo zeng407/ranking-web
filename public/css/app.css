@@ -6114,31 +6114,6 @@ readers do not read off random characters that represent icons */
   font-weight: 400;
 }
 
-.game-image {
-  width: 100%;
-  height: 600px;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center center;
-  display: flex;
-  transition: 0.5s;
-}
-
-.game-image:hover { /* IE 9 */ /* Safari 3-8 */
-  transform: scale(0.95);
-  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.game-player {
-  top: 0;
-  left: 0;
-  position: relative;
-}
-
 /*!
  * Bootstrap v4.6.2 (https://getbootstrap.com/)
  * Copyright 2011-2022 The Bootstrap Authors
@@ -17893,4 +17868,44 @@ input[type=color].form-control:disabled {
 .input-group-text .b-icon.bi {
   font-size: 125%;
   vertical-align: text-bottom;
+}
+
+.game-image {
+  width: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  display: flex;
+  transition: 0.5s;
+}
+
+.game-image:hover { /* IE 9 */ /* Safari 3-8 */
+  transform: scale(0.95);
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.game-player {
+  top: 0;
+  left: 0;
+  position: relative;
+}
+
+.zoom-in {
+  animation: zoom-in 0.5s ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes zoom-in {
+  from {
+    scale: 1;
+    opacity: 1;
+  }
+  to {
+    scale: 1.2;
+    opacity: 0;
+  }
 }

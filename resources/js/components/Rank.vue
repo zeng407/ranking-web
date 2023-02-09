@@ -27,8 +27,7 @@
             <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted
                    playsinline :src="gameResult.winner.source_url"></video>
             <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270"
-                 class=""
-                 alt="gameResult.winner.title">
+                 :alt="gameResult.winner.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ gameResult.winner.title }}</div>
               <div class="align-self-end">
@@ -55,7 +54,7 @@
             <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
                    :src="rank.loser.source_url"></video>
             <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="300px"
-                 alt="rank.element.title">
+                 :alt="rank.element.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.loser.title }}</div>
               <div class="align-self-end">
@@ -84,12 +83,14 @@
             <video v-else-if="isVideoSource(rank.element)" width="100%" height="270" loop autoplay muted playsinline
                    :src="rank.element.source_url"></video>
             <img v-else-if="isImageSource(rank.element)" :src="rank.element.thumb_url" height="270"
-                 alt="rank.element.title">
+                 :alt="rank.element.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.element.title }}</div>
               <div class="align-self-end">
                 <span>#{{ rank.rank }}</span><br>
-                <span v-if="rank.final_win_rate"> {{ $t('edit_post.rank.win_at_final') }}：{{rank.final_win_rate | percent }}<br></span>
+                <span v-if="rank.final_win_rate"> {{
+                    $t('edit_post.rank.win_at_final')
+                  }}：{{ rank.final_win_rate | percent }}<br></span>
                 <span v-if="rank.win_rate>0"> {{ $t('edit_post.rank.win_rate') }}：{{ rank.win_rate | percent }}</span>
                 <span v-else> {{ $t('edit_post.rank.win_rate') }}：{{ '0' | percent }}</span>
               </div>

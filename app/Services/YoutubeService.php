@@ -24,21 +24,13 @@ class YoutubeService
      * @return mixed|string
      * @throws \Exception
      */
-    public function parseVideoId($url)
+    public function parseVideoId($url): string
     {
         $errors = [];
         try {
             //try getting v={video_id} format
             parse_str(parse_url($url, PHP_URL_QUERY), $result);
             return $result['v'];
-        } catch (\Throwable $throwable) {
-            $errors[] = $throwable->getMessage();
-        }
-
-        try {
-            //try getting url?v={video_id} format
-            preg_match("#(?<=v=)[a-zA-Z0-9-]+(?=&)|(?<=v\/)[^&\n]+(?=\?)|(?<=v=)[^&\n]+|(?<=youtu.be/)[^&\n]+#", $url, $matches);
-            return $matches[0];
         } catch (\Throwable $throwable) {
             $errors[] = $throwable->getMessage();
         }
@@ -52,6 +44,18 @@ class YoutubeService
 
         }
 
+        try {
+            //try getting url?v={video_id} format
+            preg_match("/^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(-nocookie)?\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/", $url, $matches);
+            \Log::debug("return  matches ");
+            \Log::debug($matches);
+            return $matches[6];
+        } catch (\Throwable $throwable) {
+            $errors[] = $throwable->getMessage();
+        }
+
+//        \Log::debug($errors);
+
         throw new \Exception("cannot parse youtube video id");
     }
 
@@ -59,6 +63,7 @@ class YoutubeService
     {
         try {
             $id = $this->parseVideoId($url);
+            \Log::debug("get video id $id");
         } catch (\Exception $exception) {
             \Log::error('not a valid youtube url:' . $url);
             return null;
@@ -69,6 +74,7 @@ class YoutubeService
         ], [
             'id' => $id
         ]);
+
 
         try {
             /** @var YouTube\Video $video */

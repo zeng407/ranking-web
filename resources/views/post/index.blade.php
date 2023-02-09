@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@section('header')
+  <meta name="robots" content="noindex"/>
+@endsection
+
 @section('content')
     <index-post
         get-posts-endpoint="{{route('api.post.index')}}"

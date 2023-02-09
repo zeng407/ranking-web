@@ -68,7 +68,7 @@
                 <div class="col-6">
                   <h2 class="mt-3 mb-3">
                   <span class="d-flex justify-content-end">
-                    <a class="btn btn-danger mr-3" :href="playGameRoute" target="_blank">
+                    <a class="btn btn-danger mr-3" v-if="!isEditing" :href="playGameRoute" target="_blank">
                       <i class="fas fa-play"></i> {{ $t('edit_post.info.play') }}
                     </a>
 
@@ -94,7 +94,8 @@
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="post.title" required
-                               :disabled="!isEditing || loading['SAVING_POST']" maxlength="40"
+                               :disabled="!isEditing || loading['SAVING_POST']"
+                               :maxlength="config.post_title_size"
                         >
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
@@ -110,7 +111,7 @@
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="post.description" rows="3"
                                   style="resize: none"
-                                  maxlength="100"
+                                  :maxlength="config.post_description_size"
                                   aria-describedby="description-help"
                                   required
                                   :disabled="!isEditing || loading['SAVING_POST']">
@@ -212,13 +213,13 @@
                   </div>
                 </div>
                 <div class="mt-3">
-                  <img src="/storage/youtube-icon.jpg" height="48px">
-                  <img src="/storage/gfycat-icon.webp" height="48px">
-                  <img src="/storage/mp4-icon.png" height="48px">
-                  <img src="/storage/video-icon.png" height="48px">
-                  <img src="/storage/gif-icon.png" height="48px">
-                  <img src="/storage/jpg-icon.png" height="48px">
-                  <img src="/storage/image-icon.png" height="48px">
+                  <img alt="youtube-icon" src="/storage/youtube-icon.jpg" height="48px">
+                  <img alt="gfycat-icon" src="/storage/gfycat-icon.webp" height="48px">
+                  <img alt="mp4-icon" src="/storage/mp4-icon.png" height="48px">
+                  <img alt="video-icon" src="/storage/video-icon.png" height="48px">
+                  <img alt="gif-icon" src="/storage/gif-icon.png" height="48px">
+                  <img alt="jpg-icon" src="/storage/jpg-icon.png" height="48px">
+                  <img alt="image-icon" src="/storage/image-icon.png" height="48px">
                 </div>
               </div>
             </div>
@@ -260,7 +261,7 @@
                       <!--title edit-->
                       <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text"
                              :value="element.title"
-                             maxlength="100"
+                             :maxlength="config.element_title_size"
                              @change="updateElementTitle(element.id, $event)">
                       <!--play time range-->
                       <div class="row mb-3">
@@ -306,7 +307,7 @@
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
                              :value="element.title"
-                             maxlength="100"
+                             :maxlength="config.element_title_size"
                              @change="updateElementTitle(element.id, $event)">
                       <span class="card-text"><small
                         class="text-muted">{{ element.created_at | datetime }}</small></span>
@@ -327,7 +328,7 @@
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
                              :value="element.title"
-                             maxlength="100"
+                             :maxlength="config.element_title_size"
                              @change="updateElementTitle(element.id, $event)">
                       <span class="card-text"><small
                         class="text-muted">{{ element.created_at | datetime }}</small></span>
@@ -385,7 +386,7 @@
                 <th scope="row">{{ rank.rank }}</th>
                 <td style="overflow: scroll">
                   <div>
-                    <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
+                    <img :src="rank.element.thumb_url" height="300px" :alt="rank.element.title">
 
                     <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
                       <p>{{ rank.element.title }}</p>
@@ -434,6 +435,7 @@ export default {
     this.host = window.location.origin;
   },
   props: {
+    config: Object,
     showPostEndpoint: String,
     playGameRoute: String,
     getElementsEndpoint: String,
@@ -582,7 +584,7 @@ export default {
             id: element.id
           });
           this.$delete(this.elements.data, index);
-          this.elements.meta.total --;
+          this.elements.meta.total--;
         })
         .finally(() => {
           this.removeDeleting(element);
@@ -643,7 +645,7 @@ export default {
         .then(res => {
           let waittime = 1000;
           _.forEach(res.data.data, (data) => {
-            if(this.totalRow < this.perPage) {
+            if (this.totalRow < this.perPage) {
               this.elements.data.push(data);
             }
             setTimeout(() => {

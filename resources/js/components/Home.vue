@@ -52,7 +52,7 @@
       <div class="col-xl-4 pt-2" v-if="!isLoading" v-for="post in posts.data">
         <div class="card">
           <div class="card-header text-center">
-            <h3>{{post.title}}</h3>
+            <h1>{{post.title}}</h1>
           </div>
           <div class="row no-gutters">
             <div class="col-6">
@@ -79,7 +79,7 @@
               <h5 class="text-center mt-1">{{post.image2.title}}</h5>
             </div>
             <div class="card-body pt-0 text-center">
-              <p>{{post.description}}</p>
+              <h3>{{post.description}}</h3>
               <div class="row">
                 <div class="col-6">
                   <a class="btn btn-primary btn-block" :href="getGameUrl(post.serial)" target="_blank">
