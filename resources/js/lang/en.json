@@ -10,6 +10,7 @@
     "my_games.table.title": "Title",
     "my_games.table.description": "Description",
     "my_games.table.publish": "Publish",
+    "my_games.table.edit": "Edit",
     "my_games.table.no_data": "No Data",
 
     "create_game.publish" :"Publish",

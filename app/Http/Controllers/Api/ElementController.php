@@ -39,7 +39,7 @@ class ElementController extends Controller
         $post = $this->getPost($request->input('post_serial'));
 
         // check elements count
-        if ($post->elements()->count() > config('post.post_max_element_count')) {
+        if ($post->elements()->count() > config('setting.post_max_element_count')) {
             return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
         }
 
@@ -85,7 +85,7 @@ class ElementController extends Controller
         $post = $this->getPost($request->post_serial);
 
         // check elements count
-        if ($post->elements()->count() + $urlCount > config('post.post_max_element_count')) {
+        if ($post->elements()->count() + $urlCount > config('setting.post_max_element_count')) {
             return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
         }
 
@@ -121,7 +121,7 @@ class ElementController extends Controller
         $this->authorize('update', $element);
 
         $data = $request->validate([
-            'title' => ['sometimes', 'string', 'max:' . config('post.title_size')],
+            'title' => ['sometimes', 'string', 'max:' . config('setting.element_title_size')],
             'video_start_second' => 'sometimes|integer',
             'video_end_second' => 'sometimes|integer',
         ]);

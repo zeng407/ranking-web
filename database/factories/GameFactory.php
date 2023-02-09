@@ -17,7 +17,7 @@ class GameFactory extends Factory
     {
         return [
             'serial' => Str::random(8),
-            'element_count' => random_int(config('post.post_min_element_count'), config('post.post_max_element_count'))
+            'element_count' => random_int(config('setting.post_min_element_count'), config('setting.post_max_element_count'))
         ];
     }
 

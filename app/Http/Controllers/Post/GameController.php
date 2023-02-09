@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Post;
 
 
 use App\Http\Controllers\Controller;
+use App\Models\Game;
 use App\Models\Post;
 use App\Services\GameService;
 use App\Services\RankService;
@@ -24,12 +25,20 @@ class GameController extends Controller
 
     public function show($serial)
     {
-        return view('game.show', compact('serial'));
+        $post = Post::where('serial', $serial)->first();
+        return view('game.show', [
+            'serial' => $serial,
+            'post' => $post
+        ]);
     }
 
     public function rank($serial)
     {
-        return view('game.rank', compact('serial'));
+        $post = Post::where('serial', $serial)->first();
+        return view('game.rank', [
+            'serial' => $serial,
+            'post' => $post
+        ]);
     }
 
 }

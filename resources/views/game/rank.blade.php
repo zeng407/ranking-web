@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['post' => $post])
 
 @section('content')
     <rank

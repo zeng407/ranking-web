@@ -23,7 +23,7 @@ class PublicPostController extends Controller
     {
         $posts = $this->postService->getLists([
             'public' => true,
-            'elements_count_gte' => config('post.post_min_element_count'),
+            'elements_count_gte' => config('setting.post_min_element_count'),
             'any_like' => $request->query('any_like')
         ],[
             'sort_by' => $request->query('sort_by'),

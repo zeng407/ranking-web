@@ -1,7 +1,12 @@
 @extends('layouts.app')
 
+@section('header')
+  <meta name="robots" content="noindex"/>
+@endsection
+
 @section('content')
     <edit-post
+        :config="{{json_encode(config('setting'))}}"
         play-game-route="{{route('game.show', $serial)}}"
 
         show-post-endpoint="{{route('api.post.show', $serial)}}"

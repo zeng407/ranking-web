@@ -89,8 +89,8 @@ class MyPostController extends Controller
         $user = Auth::user();
 
         $data = $request->validate([
-            'title' => 'required',
-            'description' => 'required',
+            'title' => ['required', 'string', 'max:' . config('setting.post_title_size')],
+            'description' => ['required', 'string', 'max:' . config('setting.post_description_size')],
             'policy.access_policy' => ['required', Rule::in([PostAccessPolicy::PRIVATE, PostAccessPolicy::PUBLIC])],
         ]);
 
@@ -114,8 +114,8 @@ class MyPostController extends Controller
         $this->authorize('update', $post);
 
         $data = $request->validate([
-            'title' => 'sometimes|required',
-            'description' => 'sometimes|required',
+            'title' => ['required', 'string', 'max:' . config('setting.post_title_size')],
+            'description' => ['required', 'string', 'max:' . config('setting.post_description_size')],
             'policy.access_policy' => ['sometimes', 'required',
                 Rule::in([PostAccessPolicy::PUBLIC, PostAccessPolicy::PRIVATE])],
             'policy.password' => 'sometimes|required',

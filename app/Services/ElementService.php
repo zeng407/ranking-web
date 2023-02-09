@@ -92,7 +92,7 @@ class ElementService
             'source_url' => $url,
             'thumb_url' => $thumb,
             'type' => ElementType::IMAGE,
-            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('post.title_size'))
+            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'))
         ]);
 
         return $element;

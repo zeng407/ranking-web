@@ -18,3 +18,4 @@ Dockerfile.example
 docker-compose.yaml
 deploy.sh
 Dockerfile
+.phpstorm.meta.php

@@ -41,14 +41,14 @@ class GameTest extends TestCase
 
         $res = $this->post(route('api.game.create'), [
             'post_serial' => $post->serial,
-            'element_count' => config('post.post_min_element_count')
+            'element_count' => config('setting.post_min_element_count')
         ]);
         $res->assertOk();
 
         $serial = $res->json('game_serial');
         $this->assertDatabaseHas('games', [
             'serial' => $serial,
-            'element_count' => config('post.post_min_element_count')
+            'element_count' => config('setting.post_min_element_count')
         ]);
     }
 
