@@ -221,7 +221,7 @@ class ElementService
     {
         $video = app(YoutubeService::class)->query($sourceUrl);
         if (!$video) {
-            return api_response(ApiResponseCode::INVALID_URL, 422);
+            return null;
         }
 
         $thumb = $video->getSnippet()->getThumbnails()->getHigh() ?:

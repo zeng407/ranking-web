@@ -92,6 +92,7 @@ class ElementController extends Controller
         try {
             $path = Auth::id() . '/' . $request->post_serial;
             $elements = [];
+            $errors = [];
             foreach ($urls as $url) {
                 if ($this->elementService->getExistsElement($url, $post)) {
                     \Log::debug("skip exists source $url");
@@ -100,17 +101,21 @@ class ElementController extends Controller
 
                 $element = $this->elementService->massStore($url, $path, $post);
                 if (!$element) {
-                    return api_response(ApiResponseCode::INVALID_URL, 422, [
-                        'error_url' => $url,
-                        'elements' => $elements,
-                        'original_url' => $url
-                    ]);
+                    $errors[] = $url;
+                    continue;
                 }
                 $elements[] = $element;
             }
         } catch (\Exception $exception) {
             report($exception);
             return api_response(ApiResponseCode::INVALID_URL, 422);
+        }
+
+        if ($elements === []) {
+            return api_response(ApiResponseCode::INVALID_URL, 422, [
+                'error_url' => head($errors),
+                'error_urls' => $errors
+            ]);
         }
         return PostElementResource::collection($elements);
     }

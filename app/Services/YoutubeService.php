@@ -75,15 +75,16 @@ class YoutubeService
             'id' => $id
         ]);
 
-
         try {
-            /** @var YouTube\Video $video */
+            /** @var null|YouTube\Video $video */
+            if ($res->getItems() == []) {
+                return null;
+            }
             $video = head($res->getItems());
+            return $video;
         } catch (\Exception $exception) {
             report($exception);
             return null;
         }
-
-        return $video;
     }
 }
