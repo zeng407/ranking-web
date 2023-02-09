@@ -79,7 +79,7 @@
               <h5 class="text-center mt-1">{{post.image2.title}}</h5>
             </div>
             <div class="card-body pt-0 text-center">
-              <h3>{{post.description}}</h3>
+              <h5 class="text-break">{{post.description}}</h5>
               <div class="row">
                 <div class="col-6">
                   <a class="btn btn-primary btn-block" :href="getGameUrl(post.serial)" target="_blank">
