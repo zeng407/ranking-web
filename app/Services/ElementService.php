@@ -223,37 +223,40 @@ class ElementService
         if (!$video) {
             return null;
         }
+        try {
+            $thumb = $video->getSnippet()->getThumbnails()->getHigh() ?:
+                $video->getSnippet()->getThumbnails()->getMedium() ?:
+                    $video->getSnippet()->getThumbnails()->getStandard() ?:
+                        $video->getSnippet()->getThumbnails()->getMaxres() ?:
+                            $video->getSnippet()->getThumbnails()->getDefault();
+            $thumbUrl = $thumb->getUrl();
+            $title = $video->getSnippet()->getTitle();
+            $id = $video->getId();
+            $duration = $video->getContentDetails()->getDuration();
+            preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $parts);
 
-        $thumb = $video->getSnippet()->getThumbnails()->getHigh() ?:
-            $video->getSnippet()->getThumbnails()->getMedium() ?:
-                $video->getSnippet()->getThumbnails()->getStandard() ?:
-                    $video->getSnippet()->getThumbnails()->getMaxres() ?:
-                        $video->getSnippet()->getThumbnails()->getDefault();
-        $thumbUrl = $thumb->getUrl();
-        $title = $video->getSnippet()->getTitle();
-        $id = $video->getId();
-        $duration = $video->getContentDetails()->getDuration();
-        preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $parts);
+            $hourPart = (int)$parts[1];
+            $minutePart = (int)$parts[2];
+            $secondPart = (int)$parts[3];
+            $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
 
-        $hourPart = (int)$parts[1];
-        $minutePart = (int)$parts[2];
-        $secondPart = (int)$parts[3];
-        $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
+            $element = $post->elements()->create([
+                'original_url' => $sourceUrl,
+                'source_url' => $sourceUrl,
+                'thumb_url' => $thumbUrl,
+                'title' => $title,
+                'type' => ElementType::VIDEO,
+                'video_source' => VideoSource::YOUTUBE,
+                'video_id' => $id,
+                'video_duration_second' => $second,
+                'video_start_second' => $startSec,
+                'video_end_second' => $endSec
+            ]);
 
-        $element = $post->elements()->create([
-            'original_url' => $sourceUrl,
-            'source_url' => $sourceUrl,
-            'thumb_url' => $thumbUrl,
-            'title' => $title,
-            'type' => ElementType::VIDEO,
-            'video_source' => VideoSource::YOUTUBE,
-            'video_id' => $id,
-            'video_duration_second' => $second,
-            'video_start_second' => $startSec,
-            'video_end_second' => $endSec
-        ]);
-
-        return $element;
+            return $element;
+        }catch (\Exception $exception){
+            return null;
+        }
     }
 
     /**
