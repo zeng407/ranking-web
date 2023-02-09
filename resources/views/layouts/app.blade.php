@@ -23,10 +23,11 @@
 </head>
 <body>
 <div id="app">
-  <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+  <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand" href="{{ url('/') }}">
-        {{ config('app.name', 'VoteUp') }}
+        <img class="home-logo" src="/storage/logo-2-2x.png" alt="VoteUp">
+        VoteUp
       </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
               aria-controls="navbarSupportedContent" aria-expanded="false"

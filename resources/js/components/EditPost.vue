@@ -615,6 +615,7 @@ export default {
         })
           .then(res => {
             this.elements.data.push(res.data.data);
+            this.elements.meta.total++;
             this.deleteProgressBarValue(file);
           })
           .catch((err) => {
@@ -645,6 +646,7 @@ export default {
         .then(res => {
           let waittime = 1000;
           _.forEach(res.data.data, (data) => {
+            this.elements.meta.total++;
             if (this.totalRow < this.perPage) {
               this.elements.data.push(data);
             }
