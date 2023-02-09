@@ -135,7 +135,7 @@
                       <h5 class="text-center mt-1">{{ post.image2.title }}</h5>
                     </div>
                     <div class="card-body pt-0 text-center">
-                      <p>{{ post.description }}</p>
+                      <h5 class="text-break">{{ post.description }}</h5>
                       <span class="mt-2 card-text float-right">
                       <span class="pr-2">
                         <i class="fas fa-eye"></i>&nbsp;{{ post.play_count }}
