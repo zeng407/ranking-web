@@ -1,6 +1,7 @@
 <template>
   <div class="container-fluid">
-    <nav class="navbar navbar-light bg-light flex-nowrap">
+    <h1 class="text-center">殘酷二選一</h1>
+    <nav class="navbar navbar-light flex-nowrap">
       <div class="form-inline">
         <div class="btn-group btn-group-toggle" data-toggle="buttons">
 
@@ -25,8 +26,8 @@
         </form>
       </div>
     </nav>
-    <nav class="navbar navbar-light bg-light justify-content-start">
-      <div class="form-inline">
+    <nav class="navbar navbar-light  justify-content-start">
+      <div class="form-inline mt-3">
         <button type="button" class="btn btn-outline-dark btn-sm rounded-pill position-absolute" data-toggle="dropdown"
                 v-show="sortBy==='hot'"
                 style="top: 0"

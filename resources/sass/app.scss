@@ -31,6 +31,15 @@
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
 }
 
+.home-logo {
+    height: 40px;
+    transition: transform 500ms;
+}
+
+.home-logo:hover {
+    transform: translateY(-5px);
+}
+
 .cursor-pointer {
     cursor: pointer;
 }
