@@ -18,7 +18,7 @@ class PostController extends Controller
 
     public function index()
     {
-        return view('post.index');
+        return view('account.post.index');
     }
 
     public function edit(Post $post)
@@ -26,7 +26,7 @@ class PostController extends Controller
         /** @see PostPolicy::update() */
         $this->authorize('update', $post);
 
-        return view('post.edit', [
+        return view('account.post.edit', [
             'serial' => $post->serial
         ]);
     }

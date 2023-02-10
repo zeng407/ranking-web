@@ -20,4 +20,6 @@
         batch-create-endpoint="{{route('api.element.batch-create')}}"
     >
     </edit-post>
+
+  @include('partial.footer')
 @endsection

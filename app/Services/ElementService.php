@@ -8,13 +8,9 @@ use App\Enums\ApiResponseCode;
 use App\Enums\ElementType;
 use App\Enums\VideoSource;
 use App\Models\Element;
-use App\Models\Game;
 use App\Models\Post;
-use App\Models\User;
 use App\Repositories\ElementRepository;
-use Google\Service\YouTube\Video;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ElementService
@@ -125,7 +121,7 @@ class ElementService
         $element = $post->elements()->create([
             'path' => $path,
             'original_url' => $sourceUrl,
-            'source_url' => $sourceUrl,
+            'source_url' => $url,
             'thumb_url' => $thumb,
             'type' => ElementType::IMAGE,
             'title' => $fileInfo['filename']
