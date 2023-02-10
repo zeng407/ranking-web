@@ -11,4 +11,5 @@
         create-post-endpoint="{{route('api.post.create')}}"
     >
     </index-post>
+    @include('partial.footer')
 @endsection

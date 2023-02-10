@@ -7,4 +7,8 @@
         game-rank-route="{{route('game.rank', '_serial')}}"
         sort="{{$sort ?? 'hot'}}"
     ></home>
+
+    @include('partial.footer')
 @endsection
+
+

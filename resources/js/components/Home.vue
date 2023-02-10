@@ -1,7 +1,7 @@
 <template>
   <div class="container-fluid">
     <h1 class="text-center">殘酷二選一</h1>
-    <nav class="navbar navbar-light flex-nowrap">
+    <div class="d-flex justify-content-between flex-nowrap">
       <div class="form-inline">
         <div class="btn-group btn-group-toggle" data-toggle="buttons">
 
@@ -25,10 +25,10 @@
           </button>
         </form>
       </div>
-    </nav>
-    <nav class="navbar navbar-light  justify-content-start">
+    </div>
+    <div class="d-flex justify-content-start">
       <div class="form-inline mt-3">
-        <button type="button" class="btn btn-outline-dark btn-sm rounded-pill position-absolute" data-toggle="dropdown"
+        <button type="button" class="btn btn-outline-dark btn-sm rounded-pill" data-toggle="dropdown"
                 v-show="sortBy==='hot'"
                 style="top: 0"
         >
@@ -43,17 +43,17 @@
           <a class="dropdown-item" @click="clickTimeRange($event, 'day')" href="#">Today</a>
         </div>
       </div>
-    </nav>
+    </div>
 
     <div class="row justify-content-center pt-4">
       <div class="fa-3x" v-if="isLoading">
         <i class="fas fa-spinner fa-spin"></i>
       </div>
 
-      <div class="col-xl-4 pt-2" v-if="!isLoading" v-for="post in posts.data">
+      <div class="col-xl-4 col-md-6 pt-2" v-if="!isLoading" v-for="post in posts.data">
         <div class="card">
           <div class="card-header text-center">
-            <h1>{{post.title}}</h1>
+            <h2>{{post.title}}</h2>
           </div>
           <div class="row no-gutters">
             <div class="col-6">
