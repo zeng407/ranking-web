@@ -21,5 +21,8 @@
     >
     </edit-post>
 
+@endsection
+
+@section('footer')
   @include('partial.footer')
 @endsection

@@ -12,13 +12,13 @@ for (var i = 2; i <= thumbs.length; i++) {
     //image
     if(thumbs[i] && thumbs[i].children[0] && thumbs[i].children[0].href){
         src.push(thumbs[i].children[0].href);
-        await wait(500);
+        await wait(200);
     }
 
     //video
     else if(thumbs[i]) {
         thumbs[i].click();
-        await wait(2000);
+        await wait(1000);
         const iframes = document.getElementsByTagName('iframe');
         if(iframes[1] && iframes[1].contentDocument){
             contentDoc = iframes[1].contentDocument;
@@ -28,7 +28,7 @@ for (var i = 2; i <= thumbs.length; i++) {
                 src.push(schema.origin + schema.pathname);
             }
         }
-        await wait(2000);
+        await wait(300);
         thumbs[i].click();
     }
 }

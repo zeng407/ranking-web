@@ -65,7 +65,7 @@
                 'background-size': 'cover',
                 'background-position': 'center center',
                 'display': 'flex'}"></div>
-              <h5 class="text-center mt-1">{{post.image1.title}}</h5>
+              <p class="text-center mt-1">{{post.image1.title}}</p>
             </div>
             <div class="col-6">
               <div :style="{
@@ -77,7 +77,7 @@
                     'background-position': 'center center',
                     'display': 'flex'}"></div>
 
-              <h5 class="text-center mt-1">{{post.image2.title}}</h5>
+              <p class="text-center mt-1">{{post.image2.title}}</p>
             </div>
             <div class="card-body pt-0 text-center">
               <h5 class="text-break">{{post.description}}</h5>

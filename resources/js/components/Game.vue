@@ -14,7 +14,8 @@
       </div>
     </div>
     <div class="row" v-if="game">
-      <div class="col-md-6 pr-md-0">
+      <!--left part-->
+      <div class="col-md-6 pr-md-0 mb-2 mb-md-0">
         <div class="card game-player" id="left-player">
           <div v-if="isImageSource(le)"
                @click="clickImage"
@@ -41,17 +42,38 @@
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.source_url"></video>
           </div>
           <div class="card-body text-center">
-            <div style="min-height: 50px">
-              <h5 class="card-title">{{ le.title }}</h5>
+            <div style="height: 70px">
+              <p class="my-1">{{ le.title }}</p>
             </div>
-            <button class="btn btn-primary btn-lg btn-block" :disabled="isVoting"
+            <button class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
                     @click="leftWin()">Vote
             </button>
+            <div class="row" v-if="isYoutubeSource(le)">
+              <button class="btn btn-primary btn-lg d-block d-md-none col-7 m-2"
+                      :disabled="isVoting"
+                      @click="leftPlay()">
+                <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
+                <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
+              </button>
+              <button class="btn btn-outline-primary d-block d-md-none col-4 m-2"
+                      :disabled="isVoting"
+                      @click="leftWin()">
+                Vote
+              </button>
+            </div>
+            <div v-else>
+              <button class="btn btn-primary btn-block btn-lg d-block d-md-none" :disabled="isVoting"
+                      @click="leftWin()">Vote
+              </button>
+            </div>
+
           </div>
         </div>
       </div>
+
+      <!--right part-->
       <div class="col-md-6 pl-md-0">
-        <div class="card game-player" id="right-player">
+        <div class="card game-player" :class="{'flex-column-reverse': isMobileScreen}" id="right-player">
           <div v-if="isImageSource(re)"
                @click="clickImage"
                :style="{backgroundImage: 'url('+re.source_url+')', height: this.elementHeight+'px'}"
@@ -76,13 +98,33 @@
           <div v-else-if="isVideoSource(re)">
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.source_url"></video>
           </div>
-          <div class="card-body text-center">
-            <div style="min-height: 50px">
-              <h5 class="card-title">{{ re.title }}</h5>
+
+          <!-- reverse when device size width less md(768px)-->
+          <div class="card-body text-center" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
+            <div style="height: 70px" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
+              <p class="my-1">{{ re.title }}</p>
             </div>
-            <button class="btn btn-danger btn-lg btn-block" :disabled="isVoting"
+            <button class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
                     @click="rightWin()">Vote
             </button>
+            <div class="row" v-if="isYoutubeSource(re)">
+              <button class="btn btn-danger btn-lg d-block d-md-none col-7 m-2"
+                      :disabled="isVoting"
+                      @click="rightPlay()">
+                <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
+                <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
+              </button>
+              <button class="btn btn-outline-danger d-block d-md-none col-4 m-2"
+                      :disabled="isVoting"
+                      @click="rightWin()">
+                Vote
+              </button>
+            </div>
+            <div v-else>
+              <button class="btn btn-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"
+                      @click="rightWin()">Vote
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -187,12 +229,6 @@ export default {
     this.host = window.location.origin;
   },
 
-  created() {
-    window.addEventListener('scroll', this.handleScroll);
-  },
-  destroyed() {
-    window.removeEventListener('scroll', this.handleScroll);
-  },
   props: {
     postSerial: String,
     getRankRoute: String,
@@ -203,17 +239,23 @@ export default {
   },
   data: function () {
     return {
+      clientWidth: null,
       host: '',
-      elementHeight: 480,
+      elementHeight: 450,
       gameSerial: null,
       game: null,
       status: null,
       post: null,
       elementsCount: "",
-      isVoting: false
+      isVoting: false,
+      isLeftPlaying: false,
+      isRightPlaying: false
     }
   },
   computed: {
+    isMobileScreen: function() {
+      return $(window).width() < MD_WIDTH_SIZE;
+    },
     isElementsPowerOfTwo: function () {
       if (!this.post || !this.post.elements_count) {
         return false;
@@ -276,19 +318,35 @@ export default {
           this.resetPlayerPosition();
         });
     },
+    leftPlay() {
+      this.isLeftPlaying = true;
+      this.isRightPlaying = false;
+      const myPlayer = this.getPlayer(this.le);
+      if (myPlayer) {
+        // window.p1 = myPlayer;
+        myPlayer.unMute();
+      }
+
+      const theirPlayer = this.getPlayer(this.re);
+      if (theirPlayer) {
+        // window.p2 = theirPlayer;
+        theirPlayer.mute();
+      }
+    },
     leftWin() {
       this.isVoting = true;
       let sendWinnerData = () => {
         this.vote(this.le, this.re);
       }
 
-      if (this.isMobileScreen()) {
+      if (this.isMobileScreen) {
         let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#right-player').animate({opacity: '0'}, 500, () => {
           $('#right-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
+          this.destroyElements();
         });
         return;
       }
@@ -306,19 +364,35 @@ export default {
         sendWinnerData();
       });
     },
+    rightPlay() {
+
+      this.isLeftPlaying = false;
+      this.isRightPlaying = true;
+      const myPlayer = this.getPlayer(this.re);
+      if (myPlayer) {
+        myPlayer.unMute();
+      }
+
+      const theirPlayer = this.getPlayer(this.le);
+      if (theirPlayer) {
+        theirPlayer.mute();
+      }
+
+    },
     rightWin() {
       this.isVoting = true;
       let sendWinnerData = () => {
         this.vote(this.re, this.le);
       }
 
-      if (this.isMobileScreen()) {
+      if (this.isMobileScreen) {
         let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#left-player').animate({opacity: '0'}, 500, () => {
           $('#left-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
+          this.destroyElements();
         });
         return;
       }
@@ -430,15 +504,18 @@ export default {
       }
     },
     videoHoverIn(myElement, theirElement) {
+      if (this.isMobileScreen) {
+        return;
+      }
       const myPlayer = this.getPlayer(myElement);
       if (myPlayer) {
-        window.p1 = myPlayer;
+        // window.p1 = myPlayer;
         myPlayer.unMute();
       }
 
       const theirPlayer = this.getPlayer(theirElement);
       if (theirPlayer) {
-        window.p2 = theirPlayer;
+        // window.p2 = theirPlayer;
         theirPlayer.mute();
       }
 
@@ -469,21 +546,15 @@ export default {
     isGfycatSource: function (element) {
       return element.type === 'video' && element.video_source === 'gfycat';
     },
-    isMobileScreen() {
-      return $(window).width() < MD_WIDTH_SIZE;
-    },
-    handleScroll(event) {
-      if (window.scrollY + $(window).height() >= $(document).height() * 0.8) {
-        this.videoHoverIn(this.re, this.le);
-      } else {
-        this.videoHoverIn(this.le, this.re);
-      }
-    }
+    // isMobileScreen() {
+    //   return this.clientWidth < MD_WIDTH_SIZE;
+    // },
   },
 
   beforeMount() {
-    if ($(window).height() < 800) {
-      this.elementHeight = 400
+    // less md size
+    if ($(window).width() < MD_WIDTH_SIZE) {
+      this.elementHeight = 200
     }
   }
 }
