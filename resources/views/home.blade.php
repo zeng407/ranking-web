@@ -8,7 +8,10 @@
         sort="{{$sort ?? 'hot'}}"
     ></home>
 
-    @include('partial.footer')
+@endsection
+
+@section('footer')
+  @include('partial.footer')
 @endsection
 
 

@@ -21,7 +21,7 @@
   <!-- Styles -->
   <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 <div id="app">
   <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm">
     <div class="container-fluid">
@@ -97,9 +97,11 @@
     </div>
   </nav>
 
-  <main class="py-4">
+  <main class="pt-2">
     @yield('content')
   </main>
 </div>
+
+@yield('footer')
 </body>
 </html>

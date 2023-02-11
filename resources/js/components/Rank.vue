@@ -54,7 +54,7 @@
             <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
                    :src="rank.loser.source_url"></video>
             <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="300px"
-                 :alt="rank.element.title">
+                 :alt="rank.loser.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.loser.title }}</div>
               <div class="align-self-end">
