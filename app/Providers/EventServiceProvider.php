@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\GameElementVoted;
 use App\Events\GameComplete;
+use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -22,6 +24,9 @@ class EventServiceProvider extends ServiceProvider
 //        ],
         GameComplete::class => [
             UpdatePostRank::class
+        ],
+        GameElementVoted::class => [
+            UpdateElementRank::class
         ]
     ];
 

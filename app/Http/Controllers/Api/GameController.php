@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\GameElementVoted;
 use App\Events\GameComplete;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Game\GameResultResource;
@@ -110,7 +111,8 @@ class GameController extends Controller
             'complete_at' => now(),
         ];
         \Log::info('saving game : ' . $game->serial, $data);
-        $game->game_1v1_rounds()->create($data);
+        /** @var Game1V1Round $gameRound */
+        $gameRound = $game->game_1v1_rounds()->create($data);
 
         // update winner
         $game->elements()
@@ -126,8 +128,13 @@ class GameController extends Controller
                 'is_eliminated' => true
             ]);
 
+        $isFinal = $this->gameService->isGameComplete($game);
+
+        event(new GameElementVoted($game, $gameRound->winner, $isFinal));
+        event(new GameElementVoted($game, $gameRound->loser, $isFinal));
+
         // update rank when game complete
-        if ($this->gameService->isGameComplete($game)) {
+        if ($isFinal) {
             event(new GameComplete($game));
         }
 
