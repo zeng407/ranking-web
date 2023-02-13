@@ -20,6 +20,9 @@ sudo chown -R $(whoami):www-data .
 sudo chgrp -R www-data storage bootstrap/cache
 sudo chmod -R ug+rwx storage bootstrap/cache
 sudo chmod +x deploy.sh
-php artisan migrate
 php artisan route:cache
+php artisan config:cache
+php artisan event:cache
+php artisan migrate
 php artisan queue:restart
+

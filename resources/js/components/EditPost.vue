@@ -644,17 +644,18 @@ export default {
       this.batchString = "";
       axios.post(this.batchCreateEndpoint, data)
         .then(res => {
-          let waittime = 1000;
-          _.forEach(res.data.data, (data) => {
-            this.elements.meta.total++;
-            if (this.totalRow < this.perPage) {
-              this.elements.data.push(data);
-            }
-            setTimeout(() => {
-              this.showAlert(data.title);
-            }, waittime);
-            waittime += 1000;
-          });
+          // let waittime = 1000;
+          // _.forEach(res.data.data, (data) => {
+          //   this.elements.meta.total++;
+          //   if (this.totalRow < this.perPage) {
+          //     this.elements.data.push(data);
+          //   }
+          //   setTimeout(() => {
+          //     this.showAlert(data.title);
+          //   }, waittime);
+          //   waittime += 1000;
+          // });
+          this.loadElements(this.currentPage);
         })
         .catch((err) => {
           console.log(err.response.data);

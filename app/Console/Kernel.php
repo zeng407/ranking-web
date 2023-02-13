@@ -19,13 +19,15 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
 //        $schedule->call(fn() => \Log::debug("schedule call"))->everyMinute();
-        $schedule->call(function(){
+//        $schedule->call(function(){
 //           app(RankScheduleExecutor::class)->createRankReports();
-        })->name('createRankReport')->everyFiveMinutes()->withoutOverlapping();
+//        })->name('createRankReport')->everyFiveMinutes()->withoutOverlapping();
 
         $schedule->call(function(){
             app(PostTrendScheduleExecutor::class)->createPostTrends();
         })->name('createPostTrend')->everyThreeHours()->withoutOverlapping();
+
+        $schedule->command('telescope:prune')->daily();
     }
 
     /**

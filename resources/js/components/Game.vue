@@ -2,7 +2,7 @@
 
   <div class="container-fluid">
     <div v-if="game">
-      <h2 class="text-center">{{ game.title }}</h2>
+      <h2 class="text-center text-break">{{ game.title }}</h2>
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
         <h5 class="text-center align-self-center" style="width: 60%">{{ game.current_round }} of TOP {{
@@ -49,17 +49,21 @@
                     @click="leftWin()">Vote
             </button>
             <div class="row" v-if="isYoutubeSource(le)">
-              <button class="btn btn-primary btn-lg d-block d-md-none col-7 m-2"
-                      :disabled="isVoting"
-                      @click="leftPlay()">
-                <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
-                <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
-              </button>
-              <button class="btn btn-outline-primary d-block d-md-none col-4 m-2"
-                      :disabled="isVoting"
-                      @click="leftWin()">
-                Vote
-              </button>
+              <div class="col-3">
+                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none"
+                        :disabled="isVoting"
+                        @click="leftPlay()">
+                  <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
+                  <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
+                </button>
+              </div>
+              <div class="col-9">
+                <button class="btn btn-primary btn-lg btn-block d-block d-md-none"
+                        :disabled="isVoting"
+                        @click="leftWin()">
+                  Vote
+                </button>
+              </div>
             </div>
             <div v-else>
               <button class="btn btn-primary btn-block btn-lg d-block d-md-none" :disabled="isVoting"
@@ -72,7 +76,7 @@
       </div>
 
       <!--right part-->
-      <div class="col-md-6 pl-md-0">
+      <div class="col-md-6 pl-md-0 mb-4 mb-md-0">
         <div class="card game-player" :class="{'flex-column-reverse': isMobileScreen}" id="right-player">
           <div v-if="isImageSource(re)"
                @click="clickImage"
@@ -108,17 +112,21 @@
                     @click="rightWin()">Vote
             </button>
             <div class="row" v-if="isYoutubeSource(re)">
-              <button class="btn btn-danger btn-lg d-block d-md-none col-7 m-2"
-                      :disabled="isVoting"
-                      @click="rightPlay()">
-                <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
-                <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
-              </button>
-              <button class="btn btn-outline-danger d-block d-md-none col-4 m-2"
-                      :disabled="isVoting"
-                      @click="rightWin()">
-                Vote
-              </button>
+              <div class="col-3">
+                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none"
+                        :disabled="isVoting"
+                        @click="rightPlay()">
+                  <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
+                  <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
+                </button>
+              </div>
+              <div class="col-9">
+                <button class="btn btn-danger btn-lg btn-block d-block d-md-none"
+                        :disabled="isVoting"
+                        @click="rightWin()">
+                  Vote
+                </button>
+              </div>
             </div>
             <div v-else>
               <button class="btn btn-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"

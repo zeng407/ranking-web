@@ -2,11 +2,12 @@
 
 namespace App\Listeners;
 
-use App\Events\GameComplete;
+use App\Events\GameElementVoted;
 use App\Services\RankService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdatePostRank
+class UpdateElementRank implements ShouldQueue
 {
     use Queueable;
 
@@ -22,14 +23,19 @@ class UpdatePostRank
         $this->rankService = $rankService;
     }
 
+    public function shouldQueue(GameElementVoted $event)
+    {
+        return !$event->isFinal;
+    }
+
     /**
      * Handle the event.
      *
      * @param  object  $event
      * @return void
      */
-    public function handle(GameComplete $event)
+    public function handle(GameElementVoted $event)
     {
-        $this->rankService->createRankReport($event->game->post);
+        $this->rankService->createElementRank($event->game, $event->element);
     }
 }

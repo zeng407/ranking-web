@@ -32,83 +32,85 @@ class RankService
         return $report->rank;
     }
 
+    public function createElementRank(Game $game, Element $element)
+    {
+        \Log::debug("handle GameElementVoted");
+        $post = $game->post;
+        $topRankCounts = Game::where('games.post_id', $post->id)
+            ->whereHas('game_1v1_rounds', function ($query) use ($element) {
+                $query->where('remain_elements', 1);
+            })
+            ->whereHas('game_1v1_rounds', function ($query) use ($element) {
+                $query->where('winner_id', $element->id)
+                    ->orWhere('loser_id', $element->id);
+            })
+            ->count();
+
+        if ($topRankCounts) {
+            $winCount = Game::where('games.post_id', $post->id)
+                ->whereHas('game_1v1_rounds', function ($query) use ($element) {
+                    $query->where('remain_elements', 1)
+                        ->where('winner_id', $element->id);
+                })
+                ->count();
+
+            if ($winCount) {
+                Rank::updateOrCreate([
+                    'post_id' => $post->id,
+                    'element_id' => $element->id,
+                    'rank_type' => RankType::CHAMPION,
+                    'record_date' => today(),
+                ], [
+                    'win_count' => $winCount,
+                    'round_count' => $topRankCounts,
+                    'win_rate' => $winCount / $topRankCounts * 100
+                ]);
+            }
+        }
+
+        $pkCounts = Game::where('games.post_id', $post->id)
+            ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+            ->where(function ($query) use ($element) {
+                $query->where('winner_id', $element->id)
+                    ->orWhere('loser_id', $element->id);
+            })
+            ->count();
+
+        if ($pkCounts) {
+            $winCount = Game::where('games.post_id', $post->id)
+                ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+                ->where('winner_id', $element->id)
+                ->count();
+
+            if ($winCount) {
+                Rank::updateOrCreate([
+                    'post_id' => $post->id,
+                    'element_id' => $element->id,
+                    'rank_type' => RankType::PK_KING,
+                    'record_date' => today(),
+                ], [
+                    'win_count' => $winCount,
+                    'round_count' => $pkCounts,
+                    'win_rate' => $winCount / $pkCounts * 100
+                ]);
+            } else {
+                Rank::updateOrCreate([
+                    'post_id' => $post->id,
+                    'element_id' => $element->id,
+                    'rank_type' => RankType::PK_KING,
+                    'record_date' => today(),
+                ], [
+                    'win_count' => 0,
+                    'round_count' => $pkCounts,
+                    'win_rate' => 0
+                ]);
+            }
+        }
+
+    }
+
     public function createRankReport(Post $post)
     {
-        $post->elements->each(function (Element $element) use ($post) {
-
-            $topRankCounts = Game::where('games.post_id', $post->id)
-                ->whereHas('game_1v1_rounds', function ($query) use ($element) {
-                    $query->where('remain_elements', 1);
-                })
-                ->whereHas('game_1v1_rounds', function ($query) use ($element) {
-                    $query->where('winner_id', $element->id)
-                        ->orWhere('loser_id', $element->id);
-                })
-                ->count();
-
-            if ($topRankCounts) {
-                $winCount = Game::where('games.post_id', $post->id)
-                    ->whereHas('game_1v1_rounds', function ($query) use ($element) {
-                        $query->where('remain_elements', 1)
-                            ->where('winner_id', $element->id);
-                    })
-                    ->count();
-
-                if ($winCount) {
-                    Rank::updateOrCreate([
-                        'post_id' => $post->id,
-                        'element_id' => $element->id,
-                        'rank_type' => RankType::CHAMPION,
-                        'record_date' => today(),
-                    ], [
-                        'win_count' => $winCount,
-                        'round_count' => $topRankCounts,
-                        'win_rate' => $winCount / $topRankCounts * 100
-                    ]);
-                }
-            }
-
-
-            $pkCounts = Game::where('games.post_id', $post->id)
-                ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
-                ->where(function ($query) use ($element) {
-                    $query->where('winner_id', $element->id)
-                        ->orWhere('loser_id', $element->id);
-                })
-                ->count();
-
-            if ($pkCounts) {
-                $winCount = Game::where('games.post_id', $post->id)
-                    ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
-                    ->where('winner_id', $element->id)
-                    ->count();
-
-                if ($winCount) {
-                    Rank::updateOrCreate([
-                        'post_id' => $post->id,
-                        'element_id' => $element->id,
-                        'rank_type' => RankType::PK_KING,
-                        'record_date' => today(),
-                    ], [
-                        'win_count' => $winCount,
-                        'round_count' => $pkCounts,
-                        'win_rate' => $winCount / $pkCounts * 100
-                    ]);
-                } else {
-                    Rank::updateOrCreate([
-                        'post_id' => $post->id,
-                        'element_id' => $element->id,
-                        'rank_type' => RankType::PK_KING,
-                        'record_date' => today(),
-                    ], [
-                        'win_count' => 0,
-                        'round_count' => $pkCounts,
-                        'win_rate' => 0
-                    ]);
-                }
-            }
-        });
-
 //        \Log::debug("update post [{$post->id}] CHAMPION rank");
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
@@ -145,7 +147,7 @@ class RankService
         RankReport::where('post_id', $post->id)
             ->orderByDesc('final_win_rate')
             ->orderByDesc('win_rate')
-            ->eachById(function (RankReport $rankReport, $index) use($post){
+            ->eachById(function (RankReport $rankReport, $index) use ($post) {
                 $rankReport->update([
                     'rank' => $index + 1
                 ]);

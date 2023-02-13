@@ -16,6 +16,7 @@ namespace App\Models{
  *
  * @property int $id
  * @property string|null $path
+ * @property string|null $original_url
  * @property string|null $source_url
  * @property string|null $thumb_url
  * @property string|null $title
@@ -38,6 +39,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Element whereOriginalUrl($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element wherePath($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereSourceUrl($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereThumbUrl($value)
