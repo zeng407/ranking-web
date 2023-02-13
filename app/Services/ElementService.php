@@ -43,28 +43,28 @@ class ElementService
             ->first();
     }
 
-    public function massStore(string $sourceUrl, string $path, Post $post): ?Element
+    public function massStore(string $sourceUrl, string $path, Post $post, $params = []): ?Element
     {
         \Log::debug("guess {$sourceUrl} ...");
         $guess = new ElementSourceGuess($sourceUrl);
         if ($guess->isImage) {
             \Log::debug("got Image");
-            return $this->storeImage($sourceUrl, $path, $post);
+            return $this->storeImage($sourceUrl, $path, $post, $params);
         }
 
         if ($guess->isVideo) {
             \Log::debug("got Video");
-            return $this->storeVideo($sourceUrl, $path, $post);
+            return $this->storeVideo($sourceUrl, $path, $post, $params);
         }
 
         if ($guess->isYoutube) {
             \Log::debug("got Youtube");
-            return $this->storeYoutubeVideo($sourceUrl, $post);
+            return $this->storeYoutubeVideo($sourceUrl, $post, $params);
         }
 
         if ($guess->isGFY) {
             \Log::debug("got GFY");
-            return $this->storeGfycat($sourceUrl, $post);
+            return $this->storeGfycat($sourceUrl, $post, $params);
         }
 
         return null;
@@ -93,7 +93,7 @@ class ElementService
         return $element;
     }
 
-    public function storeImage(string $sourceUrl, string $path, Post $post): ?Element
+    public function storeImage(string $sourceUrl, string $path, Post $post, $params = []): ?Element
     {
         try {
             $content = $this->getContent($sourceUrl);
@@ -117,13 +117,17 @@ class ElementService
         //todo make thumb
         $thumb = $url;
 
-        $element = $post->elements()->create([
+        $title = $params['title'] ?? $fileInfo['filename'];
+
+        $element = $post->elements()->updateOrCreate([
+            'original_url' => $sourceUrl,
+        ], [
             'path' => $path,
             'original_url' => $sourceUrl,
             'source_url' => $url,
             'thumb_url' => $thumb,
             'type' => ElementType::IMAGE,
-            'title' => $fileInfo['filename']
+            'title' => $title
         ]);
 
         return $element;
@@ -151,7 +155,7 @@ class ElementService
         return $content;
     }
 
-    public function storeVideo(string $sourceUrl, string $path, Post $post): ?Element
+    public function storeVideo(string $sourceUrl, string $path, Post $post, $params = []): ?Element
     {
         try {
             $fileInfo = pathinfo($sourceUrl);
@@ -175,32 +179,40 @@ class ElementService
         //todo make thumb
         $thumb = $url;
 
-        $element = $post->elements()->create([
+        $title = $params['title'] ?? $fileInfo['filename'];
+
+        $element = $post->elements()->updateOrCreate([
+            'original_url' => $sourceUrl,
+        ], [
             'path' => $path,
             'original_url' => $sourceUrl,
             'source_url' => $sourceUrl,
             'thumb_url' => $thumb,
             'type' => ElementType::VIDEO,
-            'title' => $fileInfo['filename'],
+            'title' => $title,
             'video_source' => VideoSource::URL
         ]);
 
         return $element;
     }
 
-    public function storeGfycat(string $sourceUrl, Post $post): ?Element
+    public function storeGfycat(string $sourceUrl, Post $post, $params = []): ?Element
     {
         try {
             $gfycatService = app(GfycatService::class);
             $id = $gfycatService->getId($sourceUrl);
             $info = $gfycatService->getInfo($id);
 
-            $element = $post->elements()->create([
+            $title = $params['title'] ?? $info->gfyItem->title;
+
+            $element = $post->elements()->updateOrCreate([
+                'original_url' => $sourceUrl,
+            ], [
                 'original_url' => $sourceUrl,
                 'source_url' => $info->gfyItem->mp4Url,
                 'thumb_url' => $info->gfyItem->posterUrl,
                 'type' => ElementType::VIDEO,
-                'title' => $info->gfyItem->title,
+                'title' => $title,
                 'video_source' => VideoSource::GFYCAT
             ]);
 
@@ -212,7 +224,7 @@ class ElementService
         return $element;
     }
 
-    public function storeYoutubeVideo($sourceUrl, Post $post, $startSec = null, $endSec = null): ?Element
+    public function storeYoutubeVideo($sourceUrl, Post $post, $params = []): ?Element
     {
         $video = app(YoutubeService::class)->query($sourceUrl);
         if (!$video) {
@@ -235,21 +247,24 @@ class ElementService
             $secondPart = (int)$parts[3];
             $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
 
-            $element = $post->elements()->create([
+            $title = $params['title'] ?? $title;
+            $element = $post->elements()->updateOrCreate([
                 'original_url' => $sourceUrl,
-                'source_url' => $sourceUrl,
-                'thumb_url' => $thumbUrl,
-                'title' => $title,
-                'type' => ElementType::VIDEO,
-                'video_source' => VideoSource::YOUTUBE,
-                'video_id' => $id,
-                'video_duration_second' => $second,
-                'video_start_second' => $startSec,
-                'video_end_second' => $endSec
-            ]);
+            ],
+                [
+                    'original_url' => $sourceUrl,
+                    'source_url' => $sourceUrl,
+                    'thumb_url' => $thumbUrl,
+                    'title' => $title,
+                    'type' => ElementType::VIDEO,
+                    'video_source' => VideoSource::YOUTUBE,
+                    'video_id' => $id,
+                    'video_duration_second' => $second,
+                ] + $params);
 
             return $element;
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
+            report($exception);
             return null;
         }
     }
