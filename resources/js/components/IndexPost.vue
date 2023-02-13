@@ -36,6 +36,21 @@
       </table>
     </div>
 
+    <div class="row">
+      <div class="col-12" v-if="!loading[LOADING_POSTS]">
+        <b-pagination
+          v-model="currentPage"
+          :total-rows="posts.meta.total"
+          :per-page="posts.meta.per_page"
+          first-number
+          last-number
+          @change="handlePageChange"
+          align="center"
+        ></b-pagination>
+      </div>
+    </div>
+
+
 
     <div class="mt-2" v-if="!loading[LOADING_POSTS]">
       <div class="alert alert-info" v-if="posts.data.length === 0">
@@ -146,7 +161,7 @@ export default {
   },
   mounted() {
     // bsCustomFileInput.init();
-    this.loadPost();
+    this.loadPosts();
 
     // localize('zh_TW');
     //debug
@@ -171,30 +186,23 @@ export default {
         [CREATING_POST]: false
       },
       posts: null,
+      currentPage: 1
     }
   },
   methods: {
     uploadLoadingStatus(key, status) {
       this.$set(this.loading, key, status);
     },
-    loadPost: function () {
-      // if(this.$cookies.isKey('creating_post_serial')){
-      //   this.serial = this.$cookies.get('creating_post_serial');
-      //   const url = this.showPostEndpoint.replace('_serial', this.serial);
-      //   axios.get(url)
-      //     .then(res => {
-      //       const data = res.data.data;
-      //       this.title = data.title;
-      //       this.serial = data.serial;
-      //       this.description = data.description;
-      //       this.policy = data.policy;
-      //     });
-      // }
+    loadPosts: function (page) {
+      const filter = {
+        'page': page
+      };
       this.uploadLoadingStatus(LOADING_POSTS, true);
       const url = this.getPostsEndpoint;
-      axios.get(url)
+      axios.get(url, {params: filter})
         .then(res => {
           this.posts = res.data;
+          this.currentPage = res.data.meta.current_page;
         })
         .finally(() => {
           this.uploadLoadingStatus(LOADING_POSTS, false);
@@ -229,7 +237,10 @@ export default {
         }
       };
       this.createPostForm = Object.assign({}, data);
-    }
+    },
+    handlePageChange: function (page) {
+      this.loadPosts(page);
+    },
   }
 }
 

@@ -27,7 +27,8 @@ class PostController extends Controller
         $this->authorize('update', $post);
 
         return view('account.post.edit', [
-            'serial' => $post->serial
+            'serial' => $post->serial,
+            'post' => $post
         ]);
     }
 

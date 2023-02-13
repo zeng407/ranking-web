@@ -226,6 +226,7 @@
 
             <!-- edit -->
             <h2 class="mt-5 mb-3">{{ $t('edit_post.edit_media') }}</h2>
+            <p>上限128筆</p>
             <p v-if="totalRow > 0">共{{ totalRow }}筆</p>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
