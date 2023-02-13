@@ -242,9 +242,9 @@ class ElementService
             $duration = $video->getContentDetails()->getDuration();
             preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $parts);
 
-            $hourPart = (int)$parts[1];
-            $minutePart = (int)$parts[2];
-            $secondPart = (int)$parts[3];
+            $hourPart = isset($parts[1]) ? (int)$parts[1] : 0;
+            $minutePart = isset($parts[2]) ? (int)$parts[2] : 0;
+            $secondPart = isset($parts[3]) ? (int)$parts[3] : 0;
             $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
 
             $title = $params['title'] ?? $title;
