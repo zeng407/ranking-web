@@ -7,11 +7,15 @@ function wait(time) {
 
 const thumbs = document.getElementsByClassName('thumb');
 let src = [];
-for (var i = 2; i <= thumbs.length; i++) {
+for (var i = 2; i < thumbs.length; i++) {
     console.log(i);
+
+    //title
+    let title = thumbs[i].parentElement.getElementsByTagName('td')[2].textContent;
+    title = title.replace(','," ");
     //image
     if(thumbs[i] && thumbs[i].children[0] && thumbs[i].children[0].href){
-        src.push(thumbs[i].children[0].href);
+        src.push(thumbs[i].children[0].href + " " + title);
         await wait(200);
     }
 
@@ -25,10 +29,10 @@ for (var i = 2; i <= thumbs.length; i++) {
             if(contentDoc.getElementsByTagName('iframe')[0]){
                 url = contentDoc.getElementsByTagName('iframe')[0].src;
                 schema = new URL(url);
-                src.push(schema.origin + schema.pathname);
+                src.push(schema.origin + schema.pathname + " " + title);
             }
         }
-        await wait(300);
+        await wait(500);
         thumbs[i].click();
     }
 }

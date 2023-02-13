@@ -60,14 +60,21 @@ class ElementController extends Controller
         $urls = $request->input('url');
 
         try {
-            //url string to array and trim url
+            // url string to array and trim url
+            // example: convert "example1.com, www.example.com" to
+            // ["example.com", "www.example.com"]
             $urls = array_unique(explode(',', $urls));
             $urls = array_filter(array_map(function ($url) {
                 return trim($url);
             }, $urls));
 
             $urlCount = 0;
-            foreach ($urls as $url) {
+            foreach ($urls as $urlStr) {
+                // convert string to url + title
+                // example: convert "example.com title" to
+                // ["example.com", "title"]
+                $parts = explode(" ", $urlStr, 2);
+                $url = $parts[0] ?? "";
                 \Validator::validate([
                     'url' => $url
                 ], [
@@ -78,7 +85,7 @@ class ElementController extends Controller
         } catch (\Exception $exception) {
             report($exception);
             return api_response(ApiResponseCode::INVALID_URL, 422, [
-                'error_url' => $url,
+                'error_url' => $urlStr,
             ]);
         }
 
@@ -86,6 +93,7 @@ class ElementController extends Controller
 
         // check elements count
         if ($post->elements()->count() + $urlCount > config('setting.post_max_element_count')) {
+            \Log::debug("{$post->serial} OVER_ELEMENT_SIZE");
             return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
         }
 
@@ -93,13 +101,18 @@ class ElementController extends Controller
             $path = Auth::id() . '/' . $request->post_serial;
             $elements = [];
             $errors = [];
-            foreach ($urls as $url) {
-                if ($this->elementService->getExistsElement($url, $post)) {
-                    \Log::debug("skip exists source $url");
-                    continue;
-                }
+            foreach ($urls as $urlStr) {
+                $parts = explode(" ", $urlStr,2);
+                $url = $parts[0] ?? "";
+                $title = $parts[1] ?? "";
 
-                $element = $this->elementService->massStore($url, $path, $post);
+                $elementParams = [];
+                if($title){
+                    $elementParams['title'] = substr($title,0,config('setting.element_title_size'));
+                }
+                $element = $this->elementService->massStore($url, $path, $post, $elementParams);
+                \Log::debug("massStore return");
+                \Log::debug($element);
                 if (!$element) {
                     $errors[] = $url;
                     continue;
@@ -112,7 +125,8 @@ class ElementController extends Controller
         }
 
         if ($elements === []) {
-            return api_response(ApiResponseCode::INVALID_URL, 422, [
+            \Log::debug("NO_ELEMENT_CREATED");
+            return api_response(ApiResponseCode::NO_ELEMENT_CREATED, 422, [
                 'error_url' => head($errors),
                 'error_urls' => $errors
             ]);
