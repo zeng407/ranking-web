@@ -13,7 +13,7 @@
           }})</h5>
       </div>
     </div>
-    <div class="row" v-if="game">
+    <div class="row" v-if="game" style="min-height: 636.5px">
       <!--left part-->
       <div class="col-md-6 pr-md-0 mb-2 mb-md-0">
         <div class="card game-player" id="left-player">
@@ -29,12 +29,14 @@
             <youtube :videoId="le.video_id"
                      width="100%" :height="elementHeight"
                      :ref="le.id"
-                     @ready="doPlay(le)"
+                     @ready="doPlay(le, true)"
                      :player-vars="{
                       controls:1,
                       autoplay:1,
                       rel: 0,
-                      origin: host
+                      origin: host,
+                      loop: 1,
+                      playlist: re.video_id
                      }"
             ></youtube>
           </div>
@@ -42,7 +44,7 @@
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.source_url"></video>
           </div>
           <div class="card-body text-center">
-            <div style="height: 70px">
+            <div class="my-1" style="height: 70px">
               <p class="my-1">{{ le.title }}</p>
             </div>
             <button class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
@@ -95,7 +97,9 @@
                       controls:1,
                       autoplay:1,
                       rel: 0,
-                      host: host
+                      host: host,
+                      loop: 1,
+                      playlist: re.video_id
                      }"
             ></youtube>
           </div>
@@ -105,7 +109,7 @@
 
           <!-- reverse when device size width less md(768px)-->
           <div class="card-body text-center" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
-            <div style="height: 70px" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
+            <div class="my-1" style="height: 70px" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
               <p class="my-1">{{ re.title }}</p>
             </div>
             <button class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
@@ -256,8 +260,9 @@ export default {
       post: null,
       elementsCount: "",
       isVoting: false,
-      isLeftPlaying: false,
-      isRightPlaying: false
+      isLeftPlaying: true,
+      isRightPlaying: false,
+      rememberedScrollPosition: null
     }
   },
   computed: {
@@ -319,11 +324,12 @@ export default {
       axios.get(url)
         .then(res => {
           this.game = res.data.data;
-          this.doPlay(this.le);
+          this.doPlay(this.le, true);
           this.doPlay(this.re);
         })
         .then(() => {
           this.resetPlayerPosition();
+          this.scrollToLastPosition();
         });
     },
     leftPlay() {
@@ -342,6 +348,7 @@ export default {
       }
     },
     leftWin() {
+      this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
         this.vote(this.le, this.re);
@@ -354,7 +361,6 @@ export default {
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
-          this.destroyElements();
         });
         return;
       }
@@ -388,6 +394,7 @@ export default {
 
     },
     rightWin() {
+      this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
         this.vote(this.re, this.le);
@@ -400,7 +407,6 @@ export default {
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
-          this.destroyElements();
         });
         return;
       }
@@ -436,6 +442,12 @@ export default {
       $('#right-player').removeClass('zoom-in');
       $('#right-player').show();
     },
+    scrollToLastPosition() {
+      if(this.rememberedScrollPosition !== null) {
+        console.log(this.rememberedScrollPosition);
+        window.scrollTo(0, this.rememberedScrollPosition);
+      }
+    },
     vote: function (winner, loser) {
       const data = {
         'game_serial': this.gameSerial,
@@ -453,7 +465,6 @@ export default {
       // }).promise();
       // let loseAnimation = $('#' + winObj).trigger('win');
       // let winAnimation = $('#' + loseObj).trigger('lose');
-
       return axios.post(this.voteGameEndpoint, data)
         .then(res => {
           this.isVoting = false;
@@ -464,6 +475,7 @@ export default {
           } else {
             this.$cookies.set(this.postSerial, this.gameSerial, "1d");
             this.nextRound();
+            this.destroyElements();
           }
         })
 
@@ -478,10 +490,15 @@ export default {
     getPlayer(element) {
       return _.get(this.$refs, element.id + '.player', null);
     },
-    doPlay(element) {
+    doPlay(element, loud = false) {
       const player = this.getPlayer(element);
       if (player) {
-        player.mute();
+        if(loud){
+          player.unMute();
+        }else{
+          player.mute();
+        }
+
         // reset when video is stopped
         player.addEventListener('onStateChange', (event) => {
           if (event.target.getPlayerState() === 0) {
@@ -502,13 +519,18 @@ export default {
     destroyElements() {
       let player = null;
       player = this.getPlayer(this.le);
+      //default left player un-mute
       if (player) {
+        player.unMute();
         player.stopVideo();
+        this.isLeftPlaying = true;
       }
 
       player = this.getPlayer(this.re);
       if (player) {
+        player.mute();
         player.stopVideo();
+        this.isRightPlaying = false;
       }
     },
     videoHoverIn(myElement, theirElement) {

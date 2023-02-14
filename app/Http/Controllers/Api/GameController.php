@@ -128,13 +128,11 @@ class GameController extends Controller
                 'is_eliminated' => true
             ]);
 
-        $isFinal = $this->gameService->isGameComplete($game);
-
-        event(new GameElementVoted($game, $gameRound->winner, $isFinal));
-        event(new GameElementVoted($game, $gameRound->loser, $isFinal));
+        event(new GameElementVoted($game, $gameRound->winner));
+        event(new GameElementVoted($game, $gameRound->loser));
 
         // update rank when game complete
-        if ($isFinal) {
+        if ($this->gameService->isGameComplete($game)) {
             event(new GameComplete($game));
         }
 

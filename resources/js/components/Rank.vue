@@ -12,7 +12,7 @@
     <b-tabs content-class="mt-3" v-if="!isLoading">
       <b-tab title="我的排名" v-if="gameResult">
         <div class="card my-1">
-          <div class="card-body text-center" style="height: 387px">
+          <div class="card-body text-center" style="min-height: 387px">
             <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270"
                      :ref="gameResult.winner.id"
                      :videoId="gameResult.winner.video_id"
@@ -30,8 +30,8 @@
                  :alt="gameResult.winner.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ gameResult.winner.title }}</div>
-              <div class="align-self-end">
-                我的排名：1 <br>
+              <div class="align-self-end text-right mt-2">
+                #1 <br>
                 全體排名：{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
               </div>
             </div>
@@ -57,8 +57,8 @@
                  :alt="rank.loser.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.loser.title }}</div>
-              <div class="align-self-end">
-                我的排名：{{ index + 2 }}<br>
+              <div class="align-self-end text-right mt-2">
+                #{{ index + 2 }}<br>
                 全體排名：{{ rank.rank ? rank.rank : '無' }}
               </div>
             </div>
@@ -67,7 +67,7 @@
       </b-tab>
       <b-tab title="全體排名">
         <div v-if="rankReportData && !loadingPage" class="card my-1" v-for="(rank, index) in rankReportData.data">
-          <div class="card-body text-center" style="height: 387px">
+          <div class="card-body text-center" style="min-height: 387px">
             <youtube v-if="isYoutubeSource(rank.element)" width="100%" height="270"
                      :ref="rank.element.id"
                      :videoId="rank.element.video_id"
@@ -86,7 +86,7 @@
                  :alt="rank.element.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.element.title }}</div>
-              <div class="align-self-end">
+              <div class="align-self-end text-right mt-2">
                 <span>#{{ rank.rank }}</span><br>
                 <span v-if="rank.final_win_rate"> {{
                     $t('edit_post.rank.win_at_final')
