@@ -7,9 +7,8 @@ use App\Services\RankService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdateElementRank implements ShouldQueue
+class UpdateElementRank
 {
-    use Queueable;
 
     protected $rankService;
 
@@ -21,11 +20,6 @@ class UpdateElementRank implements ShouldQueue
     public function __construct(RankService $rankService)
     {
         $this->rankService = $rankService;
-    }
-
-    public function shouldQueue(GameElementVoted $event)
-    {
-        return !$event->isFinal;
     }
 
     /**

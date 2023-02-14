@@ -25,6 +25,8 @@ class RankService
 
     public function getRankPosition(Post $post, Element $element)
     {
+        \Log::debug("get rank position");
+        \Log::debug($element->id);
         $report = RankReport::where('post_id', $post->id)
             ->where('element_id', $element->id)
             ->first();
@@ -34,7 +36,7 @@ class RankService
 
     public function createElementRank(Game $game, Element $element)
     {
-        \Log::debug("handle GameElementVoted");
+        \Log::debug("handle GameElementVoted $element->id");
         $post = $game->post;
         $topRankCounts = Game::where('games.post_id', $post->id)
             ->whereHas('game_1v1_rounds', function ($query) use ($element) {
@@ -111,7 +113,7 @@ class RankService
 
     public function createRankReport(Post $post)
     {
-//        \Log::debug("update post [{$post->id}] CHAMPION rank");
+        \Log::info("update post [{$post->id}] CHAMPION rank");
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
             ->where('record_date', today())
@@ -127,7 +129,7 @@ class RankService
                 ]);
             });
 
-//        \Log::debug("update post [{$post->id}] PK_KING rank");
+        \Log::info("update post [{$post->id}] PK_KING rank");
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::PK_KING)
             ->where('record_date', today())
@@ -143,7 +145,7 @@ class RankService
                 ]);
             });
 
-//        \Log::debug("update post [{$post->id}] rank report");
+        \Log::info("update post [{$post->id}] rank report");
         RankReport::where('post_id', $post->id)
             ->orderByDesc('final_win_rate')
             ->orderByDesc('win_rate')

@@ -14,19 +14,17 @@ class GameElementVoted
 
     public Element $element;
     public Game $game;
-    public bool $isFinal;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(Game $game, Element $element, $isFinal)
+    public function __construct(Game $game, Element $element)
     {
-        \Log::debug("GameElementVoted");
+        \Log::debug("GameElementVoted $element->id");
         $this->element = $element;
         $this->game = $game;
-        $this->isFinal = $isFinal;
     }
 
 }
