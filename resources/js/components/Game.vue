@@ -548,13 +548,13 @@ export default {
       }
       const myPlayer = this.getPlayer(myElement);
       if (myPlayer) {
-        window.p1 = myPlayer;
+        // window.p1 = myPlayer;
         myPlayer.unMute();
       }
 
       const theirPlayer = this.getPlayer(theirElement);
       if (theirPlayer) {
-        window.p2 = theirPlayer;
+        // window.p2 = theirPlayer;
         theirPlayer.mute();
       }
 
