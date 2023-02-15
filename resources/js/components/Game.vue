@@ -29,14 +29,14 @@
             <youtube :videoId="le.video_id"
                      width="100%" :height="elementHeight"
                      :ref="le.id"
-                     @ready="doPlay(le, true)"
+                     @ready="doPlay(le, true,'left')"
                      :player-vars="{
                       controls:1,
                       autoplay:1,
                       rel: 0,
                       origin: host,
                       loop: 1,
-                      playlist: re.video_id
+                      playlist: le.video_id
                      }"
             ></youtube>
           </div>
@@ -92,7 +92,7 @@
             <youtube :videoId="re.video_id"
                      width="100%" :height="elementHeight"
                      :ref="re.id"
-                     @ready="doPlay(re)"
+                     @ready="doPlay(re,false,'right')"
                      :player-vars="{
                       controls:1,
                       autoplay:1,
@@ -109,7 +109,8 @@
 
           <!-- reverse when device size width less md(768px)-->
           <div class="card-body text-center" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
-            <div class="my-1" style="height: 70px" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
+            <div class="my-1" style="height: 70px"
+                 :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
               <p class="my-1">{{ re.title }}</p>
             </div>
             <button class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
@@ -262,11 +263,13 @@ export default {
       isVoting: false,
       isLeftPlaying: true,
       isRightPlaying: false,
-      rememberedScrollPosition: null
+      rememberedScrollPosition: null,
+      isLeftPlayerInit: false,
+      isRightPlayerInit: false,
     }
   },
   computed: {
-    isMobileScreen: function() {
+    isMobileScreen: function () {
       return $(window).width() < MD_WIDTH_SIZE;
     },
     isElementsPowerOfTwo: function () {
@@ -324,8 +327,8 @@ export default {
       axios.get(url)
         .then(res => {
           this.game = res.data.data;
-          this.doPlay(this.le, true);
-          this.doPlay(this.re);
+          this.doPlay(this.le, true, 'left');
+          this.doPlay(this.re, false, 'right');
         })
         .then(() => {
           this.resetPlayerPosition();
@@ -443,8 +446,8 @@ export default {
       $('#right-player').show();
     },
     scrollToLastPosition() {
-      if(this.rememberedScrollPosition !== null) {
-        console.log(this.rememberedScrollPosition);
+      if (this.rememberedScrollPosition !== null) {
+        // console.log(this.rememberedScrollPosition);
         window.scrollTo(0, this.rememberedScrollPosition);
       }
     },
@@ -490,31 +493,37 @@ export default {
     getPlayer(element) {
       return _.get(this.$refs, element.id + '.player', null);
     },
-    doPlay(element, loud = false) {
+    doPlay(element, loud = false, name) {
       const player = this.getPlayer(element);
+
       if (player) {
-        if(loud){
+        if (loud) {
           player.unMute();
-        }else{
+        } else {
           player.mute();
         }
 
-        // reset when video is stopped
-        player.addEventListener('onStateChange', (event) => {
-          if (event.target.getPlayerState() === 0) {
-            player.stopVideo();
-            player.cueVideoById({
-              videoId: element.video_id,
-              startSeconds: element.video_start_second
-            });
-          }
-        });
+        if (name === 'left' && this.isLeftPlayerInit === false) {
+          this.isLeftPlayerInit = true;
+          this.initPlayerEventLister(player);
+        }else if (name === 'right' && this.isRightPlaying === false) {
+          this.isLeftPlayerInit = true
+          this.initPlayerEventLister(player);
+        }
+
         player.loadVideoById({
           videoId: element.video_id,
           startSeconds: element.video_start_second,
           endSeconds: element.video_end_second
         });
       }
+    },
+    initPlayerEventLister(player) {
+      player.addEventListener('onStateChange', (event) => {
+        if (event.target.getPlayerState() === 0) {
+          player.playVideo();
+        }
+      });
     },
     destroyElements() {
       let player = null;
@@ -539,13 +548,13 @@ export default {
       }
       const myPlayer = this.getPlayer(myElement);
       if (myPlayer) {
-        // window.p1 = myPlayer;
+        window.p1 = myPlayer;
         myPlayer.unMute();
       }
 
       const theirPlayer = this.getPlayer(theirElement);
       if (theirPlayer) {
-        // window.p2 = theirPlayer;
+        window.p2 = theirPlayer;
         theirPlayer.mute();
       }
 
