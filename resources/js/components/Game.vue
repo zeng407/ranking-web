@@ -5,7 +5,7 @@
       <h2 class="text-center text-break">{{ game.title }}</h2>
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
-        <h5 class="text-center align-self-center" style="width: 60%">{{ game.current_round }} of TOP {{
+        <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP {{
             game.of_round
           }} </h5>
         <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} / {{
@@ -19,7 +19,7 @@
         <div class="card game-player" id="left-player">
           <div v-if="isImageSource(le)"
                @click="clickImage"
-               :style="{backgroundImage: 'url('+le.source_url+')', height: this.elementHeight+'px'}"
+               :style="{backgroundImage: 'url('+le.thumb_url+')', height: this.elementHeight+'px'}"
                class="game-image"
           ></div>
           <div class="d-flex" v-if="isYoutubeSource(le)"
@@ -41,7 +41,7 @@
             ></youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
-            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.source_url"></video>
+            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.thumb_url"></video>
           </div>
           <div class="card-body text-center">
             <div class="my-1" style="height: 70px">
@@ -82,7 +82,7 @@
         <div class="card game-player" :class="{'flex-column-reverse': isMobileScreen}" id="right-player">
           <div v-if="isImageSource(re)"
                @click="clickImage"
-               :style="{backgroundImage: 'url('+re.source_url+')', height: this.elementHeight+'px'}"
+               :style="{backgroundImage: 'url('+re.thumb_url+')', height: this.elementHeight+'px'}"
                class="game-image"
           ></div>
           <div class="d-flex" v-else-if="isYoutubeSource(re)"
@@ -104,7 +104,7 @@
             ></youtube>
           </div>
           <div v-else-if="isVideoSource(re)">
-            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.source_url"></video>
+            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.thumb_url"></video>
           </div>
 
           <!-- reverse when device size width less md(768px)-->

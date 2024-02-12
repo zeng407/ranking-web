@@ -1,6 +1,7 @@
 <?php
 
 // @formatter:off
+// phpcs:ignoreFile
 /**
  * A helper file for your Eloquent Models
  * Copy the phpDocs from this file to the correct Model,
@@ -16,7 +17,6 @@ namespace App\Models{
  *
  * @property int $id
  * @property string|null $path
- * @property string|null $original_url
  * @property string|null $source_url
  * @property string|null $thumb_url
  * @property string|null $title
@@ -29,6 +29,7 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \App\Models\ImgurImage|null $imgur_image
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Post> $posts
  * @property-read int|null $posts_count
  * @method static \Database\Factories\ElementFactory factory(...$parameters)
@@ -39,7 +40,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Element whereOriginalUrl($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element wherePath($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereSourceUrl($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Element whereThumbUrl($value)
@@ -149,6 +149,82 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * App\Models\ImgurAlbum
+ *
+ * @property int $id
+ * @property string $albumable_type
+ * @property int $albumable_id
+ * @property string|null $album_id
+ * @property string $title
+ * @property string $description
+ * @property string|null $delete_hash
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $albumable
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum query()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereAlbumId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereAlbumableId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereAlbumableType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereDeleteHash($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum withoutTrashed()
+ * @mixin \Eloquent
+ */
+	class IdeHelperImgurAlbum {}
+}
+
+namespace App\Models{
+/**
+ * App\Models\ImgurImage
+ *
+ * @property int $id
+ * @property string $imageable_type
+ * @property int $imageable_id
+ * @property string|null $image_id
+ * @property int|null $imgur_album_id
+ * @property string|null $title
+ * @property string|null $description
+ * @property string|null $delete_hash
+ * @property string|null $link
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $imageable
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage query()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereDeleteHash($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereImageId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereImageableId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereImageableType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereImgurAlbumId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereLink($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurImage withoutTrashed()
+ * @mixin \Eloquent
+ */
+	class IdeHelperImgurImage {}
+}
+
+namespace App\Models{
+/**
  * App\Models\Post
  *
  * @property int $id
@@ -163,6 +239,7 @@ namespace App\Models{
  * @property-read int|null $elements_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Game> $games
  * @property-read int|null $games_count
+ * @property-read \App\Models\ImgurAlbum|null $imgur_album
  * @property-read \App\Models\PostPolicy|null $post_policy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PostTrend> $post_trends
  * @property-read int|null $post_trends_count

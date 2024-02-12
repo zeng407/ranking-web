@@ -1,4 +1,5 @@
 {
+    "VoteUp": "殘酷二選一",
     "Remember Me": "讓我保持登入",
     "Login": "登入",
     "E-Mail Address": "Email",
@@ -9,5 +10,5 @@
     "Language": "語言",
     "Chinese": "中文",
     "English": "英文",
-    "My Votes": "我的Votes"
+    "My Votes": "我的投票"
 }

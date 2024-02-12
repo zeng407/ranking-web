@@ -15,7 +15,7 @@ class GameComplete
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $game;
+    public Game $game;
 
     /**
      * Create a new event instance.
@@ -24,6 +24,7 @@ class GameComplete
      */
     public function __construct(Game $game)
     {
+        logger('[GameComplete] event fired', ['game' => $game->id]);
         $this->game = $game;
     }
 

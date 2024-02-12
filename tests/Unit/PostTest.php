@@ -12,6 +12,8 @@ use Google\Service\YouTube\AccessPolicy;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+
 
 use Tests\TestCase;
 
@@ -107,8 +109,27 @@ class PostTest extends TestCase
 
         $this->be($user);
 
+        Http::fake([
+            'image' => Http::response([
+                'data' => [
+                    'id' => 'anyid',
+                    'deletehash' => 'anydeletehash',
+                    'title' => 'anytitle',
+                    'description' => 'anydescription',
+                    'link' => 'anylink',
+                ],
+                'success' => true,
+            ], 200),
+        ]);
+
         /** @var Post $post */
         $post = $user->posts()->first();
+        $post->imgur_album()->create([
+            'album_id' => 'anyid',
+            'deletehash' => 'anydeletehash',
+            'title' => 'anytitle',
+            'description' => 'anydescription',
+        ]);
 
         $file = UploadedFile::fake()->image('random_image.jpg');
         $data = [
@@ -141,17 +162,15 @@ class PostTest extends TestCase
 
         $data = [
             'post_serial' => $post->serial,
-            'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            'video_start_second' => '34',
-            'video_end_second' => '78'
+            'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ, https://www.youtube.com/watch?v=hvL1339luv0',
         ];
 
-        $res = $this->post(route('api.element.create-video-youtube'), $data);
-        $res->assertCreated();
-        $this->assertEquals($post->elements()->first()->id, $res->json('data.id'));
-        $this->assertEquals($res->json('data.type'), ElementType::VIDEO);
-        $this->assertEquals($res->json('data.video_start_second'), '34');
-        $this->assertEquals($res->json('data.video_end_second'), '78');
-        $this->assertEquals($res->json('data.source_url'), 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+        $res = $this->post(route('api.element.batch-create'), $data);
+        $res->assertOk();
+        $this->assertEquals($post->elements()->first()->id, $res->json('data.0.id'));
+        $this->assertEquals($res->json('data.0.type'), ElementType::VIDEO);
+        $this->assertEquals($res->json('data.0.source_url'), 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+        $this->assertEquals($res->json('data.1.type'), ElementType::VIDEO);
+        $this->assertEquals($res->json('data.1.source_url'), 'https://www.youtube.com/watch?v=hvL1339luv0');
     }
 }

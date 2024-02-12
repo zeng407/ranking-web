@@ -30,6 +30,7 @@ class UpdatePostRank
      */
     public function handle(GameComplete $event)
     {
+        logger('[UpdatePostRank] listener handle', ['post_id' => $event->game->post->id]);
         $this->rankService->createRankReport($event->game->post);
     }
 }

@@ -9,6 +9,8 @@ use App\Http\Resources\PublicPostResource;
 use App\Models\Post;
 use App\Services\PostService;
 use Illuminate\Http\Request;
+use App\Repositories\Filters\PostFilter;
+
 
 class PublicPostController extends Controller
 {
@@ -22,9 +24,9 @@ class PublicPostController extends Controller
     public function index(Request $request)
     {
         $posts = $this->postService->getLists([
-            'public' => true,
-            'elements_count_gte' => config('setting.post_min_element_count'),
-            'any_like' => $request->query('any_like')
+            PostFilter::PUBLIC => true,
+            PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
+            PostFilter::ANY_LIKE => $request->query('any_like')
         ],[
             'sort_by' => $request->query('sort_by'),
             'sort_dir' => $request->query('sort_dir'),

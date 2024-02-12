@@ -4,7 +4,12 @@
 namespace App\Services;
 
 
+use App\Models\Post;
 use App\Repositories\PostRepository;
+use App\Models\User;
+use App\Helper\SerialGenerator;
+use App\Events\PostCreated;
+use App\Events\PostDeleted;
 
 class PostService
 {
@@ -13,6 +18,11 @@ class PostService
     public function __construct(PostRepository $elementRepository)
     {
         $this->repo = $elementRepository;
+    }
+
+    public function getPost($serial): ?Post
+    {
+        return Post::where('serial', $serial)->first();
     }
 
     public function getLists(array $conditions, array $sorter = [] , array $paginationOptions = [])
@@ -33,5 +43,28 @@ class PostService
         return $query->paginate($perPage);
     }
 
+    public function create(User $user, array $data)
+    {
+            /** @var Post $post */
+        $post = $user->posts()->create([
+            'serial' => SerialGenerator::genPostSerial()
+        ] + $data);
 
+        $post->post_policy()->updateOrCreate(data_get($data, 'policy', []));
+
+        $post->imgur_album()->create([
+            'title' => $post->title,
+            'description' => $post->description
+        ]);
+
+        event(new PostCreated($post));
+
+        return $post;
+    }
+
+    public function delete(Post $post)
+    {
+        $post->delete();
+        event(new PostDeleted($post));
+    }
 }

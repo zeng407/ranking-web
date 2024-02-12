@@ -44,6 +44,7 @@ Route::get('account/posts', [MyPostController::class, 'index'])->name('api.post.
 Route::get('account/post/{post:serial}', [MyPostController::class, 'show'])->name('api.post.show');
 Route::post('account/post', [MyPostController::class, 'create'])->name('api.post.create');
 Route::put('account/post/{post:serial}', [MyPostController::class, 'update'])->name('api.post.update');
+Route::delete('account/post/{post:serial}', [MyPostController::class, 'delete'])->name('api.post.delete');
 Route::get('account/post/{post:serial}/elements', [MyPostController::class, 'elements'])->name('api.post.elements');
 Route::get('account/post/{post:serial}/rank', [MyPostController::class, 'rank'])->name('api.post.rank');
 Route::post('account/elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');

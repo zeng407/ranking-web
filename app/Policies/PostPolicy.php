@@ -36,6 +36,11 @@ class PostPolicy
         return true;
     }
 
+    public function delete(User $user, Post $post)
+    {
+        return $post->user_id === $user->id;
+    }
+
     public function newGame(?User $user, Post $post)
     {
         if($user && $user->id === $post->user_id){

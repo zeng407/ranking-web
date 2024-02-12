@@ -1,5 +1,5 @@
 // Fonts
-@import url('https://fonts.googleapis.com/css?family=Nunito');
+@import url("https://fonts.googleapis.com/css?family=Nunito");
 
 // Font-Awesome
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
@@ -8,12 +8,11 @@
 @import "~@fortawesome/fontawesome-free/scss/brands";
 
 // Variables
-@import 'variables';
+@import "variables";
 
 // Bootstrap
-@import '~bootstrap/scss/bootstrap';
-@import '~bootstrap-vue';
-
+@import "~bootstrap/scss/bootstrap";
+@import "~bootstrap-vue";
 
 .game-image {
     width: 100%;
@@ -21,7 +20,7 @@
     background-size: cover;
     background-position: center center;
     display: flex;
-    transition: .5s;
+    transition: 0.5s;
 }
 
 .game-image:hover {
@@ -73,18 +72,19 @@
     animation-fill-mode: forwards;
     box-shadow: inset 0 0 20px rgba(255, 255, 255, 0);
     outline: 3px solid;
-
 }
 
 @keyframes blue-btn-popping {
     from {
-        box-shadow: inset 0 0 20px rgba(255,255,255, 0);
+        box-shadow: inset 0 0 20px rgba(255, 255, 255, 0);
         outline: 1px solid;
-        outline-color: rgba(52, 144, 220, .5);
+        outline-color: rgba(52, 144, 220, 0.5);
         outline-offset: 0px;
     }
     to {
-        box-shadow: inset 0 0 20px rgba(255,255,255, .5), 0 0 20px rgba(255,255,255, .2);
+        box-shadow:
+            inset 0 0 20px rgba(255, 255, 255, 0.5),
+            0 0 20px rgba(255, 255, 255, 0.2);
         outline-color: rgba(52, 144, 220, 0);
         outline-offset: 30px;
     }
@@ -101,14 +101,46 @@
 
 @keyframes red-btn-popping {
     from {
-        box-shadow: inset 0 0 20px rgba(255,255,255, 0);
+        box-shadow: inset 0 0 20px rgba(255, 255, 255, 0);
         outline: 1px solid;
         outline-color: rgba(220, 53, 69, 0.5);
         outline-offset: 0px;
     }
     to {
-        box-shadow: inset 0 0 20px rgba(255,255,255, .5), 0 0 20px rgba(255,255,255, .2);
+        box-shadow:
+            inset 0 0 20px rgba(255, 255, 255, 0.5),
+            0 0 20px rgba(255, 255, 255, 0.2);
         outline-color: rgba(220, 53, 69, 0);
         outline-offset: 30px;
     }
+}
+
+.image-container {
+    height: 50px;
+    overflow: hidden; /* Hide any overflow */
+}
+
+.zoomable-image {
+    width: 100%; /* Make the image fill the container */
+    height: 100%;
+    transition: transform 0.3s; /* Add a smooth transition effect */
+}
+
+.zoomable-image:hover {
+    transform: scale(1.2); /* Apply a scale transformation on hover */
+}
+
+.rank-circle {
+    position: absolute;
+    top: -5%;
+    right: -3%;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color:rgba(53, 77, 157, 0.8);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3em;
 }

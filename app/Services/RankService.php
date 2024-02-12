@@ -25,8 +25,6 @@ class RankService
 
     public function getRankPosition(Post $post, Element $element)
     {
-        \Log::debug("get rank position");
-        \Log::debug($element->id);
         $report = RankReport::where('post_id', $post->id)
             ->where('element_id', $element->id)
             ->first();

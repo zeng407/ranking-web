@@ -1,6 +1,5 @@
 <template>
-  <div class="container-fluid">
-    <h1 class="text-center">殘酷二選一</h1>
+  <div class="mt-5 container-fluid">
     <div class="d-flex justify-content-between flex-nowrap">
       <div class="form-inline">
         <div class="btn-group btn-group-toggle" data-toggle="buttons">
@@ -104,7 +103,7 @@
               </span>
               <span class="mt-2 card-text float-right">
                 <span class="pr-2">
-                  <i class="fas fa-eye"></i>&nbsp;{{post.play_count}}
+                  <i class="fas fa-play-circle"></i>&nbsp;{{post.play_count}}
                 </span>
                 <small class="text-muted">{{post.created_at | datetime}}</small>
               </span>
