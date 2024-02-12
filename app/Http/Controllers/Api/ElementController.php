@@ -194,8 +194,7 @@ class ElementController extends Controller
         /** @see ElementPolicy::delete() */
         $this->authorize('delete', $element);
 
-        $element->posts()->detach();
-        $element->delete();
+        $this->elementService->delete($element);
 
         return response()->json();
     }

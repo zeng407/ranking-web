@@ -5,27 +5,30 @@
     "Title": "標題",
     "Publish": "發佈",
 
-    "my_games.title": "管理我的Rank",
-    "my_games.new": "新增Rank",
+    "my_games.title": "管理我的貼文",
+    "my_games.new": "新增貼文",
     "my_games.table.title": "標題",
     "my_games.table.description": "描述",
     "my_games.table.publish": "發佈",
+    "my_games.table.edit": "編輯",
+    "my_games.table.delete": "刪除",
     "my_games.table.no_data": "無資料",
 
     "create_game.publish": "發佈",
-    "create_game.title" :"Rank基本資訊",
+    "create_game.title" :"基本資訊",
     "create_game.cancel": "取消",
     "create_game.submit": "新增",
-    "create_game.description.hint": "簡單描述這個Rank內容",
+    "create_game.description.hint": "簡單描述貼文內容",
 
     "edit_post.tab.info": "基本資訊",
     "edit_post.tab.element": "素材",
     "edit_post.tab.rank": "排行",
-
-    "edit_post.info.head": "Rank基本資訊",
-    "edit_post.info.play": "Rank Start",
+    
+    "edit_post.info.head": "基本資訊",
+    "edit_post.info.play": "Play",
     "edit_post.info.edit": "編輯",
     "edit_post.info.save": "儲存",
+    "edit_post.info.delete": "刪除",
     "edit_post.info.create_time": "建立時間",
     "edit_post.at_least_element_number_hint": "至少上傳8個素材才能對外公開",
     "edit_post.upload_image": "上傳圖片",
@@ -36,8 +39,20 @@
     "edit_post.video_range": "播放範圍",
     "edit_post.rank.game_plays": "遊戲次數",
     "edit_post.rank.win_at_final": "決賽勝率",
-    "edit_post.rank.win_rate": "一般勝率"
+    "edit_post.rank.win_rate": "1v1勝率",
 
+    "Cancel": "取消",
+    "Delete": "刪除",
+    "Enter Password": "輸入密碼",
+    "Request failed": "請求失敗",
+    "Deleted!": "已刪除",
+    "Your post has been deleted.": "貼文已刪除",
 
+    "Upload from URL": "從網址上傳",
+    "Upload from Local": "從本地上傳",
+    "Global Rank": "其他人的排名",
+    "Rank": "排名",
+    "Champion": "決賽",
+    "1v1": "1v1勝率"
 
 }

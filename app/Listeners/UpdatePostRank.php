@@ -7,9 +7,8 @@ use App\Services\RankService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdatePostRank implements ShouldQueue
+class UpdatePostRank
 {
-    use Queueable;
 
     protected $rankService;
 
@@ -31,6 +30,7 @@ class UpdatePostRank implements ShouldQueue
      */
     public function handle(GameComplete $event)
     {
+        logger('[UpdatePostRank] listener handle', ['game_id' => $event->game->id]);
         $this->rankService->createRankReport($event->game->post);
     }
 }

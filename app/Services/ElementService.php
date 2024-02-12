@@ -6,6 +6,8 @@ namespace App\Services;
 
 use App\Enums\ElementType;
 use App\Enums\VideoSource;
+use App\Events\ImageElementCreated;
+use App\Events\ElementDeleted;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Post;
@@ -75,6 +77,8 @@ class ElementService
             'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('post.title_size'))
         ]);
 
+        event(new ImageElementCreated($element, $post));
+        
         return $element;
     }
 
@@ -114,6 +118,8 @@ class ElementService
             'type' => ElementType::IMAGE,
             'title' => $fileInfo['filename']
         ]);
+
+        event(new ImageElementCreated($element, $post));
 
         return $element;
     }
@@ -190,7 +196,13 @@ class ElementService
         return $element;
     }
 
+    public function delete(Element $element)
+    {
+        $element->posts()->detach();
+        $element->delete();
 
+        event(new ElementDeleted($element));
+    }
 
     protected function isVideoUrl(string $url)
     {

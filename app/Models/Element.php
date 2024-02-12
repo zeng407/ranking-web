@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasImgurImage;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,7 @@ class Element extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    use HasImgurImage;
 
     /**
      * The attributes that are mass assignable.

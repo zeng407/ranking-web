@@ -2,7 +2,7 @@
 $body-bg: #f8fafc;
 
 // Typography
-$font-family-sans-serif: 'Nunito', sans-serif;
+$font-family-sans-serif: "Nunito", sans-serif;
 $font-size-base: 0.9rem;
 $line-height-base: 1.6;
 
@@ -18,7 +18,6 @@ $green: #38c172;
 $teal: #4dc0b5;
 $cyan: #6cb2eb;
 
-
 .game-image {
     width: 100%;
     height: 600px;
@@ -26,7 +25,7 @@ $cyan: #6cb2eb;
     background-size: cover;
     background-position: center center;
     display: flex;
-    transition: .5s;
+    transition: 0.5s;
 }
 
 .game-image:hover {
@@ -45,3 +44,5 @@ $cyan: #6cb2eb;
     left: 0;
     position: relative;
 }
+
+

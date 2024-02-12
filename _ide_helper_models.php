@@ -143,6 +143,19 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * App\Models\ImgurAlbum
+ *
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $albumable
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|ImgurAlbum query()
+ * @mixin \Eloquent
+ */
+	class IdeHelperImgurAlbum {}
+}
+
+namespace App\Models{
+/**
  * App\Models\Post
  *
  * @property int $id
@@ -157,6 +170,7 @@ namespace App\Models{
  * @property-read int|null $elements_count
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Game[] $games
  * @property-read int|null $games_count
+ * @property-read \App\Models\ImgurAlbum|null $imgur_album
  * @property-read \App\Models\PostPolicy|null $post_policy
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\PostTrend[] $post_trends
  * @property-read int|null $post_trends_count

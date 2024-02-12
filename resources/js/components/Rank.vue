@@ -1,7 +1,6 @@
 <template>
   <!--  Main -->
   <div class="container">
-
     <div class="fa-3x text-center" v-if="isLoading">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
@@ -12,7 +11,7 @@
           <tr>
             <th scope="col">#</th>
             <th scope="col" class="w-75"></th>
-            <th scope="col">全體排名</th>
+            <th scope="col">其他人的排名</th>
           </tr>
           </thead>
           <tbody>
@@ -22,7 +21,7 @@
               <div>
                 <img :src="gameResult.winner.thumb_url" height="300px" alt="gameResult.winner.title">
 
-                <a v-if="gameResult.winner.type === 'video'" :href="gameResult.winner.source_url" target="_blank">
+                <a v-if="gameResult.winner.type === 'video'" :href="gameResult.winner.thumb_url" target="_blank">
                   <p>{{ gameResult.winner.title }}</p>
                 </a>
                 <p v-if="gameResult.winner.type === 'image'">{{ gameResult.winner.title }}</p>
@@ -36,7 +35,7 @@
               <div>
                 <img :src="rank.loser.thumb_url" height="300px" alt="rank.element.title">
 
-                <a v-if="rank.loser.type === 'video'" :href="rank.loser.source_url" target="_blank">
+                <a v-if="rank.loser.type === 'video'" :href="rank.loser.thumb_url" target="_blank">
                   <p>{{ rank.loser.title }}</p>
                 </a>
                 <p v-if="rank.loser.type === 'image'">{{ rank.loser.title }}</p>
@@ -47,14 +46,14 @@
           </tbody>
         </table>
       </b-tab>
-      <b-tab title="全體排名">
+      <b-tab :title="gameResult ? this.$t('Gloabl Rank'): this.$t('Rank')">
         <table class="table table-hover" style="table-layout: fixed">
           <thead>
           <tr>
             <th scope="col">#</th>
             <th scope="col" class="w-75"></th>
-            <th scope="col">決賽%</th>
-            <th scope="col">勝率%</th>
+            <th scope="col">{{ $t('Champion') }}%</th>
+            <th scope="col">{{ $t('1v1')}}%</th>
           </tr>
           </thead>
           <tbody v-if="loadingPage">
@@ -73,7 +72,7 @@
               <div>
                 <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
 
-                <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
+                <a v-if="rank.element.type === 'video'" :href="rank.element.thumb_url" target="_blank">
                   <p>{{ rank.element.title }}</p>
                 </a>
                 <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
@@ -100,8 +99,6 @@
         </div>
       </b-tab>
     </b-tabs>
-
-
   </div>
 </template>
 

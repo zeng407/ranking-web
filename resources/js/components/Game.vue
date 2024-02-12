@@ -5,7 +5,7 @@
       <h2 class="text-center">{{ game.title }}</h2>
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
-        <h5 class="text-center align-self-center" style="width: 60%">{{ game.current_round }} of TOP
+        <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP
           {{ game.of_round }} </h5>
         <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} /
           {{ game.total_elements }})
@@ -17,7 +17,7 @@
         <div class="card game-player" id="left-player">
           <div v-if="isImageSource(le)"
                @click="clickImage"
-               :style="{backgroundImage: 'url('+le.source_url+')' }"
+               :style="{backgroundImage: 'url('+le.thumb_url+')' }"
                class="game-image"
           ></div>
           <div class="d-flex" v-if="isYoutubeSource(le)"
@@ -37,7 +37,7 @@
             ></youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
-            <video width="100%" height="270" loop autoplay muted :src="le.source_url"></video>
+            <video width="100%" height="270" loop autoplay muted :src="le.thumb_url"></video>
           </div>
           <div class="card-body text-center">
             <div style="min-height: 50px">
@@ -53,7 +53,7 @@
         <div class="card game-player" id="right-player">
           <div v-if="isImageSource(re)"
                @click="clickImage"
-               :style="{backgroundImage: 'url('+re.source_url+')' }"
+               :style="{backgroundImage: 'url('+re.thumb_url+')' }"
                class="game-image"
           ></div>
           <div class="d-flex" v-else-if="isYoutubeSource(re)"
@@ -73,7 +73,7 @@
             ></youtube>
           </div>
           <div v-else-if="isVideoSource(re)">
-            <video width="100%" height="600" loop autoplay muted :src="re.source_url"></video>
+            <video width="100%" height="600" loop autoplay muted :src="re.thumb_url"></video>
           </div>
           <div class="card-body text-center">
             <div style="min-height: 50px">

@@ -24,6 +24,7 @@ class GameComplete
      */
     public function __construct(Game $game)
     {
+        logger('[GameComplete] event fired');
         $this->game = $game;
     }
 

@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 use Tests\TestCase;
+use Illuminate\Support\Facades\Http;
 
 class PostTest extends TestCase
 {
@@ -107,8 +108,27 @@ class PostTest extends TestCase
 
         $this->be($user);
 
+        Http::fake([
+            'image' => Http::response([
+                'data' => [
+                    'id' => 'anyid',
+                    'deletehash' => 'anydeletehash',
+                    'title' => 'anytitle',
+                    'description' => 'anydescription',
+                    'link' => 'anylink',
+                ],
+                'success' => true,
+            ], 200),
+        ]);
+
         /** @var Post $post */
         $post = $user->posts()->first();
+        $post->imgur_album()->create([
+            'album_id' => 'anyid',
+            'deletehash' => 'anydeletehash',
+            'title' => 'anytitle',
+            'description' => 'anydescription',
+        ]);
 
         $file = UploadedFile::fake()->image('random_image.jpg');
         $data = [

@@ -78,8 +78,8 @@ Vue.use(VBPopover);
  * YoutubeIframe
  */
 import VueYoutube from 'vue-youtube';
-
 Vue.use(VueYoutube);
+
 
 /**
  * i18n

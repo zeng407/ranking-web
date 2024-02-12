@@ -66,7 +66,7 @@
                     @else
                         @auth
                             <li class="nav-item">
-                                <a class="nav-link" href="{{route('post.index')}}">{{__('My Games')}}</a>
+                                <a class="nav-link" href="{{route('post.index')}}">{{__('My Posts')}}</a>
                             </li>
                         @endauth
                         <li class="nav-item dropdown">

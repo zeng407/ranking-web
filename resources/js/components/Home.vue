@@ -103,7 +103,7 @@
               </span>
               <span class="mt-2 card-text float-right">
                 <span class="pr-2">
-                  <i class="fas fa-eye"></i>&nbsp;{{post.play_count}}
+                  <i class="fas fa-play-circle"></i>&nbsp;{{post.play_count}}
                 </span>
                 <small class="text-muted">{{post.created_at | datetime}}</small>
               </span>

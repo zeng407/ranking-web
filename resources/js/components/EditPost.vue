@@ -1,19 +1,11 @@
 <template>
-
   <!--  Main -->
   <div class="container-fluid">
 
     <!-- Alert -->
-    <div class="position-fixed"
-         style="top: 20px; right: 15px; z-index: 10">
+    <div class="position-fixed" style="top: 20px; right: 15px; z-index: 10">
       <span class="cursor-pointer" @click="dismissAlert">
-        <b-alert
-          :show="dismissCountDown"
-          @dismissed="dismissCountDown=0"
-          dismissible
-          fade
-          :variant="alertLevel"
-        >
+        <b-alert :show="dismissCountDown" @dismissed="dismissCountDown = 0" dismissible fade :variant="alertLevel">
           {{ alertText }}
         </b-alert>
       </span>
@@ -26,21 +18,21 @@
         <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
           <a class="nav-link active" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
-             aria-controls="v-pills-post-info" aria-selected="true">
+            aria-controls="v-pills-post-info" aria-selected="true">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-info-circle"></i>
             </span>
             {{ $t('edit_post.tab.info') }}
           </a>
           <a class="nav-link" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
-             aria-controls="v-pills-elements" aria-selected="false">
+            aria-controls="v-pills-elements" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-photo-video"></i>
             </span>
             {{ $t('edit_post.tab.element') }}
           </a>
           <a class="nav-link" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
-             aria-controls="v-pills-rank" aria-selected="false">
+            aria-controls="v-pills-rank" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-trophy"></i>
             </span>
@@ -54,38 +46,40 @@
 
           <!-- tab info -->
           <div class="tab-pane fade show active" id="v-pills-post-info" role="tabpanel"
-               aria-labelledby="v-pills-post-info-tab">
+            aria-labelledby="v-pills-post-info-tab">
             <!-- Loading -->
             <div class="col-9 fa-3x text-center" v-if="loading['LOADING_POST']">
               <i class="fas fa-spinner fa-spin"></i>
             </div>
 
             <ValidationObserver v-slot="{ invalid }" v-if="post">
+              <!-- Rank基本資訊 -->
               <div class="row">
                 <div class="col-6">
                   <h2 class="mt-3 mb-3">{{ $t('edit_post.info.head') }}</h2>
                 </div>
                 <div class="col-6">
                   <h2 class="mt-3 mb-3">
-                  <span class="d-flex justify-content-end">
-                    <a class="btn btn-danger mr-3" :href="playGameRoute" target="_blank">
-                      <i class="fas fa-play"></i> {{ $t('edit_post.info.play') }}
-                    </a>
+                    <span class="d-flex justify-content-end">
+                      <a class="btn btn-danger mr-3" :href="playGameRoute" target="_blank">
+                        <i class="fas fa-play"></i> {{ $t('edit_post.info.play') }}
+                      </a>
 
-                    <button class="btn btn-primary" v-if="!isEditing" @click="clickEdit">
-                      <i class="fas fa-edit"></i> {{ $t('edit_post.info.edit') }}
-                    </button>
-                    <button class="btn btn-primary" v-else
-                            @click="savePost" :disabled="invalid || loading['SAVING_POST']">
-                      <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
-                      <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
-                      {{ $t('edit_post.info.save') }}
-                    </button>
-                  </span>
+                      <button class="btn btn-primary" v-if="!isEditing" @click="clickEdit">
+                        <i class="fas fa-edit"></i> {{ $t('edit_post.info.edit') }}
+                      </button>
+                      <button class="btn btn-primary" v-else @click="savePost"
+                        :disabled="invalid || loading['SAVING_POST']">
+                        <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
+                        <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
+                        {{ $t('edit_post.info.save') }}
+                      </button>
+                    </span>
                   </h2>
                 </div>
               </div>
               <form @submit.prevent>
+                <!-- 標題 -->
                 <div class="row">
                   <div class="col-12">
                     <div class="form-group">
@@ -94,13 +88,13 @@
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="post.title" required
-                               :disabled="!isEditing || loading['SAVING_POST']" maxlength="40"
-                        >
+                          :disabled="!isEditing || loading['SAVING_POST']" maxlength="40">
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                     </div>
                   </div>
                 </div>
+                <!-- 描述 -->
                 <div class="row">
                   <div class="col-12">
                     <div class="form-group">
@@ -109,11 +103,8 @@
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="post.description" rows="3"
-                                  style="resize: none"
-                                  maxlength="100"
-                                  aria-describedby="description-help"
-                                  required
-                                  :disabled="!isEditing || loading['SAVING_POST']">
+                          style="resize: none" maxlength="100" aria-describedby="description-help" required
+                          :disabled="!isEditing || loading['SAVING_POST']">
 
                         </textarea>
                         <small id="description-help" class="form-text text-muted">
@@ -124,6 +115,7 @@
                     </div>
                   </div>
                 </div>
+                <!-- 發佈 -->
                 <div class="row">
                   <div class="col-12">
                     <div class="form-group">
@@ -133,30 +125,29 @@
                       <ValidationProvider rules="required" v-slot="{ errors }" v-if="isEditing">
                         <label class="form-control btn btn-outline-dark" for="post-privacy-public">
                           <input type="radio" id="post-privacy-public" v-model="post.policy" value="public"
-                                 :disabled="loading['SAVING_POST']"
-                          >
+                            :disabled="loading['SAVING_POST']">
 
                           {{ $t('Public') }}
                         </label>
 
                         <label class="form-control btn btn-outline-dark" for="post-privacy-private">
                           <input type="radio" id="post-privacy-private" v-model="post.policy" value="private"
-                                 :disabled="loading['SAVING_POST']"
-                          >
+                            :disabled="loading['SAVING_POST']">
                           {{ $t('Private') }}
                         </label>
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                       <div v-else>
                         <input class="form-control" disabled="disabled" :value="post._.policy">
-                        <small class="form-text text-muted"
-                               v-if="post.policy==='public'">{{ $t('edit_post.at_least_element_number_hint') }}</small>
+                        <small class="form-text text-muted" v-if="post.policy === 'public'">{{
+                          $t('edit_post.at_least_element_number_hint') }}</small>
                       </div>
                     </div>
                   </div>
                 </div>
               </form>
             </ValidationObserver>
+            <!-- 建立時間 -->
             <div class="row" v-if="post">
               <div class="col-3">
                 <div class="form-group">
@@ -165,18 +156,30 @@
                 </div>
               </div>
             </div>
+            <!-- Delete Post Button -->
+            <div class="row" v-if="post">
+              <div class="col-12">
+                <div class="form-group fa-pull-right">
+                  <button class="btn btn-danger" @click="deletePost" :disabled="loading['DELETING_POST']">
+                    {{ $t('edit_post.info.delete') }}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- tab elements -->
           <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
+            <!-- 上傳圖片 -->
+            <h2 class="mt-3 mb-3">{{ $t('edit_post.upload_image') }}<i class="fa-regular fa-image"></i></h2>
+
+            <!-- 從本地上傳 -->
             <!-- upload image from device -->
-            <h2 class="mt-3 mb-3">{{ $t('edit_post.upload_image') }}</h2>
             <div class="row">
               <div class="col-12">
-                <label for="image-upload">從電腦上傳</label>
+                <label for="image-upload">{{ $t('Upload from Local') }}<i class="fa-solid fa-upload"></i></label>
                 <div class="custom-file form-group">
-                  <input type="file" class="custom-file-input" id="image-upload" multiple
-                         @change="uploadImages">
+                  <input type="file" class="custom-file-input" id="image-upload" multiple @change="uploadImages">
                   <label class="custom-file-label" for="image-upload">Choose File...</label>
                 </div>
               </div>
@@ -184,19 +187,18 @@
             <!-- upload progress bar -->
             <div class="progress mb-1" v-for="(progress, name) in uploadingFiles">
               <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0"
-                   aria-valuemax="100"
-                   :aria-valuenow="progress" :style="{'width': progress+'%'}">
+                aria-valuemax="100" :aria-valuenow="progress" :style="{ 'width': progress + '%' }">
                 {{ name }}
               </div>
             </div>
             <!-- upload image from url -->
+            <!-- 從網址上傳 -->
             <div class="row mt-3">
               <div class="col-12">
-                <label for="image-url-upload">從url上傳</label>
+                <label for="image-url-upload">{{ $t('Upload from URL') }}<i class="fa-solid fa-link"></i></label>
                 <div class="input-group">
-                  <input class="form-control" type="text" id="image-url-upload" name="image-url-upload"
-                         v-model="imageUrl"
-                         placeholder="https://media3.giphy.com/media/11ISwbgCxEzMyY/giphy.gif">
+                  <input class="form-control" type="text" id="image-url-upload" name="image-url-upload" v-model="imageUrl"
+                    placeholder="https://media3.giphy.com/media/11ISwbgCxEzMyY/giphy.gif">
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" @click="uploadImageUrl">
                       <span v-show="!loading['UPLOADING_IMAGE']">{{ $t('edit_post.add_image_button') }}</span>
@@ -204,22 +206,31 @@
                     </button>
                   </div>
                 </div>
+                <div class="mt-3">
+                  <img src="/storage/giphy-logo-vector.svg" class="img-thumbnail" alt="giphy logo" style="height: 50px; width: 50px;">
+                  <img src="/storage/imgur.svg" class="img-thumbnail" alt="imgur logo" style="height: 50px; width: 50px;">
+                  <img src="/storage/icons8-gif-100.png" class="img-thumbnail" alt="gif file" style="height: 50px; width: 50px;">
+                  <img src="/storage/icons8-image-file.svg" class="img-thumbnail" alt="image file" style="height: 50px; width: 50px;">
+                </div>
               </div>
             </div>
 
+            <!-- 上傳影片 -->
+            <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_video') }} <i class="fa-solid fa-film"></i></h2>
+            
             <!-- upload video from youtube -->
-            <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_video') }}</h2>
             <div class="row">
               <div class="col-12">
-                <label for="youtubeURL">Youtube</label>
+                <label for="youtubeURL">Youtube
+                  <i class="fa-brands fa-youtube"></i>
+                </label>
                 <div class="input-group">
-                  <input class="form-control" type="text" id="youtubeURL" name="youtubeURL"
-                         v-model="youtubeUrl"
-                         aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="youtubeUpload"
-                         placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                  <input class="form-control" type="text" id="youtubeURL" name="youtubeURL" v-model="youtubeUrl"
+                    aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="youtubeUpload"
+                    placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" id="youtubeUpload" @click="uploadVideo"
-                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
+                      :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
                       <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
                       <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
 
@@ -230,21 +241,26 @@
             </div>
 
             <!-- upload video from url -->
+            <!-- 從網址上傳 -->
             <div class="row mt-3">
               <div class="col-12">
-                <label for="youtubeURL">從url上傳</label>
+                <label for="youtubeURL">{{ $t('Upload from URL') }}<i class="fa-solid fa-link"></i></label>
                 <div class="input-group">
-                  <input class="form-control" type="text" id="videoUrl" name="videoUrl"
-                         v-model="videoUrl"
-                         aria-label="https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="videoUrl"
-                         placeholder="https://giant.gfycat.com/GroundedLoathsomeHind.mp4">
+                  <input class="form-control" type="text" id="videoUrl" name="videoUrl" v-model="videoUrl"
+                    aria-label="https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="videoUrl"
+                    placeholder="https://giant.gfycat.com/GroundedLoathsomeHind.mp4">
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" id="videoUrlUpload" @click="uploadVideoUrl"
-                            :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
+                      :disabled="loading['UPLOADING_YOUTUBE_VIDEO']">
                       <span v-show="!loading['UPLOADING_YOUTUBE_VIDEO']">{{ $t('edit_post.add_video_button') }}</span>
                       <i v-show="loading['UPLOADING_YOUTUBE_VIDEO']" class="fas fa-spinner fa-spin"></i>
                     </button>
                   </div>
+                </div>
+                <div class="mt-3">
+                  <img src="/storage/giphy-logo-vector.svg" class="img-thumbnail" alt="giphy logo" style="height: 50px; width: 50px;">
+                  <img src="/storage/imgur.svg" class="img-thumbnail" alt="imgur logo" style="height: 50px; width: 50px;">
+                  <img src="/storage/icons8-mp4-file-48.png" class="img-thumbnail" alt="giphy logo" style="height: 50px; width: 50px;">
                 </div>
               </div>
             </div>
@@ -256,7 +272,7 @@
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
                 <input class="form-control mr-sm-2" v-model="filters.title_like" type="search" placeholder="Search"
-                       aria-label="Search">
+                  aria-label="Search">
                 <i class="fas fa-filter" v-if="filters.title_like"></i>
               </div>
             </nav>
@@ -269,25 +285,21 @@
                   <!-- youtube source -->
                   <div class="card mb-3" v-if="isYoutubeSource(element)">
                     <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
-                             :ref="element.id"
-                             @ready="doPlay(element)"
-                             :player-vars="{
-                              controls:1,
-                              autoplay:0,
-                              start: element.video_start_second,
-                              end:element.video_end_second,
-                              rel: 0,
-                              host: 'https://www.youtube.com'
-                              }"
-                    ></youtube>
+                      :ref="element.id" @ready="doPlay(element)" :player-vars="{
+                        controls: 1,
+                        autoplay: 0,
+                        start: element.video_start_second,
+                        end: element.video_end_second,
+                        rel: 0,
+                        host: 'https://www.youtube.com'
+                      }"></youtube>
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                         v-if="isYoutubeSource(element) && !element.loadedVideo">
+                      v-if="isYoutubeSource(element) && !element.loadedVideo">
                     <!-- youtube video editor -->
                     <div class="card-body">
                       <!--title edit-->
                       <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text" :value="element.title"
-                             maxlength="100"
-                             @change="updateElementTitle(element.id, $event)">
+                        maxlength="100" @change="updateElementTitle(element.id, $event)">
                       <!--play time range-->
                       <div class="row mb-3">
                         <div class="col-10">
@@ -295,15 +307,14 @@
                             <div class="input-group-prepend d-lg-none d-xl-block">
                               <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
                             </div>
-                            <input type="text" class="form-control" name="video_start_second"
-                                   placeholder="0:00" aria-label="start"
-                                   @change="updateVideoScope(index, element, $event)"
-                                   :value="toTimeFormat(element.video_start_second)">
+                            <input type="text" class="form-control" name="video_start_second" placeholder="0:00"
+                              aria-label="start" @change="updateVideoScope(index, element, $event)"
+                              :value="toTimeFormat(element.video_start_second)">
                             <div class="input-group-prepend"><span class="input-group-text">~</span></div>
                             <input type="text" class="form-control" name="video_end_second"
-                                   :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
-                                   :value="toTimeFormat(element.video_end_second)"
-                                   @change="updateVideoScope(index, element, $event)">
+                              :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
+                              :value="toTimeFormat(element.video_end_second)"
+                              @change="updateVideoScope(index, element, $event)">
                           </div>
                         </div>
                         <!--play button-->
@@ -314,8 +325,7 @@
                         </div>
                       </div>
                       <!--create time-->
-                      <span class="card-text"><small
-                        class="text-muted">{{ element.created_at | datetime }}</small></span>
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime }}</small></span>
                       <!--delete button-->
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
@@ -325,36 +335,33 @@
                   </div>
 
                   <!-- gfycat source -->
-<!--                  <div class="card mb-3" v-else-if="isGfycatSource(element)">-->
-<!--                    &lt;!&ndash; load the video player &ndash;&gt;-->
-<!--                    <iframe :src='element.source_url' frameborder='0' scrolling='no' height="270" width="100%"></iframe>-->
-<!--                    &lt;!&ndash; editor &ndash;&gt;-->
-<!--                    <div class="card-body">-->
-<!--                      <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"-->
-<!--                             :value="element.title"-->
-<!--                             maxlength="100"-->
-<!--                             @change="updateElementTitle(element.id, $event)">-->
-<!--                      <span class="card-text"><small-->
-<!--                        class="text-muted">{{ element.created_at | datetime }}</small></span>-->
-<!--                      <a class="btn btn-danger float-right" @click="deleteElement(element)">-->
-<!--                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>-->
-<!--                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>-->
-<!--                      </a>-->
-<!--                    </div>-->
-<!--                  </div>-->
+                  <!--                  <div class="card mb-3" v-else-if="isGfycatSource(element)">-->
+                  <!--                    &lt;!&ndash; load the video player &ndash;&gt;-->
+                  <!--                    <iframe :src='element.thumb_url' frameborder='0' scrolling='no' height="270" width="100%"></iframe>-->
+                  <!--                    &lt;!&ndash; editor &ndash;&gt;-->
+                  <!--                    <div class="card-body">-->
+                  <!--                      <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"-->
+                  <!--                             :value="element.title"-->
+                  <!--                             maxlength="100"-->
+                  <!--                             @change="updateElementTitle(element.id, $event)">-->
+                  <!--                      <span class="card-text"><small-->
+                  <!--                        class="text-muted">{{ element.created_at | datetime }}</small></span>-->
+                  <!--                      <a class="btn btn-danger float-right" @click="deleteElement(element)">-->
+                  <!--                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>-->
+                  <!--                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>-->
+                  <!--                      </a>-->
+                  <!--                    </div>-->
+                  <!--                  </div>-->
 
                   <!-- simple video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
-                    <video width="100%" height="270" loop autoplay muted :src="element.source_url"></video>
+                    <video width="100%" height="270" loop autoplay muted :src="element.thumb_url"></video>
                     <!-- editor -->
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
-                             :value="element.title"
-                             maxlength="100"
-                             @change="updateElementTitle(element.id, $event)">
-                      <span class="card-text"><small
-                        class="text-muted">{{ element.created_at | datetime }}</small></span>
+                        :value="element.title" maxlength="100" @change="updateElementTitle(element.id, $event)">
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime }}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
@@ -364,18 +371,15 @@
 
                 </div>
                 <!-- image player -->
-                <div class="col-lg-4 col-md-6" v-if="element.type==='image' && isElementInPage(index)">
+                <div class="col-lg-4 col-md-6" v-if="element.type === 'image' && isElementInPage(index)">
                   <div class="card mb-3">
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                         v-if="element.type==='image'">
+                      v-if="element.type === 'image'">
 
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
-                             :value="element.title"
-                             maxlength="100"
-                             @change="updateElementTitle(element.id, $event)">
-                      <span class="card-text"><small
-                        class="text-muted">{{ element.created_at | datetime }}</small></span>
+                        :value="element.title" maxlength="100" @change="updateElementTitle(element.id, $event)">
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime }}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
@@ -385,17 +389,9 @@
                 </div>
               </template>
             </div>
+            <b-pagination v-model="currentPage" :total-rows="totalRow" :per-page="perPage" first-number last-number
+              align="center"></b-pagination>
           </div>
-
-          <b-pagination
-            v-model="currentPage"
-            :total-rows="totalRow"
-            :per-page="perPage"
-            first-number
-            last-number
-            align="center"
-          ></b-pagination>
-
 
           <!-- tab rank -->
           <div class="tab-pane fade" id="v-pills-rank" role="tabpanel" aria-labelledby="v-pills-rank-tab">
@@ -409,52 +405,46 @@
             </div>
             <table class="table table-hover" style="table-layout: fixed">
               <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col" style="width: 70%"></th>
-                <th scope="col">{{ $t('edit_post.rank.win_at_final') }}</th>
-                <th scope="col">{{ $t('edit_post.rank.win_rate') }}</th>
-              </tr>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col" style="width: 70%"></th>
+                  <th scope="col">{{ $t('edit_post.rank.win_at_final') }}</th>
+                  <th scope="col">{{ $t('edit_post.rank.win_rate') }}</th>
+                </tr>
               </thead>
               <tbody v-if="loading['LOADING_RANK']">
-              <tr>
-                <td colspan="4">
-                  <div class="fa-3x text-center">
-                    <i class="fas fa-spinner fa-spin"></i>
-                  </div>
-                </td>
-              </tr>
+                <tr>
+                  <td colspan="4">
+                    <div class="fa-3x text-center">
+                      <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
               <tbody v-if="rank.rankReportData && !loading['LOADING_RANK']">
-              <tr v-for="(rank, index) in rank.rankReportData.data">
-                <th scope="row">{{ rank.rank }}</th>
-                <td style="overflow: scroll">
-                  <div>
-                    <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
+                <tr v-for="(rank, index) in rank.rankReportData.data">
+                  <th scope="row">{{ rank.rank }}</th>
+                  <td style="overflow: scroll">
+                    <div>
+                      <img :src="rank.element.thumb_url" height="300px" alt="rank.element.title">
 
-                    <a v-if="rank.element.type === 'video'" :href="rank.element.source_url" target="_blank">
-                      <p>{{ rank.element.title }}</p>
-                    </a>
-                    <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
-                  </div>
-                </td>
-                <td>{{ rank.final_win_rate | percent }}</td>
-                <td>{{ rank.win_rate | percent }}</td>
-              </tr>
+                      <a v-if="rank.element.type === 'video'" :href="rank.element.thumb_url" target="_blank">
+                        <p>{{ rank.element.title }}</p>
+                      </a>
+                      <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
+                    </div>
+                  </td>
+                  <td>{{ rank.final_win_rate | percent }}</td>
+                  <td>{{ rank.win_rate | percent }}</td>
+                </tr>
               </tbody>
             </table>
 
             <div class="row">
               <div class="col-12" v-if="rank.rankReportData">
-                <b-pagination
-                  v-model="rank.currentPage"
-                  :total-rows="rank.rankReportData.meta.total"
-                  :per-page="rank.rankReportData.meta.per_page"
-                  first-number
-                  last-number
-                  @change="handleRankPageChange"
-                  align="center"
-                ></b-pagination>
+                <b-pagination v-model="rank.currentPage" :total-rows="rank.rankReportData.meta.total"
+                  :per-page="rank.rankReportData.meta.per_page" first-number last-number @change="handleRankPageChange"
+                  align="center"></b-pagination>
               </div>
             </div>
           </div>
@@ -468,6 +458,7 @@
 <script>
 import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
+import Swal from 'sweetalert2';
 
 // import { localize } from 'vee-validate';
 export default {
@@ -502,7 +493,8 @@ export default {
         UPLOADING_YOUTUBE_VIDEO: false,
         LOADING_RANK: false,
         UPLOADING_IMAGE: false,
-        UPLOADING_VIDEO_URL: false
+        UPLOADING_VIDEO_URL: false,
+        DELETING_POST: false
       },
       uploadingFiles: {},
       post: null,
@@ -602,13 +594,50 @@ export default {
           this.uploadLoadingStatus('SAVING_POST', false);
         });
     },
+    deletePost: function () {
+      this.uploadLoadingStatus('DELETING_POST', true);
+
+      Swal.fire({
+        title: this.$t('Enter Password'),
+        input: 'password',
+        inputAttributes: {
+          autocapitalize: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: this.$t('Delete'),
+        cancelButtonText: this.$t('Cancel'),
+        showLoaderOnConfirm: true,
+        preConfirm: (password) => {
+          return axios.delete(this.updatePostEndpoint, { data: { password: password } })
+            .then(res => {
+
+            })
+            .catch(error => {
+              Swal.showValidationMessage(this.$t(`Request failed`));
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: this.$t('Deleted!'),
+            text: this.$t('Your post has been deleted.'),
+            icon: 'success'
+          }).then(res => {
+            window.location.href = '/account/post';
+          });
+        }
+      }).finally(() => {
+        this.uploadLoadingStatus('DELETING_POST', false);
+      });
+    },
 
     /** Elements **/
     loadElements: function (page = 1) {
       const params = {
         page: page
       };
-      axios.get(this.getElementsEndpoint, {params: params})
+      axios.get(this.getElementsEndpoint, { params: params })
         .then(res => {
           this.postElements = res.data;
           let counter = 1;
@@ -836,7 +865,7 @@ export default {
       const filter = {
         'page': page
       };
-      axios.get(this.getRankEndpoint, {params: filter})
+      axios.get(this.getRankEndpoint, { params: filter })
         .then(res => {
           this.$set(this.rank, 'rankReportData', res.data);
           this.$set(this.rank, 'currentPage', res.data.meta.current_page);

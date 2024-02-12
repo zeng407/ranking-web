@@ -19,7 +19,7 @@
           <th scope="col">{{ $t('my_games.table.title')}}</th>
           <th scope="col">{{ $t('my_games.table.description')}}</th>
           <th scope="col">{{ $t('my_games.table.publish') }}</th>
-          <th scope="col"></th>
+          <th scope="col">{{ $t('my_games.table.edit') }}</th>
         </tr>
         </thead>
         <tbody>
@@ -98,6 +98,7 @@
                         {{ $t('create_game.publish') }}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
+                        <div class="form-group">
                         <label class="btn btn-outline-dark" for="post-privacy-public">
                           <input type="radio" id="post-privacy-public" v-model="createPostForm.policy.access_policy"
                                  value="public" checked>
@@ -108,6 +109,7 @@
                                  value="private">
                           {{$t('Private')}}
                         </label>
+                        </div>
                       </ValidationProvider>
                     </div>
                   </div>

@@ -22,13 +22,15 @@ class GameController extends Controller
         $this->rankService = $rankService;
     }
 
-    public function show($serial)
+    public function show(Request $request)
     {
+        $serial = $request->route('post');
         return view('game.show', compact('serial'));
     }
 
-    public function rank($serial)
+    public function rank(Request $request)
     {
+        $serial = $request->route('post');
         return view('game.rank', compact('serial'));
     }
 
