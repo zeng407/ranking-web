@@ -9,6 +9,7 @@ use App\Models\Game;
 use App\Models\Post;
 use App\Services\GameService;
 use App\Services\RankService;
+use App\Services\PostService;
 use Illuminate\Http\Request;
 
 class GameController extends Controller
@@ -16,25 +17,28 @@ class GameController extends Controller
 
     protected $gameService;
     protected $rankService;
-
-    public function __construct(GameService $gameService, RankService $rankService)
+    protected $postService;
+    public function __construct(GameService $gameService, RankService $rankService, PostService $postService)
     {
         $this->gameService = $gameService;
         $this->rankService = $rankService;
+        $this->postService = $postService;
     }
 
-    public function show($serial)
+    public function show(Request $request)
     {
-        $post = Post::where('serial', $serial)->first();
+        $serial = $request->route('post');
+        $post = $this->postService->getPost($serial);
         return view('game.show', [
             'serial' => $serial,
             'post' => $post
         ]);
     }
 
-    public function rank($serial)
+    public function rank(Request $request)
     {
-        $post = Post::where('serial', $serial)->first();
+        $serial = $request->route('post');
+        $post = $this->postService->getPost($serial);
         return view('game.rank', [
             'serial' => $serial,
             'post' => $post

@@ -6,6 +6,14 @@ use App\Events\GameElementVoted;
 use App\Events\GameComplete;
 use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
+use App\Events\ElementDeleted;
+use App\Events\PostCreated;
+use App\Events\PostDeleted;
+use App\Listeners\CreateImgurAlbum;
+use App\Listeners\CreateImgurImage;
+use App\Listeners\DeleteImgurImage;
+use App\Events\ImageElementCreated;
+use App\Listeners\DeleteImgurAlbum;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -27,6 +35,18 @@ class EventServiceProvider extends ServiceProvider
         ],
         GameElementVoted::class => [
             UpdateElementRank::class
+        ],
+        PostCreated::class => [
+            CreateImgurAlbum::class
+        ],
+        PostDeleted::class => [
+            DeleteImgurAlbum::class
+        ],
+        ImageElementCreated::class => [
+            CreateImgurImage::class
+        ],
+        ElementDeleted::class => [
+            DeleteImgurImage::class
         ]
     ];
 

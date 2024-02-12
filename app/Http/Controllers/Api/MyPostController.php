@@ -19,18 +19,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Arr;
+use App\Services\PostService;
 
 class MyPostController extends Controller
 {
     const ELEMENTS_PER_PAGE = 50;
 
-    protected $elementService;
-    protected $rankService;
+    protected ElementService $elementService;
+    protected RankService $rankService;
+    protected PostService $postService;
 
-    public function __construct(ElementService $elementService, RankService $rankService)
+    public function __construct(ElementService $elementService, RankService $rankService, PostService $postService)
     {
         $this->elementService = $elementService;
         $this->rankService = $rankService;
+        $this->postService = $postService;
         $this->middleware('auth');
     }
 
@@ -94,12 +97,7 @@ class MyPostController extends Controller
             'policy.access_policy' => ['required', Rule::in([PostAccessPolicy::PRIVATE, PostAccessPolicy::PUBLIC])],
         ]);
 
-        /** @var Post $post */
-        $post = $user->posts()->create([
-                'serial' => SerialGenerator::genPostSerial()
-            ] + $data);
-
-        $post->post_policy()->updateOrCreate(data_get($data, 'policy', []));
+        $post = $this->postService->create($user, $data);
 
         return response()->json([
             'serial' => $post->serial
@@ -116,8 +114,11 @@ class MyPostController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:' . config('setting.post_title_size')],
             'description' => ['required', 'string', 'max:' . config('setting.post_description_size')],
-            'policy.access_policy' => ['sometimes', 'required',
-                Rule::in([PostAccessPolicy::PUBLIC, PostAccessPolicy::PRIVATE])],
+            'policy.access_policy' => [
+                'sometimes',
+                'required',
+                Rule::in([PostAccessPolicy::PUBLIC, PostAccessPolicy::PRIVATE])
+            ],
             'policy.password' => 'sometimes|required',
         ]);
 
@@ -125,6 +126,30 @@ class MyPostController extends Controller
         $post->post_policy()->update(data_get($data, 'policy', []));
         return PostResource::make($post);
     }
+
+    public function delete(Request $request, Post $post)
+    {
+        /**
+         * @see \App\Policies\PostPolicy::delete()
+         */
+        $this->authorize('delete', $post);
+
+        $this->validate($request, [
+            'password' => 'required'
+        ]);
+        if(!password_verify($request->input('password'), Auth::user()->password)){
+            return response()->json([
+                'message' => 'password is not correct'
+            ], 403);
+        }
+
+        $this->postService->delete($post);
+
+        return response()->json([
+            'message' => 'success'
+        ]);
+    }
+
 
     public function rank(Post $post)
     {

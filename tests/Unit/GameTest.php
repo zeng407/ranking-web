@@ -13,7 +13,6 @@ use Tests\TestCase;
 
 class GameTest extends TestCase
 {
-
     public function test_index_public_post()
     {
         $post = $this->seedPost();

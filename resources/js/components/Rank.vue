@@ -10,9 +10,10 @@
       <p>{{ rankInfo.data.description }}</p>
     </div>
     <b-tabs content-class="mt-3" v-if="!isLoading">
-      <b-tab title="我的排名" v-if="gameResult">
+      <b-tab :title="$t('Rank')" v-if="gameResult">
         <div class="card my-1">
           <div class="card-body text-center" style="min-height: 387px">
+            <div class="rank-circle">1</div>
             <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270"
                      :ref="gameResult.winner.id"
                      :videoId="gameResult.winner.video_id"
@@ -25,20 +26,20 @@
                             }"
             ></youtube>
             <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted
-                   playsinline :src="gameResult.winner.source_url"></video>
+                   playsinline :src="gameResult.winner.thumb_url"></video>
             <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270"
                  :alt="gameResult.winner.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ gameResult.winner.title }}</div>
               <div class="align-self-end text-right mt-2">
-                #1 <br>
-                全體排名：{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
+                {{$t('Global Rank')}}:{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
               </div>
             </div>
           </div>
         </div>
         <div class="card my-1" v-for="(rank, index) in gameResult.data">
           <div class="card-body text-center" style="height: 387px">
+            <div class="rank-circle">{{ index + 2 }}</div>
             <youtube v-if="isYoutubeSource(rank.loser)" width="100%" height="270"
                      :ref="rank.loser.id"
                      :videoId="rank.loser.video_id"
@@ -52,22 +53,22 @@
                             }"
             ></youtube>
             <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
-                   :src="rank.loser.source_url"></video>
+                   :src="rank.loser.thumb_url"></video>
             <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="270"
                  :alt="rank.loser.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.loser.title }}</div>
               <div class="align-self-end text-right mt-2">
-                #{{ index + 2 }}<br>
-                全體排名：{{ rank.rank ? rank.rank : '無' }}
+                {{$t('Global Rank')}}:{{ rank.rank ? rank.rank : '無' }}
               </div>
             </div>
           </div>
         </div>
       </b-tab>
-      <b-tab title="全體排名">
+      <b-tab :title="$t('Global Rank')">
         <div v-if="rankReportData && !loadingPage" class="card my-1" v-for="(rank, index) in rankReportData.data">
           <div class="card-body text-center" style="min-height: 387px">
+            <div class="rank-circle">{{ rank.rank }}</div>
             <youtube v-if="isYoutubeSource(rank.element)" width="100%" height="270"
                      :ref="rank.element.id"
                      :videoId="rank.element.video_id"
@@ -81,18 +82,17 @@
                               }"
             ></youtube>
             <video v-else-if="isVideoSource(rank.element)" width="100%" height="270" loop autoplay muted playsinline
-                   :src="rank.element.source_url"></video>
+                   :src="rank.element.thumb_url"></video>
             <img v-else-if="isImageSource(rank.element)" :src="rank.element.thumb_url" height="270"
                  :alt="rank.element.title">
             <div class="d-flex flex-column align-items-start">
               <div class="align-self-center">{{ rank.element.title }}</div>
               <div class="align-self-end text-right mt-2">
-                <span>#{{ rank.rank }}</span><br>
                 <span v-if="rank.final_win_rate"> {{
                     $t('edit_post.rank.win_at_final')
-                  }}：{{ rank.final_win_rate | percent }}<br></span>
-                <span v-if="rank.win_rate>0"> {{ $t('edit_post.rank.win_rate') }}：{{ rank.win_rate | percent }}</span>
-                <span v-else> {{ $t('edit_post.rank.win_rate') }}：{{ '0' | percent }}</span>
+                  }}:{{ rank.final_win_rate | percent }}<br></span>
+                <span v-if="rank.win_rate>0"> {{ $t('edit_post.rank.win_rate') }}:{{ rank.win_rate | percent }}</span>
+                <span v-else> {{ $t('edit_post.rank.win_rate') }}:{{ '0' | percent }}</span>
               </div>
             </div>
           </div>

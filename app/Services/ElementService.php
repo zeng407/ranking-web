@@ -11,6 +11,8 @@ use App\Models\Post;
 use App\Repositories\ElementRepository;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use App\Events\ImageElementCreated;
+use App\Events\ElementDeleted;
 
 class ElementService
 {
@@ -37,8 +39,7 @@ class ElementService
     public function getExistsElement(string $sourceUrl, Post $post): ?Element
     {
         return $post->elements()->where(function ($query) use ($sourceUrl) {
-            $query->where('original_url', $sourceUrl)
-                ->orWhere('source_url', $sourceUrl);
+            $query->Where('source_url', $sourceUrl);
         })
             ->first();
     }
@@ -76,12 +77,8 @@ class ElementService
         $path = $file->store($saveDir);
         Storage::setVisibility($path, 'public');
 
-        //todo sign path
         $url = Storage::url($path);
-
-        //todo make thumb
         $thumb = $url;
-
         $element = $post->elements()->create([
             'path' => $path,
             'source_url' => $url,
@@ -89,6 +86,8 @@ class ElementService
             'type' => ElementType::IMAGE,
             'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'))
         ]);
+        
+        event(new ImageElementCreated($element, $post));
 
         return $element;
     }
@@ -111,24 +110,18 @@ class ElementService
             return null;
         }
 
-        //todo sign path
-        $url = Storage::url($path);
-
-        //todo make thumb
-        $thumb = $url;
-
         $title = $params['title'] ?? $fileInfo['filename'];
 
         $element = $post->elements()->updateOrCreate([
-            'original_url' => $sourceUrl,
+            'source_url' => $sourceUrl,
         ], [
             'path' => $path,
-            'original_url' => $sourceUrl,
-            'source_url' => $url,
-            'thumb_url' => $thumb,
+            'source_url' => $sourceUrl,
+            'thumb_url' => $sourceUrl,
             'type' => ElementType::IMAGE,
             'title' => $title
         ]);
+        event(new ImageElementCreated($element, $post));
 
         return $element;
     }
@@ -173,21 +166,15 @@ class ElementService
             return null;
         }
 
-        //todo sign path
-        $url = Storage::url($path);
-
-        //todo make thumb
-        $thumb = $url;
-
+    
         $title = $params['title'] ?? $fileInfo['filename'];
 
         $element = $post->elements()->updateOrCreate([
-            'original_url' => $sourceUrl,
+            'source_url' => $sourceUrl,
         ], [
             'path' => $path,
-            'original_url' => $sourceUrl,
             'source_url' => $sourceUrl,
-            'thumb_url' => $thumb,
+            'thumb_url' => $sourceUrl,
             'type' => ElementType::VIDEO,
             'title' => $title,
             'video_source' => VideoSource::URL
@@ -206,9 +193,8 @@ class ElementService
             $title = $params['title'] ?? $info->gfyItem->title;
 
             $element = $post->elements()->updateOrCreate([
-                'original_url' => $sourceUrl,
+                'source_url' => $info->gfyItem->mp4Url,
             ], [
-                'original_url' => $sourceUrl,
                 'source_url' => $info->gfyItem->mp4Url,
                 'thumb_url' => $info->gfyItem->posterUrl,
                 'type' => ElementType::VIDEO,
@@ -249,10 +235,9 @@ class ElementService
 
             $title = $params['title'] ?? $title;
             $element = $post->elements()->updateOrCreate([
-                'original_url' => $sourceUrl,
+                'source_url' => $sourceUrl,
             ],
                 [
-                    'original_url' => $sourceUrl,
                     'source_url' => $sourceUrl,
                     'thumb_url' => $thumbUrl,
                     'title' => $title,
@@ -267,6 +252,14 @@ class ElementService
             report($exception);
             return null;
         }
+    }
+
+    public function delete(Element $element)
+    {
+        $element->posts()->detach();
+        $element->delete();
+
+        event(new ElementDeleted($element));
     }
 
     /**

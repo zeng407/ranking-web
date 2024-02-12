@@ -1,8 +1,7 @@
 <template>
-
   <!--  Main-->
   <div class="container">
-    <div>
+    <div class="mt-3">
       <h2 class="d-inline">{{ $t('my_games.title') }}</h2>
       <button class="btn btn-primary d-inline float-right" @click="openCreateFormModal">{{ $t('my_games.new') }}
       </button>
@@ -14,48 +13,53 @@
     </div>
 
     <div class="mt-2" v-if="!loading[LOADING_POSTS]">
-      <table class="table table-hover" style="table-layout: fixed" v-if="posts.data.length > 0">
+      <table class="table table-bordered table-hover" style="table-layout: fixed" v-if="posts.data.length > 0">
         <thead class="th-nowrap">
-        <tr>
-          <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
-          <th scope="col" style="width: 50%">{{ $t('my_games.table.description') }}</th>
-          <th scope="col">{{ $t('my_games.table.publish') }}</th>
-          <th scope="col">{{ $t('my_games.table.edit') }}</th>
-        </tr>
+          <tr>
+            <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
+            <th scope="col" style="width: 30%">{{ $t('my_games.table.description') }}</th>
+            <th scope="col">{{ $t('my_games.table.visibility') }}</th>
+            <th scope="col">{{ $t('my_games.table.edit') }}</th>
+          </tr>
         </thead>
         <tbody>
-        <tr v-for="post in posts.data">
-          <td class="text-break">{{ post.title }}</td>
-          <td class="text-break">{{ post.description }}</td>
-          <td class="text-break">{{ post._.policy }}</td>
-          <td>
-            <a title="編輯" :href="getEditLink(post.serial)"><i class="fas fa-edit"></i></a>
-          </td>
-        </tr>
+          <tr v-for="post in posts.data">
+            <td class="text-break">{{ post.title }}</td>
+            <td class="text-break">{{ post.description }}</td>
+            <td class="text-break">{{ post._.policy }}</td>
+            <td>
+              <a :title="$t('my_games.table.edit')" :href="getEditLink(post.serial)"><i class="fas fa-edit"></i></a>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <div class="row">
-      <div class="col-12" v-if="!loading[LOADING_POSTS]">
-        <b-pagination
-          v-model="currentPage"
-          :total-rows="posts.meta.total"
-          :per-page="posts.meta.per_page"
-          first-number
-          last-number
-          @change="handlePageChange"
-          align="center"
-        ></b-pagination>
+      <div class="col-12" v-if="!loading[LOADING_POSTS] && posts.meta.total > 0">
+        <b-pagination v-model="currentPage" :total-rows="posts.meta.total" :per-page="posts.meta.per_page" first-number
+          last-number @change="handlePageChange" align="center"></b-pagination>
       </div>
     </div>
 
 
 
     <div class="mt-2" v-if="!loading[LOADING_POSTS]">
-      <div class="alert alert-info" v-if="posts.data.length === 0">
-        {{ $t('my_games.table.no_data') }}
-      </div>
+      <table class="table table-bordered table-hover" style="table-layout: fixed">
+        <thead class="th-nowrap">
+          <tr>
+            <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
+            <th scope="col" style="width: 30%">{{ $t('my_games.table.description') }}</th>
+            <th scope="col">{{ $t('my_games.table.visibility') }}</th>
+            <th scope="col">{{ $t('my_games.table.edit') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="4" class="text-center">{{ $t('my_games.table.no_data') }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- modal -->
@@ -80,7 +84,7 @@
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="createPostForm.title" required
-                               maxlength="40">
+                          maxlength="40">
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                     </div>
@@ -94,11 +98,8 @@
                         {{ $t('Description') }}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
-                      <textarea class="form-control" id="description" v-model="createPostForm.description" rows="3"
-                                style="resize: none"
-                                maxlength="100"
-                                aria-describedby="description-help"
-                                required></textarea>
+                        <textarea class="form-control" id="description" v-model="createPostForm.description" rows="3"
+                          style="resize: none" maxlength="100" aria-describedby="description-help" required></textarea>
                         <small id="description-help" class="form-text text-muted">
                           {{ $t('create_game.description.hint') }}
                         </small>
@@ -111,19 +112,21 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg">
-                        {{ $t('create_game.publish') }}
+                        {{ $t('create_game.visibility') }}
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
-                        <label class="btn btn-outline-dark" for="post-privacy-public">
-                          <input type="radio" id="post-privacy-public" v-model="createPostForm.policy.access_policy"
-                                 value="public" checked>
-                          {{ $t('Public') }}
-                        </label>
-                        <label class="btn btn-outline-dark" for="post-privacy-private">
-                          <input type="radio" id="post-privacy-private" v-model="createPostForm.policy.access_policy"
-                                 value="private">
-                          {{ $t('Private') }}
-                        </label>
+                        <div class="form-group">
+                          <label class="btn btn-outline-dark" for="post-privacy-public">
+                            <input type="radio" id="post-privacy-public" v-model="createPostForm.policy.access_policy"
+                              value="public" checked>
+                            {{ $t('Public') }}
+                          </label>
+                          <label class="btn btn-outline-dark" for="post-privacy-private">
+                            <input type="radio" id="post-privacy-private" v-model="createPostForm.policy.access_policy"
+                              value="private">
+                            {{ $t('Private') }}
+                          </label>
+                        </div>
                       </ValidationProvider>
                     </div>
                   </div>
@@ -134,10 +137,10 @@
               <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ $t('create_game.cancel') }}
               </button>
               <button type="submit" class="btn btn-primary float-right" @click="createPost"
-                      :disabled="invalid || loading[CREATING_POST]">
+                :disabled="invalid || loading[CREATING_POST]">
                 {{ $t('create_game.submit') }}
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
-                      v-if="loading[CREATING_POST]"></span>
+                  v-if="loading[CREATING_POST]"></span>
               </button>
             </div>
           </ValidationObserver>
@@ -199,7 +202,7 @@ export default {
       };
       this.uploadLoadingStatus(LOADING_POSTS, true);
       const url = this.getPostsEndpoint;
-      axios.get(url, {params: filter})
+      axios.get(url, { params: filter })
         .then(res => {
           this.posts = res.data;
           this.currentPage = res.data.meta.current_page;

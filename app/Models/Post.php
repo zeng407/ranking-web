@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PostAccessPolicy;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Traits\HasImgurAlbum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,6 +17,7 @@ use Laravel\Sanctum\HasApiTokens;
  */
 class Post extends Model
 {
+    use HasImgurAlbum;
     use HasFactory;
     use SoftDeletes;
 

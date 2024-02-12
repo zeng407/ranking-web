@@ -25,7 +25,7 @@ Auth::routes();
 
 Route::get('/lang/{locale}', function($locale){
     Session::put('locale', $locale);
-    return back();
+    return redirect()->home();
 })->name('lang');
 
 
