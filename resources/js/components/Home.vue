@@ -6,12 +6,12 @@
 
           <label class="btn btn-outline-dark mr-2">
             <input type="radio" v-model="sortBy" value="hot">
-            <i class="fas fa-fire-alt"></i>&nbsp;Hot
+            <i class="fas fa-fire-alt"></i>&nbsp;{{$t('Hot')}}
           </label>
 
           <label class="btn btn-outline-dark mr-2">
             <input type="radio" v-model="sortBy" value="new">
-            <i class="fas fa-sort-amount-down-alt"></i>&nbsp;New
+            <i class="fas fa-sort-amount-down-alt"></i>&nbsp;{{$t('New')}}
           </label>
         </div>
       </div>
@@ -35,11 +35,11 @@
           <i class="fas fa-caret-down"></i>
         </button>
         <div class="dropdown-menu">
-          <a class="dropdown-item" @click="clickTimeRange($event, 'all')" href="#">All Time</a>
-          <a class="dropdown-item" @click="clickTimeRange($event, 'year')" href="#">This Year</a>
-          <a class="dropdown-item" @click="clickTimeRange($event, 'month')" href="#">This Month</a>
-          <a class="dropdown-item" @click="clickTimeRange($event, 'week')" href="#">This Week</a>
-          <a class="dropdown-item" @click="clickTimeRange($event, 'day')" href="#">Today</a>
+          <a class="dropdown-item" @click="clickTimeRange($event, 'all')" href="#">{{$t('All')}}</a>
+          <a class="dropdown-item" @click="clickTimeRange($event, 'year')" href="#">{{$t('This Year')}}</a>
+          <a class="dropdown-item" @click="clickTimeRange($event, 'month')" href="#">{{$t('This Month')}}</a>
+          <a class="dropdown-item" @click="clickTimeRange($event, 'week')" href="#">{{$t('This Week')}}</a>
+          <a class="dropdown-item" @click="clickTimeRange($event, 'day')" href="#">{{$t('Today')}}</a>
         </div>
       </div>
     </div>
@@ -114,7 +114,7 @@
     </div>
 
     <div class="row justify-content-center pt-2">
-      <div v-if="posts.data.length">
+      <div v-if="posts.data.length && posts.meta.last_page > 1">
         <b-pagination
           v-model="currentPage"
           :total-rows="posts.meta.total"
@@ -159,7 +159,7 @@
         },
         sortBy: this.sort,
         timeRange: 'month',
-        timeRangeText: 'This Month',
+        timeRangeText: this.$t('This Month'),
         isLoading: false,
         currentPage: 1,
         lastPage: 1

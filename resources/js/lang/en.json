@@ -34,11 +34,14 @@
     "edit_post.at_least_element_number_hint": "You must upload 8 medias at least.",
     "edit_post.upload_image": "Upload Image",
     "edit_post.upload_video": "Upload Video",
+    "edit_post.upload_batch": "Upload Image&Video",
     "edit_post.add_video_button": "Add",
     "edit_post.edit_media": "Edit",
     "edit_post.video_range": "Range",
     "edit_post.rank.game_plays": "Vote count",
     "edit_post.rank.win_at_final": "Champion",
-    "edit_post.rank.win_rate": "1v1"
+    "edit_post.rank.win_rate": "1v1",
+
+    "total elements": "total elements : {count}"
 
 }

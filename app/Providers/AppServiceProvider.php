@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Element;
 use App\Models\ImgurAlbum;
@@ -9,6 +10,7 @@ use App\Models\ImgurImage;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Route;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,11 +43,6 @@ class AppServiceProvider extends ServiceProvider
         
         if (config('app.force_https')) {
             \URL::forceScheme('https');
-        }
-
-        if ($this->app->environment('local')) {
-            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
-            $this->app->register(TelescopeServiceProvider::class);
         }
     }
 }

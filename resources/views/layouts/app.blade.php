@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
   <!-- SEO -->
-  <title>{{ get_page_title($post ?? null) }}</title>
+  <title>{{ get_page_title($post ?? null, 'VoteUp 殘酷二選一') }}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ get_page_description($post ?? null) }}">

@@ -55,5 +55,17 @@
     "Rank": "排名",
     "Champion": "決賽",
     "1v1": "1v1勝率",
-    "Max 64 elements": "最多上傳64個素材"
+    "Max 64 elements": "最多上傳64個素材",
+    "total elements": "共 {count} 筆",
+    "Search": "搜尋",
+
+    "Hot": "熱門",
+    "New": "最新",
+    "This Week": "本週",
+    "This Month": "本月",
+    "This Year": "今年",
+    "Today": "今天",
+    "All": "全部"
+    
+
 }

@@ -394,6 +394,23 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * App\Models\Role
+ *
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $users
+ * @property-read int|null $users_count
+ * @method static \Illuminate\Database\Eloquent\Builder|Role newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Role newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Role onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|Role query()
+ * @method static \Illuminate\Database\Eloquent\Builder|Role withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|Role withoutTrashed()
+ * @mixin \Eloquent
+ */
+	class IdeHelperRole {}
+}
+
+namespace App\Models{
+/**
  * App\Models\User
  *
  * @property int $id
@@ -408,6 +425,8 @@ namespace App\Models{
  * @property-read int|null $notifications_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Post> $posts
  * @property-read int|null $posts_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Role> $roles
+ * @property-read int|null $roles_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
  * @method static \Database\Factories\UserFactory factory(...$parameters)
@@ -425,5 +444,17 @@ namespace App\Models{
  * @mixin \Eloquent
  */
 	class IdeHelperUser {}
+}
+
+namespace App\Models{
+/**
+ * App\Models\UserRole
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder|UserRole newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|UserRole newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|UserRole query()
+ * @mixin \Eloquent
+ */
+	class IdeHelperUserRole {}
 }
 

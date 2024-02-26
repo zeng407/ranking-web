@@ -172,11 +172,11 @@
           <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
             <!-- upload image from device -->
             <!-- 上傳圖片 -->
-            <h2 class="mt-3 mb-3">{{ $t('edit_post.upload_image') }}<i class="fa-regular fa-image"></i></h2>
+            <h2 class="mt-3 mb-3"><i class="fa-regular fa-image"></i>&nbsp;{{ $t('edit_post.upload_image') }}</h2>
 
             <div class="row">
               <div class="col-12">
-                <label for="image-upload">{{ $t('Upload from Local') }}<i class="fa-solid fa-upload"></i></label>
+                <label for="image-upload"><i class="fa-solid fa-upload"></i>&nbsp;{{ $t('Upload from Local') }}</label>
                 <div class="custom-file form-group">
                   <input type="file" class="custom-file-input" id="image-upload" multiple @change="uploadImages">
                   <label class="custom-file-label" for="image-upload">Choose File...</label>
@@ -193,10 +193,10 @@
 
             <!-- batch upload -->
             <!-- 從網址上傳 -->
-            <h2 class="mt-5 mb-3">{{ $t('edit_post.upload_batch') }}<i class="fa-solid fa-link"></i></h2>
+            <h2 class="mt-5 mb-3"><i class="fa-solid fa-photo-film"></i>&nbsp;{{ $t('edit_post.upload_batch') }}</h2>
             <div class="row mt-3">
               <div class="col-12">
-                <label for="image-url-upload">{{ $t('Upload from URL') }}</label>
+                <label for="image-url-upload"><i class="fa-solid fa-link"></i>&nbsp;{{ $t('Upload from URL') }}</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate" rows="5"
                     v-model="batchString" aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ,
@@ -237,14 +237,17 @@
             </div>
 
             <!-- edit -->
-            <h2 class="mt-5 mb-3">{{ $t('edit_post.edit_media') }}</h2>
+
+            <h2 class="mt-5 mb-3"><i class="fa-solid fa-gear"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
+
             <p>{{ $t('Max 64 elements') }}</p>
-            <p v-if="totalRow > 0">共{{ totalRow }}筆</p>
+            <p>{{ $t('total elements', { count :totalRow }) }}</p>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
-                <input class="form-control mr-sm-2" v-model="filters.title_like" type="search" placeholder="Search"
+                <input class="form-control mr-sm-2" v-model="filters.title_like" type="search" :placeholder="$t('Search')"
                   aria-label="Search" @change="loadElements(1)">
+                <i class="fa-solid fa-magnifying-glass" v-if="!filters.title_like"></i>
                 <i class="fas fa-filter" v-if="filters.title_like"></i>
               </div>
             </nav>
@@ -344,7 +347,7 @@
               </template>
             </div>
 
-            <b-pagination v-model="currentPage" :total-rows="totalRow" :per-page="perPage" first-number last-number
+            <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow" :per-page="perPage" first-number last-number
               @change="handleElementPageChange" align="center"></b-pagination>
           </div>
 
@@ -413,7 +416,6 @@
 <script>
 import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
-import { forEach } from "lodash";
 import Swal from 'sweetalert2';
 import UploadIcon from './partials/UploadIcon.vue';
 
@@ -454,7 +456,12 @@ export default {
       uploadingFiles: {},
       post: null,
       isEditing: false,
-      elements: [],
+      elements: {
+        data: [],
+        meta: {
+          last_page: 1,
+        }
+      },
       playingVideo: null,
       deletingElement: [],
 

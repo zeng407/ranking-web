@@ -20,12 +20,11 @@ class LocalePrefixRoute
     {
         if ($locale = $request->route('locale')) {
             // validate locale
-            if (in_array($locale, ['en', 'zh_TW'])) {
+            if (in_array($locale, config('app.locales'))) {
                 Session::put('locale', $locale);
                 App::setLocale($locale);
             }                    
         }
-
         return $next($request);
     }
 }
