@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @mixin IdeHelperUser
@@ -48,6 +48,18 @@ class User extends Authenticatable
     public function posts()
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function isAdmin()
+    {
+        return Cache::remember('isAdmin_' . $this->id, 60, function () {
+            return $this->roles()->where('slug', \App\Enums\Role::ADMIN)->exists();
+        });
+    }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, UserRole::class)->withTimestamps();
     }
 
 }

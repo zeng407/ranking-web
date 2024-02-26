@@ -67,6 +67,6 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'locale.prefix' => \App\Http\Middleware\LocalePrefixRoute::class,
-
+        'admin' => \App\Http\Middleware\AdminRoute::class
     ];
 }

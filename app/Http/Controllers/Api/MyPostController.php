@@ -61,11 +61,11 @@ class MyPostController extends Controller
          * @see \App\Policies\PostPolicy::read()
          */
         $this->authorize('read', $post);
-
+        
         $input = $request->validate([
             'per_page' => 'integer|max:50',
             'page' => 'integer',
-            'filter' => 'json'
+            'filter' => 'array'
         ]);
         \Log::debug($request->input());
 
@@ -175,8 +175,7 @@ class MyPostController extends Controller
     protected function parseFilter($input, $preCondition, $only = [])
     {
         if (isset($input['filter'])) {
-            $filter = (array)json_decode($input['filter'], true);
-            $filter = array_filter($filter);
+            $filter = array_filter($input['filter']);
             if (count($only)) {
                 $filter = Arr::only($filter, $only);
             }

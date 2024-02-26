@@ -48,4 +48,5 @@ class Element extends Model
             'post_id'
         );
     }
+
 }

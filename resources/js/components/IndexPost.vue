@@ -36,7 +36,7 @@
     </div>
 
     <div class="row">
-      <div class="col-12" v-if="!loading[LOADING_POSTS] && posts.meta.total > 0">
+      <div class="col-12" v-if="!loading[LOADING_POSTS] && posts.meta.total > 0 && posts.meta.last_page > 1">
         <b-pagination v-model="currentPage" :total-rows="posts.meta.total" :per-page="posts.meta.per_page" first-number
           last-number @change="handlePageChange" align="center"></b-pagination>
       </div>
@@ -44,7 +44,7 @@
 
 
 
-    <div class="mt-2" v-if="!loading[LOADING_POSTS]">
+    <div class="mt-2" v-if="!loading[LOADING_POSTS] && posts.data.length == 0">
       <table class="table table-bordered table-hover" style="table-layout: fixed">
         <thead class="th-nowrap">
           <tr>

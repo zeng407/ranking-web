@@ -82,7 +82,14 @@ return [
     |
     */
 
+    // Set the default locale
     'locale' => 'zh_TW',
+
+    // Add locales to the list
+    'locales' => [
+        'en',
+        'zh_TW'
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -176,7 +183,6 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-//        App\Providers\TelescopeServiceProvider::class,
         App\Providers\MinioStorageServiceProvider::class
 
     ],

@@ -26,8 +26,6 @@ class Kernel extends ConsoleKernel
         $schedule->call(function(){
             app(PostTrendScheduleExecutor::class)->createPostTrends();
         })->name('createPostTrend')->everyThreeHours()->withoutOverlapping();
-
-        $schedule->command('telescope:prune')->daily();
     }
 
     /**
