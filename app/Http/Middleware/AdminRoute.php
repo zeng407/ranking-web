@@ -16,10 +16,11 @@ class AdminRoute
      */
     public function handle(Request $request, Closure $next)
     {
-        if(!auth()->check()) {
-            return redirect()->route('home');
-        }
-        if (!auth()->user()->isAdmin()) {
+        /**
+         * @var \App\Models\User $user
+         */
+        $user = auth()->user();
+        if (!$user->isAdmin()) {
             return redirect()->route('home');
         }
         return $next($request);

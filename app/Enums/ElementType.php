@@ -1,10 +1,8 @@
 <?php
 
-
 namespace App\Enums;
 
-
-class ElementType
+enum ElementType: string
 {
     const IMAGE = 'image';
     const VIDEO = 'video';

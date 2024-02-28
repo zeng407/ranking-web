@@ -34,7 +34,6 @@ class MyPostController extends Controller
         $this->elementService = $elementService;
         $this->rankService = $rankService;
         $this->postService = $postService;
-        $this->middleware('auth');
     }
 
     public function index()

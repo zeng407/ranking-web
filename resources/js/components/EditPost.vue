@@ -52,7 +52,7 @@
               <i class="fas fa-spinner fa-spin"></i>
             </div>
 
-            <ValidationObserver v-slot="{ invalid }" v-if="post">
+            <ValidationObserver v-slot="{ invalid }" v-if="post && !loading['LOADING_POST']">
               <!-- Rank基本資訊 -->
               <div class="row">
                 <div class="col-6">
@@ -146,26 +146,26 @@
                   </div>
                 </div>
               </form>
+              <!-- 建立時間 -->
+              <div class="row" v-if="post">
+                <div class="col-3">
+                  <div class="form-group">
+                    <label class="col-form-label-lg">{{ $t('edit_post.info.create_time') }}</label>
+                    <input class="form-control" disabled :value="post.created_at | date">
+                  </div>
+                </div>
+              </div>
+              <!-- Delete Post Button -->
+              <div class="row" v-if="post">
+                <div class="col-12">
+                  <div class="form-group fa-pull-right">
+                    <button class="btn btn-danger" @click="deletePost" :disabled="loading['DELETING_POST']">
+                      {{ $t('edit_post.info.delete') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </ValidationObserver>
-            <!-- 建立時間 -->
-            <div class="row" v-if="post">
-              <div class="col-3">
-                <div class="form-group">
-                  <label class="col-form-label-lg">{{ $t('edit_post.info.create_time') }}</label>
-                  <input class="form-control" disabled :value="post.created_at | date">
-                </div>
-              </div>
-            </div>
-            <!-- Delete Post Button -->
-            <div class="row" v-if="post">
-              <div class="col-12">
-                <div class="form-group fa-pull-right">
-                  <button class="btn btn-danger" @click="deletePost" :disabled="loading['DELETING_POST']">
-                    {{ $t('edit_post.info.delete') }}
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- tab elements -->
@@ -241,7 +241,7 @@
             <h2 class="mt-5 mb-3"><i class="fa-solid fa-gear"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
 
             <p>{{ $t('Max 64 elements') }}</p>
-            <p>{{ $t('total elements', { count :totalRow }) }}</p>
+            <p>{{ $t('total elements', { count: totalRow }) }}</p>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
@@ -347,8 +347,9 @@
               </template>
             </div>
 
-            <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow" :per-page="perPage" first-number last-number
-              @change="handleElementPageChange" align="center"></b-pagination>
+            <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow"
+              :per-page="perPage" first-number last-number @change="handleElementPageChange"
+              align="center"></b-pagination>
           </div>
 
           <!-- tab rank -->
@@ -573,25 +574,55 @@ export default {
       const url = this.updateElementEndpoint.replace('_id', id);
       axios.put(url, data)
         .then((res) => {
-
+          Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            title: this.$t("Updated!"),
+            toast: true,
+            text: this.$t("The element has been updated."),
+            icon: "success",
+            timer: 3000
+          });
         })
     },
     deleteElement: function (element) {
-      this.pushDeleting(element);
+      Swal.fire({
+        title: this.$t("Are you sure?"),
+        text: this.$t("Once deleted, you will not be able to recover this element!"),
+        icon: "warning",
+        buttons: true,
+        showCancelButton: true,
+        dangerMode: true,
+      })
+        .then((willDelete) => {
+          if (willDelete.isConfirmed) {
+            this.pushDeleting(element);
 
-      const url = this.deleteElementEndpoint.replace('_id', element.id);
-      axios.delete(url)
-        .then((res) => {
-          const index = _.findIndex(this.elements.data, {
-            id: element.id
-          });
-          this.$delete(this.elements.data, index);
-          this.elements.meta.total--;
-        })
-        .finally(() => {
-          this.removeDeleting(element);
+            const url = this.deleteElementEndpoint.replace('_id', element.id);
+            axios.delete(url)
+              .then((res) => {
+                const index = _.findIndex(this.elements.data, {
+                  id: element.id
+                });
+                this.$delete(this.elements.data, index);
+                this.elements.meta.total--;
+                Swal.fire({
+                  position: "top-end",
+                  title: this.$t("Deleted!"),
+                  toast: true,
+                  text: this.$t("The element has been deleted."),
+                  showConfirmButton: false,
+                  icon: "success",
+                  timer: 3000
+                });
+              })
+              .finally(() => {
+                this.removeDeleting(element);
+              });
+          }
         });
     },
+
     pushDeleting(element) {
       this.deletingElement.push(element.id);
     },
@@ -720,10 +751,15 @@ export default {
         allowOutsideClick: () => !Swal.isLoading()
       }).then((result) => {
         if (result.isConfirmed) {
+          this.uploadLoadingStatus('LOADING_POST', true);
           Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            toast: true,
             title: this.$t('Deleted!'),
             text: this.$t('Your post has been deleted.'),
-            icon: 'success'
+            icon: 'success',
+            timer: 3000
           }).then(res => {
             window.location.href = '/account/post';
           });

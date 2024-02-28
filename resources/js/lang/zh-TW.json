@@ -65,7 +65,10 @@
     "This Month": "本月",
     "This Year": "今年",
     "Today": "今天",
-    "All": "全部"
-    
-
+    "All": "全部",
+    "Are you sure?": "確定嗎?",
+    "Once deleted, you will not be able to recover this element!" : "刪除後將無法恢復!",
+    "The element has been deleted.": "素材已刪除" ,
+    "Updated": "已更新",
+    "Your element has been updated.": "素材已更新"
 }

@@ -1,7 +1,5 @@
 @extends('admin.layouts.app', ['title' => __('管理後台 - 貼文管理')])
 
-@inject('PostAccessPolicy', \App\Enums\PostAccessPolicy::class)
-@inject('ElementType', \App\Enums\ElementType::class)
 @section('content')
     <div class="container">
         <h1 class="mt-3">{{ __('貼文管理') }} </h1>
@@ -32,12 +30,12 @@
                             <div class="form-group">
                                 <label for="post_policy" class="col-form-label text-md-right">{{ __('發佈') }}</label>
                                 <select id="post_policy" class="form-control" name="policy[access_policy]">
-                                    <option value="{{ $PostAccessPolicy::PUBLIC }}"
-                                        @if ($post->post_policy->access_policy == $PostAccessPolicy::PUBLIC) selected @endif>
-                                        {{ $PostAccessPolicy::trans($PostAccessPolicy::PUBLIC) }}</option>
-                                    <option value="{{ $PostAccessPolicy::PRIVATE }}"
-                                        @if ($post->post_policy->access_policy == $PostAccessPolicy::PRIVATE) selected @endif>
-                                        {{ $PostAccessPolicy::trans($PostAccessPolicy::PRIVATE) }}</option>
+                                    <option value="{{ \App\Enums\PostAccessPolicy::PUBLIC }}"
+                                        @if ($post->post_policy->access_policy == \App\Enums\PostAccessPolicy::PUBLIC) selected @endif>
+                                        {{ \App\Enums\PostAccessPolicy::trans(\App\Enums\PostAccessPolicy::PUBLIC) }}</option>
+                                    <option value="{{ \App\Enums\PostAccessPolicy::PRIVATE }}"
+                                        @if ($post->post_policy->access_policy == \App\Enums\PostAccessPolicy::PRIVATE) selected @endif>
+                                        {{ \App\Enums\PostAccessPolicy::trans(\App\Enums\PostAccessPolicy::PRIVATE) }}</option>
                                 </select>
                             </div>
 

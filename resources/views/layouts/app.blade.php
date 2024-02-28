@@ -98,6 +98,7 @@
   </nav>
 
   <main class="pt-2">
+    @include('layouts.flash')
     @yield('content')
   </main>
 </div>

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Facades\Cache;
+use App\Helper\CacheService;
 
 /**
  * @mixin IdeHelperUser
@@ -52,14 +53,18 @@ class User extends Authenticatable
 
     public function isAdmin()
     {
-        return Cache::remember('isAdmin_' . $this->id, 60, function () {
-            return $this->roles()->where('slug', \App\Enums\Role::ADMIN)->exists();
-        });
+        return in_array(\App\Enums\Role::ADMIN, CacheService::rememberUserRole($this));
+    }
+
+    public function isBanned()
+    {
+        return in_array(\App\Enums\Role::BANNED, CacheService::rememberUserRole($this));
     }
 
     public function roles()
     {
         return $this->belongsToMany(Role::class, UserRole::class)->withTimestamps();
     }
+
 
 }

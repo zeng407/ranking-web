@@ -4,7 +4,7 @@
 namespace App\Enums;
 
 
-class TrendTimeRange
+enum TrendTimeRange: string
 {
     const TODAY = 'today';
     const WEEK = 'week';
