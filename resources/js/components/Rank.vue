@@ -1,7 +1,6 @@
 <template>
   <!--  Main -->
   <div class="container">
-
     <div class="fa-3x text-center" v-if="isLoading">
       <i class="fas fa-spinner fa-spin"></i>
     </div>
@@ -11,110 +10,110 @@
     </div>
     <b-tabs content-class="mt-3" v-if="!isLoading">
       <b-tab :title="$t('Rank')" v-if="gameResult">
-        <div class="card my-1">
-          <div class="card-body text-center" style="min-height: 387px">
-            <div class="rank-circle">1</div>
-            <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270"
-                     :ref="gameResult.winner.id"
-                     :videoId="gameResult.winner.video_id"
-                     :player-vars="{
-                            controls:1,
-                            autoplay:0,
-                            start:gameResult.winner.video_start_second,
-                            rel:0,
-                            origin: host
-                            }"
-            ></youtube>
-            <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted
-                   playsinline :src="gameResult.winner.thumb_url"></video>
-            <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270"
-                 :alt="gameResult.winner.title">
-            <div class="d-flex flex-column align-items-start">
-              <div class="align-self-center">{{ gameResult.winner.title }}</div>
-              <div class="align-self-end text-right mt-2">
-                {{$t('Global Rank')}}:{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
-              </div>
+        <div class="card my-2 card-hover">
+          <div class="card-header rank-header">
+            <h2 class="text-left">1</h2>
+            <div class="text-center sm-text-break">{{ gameResult.winner.title }}</div>
+            <div class="text-right">
+              {{ $t('Global Rank') }}:{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
             </div>
           </div>
+          <div class="card-body text-center rank-card">
+            <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270" :ref="gameResult.winner.id"
+              :videoId="gameResult.winner.video_id" :player-vars="{
+                controls: 1,
+                autoplay: 0,
+                start: gameResult.winner.video_start_second,
+                rel: 0,
+                origin: host
+              }"></youtube>
+            <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted playsinline
+              :src="gameResult.winner.thumb_url"></video>
+            <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270" width="100%"
+              :alt="gameResult.winner.title">
+          </div>
         </div>
-        <div class="card my-1" v-for="(rank, index) in gameResult.data">
-          <div class="card-body text-center" style="height: 387px">
-            <div class="rank-circle">{{ index + 2 }}</div>
-            <youtube v-if="isYoutubeSource(rank.loser)" width="100%" height="270"
-                     :ref="rank.loser.id"
-                     :videoId="rank.loser.video_id"
-                     :player-vars="{
-                            controls: 1,
-                            autoplay: 0,
-                            start: rank.loser.video_start_second,
-                            end: rank.loser.video_end_second,
-                            rel: 0,
-                            origin: host
-                            }"
-            ></youtube>
-            <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
-                   :src="rank.loser.thumb_url"></video>
-            <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="270"
-                 :alt="rank.loser.title">
-            <div class="d-flex flex-column align-items-start">
-              <div class="align-self-center">{{ rank.loser.title }}</div>
-              <div class="align-self-end text-right mt-2">
-                {{$t('Global Rank')}}:{{ rank.rank ? rank.rank : '無' }}
-              </div>
+        <div class="card my-2 card-hover" v-for="(rank, index) in gameResult.data">
+          <div class="card-header rank-header">
+            <h2 class="text-left">{{ index + 2 }}</h2>
+            <div class="text-center">{{ rank.loser.title }}</div>
+            <div class="text-right">
+              {{ $t('Global Rank') }}:{{ rank.rank ? rank.rank : '無' }}
             </div>
+          </div>
+          <div class="card-body text-center rank-card">
+            <youtube v-if="isYoutubeSource(rank.loser)" width="100%" height="270" :ref="rank.loser.id"
+              :videoId="rank.loser.video_id" :player-vars="{
+                controls: 1,
+                autoplay: 0,
+                start: rank.loser.video_start_second,
+                end: rank.loser.video_end_second,
+                rel: 0,
+                origin: host
+              }"></youtube>
+            <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
+              :src="rank.loser.thumb_url"></video>
+            <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="270" width="100%" :alt="rank.loser.title">
           </div>
         </div>
       </b-tab>
       <b-tab :title="$t('Global Rank')">
-        <div v-if="rankReportData && !loadingPage" class="card my-1" v-for="(rank, index) in rankReportData.data">
-          <div class="card-body text-center" style="min-height: 387px">
-            <div class="rank-circle">{{ rank.rank }}</div>
-            <youtube v-if="isYoutubeSource(rank.element)" width="100%" height="270"
-                     :ref="rank.element.id"
-                     :videoId="rank.element.video_id"
-                     :player-vars="{
-                              controls:1,
-                              autoplay:0,
-                              start: rank.element.video_start_second,
-                              end:rank.element.video_end_second,
-                              rel: 0,
-                              origin: host
-                              }"
-            ></youtube>
+        <div v-if="rankReportData && !loadingPage" class="card my-2 card-hover" v-for="(rank, index) in rankReportData.data">
+          <div class="card-header rank-header">
+            <h2 class="text-left">{{ rank.rank }}</h2>
+            <div class="text-center">{{ rank.element.title }}</div>
+            <div class="text-right">
+              <!-- {{ $t('Global Rank') }}:{{ rank.rank ? rank.rank : '無' }} -->
+              <span v-if="rank.final_win_rate"> {{ $t('edit_post.rank.win_at_final') }}:{{ rank.final_win_rate | percent}}<br></span>
+              <span v-if="rank.win_rate > 0"> {{ $t('edit_post.rank.win_rate') }}:{{ rank.win_rate | percent }}</span>
+              <span v-else> {{ $t('edit_post.rank.win_rate') }}:{{ '0' | percent }}</span>
+            </div>
+          </div>
+          <div class="card-body text-center rank-card">
+            <!-- <div class="rank-circle">{{ rank.rank }}</div> -->
+            <youtube v-if="isYoutubeSource(rank.element)" width="100%" height="270" :ref="rank.element.id"
+              :videoId="rank.element.video_id" :player-vars="{
+                controls: 1,
+                autoplay: 0,
+                start: rank.element.video_start_second,
+                end: rank.element.video_end_second,
+                rel: 0,
+                origin: host
+              }"></youtube>
             <video v-else-if="isVideoSource(rank.element)" width="100%" height="270" loop autoplay muted playsinline
-                   :src="rank.element.thumb_url"></video>
+              :src="rank.element.thumb_url"></video>
             <img v-else-if="isImageSource(rank.element)" :src="rank.element.thumb_url" height="270"
-                 :alt="rank.element.title">
-            <div class="d-flex flex-column align-items-start">
-              <div class="align-self-center">{{ rank.element.title }}</div>
-              <div class="align-self-end text-right mt-2">
-                <span v-if="rank.final_win_rate"> {{
-                    $t('edit_post.rank.win_at_final')
-                  }}:{{ rank.final_win_rate | percent }}<br></span>
-                <span v-if="rank.win_rate>0"> {{ $t('edit_post.rank.win_rate') }}:{{ rank.win_rate | percent }}</span>
-                <span v-else> {{ $t('edit_post.rank.win_rate') }}:{{ '0' | percent }}</span>
-              </div>
+              :alt="rank.element.title">
+            <!-- <div class="d-flex flex-column align-items-start"> -->
+              <!-- <div class="align-self-center">{{ rank.element.title }}</div> -->
+              <!-- <div class="align-self-end text-right mt-2"> -->
+              <!-- <span v-if="rank.final_win_rate"> {{
+                  $t('edit_post.rank.win_at_final')
+                }}:{{ rank.final_win_rate | percent }}<br></span>
+                <span v-if="rank.win_rate > 0"> {{ $t('edit_post.rank.win_rate') }}:{{ rank.win_rate | percent }}</span>
+                <span v-else> {{ $t('edit_post.rank.win_rate') }}:{{ '0' | percent }}</span> -->
+              <!-- </div> -->
+            <!-- </div> -->
+          </div>
+        </div>
+
+        <div v-if="rankReportData && rankReportData.data.length == 0">
+          <div class="card my-2 card-hover">
+            <div class="card-body text-center rank-card">
+              <div class="align-self-center">{{ $t('rank.no_rank') }}</div>
             </div>
           </div>
         </div>
 
         <div class="row">
-          <div class="col-12" v-if="rankReportData">
-            <b-pagination
-              v-model="currentPage"
-              :total-rows="rankReportData.meta.total"
-              :per-page="rankReportData.meta.per_page"
-              first-number
-              last-number
-              @change="handlePageChange"
-              align="center"
-            ></b-pagination>
+          <div class="col-12" v-if="rankReportData && rankReportData.meta.last_page > 1">
+            <b-pagination v-model="currentPage" :total-rows="rankReportData.meta.total"
+              :per-page="rankReportData.meta.per_page" first-number last-number @change="handlePageChange"
+              align="center"></b-pagination>
           </div>
         </div>
       </b-tab>
     </b-tabs>
-
-
   </div>
 </template>
 
@@ -183,7 +182,7 @@ export default {
       const filter = {
         'page': page
       };
-      axios.get(this.getRankReportEndpoint, {params: filter})
+      axios.get(this.getRankReportEndpoint, { params: filter })
         .then(res => {
           this.rankReportData = res.data;
           this.currentPage = res.data.meta.current_page;

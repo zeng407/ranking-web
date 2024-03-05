@@ -3,7 +3,12 @@
     "Private": "私人",
     "Description": "描述",
     "Title": "標題",
+    "Tag": "標籤",
     "Visibility": "發佈",
+
+    "post_policy.private": "私人",
+    "post_policy.public": "公開",
+    "post_policy.password": "密碼存取",
 
     "my_games.title": "管理我的投票",
     "my_games.new": "新增投票",
@@ -13,6 +18,7 @@
     "my_games.table.edit": "編輯",
     "my_games.table.delete": "刪除",
     "my_games.table.no_data": "無資料",
+    
 
     "create_game.visibility": "發佈",
     "create_game.title" :"基本資訊",
@@ -28,8 +34,10 @@
     "edit_post.info.play": "Play",
     "edit_post.info.edit": "編輯",
     "edit_post.info.save": "儲存",
-    "edit_post.info.delete": "刪除",
+    "edit_post.info.delete": "刪除此投票",
     "edit_post.info.create_time": "建立時間",
+    "edit_post.info.max_hashtag": "最多5個標籤",
+    "edit_post.info.no_tag": "尚未設定標籤",
     "edit_post.at_least_element_number_hint": "至少上傳8個素材才能對外公開",
     "edit_post.upload_image": "上傳圖片",
     "edit_post.upload_video": "上傳影片",
@@ -41,6 +49,15 @@
     "edit_post.rank.game_plays": "遊戲次數",
     "edit_post.rank.win_at_final": "決賽勝率",
     "edit_post.rank.win_rate": "1v1勝率",
+    "edit_post.tag.enter": "輸入",
+
+    "game.rounds": "回合數",
+    "game.select": "選擇",
+    "gmae.continue": "繼續",
+    "gmae.continue_hint": "繼續上次未完的投票嗎", 
+    "game.setting": "設定",
+
+    "rank.no_rank": "尚未有資料",
 
     "Cancel": "取消",
     "Delete": "刪除",
@@ -70,5 +87,7 @@
     "Once deleted, you will not be able to recover this element!" : "刪除後將無法恢復!",
     "The element has been deleted.": "素材已刪除" ,
     "Updated": "已更新",
-    "Your element has been updated.": "素材已更新"
+    "Your element has been updated.": "素材已更新",
+    "Hashtag already exists": "標籤已存在",
+    "Maximum number of tags reached": "已達到最大標籤數"
 }

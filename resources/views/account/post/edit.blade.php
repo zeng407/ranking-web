@@ -18,6 +18,8 @@
         delete-element-endpoint="{{route('api.element.delete', '_id')}}"
         create-image-element-endpoint="{{route('api.element.create-image')}}"
         batch-create-endpoint="{{route('api.element.batch-create')}}"
+
+        get-tags-options-endpoint="{{route('api.tag.index')}}"
     >
     </edit-post>
 

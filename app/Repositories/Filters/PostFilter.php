@@ -33,24 +33,38 @@ class PostFilter
 
     public static function any_like(Builder $query, $value)
     {
-        if (!is_null($value) && '' !== $value) {
-            return $query->where(function ($query) use ($value) {
-                $query->orWhere('title', 'like', "%$value%")
-                    ->orWhere('description', 'like', "%$value%");
-            });
+        if (is_string($value)) {
+            $value = explode(' ', trim($value));
         }
+        $value = array_filter($value, fn($v) => !is_null($v) && '' !== $v);
+
+        if (count($value) > 0) {
+            foreach ($value as $keyword) {
+                $query->where(
+                    function ($query) use ($keyword) {
+                        $query->orWhere('title', 'like', "%$keyword%")
+                            ->orWhere('description', 'like', "%$keyword%")
+                            ->orWhereHas('tags', function ($query) use ($keyword) {
+                                $query->where('name', 'like', "%$keyword%")
+                                    ->orWhere('name', 'like', "%" . str_replace('#', '', $keyword) . "%");
+                            });
+                    }
+                );
+            }
+        }
+        return $query;
     }
 
     public static function elements_count_gte(Builder $query, $value)
     {
-        return $query->whereHas('elements', null,'>=', $value);
+        return $query->whereHas('elements', null, '>=', $value);
     }
 
     public static function public(Builder $query, $value)
     {
         return $query->whereHas('post_policy', function ($query) {
-            $query->where('access_policy', PostAccessPolicy::PUBLIC);
+            $query->where('access_policy', PostAccessPolicy::PUBLIC );
         });
-//        return (new Post)->scopePublic($query);
+        //        return (new Post)->scopePublic($query);
     }
 }

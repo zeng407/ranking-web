@@ -5,12 +5,21 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\PostAccessPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Models\Tag;
+use App\Services\PostService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\Element;
 
 class AdminController extends Controller
 {
+    protected PostService $postService;
+
+    public function __construct(PostService $postService)
+    {
+        $this->postService = $postService;
+    }
+    
     public function dashboard()
     {
         return view('admin.dashboard');
@@ -39,11 +48,14 @@ class AdminController extends Controller
                 Rule::in([PostAccessPolicy::PUBLIC , PostAccessPolicy::PRIVATE ])
             ],
             'policy.password' => 'sometimes|required',
+            'tags' => ['sometimes', 'array', 'between:0,' . config('setting.post_max_tags')],
+            'tags.*' => ['sometimes','nullable', 'string', 'max:'.config('setting.tag_name_size')],
         ]);
 
         $post = Post::findOrFail($postId);
         $post->update($data);
         $post->post_policy()->update(data_get($data, 'policy', []));
+        $this->postService->syncTags($post, data_get($data, 'tags', []));
         return redirect()->back()->with('success', 'Post updated successfully!');
     }
 

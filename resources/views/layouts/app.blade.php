@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
   <!-- SEO -->
-  <title>{{ get_page_title($post ?? null, 'VoteUp 殘酷二選一') }}</title>
+  <title>{{ get_page_title($post ?? null, '2Pick | 殘酷二選一') }}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ get_page_description($post ?? null) }}">
@@ -26,8 +26,8 @@
   <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand" href="{{ url('/') }}">
-        {{ __('VoteUp') }}
-        <img class="home-logo" src="/storage/logo-2-2x.png" alt="VoteUp">
+        {{ __('2Pick') }}
+        <img class="home-logo" src="/storage/logo-2-2x.png" alt="2Pick">
       </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
               aria-controls="navbarSupportedContent" aria-expanded="false"

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\TagController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MyPostController;
 use App\Http\Controllers\Api\ElementController;
@@ -31,11 +32,10 @@ Route::post('game', [GameController::class, 'create'])->name('api.game.create');
 Route::post('game/vote', [GameController::class, 'vote'])->name('api.game.vote');
 //Route::get('post/{post:serial}/game/{game:serial}', [GameController::class, 'nextRound'])->name('api.game.next-round');
 
-
-
 Route::get('post/{post:serial}/rank', [RankController::class, 'index'])->name('api.rank.index');
 Route::get('post/{post:serial}/rank/report', [RankController::class, 'report'])->name('api.rank.report');
 
+Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
 
 /**
  * Auth
@@ -48,8 +48,11 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('account/post/{post:serial}', [MyPostController::class, 'delete'])->name('api.post.delete');
     Route::get('account/post/{post:serial}/elements', [MyPostController::class, 'elements'])->name('api.post.elements');
     Route::get('account/post/{post:serial}/rank', [MyPostController::class, 'rank'])->name('api.post.rank');
+
     Route::post('account/elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');
     Route::post('account/elements/batch', [ElementController::class, 'batchCreate'])->name('api.element.batch-create');
     Route::put('account/element/{element}', [ElementController::class, 'update'])->name('api.element.update');
     Route::delete('account/element/{element}', [ElementController::class, 'delete'])->name('api.element.delete');
+
+    
 });

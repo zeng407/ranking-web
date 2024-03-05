@@ -28,7 +28,7 @@
     "edit_post.info.head": "The Vote Information",
     "edit_post.info.play": "Play",
     "edit_post.info.edit": "Edit",
-    "edit_post.info.delete": "Delete",
+    "edit_post.info.delete": "Delete the vote",
     "edit_post.info.save": "Save",
     "edit_post.info.create_time": "Created At",
     "edit_post.at_least_element_number_hint": "You must upload 8 medias at least.",
@@ -41,7 +41,15 @@
     "edit_post.rank.game_plays": "Vote count",
     "edit_post.rank.win_at_final": "Champion",
     "edit_post.rank.win_rate": "1v1",
+    "edit_post.tag.enter": "Enter",
 
-    "total elements": "total elements : {count}"
+    "game.rounds": "Rounds",
+    "game.select": "Select",
+    "gmae.continue": "Continue",
+    "gmae.continue_hint": "Continue last round",
+    "game.setting": "Setting",
 
+    "total elements": "total elements : {count}",
+
+    "rank.no_rank": "No data"
 }
