@@ -4,7 +4,7 @@
 namespace App\Enums;
 
 
-class TrendType
+enum TrendType: string
 {
     const HOT = 'hot';
     const NEW = 'new';

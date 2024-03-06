@@ -52,7 +52,7 @@
               <i class="fas fa-spinner fa-spin"></i>
             </div>
 
-            <ValidationObserver v-slot="{ invalid }" v-if="post">
+            <ValidationObserver v-slot="{ invalid }" v-if="post && !loading['LOADING_POST']">
               <!-- Rank基本資訊 -->
               <div class="row">
                 <div class="col-6">
@@ -115,6 +115,43 @@
                     </div>
                   </div>
                 </div>
+                <!-- 標籤 -->
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg">
+                        {{ $t('Tag') }}
+                      </label>
+                      <ValidationProvider v-slot="{ errors }">
+                        <div class="input-group mb-3" v-if="isEditing">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text" id="hashtag">#</span>
+                          </div>
+                          <input list="tagsOptions" type="text" class="form-control" autocomplete="off"
+                            :placeholder="$t('edit_post.info.max_hashtag')" maxlength="15" aria-label="hashtag"
+                            aria-describedby="hashtag" v-model="tagInput" @keyup="loadTagsOptions">
+                          <datalist id="tagsOptions">
+                            <option v-for="tag in tagsOptions" :value="tag.name">{{ tag.name }}</option>
+                          </datalist>
+                          <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="hashtag" @click="addTag"
+                              :disabled="tags.length >= 5">{{ $t('edit_post.tag.enter') }}</button>
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <span v-for="tag in tags" class="badge badge-secondary mr-1" style="font-size: larger;">
+                            {{ tag }}
+                            <a v-if="isEditing" class="btn btn-sm btn-light ml-1" @click="removeTag(tag)"
+                              @keydown.enter.prevent>
+                              <i class="fas fa-times"></i>
+                            </a>
+                          </span>
+                          <span v-if="tags.length === 0" class="text-muted">{{ $t('edit_post.info.no_tag') }}</span>
+                        </div>
+                      </ValidationProvider>
+                    </div>
+                  </div>
+                </div>
                 <!-- 發佈 -->
                 <div class="row">
                   <div class="col-12">
@@ -138,7 +175,7 @@
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                       <div v-else>
-                        <input class="form-control" disabled="disabled" :value="post._.policy">
+                        <input class="form-control" disabled="disabled" :value="$t('post_policy.' + post.policy)">
                         <small class="form-text text-muted" v-if="post.policy === 'public'">{{
                           $t('edit_post.at_least_element_number_hint') }}</small>
                       </div>
@@ -146,26 +183,26 @@
                   </div>
                 </div>
               </form>
+              <!-- 建立時間 -->
+              <div class="row" v-if="post">
+                <div class="col-3">
+                  <div class="form-group">
+                    <label class="col-form-label-lg">{{ $t('edit_post.info.create_time') }}</label>
+                    <input class="form-control" disabled :value="post.created_at | date">
+                  </div>
+                </div>
+              </div>
+              <!-- Delete Post Button -->
+              <div class="row" v-if="post && isEditing">
+                <div class="col-12">
+                  <div class="form-group fa-pull-right">
+                    <button class="btn btn-danger" @click="deletePost" :disabled="loading['DELETING_POST']">
+                      <i class="fas fa-trash-alt"></i> {{ $t('edit_post.info.delete') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </ValidationObserver>
-            <!-- 建立時間 -->
-            <div class="row" v-if="post">
-              <div class="col-3">
-                <div class="form-group">
-                  <label class="col-form-label-lg">{{ $t('edit_post.info.create_time') }}</label>
-                  <input class="form-control" disabled :value="post.created_at | date">
-                </div>
-              </div>
-            </div>
-            <!-- Delete Post Button -->
-            <div class="row" v-if="post">
-              <div class="col-12">
-                <div class="form-group fa-pull-right">
-                  <button class="btn btn-danger" @click="deletePost" :disabled="loading['DELETING_POST']">
-                    {{ $t('edit_post.info.delete') }}
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- tab elements -->
@@ -196,7 +233,7 @@
             <h2 class="mt-5 mb-3"><i class="fa-solid fa-photo-film"></i>&nbsp;{{ $t('edit_post.upload_batch') }}</h2>
             <div class="row mt-3">
               <div class="col-12">
-                <label for="image-url-upload"><i class="fa-solid fa-link"></i>&nbsp;{{ $t('Upload from URL') }}</label>
+                <label><i class="fa-solid fa-link"></i>&nbsp;{{ $t('Upload from URL') }}</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate" rows="5"
                     v-model="batchString" aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ,
@@ -241,7 +278,7 @@
             <h2 class="mt-5 mb-3"><i class="fa-solid fa-gear"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
 
             <p>{{ $t('Max 64 elements') }}</p>
-            <p>{{ $t('total elements', { count :totalRow }) }}</p>
+            <p>{{ $t('total elements', { count: totalRow }) }}</p>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
@@ -347,8 +384,9 @@
               </template>
             </div>
 
-            <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow" :per-page="perPage" first-number last-number
-              @change="handleElementPageChange" align="center"></b-pagination>
+            <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow"
+              :per-page="perPage" first-number last-number @change="handleElementPageChange"
+              align="center"></b-pagination>
           </div>
 
           <!-- tab rank -->
@@ -426,6 +464,7 @@ export default {
     this.loadPost();
     this.loadElements();
     this.loadRankReport();
+    this.loadTagsOptions();
     this.host = window.location.origin;
   },
   props: {
@@ -439,6 +478,7 @@ export default {
     deleteElementEndpoint: String,
     createImageElementEndpoint: String,
     batchCreateEndpoint: String,
+    getTagsOptionsEndpoint: String,
   },
   data: function () {
     return {
@@ -483,7 +523,14 @@ export default {
       },
 
       //rank
-      rank: {}
+      rank: {},
+
+      //tags
+      tagInput: "",
+      oldTagInput: "",
+      tags: [],
+      tagsOptions: [],
+      tagLocalStash: {},
 
     }
   },
@@ -523,6 +570,7 @@ export default {
       axios.get(url)
         .then(res => {
           this.post = res.data.data;
+          this.tags = res.data.data.tags;
         })
         .finally(() => {
           this.uploadLoadingStatus('LOADING_POST', false);
@@ -539,12 +587,14 @@ export default {
         description: this.post.description,
         policy: {
           access_policy: this.post.policy
-        }
+        },
+        tags: this.tags
       };
 
       axios.put(this.updatePostEndpoint, data)
         .then(res => {
           this.post = res.data.data;
+          this.tags = res.data.data.tags;
           this.isEditing = false;
         })
         .finally(() => {
@@ -573,25 +623,129 @@ export default {
       const url = this.updateElementEndpoint.replace('_id', id);
       axios.put(url, data)
         .then((res) => {
-
+          Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            title: this.$t("Updated!"),
+            toast: true,
+            text: this.$t("The element has been updated."),
+            icon: "success",
+            timer: 3000
+          });
         })
     },
     deleteElement: function (element) {
-      this.pushDeleting(element);
+      Swal.fire({
+        title: this.$t("Are you sure?"),
+        text: this.$t("Once deleted, you will not be able to recover this element!"),
+        icon: "warning",
+        buttons: true,
+        showCancelButton: true,
+        dangerMode: true,
+      })
+        .then((willDelete) => {
+          if (willDelete.isConfirmed) {
+            this.pushDeleting(element);
 
-      const url = this.deleteElementEndpoint.replace('_id', element.id);
-      axios.delete(url)
-        .then((res) => {
-          const index = _.findIndex(this.elements.data, {
-            id: element.id
-          });
-          this.$delete(this.elements.data, index);
-          this.elements.meta.total--;
-        })
-        .finally(() => {
-          this.removeDeleting(element);
+            const url = this.deleteElementEndpoint.replace('_id', element.id);
+            axios.delete(url)
+              .then((res) => {
+                const index = _.findIndex(this.elements.data, {
+                  id: element.id
+                });
+                this.$delete(this.elements.data, index);
+                this.elements.meta.total--;
+                Swal.fire({
+                  position: "top-end",
+                  title: this.$t("Deleted!"),
+                  toast: true,
+                  text: this.$t("The element has been deleted."),
+                  showConfirmButton: false,
+                  icon: "success",
+                  timer: 3000
+                });
+              })
+              .finally(() => {
+                this.removeDeleting(element);
+              });
+          }
         });
     },
+    /** Tag */
+    addTag: function () {
+      const tag = this.tagInput.trim().replace("#", "");
+      if (tag.length > 20) {
+        tag = tag.substring(0, 20);
+      }
+      if (this.tags.length >= 5) {
+        Swal.fire({
+          position: "top-end",
+          showConfirmButton: false,
+          title: this.$t("Maximum number of tags reached"),
+          toast: true,
+          icon: "warning",
+          timer: 3000
+        });
+        return;
+      }
+
+      if (this.tags.includes(tag)) {
+        Swal.fire({
+          position: "top-end",
+          showConfirmButton: false,
+          title: this.$t("Hashtag already exists"),
+          toast: true,
+          icon: "warning",
+          timer: 3000
+        });
+        return;
+      }
+
+      if (tag) {
+        this.tags.push(tag);
+        this.tagInput = "";
+      }
+    },
+    removeTag: function (tag) {
+      _.remove(this.tags, (v) => {
+        return v === tag;
+      });
+      this.tags = Object.assign([], this.tags);
+    },
+    loadTagsOptions: function () {
+      if (this.tagInput === this.oldTagInput) {
+        return;
+      }
+
+      if (this.tagLocalStash[this.tagInput]) {
+          this.tagsOptions = this.tagLocalStash[this.tagInput];
+          return;
+        }
+
+      if (this.tagInputTimeout) {
+        clearTimeout(this.tagInputTimeout);
+      }
+
+      this.tagInputTimeout = setTimeout(() => {
+        const params = {
+          prompt: this.tagInput
+        };
+
+        axios.get(this.getTagsOptionsEndpoint, { params: params })
+          .then(res => {
+            this.tagsOptions = res.data;
+            this.oldTagInput = this.tagInput;
+            this.tagLocalStash[this.tagInput] = res.data;
+            const tagLocalStashLength = Object.keys(this.tagLocalStash).length;
+            if (tagLocalStashLength > 30) {
+              delete this.tagLocalStash[Object.keys(this.tagLocalStash)[0]];
+            }
+          });
+      }, 500);
+
+
+    },
+    /** Other */
     pushDeleting(element) {
       this.deletingElement.push(element.id);
     },
@@ -720,10 +874,15 @@ export default {
         allowOutsideClick: () => !Swal.isLoading()
       }).then((result) => {
         if (result.isConfirmed) {
+          this.uploadLoadingStatus('LOADING_POST', true);
           Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            toast: true,
             title: this.$t('Deleted!'),
             text: this.$t('Your post has been deleted.'),
-            icon: 'success'
+            icon: 'success',
+            timer: 3000
           }).then(res => {
             window.location.href = '/account/post';
           });

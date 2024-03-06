@@ -5,6 +5,7 @@ namespace App\Services;
 
 
 use App\Models\Post;
+use App\Models\Tag;
 use App\Repositories\PostRepository;
 use App\Models\User;
 use App\Helper\SerialGenerator;
@@ -35,7 +36,12 @@ class PostService
 
         if($sortBy = data_get($sorter, 'sort_by')){
             $dir = data_get($sorter, 'sort_dir') === 'desc' ? 'desc' : 'asc';
+            if($sortBy === 'hot'){
+                $sortRange = data_get($sorter,'sort_range', 'month');
+                $sortBy = 'hot_'.$sortRange;
+            }
             $query = $this->repo->sorter($query, $sortBy, $dir);
+            logger($sortBy);
         }
 
         $perPage = data_get($paginationOptions, 'per_page', 15);
@@ -64,7 +70,19 @@ class PostService
 
     public function delete(Post $post)
     {
+        $post->tags()->detach();
         $post->delete();
         event(new PostDeleted($post));
+    }
+
+    public function syncTags(Post $post, array $tags)
+    {
+        $post->tags()->detach();
+        foreach ($tags as $tag) {
+            if (is_string($tag) && !empty($tag) ) {
+                $tagModel = Tag::firstOrCreate(['name' => $tag]);
+                $post->tags()->attach($tagModel->id);
+            }
+        }
     }
 }

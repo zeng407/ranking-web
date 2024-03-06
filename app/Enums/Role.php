@@ -2,7 +2,8 @@
 
 namespace App\Enums;
 
-class Role
+enum Role: string
 {
     const ADMIN = 'admin';
+    const BANNED = 'banned';
 }

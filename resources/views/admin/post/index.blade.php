@@ -27,7 +27,7 @@
                         <td>{{ $post->elements()->count() }}</td>
                         <td>{{ $post->post_policy->getAccessPolicyEnum() }}</td>
                         <td >{{ $post->user->name }}<br>
-                            <span class="badge badge-secondary text-truncate" style="max-width: 150px;">{{ $post->user->email }}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>
+                            <span class="badge badge-secondary text-truncate" style="max-width: 150px;">{{ $post->user->email }}</span>
                             
                         </td>
                         <td>{{ $post->created_at->diffForHumans() }}<br>
@@ -39,6 +39,8 @@
             </tbody>
         </table>
         <!-- Pagination links -->
-        {{ $posts->links() }}
+        <div class="d-flex justify-content-center">
+            {{ $posts->links() }}
+        </div>
     </div>
 @endsection

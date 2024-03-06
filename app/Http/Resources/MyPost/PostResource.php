@@ -26,11 +26,9 @@ class PostResource extends JsonResource
             'serial' => $this->serial,
             'description' => $this->description,
             'policy' => $this->post_policy->access_policy,
-            '_' => [
-                'policy' => PostAccessPolicy::trans($this->post_policy->access_policy)
-            ],
             'play_count' => $this->games()->count(),
-            'created_at' => $this->created_at
+            'created_at' => $this->created_at,
+            'tags' => $this->tags->pluck('name')->toArray(),
         ];
     }
 }

@@ -21,7 +21,6 @@ class ElementController extends Controller
         $data = $request->validate([
             'title' => ['sometimes', 'string', 'max:' . config('setting.element_title_size')],
         ]);
-        logger($data);
         $element = Element::findOrFail($elementId);
         $element->update($data);
         return response()->json();

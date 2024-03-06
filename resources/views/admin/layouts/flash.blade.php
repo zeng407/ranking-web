@@ -29,6 +29,14 @@
 @if ($errors->any())
 <span class="alert alert-danger alert-block fa-pull-right mr-5">
     <button type="button" class="close" data-dismiss="alert">×</button>    
-    Please check the form below for errors
+    Something went wrong, please check and try again!
+    @env('local')
+    <ul>
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+    @endenv
+    
 </span>
 @endif

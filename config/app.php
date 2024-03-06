@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Voteup.gg'),
+    'name' => env('APP_NAME', '2Pick.gg'),
 
     /*
     |--------------------------------------------------------------------------
@@ -57,6 +57,9 @@ return [
     'asset_url' => env('ASSET_URL', null),
 
     'force_https' => env('FORCE_HTTPS', false),
+
+    /* Contact Email */
+    'contact_email'=> env('CONTACT_EMAIL', 'admin@example.com'),
 
     /*
     |--------------------------------------------------------------------------

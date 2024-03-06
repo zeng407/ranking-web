@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\ApiController;
+use App\Http\Controllers\Admin\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,3 +19,5 @@ Route::get('/', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 Route::get('/posts', [AdminController::class, 'indexPost'])->name('admin.post.index');
 Route::get('/post/{post_id}', [AdminController::class, 'showPost'])->name('admin.post.show');
 Route::put('/post/{post_id}', [AdminController::class, 'updatePost'])->name('admin.post.update');
+Route::get('/users', [UserController::class, 'index'])->name('admin.user.index');
+Route::get('/users/search', [UserController::class, 'search'])->name('admin.user.search');

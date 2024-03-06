@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\ApiController;
+use App\Http\Controllers\Admin\Api\UserController;
 use App\Http\Controllers\Admin\Api\ElementController;
 
 /*
@@ -20,3 +19,5 @@ use App\Http\Controllers\Admin\Api\ElementController;
 Route::get('post/{post_id}/elements', [ElementController::class, 'indexElement'])->name('admin.api.element.index');
 Route::put('post/{post_id}/element/{element_id}', [ElementController::class, 'updateElement'])->name('admin.api.element.update');
 Route::delete('post/{post_id}/element/{element_id}', [ElementController::class, 'deleteElement'])->name('admin.api.element.delete');
+Route::put('user/{user_id}/ban', [UserController::class, 'ban'])->name('admin.user.ban');
+Route::put('user/{user_id}/unban', [UserController::class, 'unban'])->name('admin.user.unban');

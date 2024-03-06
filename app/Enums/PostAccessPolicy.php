@@ -3,7 +3,7 @@
 
 namespace App\Enums;
 
-class PostAccessPolicy
+enum PostAccessPolicy: string
 {
     const PRIVATE = 'private';
     const PUBLIC = 'public';
@@ -19,3 +19,4 @@ class PostAccessPolicy
         return __($key);
     }
 }
+

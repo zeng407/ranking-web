@@ -26,7 +26,7 @@
           <tr v-for="post in posts.data">
             <td class="text-break">{{ post.title }}</td>
             <td class="text-break">{{ post.description }}</td>
-            <td class="text-break">{{ post._.policy }}</td>
+            <td class="text-break">{{ $t('post_policy.'+post.policy) }}</td>
             <td>
               <a :title="$t('my_games.table.edit')" :href="getEditLink(post.serial)"><i class="fas fa-edit"></i></a>
             </td>

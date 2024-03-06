@@ -1,5 +1,5 @@
 {
-    "VoteUp": "殘酷二選一",
+    "2Pick": "殘酷二選一",
     "Remember Me": "讓我保持登入",
     "Login": "登入",
     "Logout": "登出",
@@ -11,5 +11,6 @@
     "Language": "語言",
     "Chinese": "中文",
     "English": "英文",
-    "My Votes": "我的投票"
+    "My Votes": "我的投票",
+    "Home": "首頁"
 }

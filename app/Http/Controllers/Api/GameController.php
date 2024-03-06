@@ -12,8 +12,6 @@ use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
 use App\Models\Game1V1Round;
 use App\Models\Post;
-use App\Policies\GamePolicy;
-use App\Policies\PostPolicy;
 use App\Services\GameService;
 use App\Services\RankService;
 use Illuminate\Http\Request;

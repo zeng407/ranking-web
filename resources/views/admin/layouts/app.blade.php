@@ -29,7 +29,7 @@
             <div class="container-fluid">
                 <a class="navbar-brand" href="{{ route('admin.dashboard') }}">
                     管理後台
-                    <img class="home-logo" src="/storage/logo-2-2x.png" alt="VoteUp">
+                    <img class="home-logo" src="/storage/logo.png" alt="2Pick Logo">
                 </a>
                 @include('admin.layouts.header')
                 <button class="navbar-toggler" type="button" data-toggle="collapse"

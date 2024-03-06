@@ -21,7 +21,6 @@ class ElementController extends Controller
 
     public function __construct(YoutubeService $service, ElementService $elementService)
     {
-        $this->middleware('auth');
         $this->youtube = $service;
         $this->elementService = $elementService;
     }

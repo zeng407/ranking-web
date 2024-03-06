@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helper\CacheService;
 use Illuminate\Console\Command;
 
 class CreateAdmin extends Command
@@ -38,12 +39,16 @@ class CreateAdmin extends Command
     public function handle()
     {
         $email = $this->argument('email');
+        /**
+         * @var \App\Models\User $user
+         */
         $user = \App\Models\User::where('email', $email)->first();
         if (!$user) {
             $this->error('User not found');
             return 1;
         }
         $user->roles()->syncWithoutDetaching(find_role_id(\App\Enums\Role::ADMIN));
+        CacheService::rememberUserRole($user, true);
 
         $this->info('Admin role created for user ' . $email);
         return 0;

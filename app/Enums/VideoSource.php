@@ -4,7 +4,7 @@
 namespace App\Enums;
 
 
-class VideoSource
+enum VideoSource: string
 {
     const YOUTUBE = 'youtube';
     const URL = 'url';

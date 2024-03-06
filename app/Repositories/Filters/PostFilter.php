@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PostFilter
 {
-    const ANY_LIKE = 'any_like';
+    const KEYWORD_LIKE = 'keyword_like';
     const ELEMENTS_COUNT_GTE = 'elements_count_gte';
     const PUBLIC = 'public';
 
     public static function apply(Builder $query, array $condition)
     {
-        if (isset($condition[self::ANY_LIKE])) {
-            $query = self::any_like($query, $condition[self::ANY_LIKE]);
+        if (isset($condition[self::KEYWORD_LIKE])) {
+            $query = self::keyword_like($query, $condition[self::KEYWORD_LIKE]);
         }
 
         if (isset($condition[self::ELEMENTS_COUNT_GTE])) {
@@ -31,26 +31,40 @@ class PostFilter
         return $query;
     }
 
-    public static function any_like(Builder $query, $value)
+    public static function keyword_like(Builder $query, $value)
     {
-        if (!is_null($value) && '' !== $value) {
-            return $query->where(function ($query) use ($value) {
-                $query->orWhere('title', 'like', "%$value%")
-                    ->orWhere('description', 'like', "%$value%");
-            });
+        if (is_string($value)) {
+            $value = explode(' ', trim($value));
         }
+        $value = array_filter($value, fn($v) => !is_null($v) && '' !== $v);
+
+        if (count($value) > 0) {
+            foreach ($value as $keyword) {
+                $query->where(
+                    function ($query) use ($keyword) {
+                        $query->orWhere('title', 'like', "%$keyword%")
+                            ->orWhere('description', 'like', "%$keyword%")
+                            ->orWhereHas('tags', function ($query) use ($keyword) {
+                                $query->where('name', 'like', "%$keyword%")
+                                    ->orWhere('name', 'like', "%" . str_replace('#', '', $keyword) . "%");
+                            });
+                    }
+                );
+            }
+        }
+        return $query;
     }
 
     public static function elements_count_gte(Builder $query, $value)
     {
-        return $query->whereHas('elements', null,'>=', $value);
+        return $query->whereHas('elements', null, '>=', $value);
     }
 
     public static function public(Builder $query, $value)
     {
         return $query->whereHas('post_policy', function ($query) {
-            $query->where('access_policy', PostAccessPolicy::PUBLIC);
+            $query->where('access_policy', PostAccessPolicy::PUBLIC );
         });
-//        return (new Post)->scopePublic($query);
+        //        return (new Post)->scopePublic($query);
     }
 }

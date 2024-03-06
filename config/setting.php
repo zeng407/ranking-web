@@ -9,4 +9,6 @@ return [
     'post_min_element_count' => 8,
     'post_max_element_count' => 64,
     'element_title_size' => 70,
+    'post_max_tags' => 5,
+    'tag_name_size' => 15,
 ];

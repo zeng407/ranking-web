@@ -4,7 +4,7 @@
 namespace App\Enums;
 
 
-class RankType
+enum RankType: string
 {
     const CHAMPION = 'champion';
     const PK_KING = 'pk_king';

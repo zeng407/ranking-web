@@ -1,44 +1,35 @@
 <template>
-
   <div class="container-fluid">
     <div v-if="game">
       <h2 class="text-center text-break">{{ game.title }}</h2>
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
         <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP {{
-            game.of_round
-          }} </h5>
+          game.of_round
+        }} </h5>
         <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} / {{
-            game.total_elements
-          }})</h5>
+          game.total_elements
+        }})</h5>
       </div>
     </div>
-    <div class="row" v-if="game" style="min-height: 636.5px">
+    <div class="row game-body" v-if="game">
       <!--left part-->
-      <div class="col-md-6 pr-md-0 mb-2 mb-md-0">
-        <div class="card game-player" id="left-player">
-          <div v-if="isImageSource(le)"
-               @click="clickImage"
-               :style="{backgroundImage: 'url('+le.thumb_url+')', height: this.elementHeight+'px'}"
-               class="game-image"
-          ></div>
-          <div class="d-flex" v-if="isYoutubeSource(le)"
-               @mouseover="videoHoverIn(le, re)"
-               @mouseleave="videoHoverOut(le, re)"
-          >
-            <youtube :videoId="le.video_id"
-                     width="100%" :height="elementHeight"
-                     :ref="le.id"
-                     @ready="doPlay(le, true,'left')"
-                     :player-vars="{
-                      controls:1,
-                      autoplay:1,
-                      rel: 0,
-                      origin: host,
-                      loop: 1,
-                      playlist: le.video_id
-                     }"
-            ></youtube>
+      <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
+        <div class="card game-player left-player" id="left-player">
+          <div v-if="isImageSource(le)" @click="clickImage"
+            :style="{ backgroundImage: 'url(' + le.thumb_url + ')', height: this.elementHeight + 'px' }"
+            class="game-image"></div>
+          <div class="d-flex" v-if="isYoutubeSource(le)" @mouseover="videoHoverIn(le, re)"
+            @mouseleave="videoHoverOut(le, re)">
+            <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
+              @ready="doPlay(le, true, 'left')" :player-vars="{
+                controls: 1,
+                autoplay: 1,
+                rel: 0,
+                origin: host,
+                loop: 1,
+                playlist: le.video_id
+              }"></youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.thumb_url"></video>
@@ -48,28 +39,26 @@
               <p class="my-1">{{ le.title }}</p>
             </div>
             <button class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
-                    @click="leftWin()">Vote
+              @click="leftWin()">Vote
             </button>
             <div class="row" v-if="isYoutubeSource(le)">
               <div class="col-3">
-                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none"
-                        :disabled="isVoting"
-                        @click="leftPlay()">
+                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :disabled="isVoting"
+                  @click="leftPlay()">
                   <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
                 </button>
               </div>
               <div class="col-9">
-                <button class="btn btn-primary btn-lg btn-block d-block d-md-none"
-                        :disabled="isVoting"
-                        @click="leftWin()">
+                <button class="btn btn-primary btn-lg btn-block d-block d-md-none" :disabled="isVoting"
+                  @click="leftWin()">
                   Vote
                 </button>
               </div>
             </div>
             <div v-else>
               <button class="btn btn-primary btn-block btn-lg d-block d-md-none" :disabled="isVoting"
-                      @click="leftWin()">Vote
+                @click="leftWin()">Vote
               </button>
             </div>
 
@@ -78,64 +67,54 @@
       </div>
 
       <!--right part-->
-      <div class="col-md-6 pl-md-0 mb-4 mb-md-0">
-        <div class="card game-player" :class="{'flex-column-reverse': isMobileScreen}" id="right-player">
-          <div v-if="isImageSource(re)"
-               @click="clickImage"
-               :style="{backgroundImage: 'url('+re.thumb_url+')', height: this.elementHeight+'px'}"
-               class="game-image"
-          ></div>
-          <div class="d-flex" v-else-if="isYoutubeSource(re)"
-               @mouseover="videoHoverIn(re, le)"
-               @mouseleave="videoHoverOut(re, le)"
-          >
-            <youtube :videoId="re.video_id"
-                     width="100%" :height="elementHeight"
-                     :ref="re.id"
-                     @ready="doPlay(re,false,'right')"
-                     :player-vars="{
-                      controls:1,
-                      autoplay:1,
-                      rel: 0,
-                      host: host,
-                      loop: 1,
-                      playlist: re.video_id
-                     }"
-            ></youtube>
+      <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
+        <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
+          <div v-if="isImageSource(re)" @click="clickImage"
+            :style="{ backgroundImage: 'url(' + re.thumb_url + ')', height: this.elementHeight + 'px' }"
+            class="game-image"></div>
+          <div class="d-flex" v-else-if="isYoutubeSource(re)" @mouseover="videoHoverIn(re, le)"
+            @mouseleave="videoHoverOut(re, le)">
+            <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
+              @ready="doPlay(re, false, 'right')" :player-vars="{
+                controls: 1,
+                autoplay: 1,
+                rel: 0,
+                host: host,
+                loop: 1,
+                playlist: re.video_id
+              }"></youtube>
           </div>
           <div v-else-if="isVideoSource(re)">
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.thumb_url"></video>
           </div>
 
           <!-- reverse when device size width less md(768px)-->
-          <div class="card-body text-center" :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
+          <div class="card-body text-center" :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
             <div class="my-1" style="height: 70px"
-                 :class="{'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen}">
+              :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
               <p class="my-1">{{ re.title }}</p>
             </div>
             <button class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
-                    @click="rightWin()">Vote
+              @click="rightWin()">Vote
             </button>
             <div class="row" v-if="isYoutubeSource(re)">
               <div class="col-3">
-                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none"
-                        :disabled="isVoting"
-                        @click="rightPlay()">
+                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"
+                  @click="rightPlay()">
                   <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
                 </button>
               </div>
               <div class="col-9">
-                <button class="btn btn-danger btn-lg btn-block d-block d-md-none"
-                        :disabled="isVoting"
-                        @click="rightWin()">
+                <button class="btn btn-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"
+                  @click="rightWin()">
                   Vote
                 </button>
               </div>
             </div>
             <div v-else>
               <button class="btn btn-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"
-                      @click="rightWin()">Vote
+                @click="rightWin()">Vote
               </button>
             </div>
           </div>
@@ -145,20 +124,20 @@
 
     <!-- Modal -->
     <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
-         aria-labelledby="gameSettingPanelLabel" aria-hidden="true">
+      aria-labelledby="gameSettingPanelLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="gameSettingPanelLabel">Vote設定</h5>
+            <h5 class="modal-title" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
           </div>
           <ValidationObserver v-slot="{ invalid }" v-if="post">
             <form @submit.prevent>
               <div class="modal-body">
                 <div class="alert alert-danger" v-if="processingGameSerial">
-                  有未完成的Vote，是否繼續？
+                  <i class="fas fa-exclamation-triangle"></i>{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
                     <i class="fas fa-play"></i>
-                    繼續Vote
+                    {{ $t('game.continue') }}
                   </span>
                 </div>
                 <div class="card">
@@ -168,35 +147,40 @@
                   <div class="row no-gutters">
                     <div class="col-6">
                       <div :style="{
-                      'background': 'url('+post.image1.url+')',
-                      'width': '100%',
-                      'height': '300px',
-                      'background-repeat': 'no-repeat',
-                      'background-size': 'cover',
-                      'background-position': 'center center',
-                      'display': 'flex'}"></div>
-                      <h5 class="text-center mt-1">{{ post.image1.title }}</h5>
-                    </div>
-                    <div class="col-6">
-                      <div :style="{
-                        'background': 'url('+post.image2.url+')',
+                        'background': 'url(' + post.image1.url + ')',
                         'width': '100%',
                         'height': '300px',
                         'background-repeat': 'no-repeat',
                         'background-size': 'cover',
                         'background-position': 'center center',
-                        'display': 'flex'}">
+                        'display': 'flex'
+                      }"></div>
+                      <h5 class="text-center mt-1 p-1">{{ post.image1.title }}</h5>
+                    </div>
+                    <div class="col-6">
+                      <div :style="{
+                        'background': 'url(' + post.image2.url + ')',
+                        'width': '100%',
+                        'height': '300px',
+                        'background-repeat': 'no-repeat',
+                        'background-size': 'cover',
+                        'background-position': 'center center',
+                        'display': 'flex'
+                      }">
                       </div>
-                      <h5 class="text-center mt-1">{{ post.image2.title }}</h5>
+                      <h5 class="text-center mt-1 p-1">{{ post.image2.title }}</h5>
                     </div>
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ post.description }}</h5>
-                      <span class="mt-2 card-text float-right">
-                      <span class="pr-2">
-                        <i class="fas fa-eye"></i>&nbsp;{{ post.play_count }}
+                      <div v-if="post.tags.length > 0" class="d-flex">
+                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{ tag }}</span>
+                      </div>
+                      <span class="mt-2 card-text d-flex justify-content-end">
+                        <span class="pr-2">
+                          <i class="fas fa-play-circle"></i>&nbsp;{{post.play_count}}
+                        </span>
+                        <small class="text-muted">{{ post.created_at | datetime }}</small>
                       </span>
-                      <small class="text-muted">{{ post.created_at | datetime }}</small>
-                    </span>
                     </div>
                   </div>
                 </div>
@@ -205,12 +189,12 @@
                     <ValidationProvider rules="required" v-slot="{ errors }">
                       <div class="input-group mb-3">
                         <div class="input-group-prepend">
-                          <label class="input-group-text" for="elementsCount">參戰數</label>
+                          <label class="input-group-text" for="elementsCount">{{ $t('game.rounds') }}</label>
                         </div>
                         <select v-model="elementsCount" class="custom-select" id="elementsCount" required>
-                          <option value="" disabled selected="selected">請選擇</option>
-                          <option v-for="count in [8,16,32,64,128,256,512,1024]"
-                                  :value="count" v-if="post.elements_count >= count">
+                          <option value="" disabled selected="selected">{{ $t('game.select') }}</option>
+                          <option v-for="count in [8, 16, 32, 64, 128, 256, 512, 1024]" :value="count"
+                            v-if="post.elements_count >= count">
                             {{ count }}
                           </option>
                           <option :value="post.elements_count" v-if="!isElementsPowerOfTwo">
@@ -223,7 +207,7 @@
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">開戰!</button>
+                <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{ $t('game.start') }}</button>
               </div>
             </form>
           </ValidationObserver>
@@ -359,7 +343,7 @@ export default {
 
       if (this.isMobileScreen) {
         let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
-        let loseAnimate = $('#right-player').animate({opacity: '0'}, 500, () => {
+        let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
           $('#right-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
@@ -368,12 +352,12 @@ export default {
         return;
       }
 
-      let winAnimate = $('#left-player').animate({left: '50%'}, 500, () => {
-        $('#left-player').delay(500).animate({top: '-2000'}, 500, () => {
+      let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
+        $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
           $('#left-player').hide();
         });
       }).promise();
-      let loseAnimate = $('#right-player').animate({top: '2000'}, 500, () => {
+      let loseAnimate = $('#right-player').animate({ top: '2000' }, 500, () => {
         $('#right-player').hide();
       }).promise();
 
@@ -405,7 +389,7 @@ export default {
 
       if (this.isMobileScreen) {
         let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
-        let loseAnimate = $('#left-player').animate({opacity: '0'}, 500, () => {
+        let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500, () => {
           $('#left-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
@@ -414,13 +398,13 @@ export default {
         return;
       }
 
-      let winAnimate = $('#right-player').animate({left: '-50%'}, 500, () => {
-        $('#right-player').delay(500).animate({top: '-2000'}, 500, () => {
+      let winAnimate = $('#right-player').animate({ left: '-50%' }, 500, () => {
+        $('#right-player').delay(500).animate({ top: '-2000' }, 500, () => {
           $('#right-player').hide();
         });
       }).promise();
 
-      let loseAnimate = $('#left-player').animate({top: '2000'}, 500, () => {
+      let loseAnimate = $('#left-player').animate({ top: '2000' }, 500, () => {
         $('#left-player').hide();
       }).promise();
 
@@ -506,7 +490,7 @@ export default {
         if (name === 'left' && this.isLeftPlayerInit === false) {
           this.isLeftPlayerInit = true;
           this.initPlayerEventLister(player);
-        }else if (name === 'right' && this.isRightPlaying === false) {
+        } else if (name === 'right' && this.isRightPlaying === false) {
           this.isLeftPlayerInit = true
           this.initPlayerEventLister(player);
         }

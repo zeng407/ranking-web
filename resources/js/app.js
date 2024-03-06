@@ -103,6 +103,13 @@ Vue.filter('date', function (value) {
 Vue.filter('datetime', function (value) {
     return moment(value).format('Y/M/D HH:mm:ss');
 });
+Vue.filter('moment', function (value, format) {
+    return moment(value).format(format);
+});
+Vue.filter('formNow', function (value, locale = 'zh-tw') {
+    moment.locale(locale || 'en');
+    return moment(value).fromNow();
+});
 
 
 Vue.directive('b-popover', VBPopover);

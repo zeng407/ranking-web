@@ -50,7 +50,8 @@ class PublicPostResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'play_count' => $this->games()->count(),
-            'elements_count' => $elementsCount
+            'elements_count' => $elementsCount,
+            'tags' => $this->tags->pluck('name')->toArray(),
         ];
     }
 }

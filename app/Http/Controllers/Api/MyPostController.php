@@ -11,6 +11,7 @@ use App\Http\Resources\MyPost\PostResource;
 use App\Models\Element;
 use App\Models\Post;
 use App\Models\PostPolicy;
+use App\Models\Tag;
 use App\Models\User;
 use App\Repositories\Filters\ElementFilter;
 use App\Services\ElementService;
@@ -34,7 +35,6 @@ class MyPostController extends Controller
         $this->elementService = $elementService;
         $this->rankService = $rankService;
         $this->postService = $postService;
-        $this->middleware('auth');
     }
 
     public function index()
@@ -61,13 +61,12 @@ class MyPostController extends Controller
          * @see \App\Policies\PostPolicy::read()
          */
         $this->authorize('read', $post);
-        
+
         $input = $request->validate([
             'per_page' => 'integer|max:50',
             'page' => 'integer',
             'filter' => 'array'
         ]);
-        \Log::debug($request->input());
 
         $paginationOptions = $this->parsePaginationOptions($input);
         $condition = $this->parseFilter($input, [
@@ -94,7 +93,7 @@ class MyPostController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:' . config('setting.post_title_size')],
             'description' => ['required', 'string', 'max:' . config('setting.post_description_size')],
-            'policy.access_policy' => ['required', Rule::in([PostAccessPolicy::PRIVATE, PostAccessPolicy::PUBLIC])],
+            'policy.access_policy' => ['required', Rule::in([PostAccessPolicy::PRIVATE , PostAccessPolicy::PUBLIC])],
         ]);
 
         $post = $this->postService->create($user, $data);
@@ -117,13 +116,16 @@ class MyPostController extends Controller
             'policy.access_policy' => [
                 'sometimes',
                 'required',
-                Rule::in([PostAccessPolicy::PUBLIC, PostAccessPolicy::PRIVATE])
+                Rule::in([PostAccessPolicy::PUBLIC , PostAccessPolicy::PRIVATE])
             ],
             'policy.password' => 'sometimes|required',
+            'tags' => ['sometimes', 'array', 'between:0,' . config('setting.post_max_tags')],
+            'tags.*' => ['sometimes', 'string', 'max:' . config('setting.tag_name_size')],
         ]);
 
         $post->update($data);
         $post->post_policy()->update(data_get($data, 'policy', []));
+        $this->postService->syncTags($post, data_get($data, 'tags', []));
         return PostResource::make($post);
     }
 
@@ -137,7 +139,7 @@ class MyPostController extends Controller
         $this->validate($request, [
             'password' => 'required'
         ]);
-        if(!password_verify($request->input('password'), Auth::user()->password)){
+        if (!password_verify($request->input('password'), Auth::user()->password)) {
             return response()->json([
                 'message' => 'password is not correct'
             ], 403);

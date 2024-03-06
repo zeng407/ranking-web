@@ -26,7 +26,7 @@ class PublicPostController extends Controller
         $posts = $this->postService->getLists([
             PostFilter::PUBLIC => true,
             PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
-            PostFilter::ANY_LIKE => $request->query('any_like')
+            PostFilter::KEYWORD_LIKE => $request->query('k')
         ],[
             'sort_by' => $request->query('sort_by'),
             'sort_dir' => $request->query('sort_dir'),
