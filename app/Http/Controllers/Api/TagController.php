@@ -6,33 +6,23 @@ use App\Enums\PostAccessPolicy;
 use App\Http\Controllers\Controller;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use App\Services\TagService;
 
 class TagController extends Controller
 {
+    protected $tagService;
+    protected $postService;
+
+    public function __construct(TagService $tagService)
+    {
+        $this->tagService = $tagService;
+    }
+
     public function index(Request $request)
     {
-        $prompt = $request->input("prompt");
+        $prompt = $request->query("prompt");
 
-        $query = Tag::join('post_tags', 'tags.id', '=', 'post_tags.tag_id')
-            ->whereHas('posts.post_policy', function ($query) {
-                $query->where('access_policy', PostAccessPolicy::PUBLIC);
-            })
-            ->groupBy('tags.id')
-            ->orderByRaw('count(tags.id) desc')
-            ->select('tags.name', \DB::raw('count(tags.id) as count'))
-            ->limit(5);
-
-        if (!is_null($prompt) && $prompt !== '') {
-            $tags = $query->where('name', 'like', "%$prompt%");
-        }
-
-        $tags = $query->get();
-
-        foreach ($tags as $tag) {
-            // hide the count for now
-            $tag->count = 0;
-            // $tag->count = max(((int) ($tag->count / 10)) * 10, 10);
-        }
+        $tags = $this->tagService->get($prompt);
 
         return response()->json($tags);
     }

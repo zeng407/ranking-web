@@ -100,6 +100,9 @@ if (!function_exists('get_page_title')) {
             $title = str_replace(" \t\n\r\0\x0B", "", $object->title);
             return "{$title} | {$base}";
         }
+        if(is_string($object)) {
+            return "{$object} | {$base}";
+        }
         return $base;
     }
 }
@@ -107,7 +110,7 @@ if (!function_exists('get_page_title')) {
 if (!function_exists('get_page_description')) {
     function get_page_description($object)
     {
-        $base = "殘酷二選一，選出你心中最的第一名，歌曲、男星、女星、動漫男主角、動漫女主角、寵物、食物、電影...，任何事物都可以投票！";
+        $base = "殘酷二選一，選出你心中最的第一名。歌曲、明星、動漫、寵物、食物、電影...，從64組候選人中，一輪一輪淘汰，最後選出你心中的第一名。";
         if ($object instanceof \App\Models\Post) {
             $description = str_replace(" \t\n\r\0\x0B", "", $object->description);
             return "{$description}。{$base}";

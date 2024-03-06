@@ -45,9 +45,10 @@
 
     "game.rounds": "Rounds",
     "game.select": "Select",
-    "gmae.continue": "Continue",
-    "gmae.continue_hint": "Continue last round",
+    "game.continue": "Continue",
+    "game.continue_hint": "Continue last round",
     "game.setting": "Setting",
+    "game.start": "Start",
 
     "total elements": "total elements : {count}",
 

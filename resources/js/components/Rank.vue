@@ -9,7 +9,7 @@
       <p>{{ rankInfo.data.description }}</p>
     </div>
     <b-tabs content-class="mt-3" v-if="!isLoading">
-      <b-tab :title="$t('Rank')" v-if="gameResult">
+      <b-tab :title="$t('My Rank')" v-if="gameResult">
         <div class="card my-2 card-hover">
           <div class="card-header rank-header">
             <h2 class="text-left">1</h2>

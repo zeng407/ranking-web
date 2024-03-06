@@ -58,6 +58,9 @@ return [
 
     'force_https' => env('FORCE_HTTPS', false),
 
+    /* Contact Email */
+    'contact_email'=> env('CONTACT_EMAIL', 'admin@example.com'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

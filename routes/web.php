@@ -30,8 +30,6 @@ Route::get('/lang/{locale}', function($locale){
 
 
 Route::get('', [HomeController::class, 'index'])->name('home');
-Route::get('hot', [HomeController::class, 'hot'])->name('home.hot');
-Route::get('new', [HomeController::class, 'new'])->name('home.new');
 Route::get('post/{post:serial}/game', [GameController::class, 'show'])->name('game.show');
 Route::get('post/{post:serial}/rank', [GameController::class, 'rank'])->name('game.rank');
 

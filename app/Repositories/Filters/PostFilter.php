@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PostFilter
 {
-    const ANY_LIKE = 'any_like';
+    const KEYWORD_LIKE = 'keyword_like';
     const ELEMENTS_COUNT_GTE = 'elements_count_gte';
     const PUBLIC = 'public';
 
     public static function apply(Builder $query, array $condition)
     {
-        if (isset($condition[self::ANY_LIKE])) {
-            $query = self::any_like($query, $condition[self::ANY_LIKE]);
+        if (isset($condition[self::KEYWORD_LIKE])) {
+            $query = self::keyword_like($query, $condition[self::KEYWORD_LIKE]);
         }
 
         if (isset($condition[self::ELEMENTS_COUNT_GTE])) {
@@ -31,7 +31,7 @@ class PostFilter
         return $query;
     }
 
-    public static function any_like(Builder $query, $value)
+    public static function keyword_like(Builder $query, $value)
     {
         if (is_string($value)) {
             $value = explode(' ', trim($value));

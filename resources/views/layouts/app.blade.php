@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
   <!-- SEO -->
-  <title>{{ get_page_title($post ?? null, '2Pick | 殘酷二選一') }}</title>
+  <title>{{ get_page_title($title ?? '', '殘酷二選一') }}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ get_page_description($post ?? null) }}">
@@ -26,8 +26,9 @@
   <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand" href="{{ url('/') }}">
-        {{ __('2Pick') }}
-        <img class="home-logo" src="/storage/logo-2-2x.png" alt="2Pick">
+        {{-- {{ __('2Pick') }} --}}
+        2Pick
+        {{-- <img class="home-logo" src="/storage/logo3.png" alt="2Pick Logo"> --}}
       </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
               aria-controls="navbarSupportedContent" aria-expanded="false"
@@ -44,17 +45,6 @@
         <!-- Right Side Of Navbar -->
         <ul class="navbar-nav ml-auto">
           <!-- Authentication Links -->
-          <li class="nav-item dropdown">
-            <a class="nav-link" href="#" id="dropdownLangButton" role="button" data-toggle="dropdown"
-               aria-expanded="false">
-              <i class="fas fa-globe-asia"></i>
-            </a>
-            <div class="dropdown-menu" aria-labelledby="dropdownLangButton">
-              <a class="dropdown-item" href="{{route('lang', 'zh_TW')}}">中文 (Chinese)</a>
-              <a class="dropdown-item" href="{{route('lang', 'en')}}">English</a>
-            </div>
-          </li>
-
           @guest
             @if (Route::has('login'))
               <li class="nav-item">

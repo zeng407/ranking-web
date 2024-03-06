@@ -34,8 +34,6 @@ class PostSorter
             $query = self::new($query, $sortBy, $dir);
         }
 
-
-
         return $query;
     }
 

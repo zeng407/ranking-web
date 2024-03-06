@@ -22097,6 +22097,19 @@ input[type=color].form-control:disabled {
   vertical-align: text-bottom;
 }
 
+[v-cloak] {
+  display: none;
+}
+
+.post-image {
+  width: 100%;
+  height: 300px;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  display: flex;
+}
+
 .game-body {
   min-height: 636.5px;
 }
@@ -22106,6 +22119,7 @@ input[type=color].form-control:disabled {
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center center;
+  background-color: #fff;
   display: flex;
   transition: 0.5s;
 }
@@ -22132,6 +22146,16 @@ input[type=color].form-control:disabled {
   top: 0;
   left: 0;
   position: relative;
+}
+
+.left-player {
+  background-color: #98CCFD;
+  border-color: #000;
+}
+
+.right-player {
+  background-color: #F8ABA8;
+  border-color: #000;
 }
 
 .zoom-in {
@@ -22277,4 +22301,14 @@ input[type=color].form-control:disabled {
     word-break: break-word;
   }
 }
+.red-card {
+  color: #fff;
+  background-color: #F8ABA8;
+  border-color: #F8ABA8;
+}
 
+.blue-card {
+  color: #fff;
+  background-color: #98CCFD;
+  border-color: #98CCFD;
+}

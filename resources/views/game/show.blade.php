@@ -1,4 +1,4 @@
-@extends('layouts.app', ['post' => $post])
+@extends('layouts.app', ['title' => $post])
 
 @section('content')
     <game

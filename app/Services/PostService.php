@@ -36,7 +36,12 @@ class PostService
 
         if($sortBy = data_get($sorter, 'sort_by')){
             $dir = data_get($sorter, 'sort_dir') === 'desc' ? 'desc' : 'asc';
+            if($sortBy === 'hot'){
+                $sortRange = data_get($sorter,'sort_range', 'month');
+                $sortBy = 'hot_'.$sortRange;
+            }
             $query = $this->repo->sorter($query, $sortBy, $dir);
+            logger($sortBy);
         }
 
         $perPage = data_get($paginationOptions, 'per_page', 15);

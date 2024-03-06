@@ -53,9 +53,10 @@
 
     "game.rounds": "回合數",
     "game.select": "選擇",
-    "gmae.continue": "繼續",
-    "gmae.continue_hint": "繼續上次未完的投票嗎", 
+    "game.continue": "繼續",
+    "game.continue_hint": "繼續上次未完的投票嗎", 
     "game.setting": "設定",
+    "game.start": "開始",
 
     "rank.no_rank": "尚未有資料",
 
@@ -69,7 +70,7 @@
     "Upload from URL": "輸入網址(多網址可用,隔開)",
     "Upload from Local": "電腦上傳",
     "Global Rank": "其他人的排名",
-    "Rank": "排名",
+    "My Rank": "我的排名",
     "Champion": "決賽",
     "1v1": "1v1勝率",
     "Max 64 elements": "最多上傳64個素材",
@@ -82,7 +83,7 @@
     "This Month": "本月",
     "This Year": "今年",
     "Today": "今天",
-    "All": "全部",
+    "All Time": "全部",
     "Are you sure?": "確定嗎?",
     "Once deleted, you will not be able to recover this element!" : "刪除後將無法恢復!",
     "The element has been deleted.": "素材已刪除" ,

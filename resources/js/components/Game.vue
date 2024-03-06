@@ -14,8 +14,8 @@
     </div>
     <div class="row game-body" v-if="game">
       <!--left part-->
-      <div class="col-md-6 pr-md-0 mb-2 mb-md-0">
-        <div class="card game-player" id="left-player">
+      <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
+        <div class="card game-player left-player" id="left-player">
           <div v-if="isImageSource(le)" @click="clickImage"
             :style="{ backgroundImage: 'url(' + le.thumb_url + ')', height: this.elementHeight + 'px' }"
             class="game-image"></div>
@@ -67,8 +67,8 @@
       </div>
 
       <!--right part-->
-      <div class="col-md-6 pl-md-0 mb-4 mb-md-0">
-        <div class="card game-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
+      <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
+        <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
           <div v-if="isImageSource(re)" @click="clickImage"
             :style="{ backgroundImage: 'url(' + re.thumb_url + ')', height: this.elementHeight + 'px' }"
             class="game-image"></div>
@@ -207,7 +207,7 @@
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">開戰!</button>
+                <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{ $t('game.start') }}</button>
               </div>
             </form>
           </ValidationObserver>
