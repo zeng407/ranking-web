@@ -54,6 +54,8 @@ export default {
         sort_by: this.filters.sort_by,
         range: this.filters.range
       };
+      // Remove null values from the query
+      query = Object.fromEntries(Object.entries(query).filter(([_, v]) => v !== null && v !== ''));
       window.location.href = '?' + new URLSearchParams(query).toString();
     },
     addTag: function (tag) {
