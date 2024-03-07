@@ -323,21 +323,7 @@ class ElementService
 
             }
 
-            //youtube
-            try {
-                //gfycat.com
-                $schemas = parse_url($source);
-                $domain = $schemas['host'];
-                $regex = '/(^|[^\.]+\.)gfycat\.com$/';
-                if (preg_match($regex, $domain) === 1) {
-
-                };
-            } catch (\Exception $exception) {
-
-            }
-            return false;
-
-            return VideoSource::URL;
+            return null;
         } catch (\Exception $exception) {
             report($exception);
             return null;
