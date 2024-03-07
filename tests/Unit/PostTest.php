@@ -55,6 +55,12 @@ class PostTest extends TestCase
 
         $this->be($user);
 
+        $expectedResult = ['data' => ['id' => 'QFH735d', 'deletehash' => 'pPEHoApUaxS220Q'], 'success' => true, 'status' => 200];
+
+        Http::fake([
+            'album' => Http::response($expectedResult, 200),
+        ]);
+
         $res = $this->post(route('api.post.create'), [
             'title' => 'title',
             'description' => 'description',

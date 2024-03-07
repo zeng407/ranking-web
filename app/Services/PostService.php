@@ -41,7 +41,6 @@ class PostService
                 $sortBy = 'hot_'.$sortRange;
             }
             $query = $this->repo->sorter($query, $sortBy, $dir);
-            logger($sortBy);
         }
 
         $perPage = data_get($paginationOptions, 'per_page', 15);
