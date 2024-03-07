@@ -8,12 +8,18 @@ use App\Models\Element;
 use App\Models\Post;
 use App\Models\PostPolicy;
 use App\Models\User;
+use App\Services\YoutubeService;
 use Google\Service\YouTube\AccessPolicy;
+use Google\Service\YouTube\Thumbnail;
+use Google\Service\YouTube\ThumbnailDetails;
+use Google\Service\YouTube\Video;
+use Google\Service\YouTube\VideoContentDetails;
+use Google\Service\YouTube\VideoSnippet;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
-
+use Google\Service\YouTube;
 
 use Tests\TestCase;
 
@@ -170,6 +176,23 @@ class PostTest extends TestCase
             'post_serial' => $post->serial,
             'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ, https://www.youtube.com/watch?v=hvL1339luv0',
         ];
+
+        $video = new YouTube\Video();
+        $video->setId('0');
+        $video->setContentDetails(tap(new YouTube\VideoContentDetails(), fn(VideoContentDetails $videoContentDetails) => $videoContentDetails->setDuration('PT3M31S')));
+        $video->setSnippet(
+            tap(new YouTube\VideoSnippet(), fn(VideoSnippet $videoSnippet) => $videoSnippet->setThumbnails(
+                tap(new ThumbnailDetails(), fn (ThumbnailDetails $thumbnail) => $thumbnail->setHigh(
+                        tap(new Thumbnail(), fn (Thumbnail $thumbnail) => $thumbnail->setUrl('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg'))
+                    )
+                )
+            )));
+        $youtubeServiceMock = $this->partialMock(YoutubeService::class, function ($mock) use ($video){
+            $mock->shouldReceive('query')
+                ->times(2)
+                ->andReturn($video);
+        });
+        
 
         $res = $this->post(route('api.element.batch-create'), $data);
         $res->assertOk();
