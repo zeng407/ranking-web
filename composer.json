@@ -8,6 +8,7 @@
         "php": "^8.2",
         "ext-bcmath": "*",
         "ext-json": "*",
+        "ext-redis": "*",
         "fruitcake/laravel-cors": "^2.0",
         "google/apiclient": "^2.12.1",
         "guzzlehttp/guzzle": "^7.0.1",
