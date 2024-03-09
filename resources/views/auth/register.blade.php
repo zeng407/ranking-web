@@ -35,7 +35,7 @@
                                 <div class="col-md-6">
                                     <input id="email" type="email"
                                         class="form-control @error('email') is-invalid @enderror" name="email"
-                                        value="{{ old('email') }}" required autocomplete="email" maxlength="{{config('setting.email_max_size'))}}">
+                                        value="{{ old('email') }}" required autocomplete="email" maxlength="{{config('setting.email_max_size')}}">
 
                                     @error('email')
                                         <span class="invalid-feedback" role="alert">
