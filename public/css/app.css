@@ -22229,7 +22229,7 @@ input[type=color].form-control:disabled {
 }
 
 .zoomable-image:hover {
-  transform: scale(1.2); /* Apply a scale transformation on hover */
+  transform: scale(1.05); /* Apply a scale transformation on hover */
 }
 
 .rank-circle {

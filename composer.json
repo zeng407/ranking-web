@@ -6,7 +6,6 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "ext-bcmath": "*",
         "ext-json": "*",
         "ext-redis": "*",
         "fruitcake/laravel-cors": "^2.0",
