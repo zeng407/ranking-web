@@ -10,7 +10,7 @@ class UpdatePostRank
 {
     use Queueable;
 
-    protected $rankService;
+    protected RankService $rankService;
 
     /**
      * Create the event listener.
