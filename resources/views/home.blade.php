@@ -1,7 +1,7 @@
 @extends('layouts.app', [
   'title' => __('Home'),
   'ogTitle' => __('2Pick 殘酷二選一'),
-  'ogImage' => asset('/storage/og-image.png')
+  'ogImage' => asset('/storage/og-image.jpeg')
   ])
 
 @section('content')
