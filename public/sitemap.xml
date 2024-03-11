@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>https://2pick.app/</loc>
+  <lastmod>2024-03-11T16:54:16+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://2pick.app/login</loc>
+  <lastmod>2024-03-11T16:54:16+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://2pick.app/register</loc>
+  <lastmod>2024-03-11T16:54:16+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://2pick.app/post/wC5gUiEB/game</loc>
+  <lastmod>2024-03-11T16:54:16+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://2pick.app/post/wC5gUiEB/rank</loc>
+  <lastmod>2024-03-11T16:54:16+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://2pick.app/post/WliyrCOU/game</loc>
+  <lastmod>2024-03-11T16:54:16+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://2pick.app/post/WliyrCOU/rank</loc>
+  <lastmod>2024-03-11T16:54:16+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+
+
+</urlset>

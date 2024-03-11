@@ -639,9 +639,7 @@ export default {
         title: this.$t("Are you sure?"),
         text: this.$t("Once deleted, you will not be able to recover this element!"),
         icon: "warning",
-        buttons: true,
         showCancelButton: true,
-        dangerMode: true,
       })
         .then((willDelete) => {
           if (willDelete.isConfirmed) {
