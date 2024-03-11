@@ -17,15 +17,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
-//        $schedule->call(fn() => \Log::debug("schedule call"))->everyMinute();
-//        $schedule->call(function(){
-//           app(RankScheduleExecutor::class)->createRankReports();
-//        })->name('createRankReport')->everyFiveMinutes()->withoutOverlapping();
-
         $schedule->call(function(){
             app(PostTrendScheduleExecutor::class)->createPostTrends();
         })->name('createPostTrend')->everyThreeHours()->withoutOverlapping();
+
+        $schedule->command('sitemap:generate')->name('Generate Sitemap')->daily();
+
     }
 
     /**
