@@ -49,6 +49,7 @@
     "game.continue_hint": "Continue last round",
     "game.setting": "Setting",
     "game.start": "Start",
+    "game.cancel": "Cancel",
 
     "total elements": "total elements : {count}",
 

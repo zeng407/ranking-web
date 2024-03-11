@@ -84,7 +84,7 @@ class ElementService
             'source_url' => $url,
             'thumb_url' => $thumb,
             'type' => ElementType::IMAGE,
-            'title' => substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'))
+            'title' => mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'))
         ]);
         
         event(new ImageElementCreated($element, $post));
@@ -212,7 +212,8 @@ class ElementService
 
     public function storeYoutubeVideo($sourceUrl, Post $post, $params = []): ?Element
     {
-        $video = app(YoutubeService::class)->query($sourceUrl);
+
+        $video = $this->getYoutubeService()->query($sourceUrl);
         if (!$video) {
             return null;
         }
@@ -240,7 +241,7 @@ class ElementService
                 [
                     'source_url' => $sourceUrl,
                     'thumb_url' => $thumbUrl,
-                    'title' => $title,
+                    'title' => mb_substr($title,0,config('setting.element_title_size')),
                     'type' => ElementType::VIDEO,
                     'video_source' => VideoSource::YOUTUBE,
                     'video_id' => $id,
@@ -316,7 +317,7 @@ class ElementService
         try {
             //youtube
             try {
-                if (app(YoutubeService::class)->parseVideoId($url)) {
+                if ($this->getYoutubeService()->parseVideoId($url)) {
                     return VideoSource::YOUTUBE;
                 }
             } catch (\Exception $exception) {
@@ -328,6 +329,13 @@ class ElementService
             report($exception);
             return null;
         }
+    }
+
+    protected function getYoutubeService()
+    {
+        /** @var YoutubeService  */
+        $youtubeService = app(YoutubeService::class);
+        return $youtubeService;
     }
 
 }

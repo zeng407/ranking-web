@@ -13,12 +13,13 @@
         <div class="card my-2 card-hover">
           <div class="card-header rank-header">
             <h2 class="text-left">1</h2>
-            <div class="text-center sm-text-break">{{ gameResult.winner.title }}</div>
+            <div class="text-center d-none d-md-block">{{ gameResult.winner.title }}</div>
             <div class="text-right">
               {{ $t('Global Rank') }}:{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
             </div>
           </div>
           <div class="card-body text-center rank-card">
+            <div class="text-center d-block d-md-none">{{ gameResult.winner.title }}</div>
             <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270" :ref="gameResult.winner.id"
               :videoId="gameResult.winner.video_id" :player-vars="{
                 controls: 1,
@@ -29,19 +30,20 @@
               }"></youtube>
             <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted playsinline
               :src="gameResult.winner.thumb_url"></video>
-            <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270" width="100%"
+            <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270" class="w-100"
               :alt="gameResult.winner.title">
           </div>
         </div>
         <div class="card my-2 card-hover" v-for="(rank, index) in gameResult.data">
           <div class="card-header rank-header">
             <h2 class="text-left">{{ index + 2 }}</h2>
-            <div class="text-center">{{ rank.loser.title }}</div>
+            <div class="text-center d-none d-md-block">{{ rank.loser.title }}</div>
             <div class="text-right">
               {{ $t('Global Rank') }}:{{ rank.rank ? rank.rank : '無' }}
             </div>
           </div>
           <div class="card-body text-center rank-card">
+            <div class="text-center d-block d-md-none">{{ rank.loser.title }}</div>
             <youtube v-if="isYoutubeSource(rank.loser)" width="100%" height="270" :ref="rank.loser.id"
               :videoId="rank.loser.video_id" :player-vars="{
                 controls: 1,
@@ -53,7 +55,7 @@
               }"></youtube>
             <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
               :src="rank.loser.thumb_url"></video>
-            <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="270" width="100%" :alt="rank.loser.title">
+            <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="270" class="w-100" :alt="rank.loser.title">
           </div>
         </div>
       </b-tab>
@@ -61,16 +63,15 @@
         <div v-if="rankReportData && !loadingPage" class="card my-2 card-hover" v-for="(rank, index) in rankReportData.data">
           <div class="card-header rank-header">
             <h2 class="text-left">{{ rank.rank }}</h2>
-            <div class="text-center">{{ rank.element.title }}</div>
+            <div class="text-center d-none d-md-block">{{ rank.element.title }}</div>
             <div class="text-right">
-              <!-- {{ $t('Global Rank') }}:{{ rank.rank ? rank.rank : '無' }} -->
               <span v-if="rank.final_win_rate"> {{ $t('edit_post.rank.win_at_final') }}:{{ rank.final_win_rate | percent}}<br></span>
               <span v-if="rank.win_rate > 0"> {{ $t('edit_post.rank.win_rate') }}:{{ rank.win_rate | percent }}</span>
               <span v-else> {{ $t('edit_post.rank.win_rate') }}:{{ '0' | percent }}</span>
             </div>
           </div>
           <div class="card-body text-center rank-card">
-            <!-- <div class="rank-circle">{{ rank.rank }}</div> -->
+            <div class="text-center d-block d-md-none">{{ rank.element.title }}</div>
             <youtube v-if="isYoutubeSource(rank.element)" width="100%" height="270" :ref="rank.element.id"
               :videoId="rank.element.video_id" :player-vars="{
                 controls: 1,
@@ -82,7 +83,7 @@
               }"></youtube>
             <video v-else-if="isVideoSource(rank.element)" width="100%" height="270" loop autoplay muted playsinline
               :src="rank.element.thumb_url"></video>
-            <img v-else-if="isImageSource(rank.element)" :src="rank.element.thumb_url" height="270"
+            <img v-else-if="isImageSource(rank.element)" :src="rank.element.thumb_url" height="270" class="w-100"
               :alt="rank.element.title">
             <!-- <div class="d-flex flex-column align-items-start"> -->
               <!-- <div class="align-self-center">{{ rank.element.title }}</div> -->
