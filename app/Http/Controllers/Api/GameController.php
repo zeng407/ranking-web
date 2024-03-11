@@ -21,8 +21,8 @@ class GameController extends Controller
     const END_GAME = 'end_game';
     const PROCESSING = 'processing';
 
-    protected $gameService;
-    protected $rankService;
+    protected GameService $gameService;
+    protected RankService $rankService;
 
     public function __construct(GameService $gameService, RankService $rankService)
     {

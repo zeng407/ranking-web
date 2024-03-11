@@ -29,9 +29,9 @@
             <input class="form-control w-100" v-model="filters.keyword" type="search" placeholder="Search"
               aria-label="Search" >
             <div>
-              <div class="d-flex mt-1 w-100">
+              <div class="row ml-1">
                 @foreach($tags as $tag)
-                <button type="button" class="btn btn-sm btn-outline-secondary mr-1"
+                <button type="button" class="btn btn-sm btn-outline-secondary mr-1 mt-1"
                   @click="addTag('{{$tag['name']}}')">
                   #{{ $tag['name'] }}
                 </button>

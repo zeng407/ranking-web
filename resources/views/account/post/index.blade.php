@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app',['title' => __('My Votes')])
 
 @section('header')
   <meta name="robots" content="noindex"/>

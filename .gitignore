@@ -14,7 +14,8 @@ yarn-error.log
 /.idea
 /.vscode
 .rk-db
-docker-compose.yaml
 deploy.sh
 .phpstorm.meta.php
 .DS_Store
+_ide_helper.php
+_ide_helper_models.php

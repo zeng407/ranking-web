@@ -2,13 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @mixin IdeHelperGame1V1Round
@@ -40,11 +35,11 @@ class Game1V1Round extends Model
 
     public function winner()
     {
-        return $this->belongsTo(Element::class, 'winner_id');
+        return $this->belongsTo(Element::class, 'winner_id')->withTrashed();
     }
 
     public function loser()
     {
-        return $this->belongsTo(Element::class,'loser_id');
+        return $this->belongsTo(Element::class,'loser_id')->withTrashed();
     }
 }

@@ -107,7 +107,7 @@ class ElementController extends Controller
 
                 $elementParams = [];
                 if($title){
-                    $elementParams['title'] = substr($title,0,config('setting.element_title_size'));
+                    $elementParams['title'] = mb_substr($title,0,config('setting.element_title_size'));
                 }
                 $element = $this->elementService->massStore($url, $path, $post, $elementParams);
                 \Log::debug("massStore return");

@@ -22,6 +22,7 @@ class GameResultResource extends JsonResource
      */
     public function toArray($request)
     {
+        /** @var RankService */
         $service = app(RankService::class);
         return [
             'loser' => GameElementResource::make($this->loser),

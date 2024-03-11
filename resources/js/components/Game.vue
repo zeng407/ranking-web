@@ -207,6 +207,7 @@
                 </div>
               </div>
               <div class="modal-footer">
+                <a type="submit" class="btn btn-secondary fa-pull-left" href="/">{{ $t('game.cancel') }}</a>
                 <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{ $t('game.start') }}</button>
               </div>
             </form>
