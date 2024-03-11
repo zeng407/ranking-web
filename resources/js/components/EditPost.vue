@@ -292,9 +292,9 @@
             <div class="row">
               <template v-for="(element, index) in elements.data">
                 <!-- show video card -->
-                <div class="col-lg-4 col-md-6" v-if="isVideoSource(element)">
+                <div class="col-lg-4 col-md-6" v-show="isVideoSource(element)">
                   <!-- youtube source -->
-                  <div class="card mb-3" v-if="isYoutubeSource(element)">
+                  <div class="card mb-3" v-show="isYoutubeSource(element)">
                     <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
                       :ref="element.id" @ready="doPlay(element)" :player-vars="{
                         controls: 1,
@@ -305,7 +305,7 @@
                         origin: host
                       }"></youtube>
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                      v-if="isYoutubeSource(element) && !element.loadedVideo">
+                      v-show="isYoutubeSource(element) && !element.loadedVideo">
                     <!-- youtube video editor -->
                     <div class="card-body">
                       <!--title edit-->
@@ -346,7 +346,7 @@
                   </div>
 
                   <!-- simple video source -->
-                  <div class="card mb-3" v-else>
+                  <div class="card mb-3" v-show="!isYoutubeSource(element)">
                     <!-- load the video player -->
                     <video width="100%" height="270" loop autoplay muted playsinline :src="element.thumb_url"></video>
                     <!-- editor -->

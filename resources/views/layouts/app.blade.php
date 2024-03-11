@@ -6,10 +6,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ get_page_description($post ?? null) }}">
+  <meta property="og:title" content="2Pick 殘酷二選一" />
+  <meta property="og:image" content="{{ $ogImage ?? asset('/storage/logo.png')}}" />
+  <meta property="og:description" content="{{$ogDescription ?? get_page_description($post ?? null)}}" />
   @yield('header')
 
   <!-- CSRF Token -->
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  
 
   <!-- Scripts -->
   <script src="{{ asset('js/app.js') }}" defer></script>
