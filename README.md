@@ -1,3 +1,6 @@
+# production site
+[2pick.app](https://2pick.app)
+
 # pre-install
 - [docker](https://www.docker.com/) - Docker is an open platform for developing, shipping, and running applications. It allows you to package your application and its dependencies into a standardized unit called a container, which can be deployed on any operating system.
 - [laravel hard](https://herd.laravel.com/) - One click PHP development environment.
@@ -22,43 +25,6 @@ AWS_ENDPOINT=http://ranking-web-minio-1:9000
 AWS_USE_PATH_STYLE_ENDPOINT=true
 ```
 
-# Build for production
-1. `composer install --no-dev` (you may encounter missing dependencies, in that case, use the `--ignore-platform-reqs` flag)
-2. `git submodule init` and `git submodule update` for fetching laradock repository
-3. go to the laradock directory and `cp .env.example .env`
-4. modify the configurations of the services you need to use, such as `mysql`, `php`, `redis`, `supervisor`, `scheduler`, `minio`, `caddy`
-5. (optional) modify caddy/caddy/Caddyfile
-6. (optional) modify php-worker/supervisor.d/laravel-worker.conf
-
-- Caddyfile
-```
-2pick.app {
-        root * /var/www/public
-        php_fastcgi php-fpm:9000
-        file_server
-
-        encode zstd gzip
-        log /var/log/caddy/access.log
-
-        tls 2pick.app@gmail.com
-}
-
-file.2pick.app {
-         reverse_proxy minio:9000
-}
-```
-
-- laravel-worker.conf
-```
-[program:laravel-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/artisan queue:work redis --sleep=3 --tries=3
-autostart=true
-autorestart=true
-numprocs=4
-user=laradock
-redirect_stderr=true
-```
 
 # Troubleshooting
 
