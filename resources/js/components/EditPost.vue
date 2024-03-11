@@ -704,6 +704,7 @@ export default {
       if (tag) {
         this.tags.push(tag);
         this.tagInput = "";
+        this.loadTagsOptions();
       }
     },
     removeTag: function (tag) {
@@ -713,7 +714,7 @@ export default {
       this.tags = Object.assign([], this.tags);
     },
     loadTagsOptions: function () {
-      if (this.tagInput === this.oldTagInput) {
+      if (this.tagInput === this.oldTagInput && this.tagInput !== "") {
         return;
       }
 
