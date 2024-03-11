@@ -29,12 +29,12 @@ class GameController extends Controller
     {
         $serial = $request->route('post');
         $post = $this->postService->getPost($serial);
-        $ranks = collect($this->rankService->getRankReports($post, 1)->items());
+        $element = $this->getElementForOG($post);
         
         return view('game.show', [
             'serial' => $serial,
             'post' => $post,
-            'ranks' => $ranks
+            'element' => $element
         ]);
     }
 
@@ -42,12 +42,21 @@ class GameController extends Controller
     {
         $serial = $request->route('post');
         $post = $this->postService->getPost($serial);
-        $ranks = collect($this->rankService->getRankReports($post, 1)->items());
+        $element = $this->getElementForOG($post);
         return view('game.rank', [
             'serial' => $serial,
             'post' => $post,
-            'ranks' => $ranks
+            'element' => $element
         ]);
+    }
+
+    protected function getElementForOG(Post $post, $limit = 10)
+    {
+        $reports = $this->rankService->getRankReports($post, 1)->items();
+        if(count($reports) > 0){
+            return $reports[0]->element;
+        }
+        return $post->elements()->first();
     }
 
 }

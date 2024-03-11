@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $post,
     'ogTitle' => $post->title,
-    'ogImage' => optional($ranks->pop()->element)->thumb_url,
+    'ogImage' => $element->thumb_url,
     'ogDescription' => $post->description
 ])
 
