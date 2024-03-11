@@ -1,4 +1,7 @@
-@extends('layouts.app', ['title' => $post])
+@extends('layouts.app', [
+    'title' => $post,
+    'ogImage' => optional($ranks->pop()->element)->thumb_url,
+    'ogDescription' => $post->description])
 
 @section('content')
     <game

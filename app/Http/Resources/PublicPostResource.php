@@ -23,7 +23,9 @@ class PublicPostResource extends JsonResource
      */
     public function toArray($request)
     {
-        $ranks = collect(app(RankService::class)->getRankReports($this->resource, 5)->items());
+        /** @var RankService */
+        $rankService = app(RankService::class);
+        $ranks = collect($rankService->getRankReports($this->resource, 5)->items());
         if($ranks->count() >= 2) {
             $ranks = $ranks->shuffle();
             $image1 = $ranks->pop()->element;

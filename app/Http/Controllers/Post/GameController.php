@@ -29,9 +29,12 @@ class GameController extends Controller
     {
         $serial = $request->route('post');
         $post = $this->postService->getPost($serial);
+        $ranks = collect($this->rankService->getRankReports($post, 1)->items());
+        
         return view('game.show', [
             'serial' => $serial,
-            'post' => $post
+            'post' => $post,
+            'ranks' => $ranks
         ]);
     }
 
@@ -39,9 +42,11 @@ class GameController extends Controller
     {
         $serial = $request->route('post');
         $post = $this->postService->getPost($serial);
+        $ranks = collect($this->rankService->getRankReports($post, 1)->items());
         return view('game.rank', [
             'serial' => $serial,
-            'post' => $post
+            'post' => $post,
+            'ranks' => $ranks
         ]);
     }
 
