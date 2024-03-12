@@ -1,6 +1,16 @@
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script script async src="https://www.googletagmanager.com/gtag/js?id=G-XVDTCY64L1"></script>
+  <script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-XVDTCY64L1');
+  </script>
+  
   <!-- SEO -->
   <title>{{ get_page_title($title ?? '', '2Pick 殘酷二選一') }}</title>
   <meta charset="utf-8">
