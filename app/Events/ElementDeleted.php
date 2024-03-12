@@ -23,7 +23,7 @@ class ElementDeleted
      */
     public function __construct(Element $element)
     {
-        logger('[ImageElementDeleted] event fired');
+        logger('[ElementDeleted] event fired');
         $this->element = $element;
     }
 

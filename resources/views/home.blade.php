@@ -88,7 +88,7 @@
   
         @foreach($posts as $post)
         <div class="col-xl-4 col-md-6 pt-2">
-          <div class="card">
+          <div class="card shadow">
             <div class="card-header text-center">
               <h3>{{ $post['title'] }}</h3>
             </div>
@@ -104,7 +104,7 @@
                 <p class="text-center mt-1">{{ $post['image2']['title'] }}</p>
               </div>
               <div class="card-body pt-0 text-center">
-                <h5 class="text-break">{{ $post['description'] }}</h5>
+                <p class="text-break">{{ $post['description'] }}</p>
                 <div class="row">
                   <div class="col-6">
                     <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}" target="_blank">

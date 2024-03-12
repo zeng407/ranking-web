@@ -17,6 +17,7 @@ use Laravel\Sanctum\HasApiTokens;
 class RankReport extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

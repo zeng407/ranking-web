@@ -48,6 +48,10 @@ class CreateImgurImage implements ShouldQueue
      */
     public function handle(ImageElementCreated $event)
     {
+        if(app()->isLocal()){
+            return;
+        }
+        
         $element = $event->getElement();
         if(!$element){
             logger('Element have been deleted');
@@ -72,7 +76,7 @@ class CreateImgurImage implements ShouldQueue
             $post->imgur_album->album_id
         );
 
-        if (!$res['success']) {
+        if (!isset($res['success']) || !$res['success']) {
             logger('Failed to upload image', ['res' => $res]);
             throw new \Exception('Failed to upload image');
         }
