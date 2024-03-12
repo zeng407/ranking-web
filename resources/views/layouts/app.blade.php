@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
+  @production
   <!-- Google tag (gtag.js) -->
   <script script async src="https://www.googletagmanager.com/gtag/js?id=G-XVDTCY64L1"></script>
   <script>
@@ -10,6 +11,7 @@
 
   gtag('config', 'G-XVDTCY64L1');
   </script>
+  @endproduction
   
   <!-- SEO -->
   <title>{{ get_page_title($title ?? '', '2Pick 殘酷二選一') }}</title>
