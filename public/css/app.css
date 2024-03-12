@@ -22121,10 +22121,10 @@ input[type=color].form-control:disabled {
   background-position: center center;
   background-color: #fff;
   display: flex;
-  transition: 0.5s;
 }
 
-.game-image:hover { /* IE 9 */ /* Safari 3-8 */
+.game-image:hover {
+  transition: 0.5s; /* IE 9 */ /* Safari 3-8 */
   transform: scale(0.95);
   box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
 }

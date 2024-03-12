@@ -37,10 +37,10 @@
     background-position: center center;
     background-color: #fff;
     display: flex;
-    transition: 0.5s;
 }
 
 .game-image:hover {
+    transition: 0.5s;
     -ms-transform: scale(1.2); /* IE 9 */
     -webkit-transform: scale(1.2); /* Safari 3-8 */
     transform: scale(0.95);

@@ -5,11 +5,11 @@
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
         <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP {{
-          game.of_round
-        }} </h5>
+      game.of_round
+    }} </h5>
         <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} / {{
-          game.total_elements
-        }})</h5>
+      game.total_elements
+    }})</h5>
       </div>
     </div>
     <div class="row game-body" v-if="game">
@@ -23,19 +23,19 @@
             @mouseleave="videoHoverOut(le, re)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
               @ready="doPlay(le, true, 'left')" :player-vars="{
-                controls: 1,
-                autoplay: 1,
-                rel: 0,
-                origin: host,
-                loop: 1,
-                playlist: le.video_id
-              }"></youtube>
+      controls: 1,
+      autoplay: 1,
+      rel: 0,
+      origin: host,
+      loop: 1,
+      playlist: le.video_id
+    }"></youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.thumb_url"></video>
           </div>
           <div class="card-body text-center">
-            <div class="my-1" style="height: 70px">
+            <div class="my-1 overflow-hidden" style="height: 70px">
               <p class="my-1">{{ le.title }}</p>
             </div>
             <button class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
@@ -76,21 +76,22 @@
             @mouseleave="videoHoverOut(re, le)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
               @ready="doPlay(re, false, 'right')" :player-vars="{
-                controls: 1,
-                autoplay: 1,
-                rel: 0,
-                host: host,
-                loop: 1,
-                playlist: re.video_id
-              }"></youtube>
+      controls: 1,
+      autoplay: 1,
+      rel: 0,
+      host: host,
+      loop: 1,
+      playlist: re.video_id
+    }"></youtube>
           </div>
           <div v-else-if="isVideoSource(re)">
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.thumb_url"></video>
           </div>
 
           <!-- reverse when device size width less md(768px)-->
-          <div class="card-body text-center" :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
-            <div class="my-1" style="height: 70px"
+          <div class="card-body text-center"
+            :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
+            <div class="my-1 overflow-hidden" style="height: 70px"
               :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
               <p class="my-1">{{ re.title }}</p>
             </div>
@@ -147,37 +148,38 @@
                   <div class="row no-gutters">
                     <div class="col-6">
                       <div :style="{
-                        'background': 'url(' + post.image1.url + ')',
-                        'width': '100%',
-                        'height': '300px',
-                        'background-repeat': 'no-repeat',
-                        'background-size': 'cover',
-                        'background-position': 'center center',
-                        'display': 'flex'
-                      }"></div>
+      'background': 'url(' + post.image1.url + ')',
+      'width': '100%',
+      'height': '300px',
+      'background-repeat': 'no-repeat',
+      'background-size': 'cover',
+      'background-position': 'center center',
+      'display': 'flex'
+    }"></div>
                       <h5 class="text-center mt-1 p-1">{{ post.image1.title }}</h5>
                     </div>
                     <div class="col-6">
                       <div :style="{
-                        'background': 'url(' + post.image2.url + ')',
-                        'width': '100%',
-                        'height': '300px',
-                        'background-repeat': 'no-repeat',
-                        'background-size': 'cover',
-                        'background-position': 'center center',
-                        'display': 'flex'
-                      }">
+      'background': 'url(' + post.image2.url + ')',
+      'width': '100%',
+      'height': '300px',
+      'background-repeat': 'no-repeat',
+      'background-size': 'cover',
+      'background-position': 'center center',
+      'display': 'flex'
+    }">
                       </div>
                       <h5 class="text-center mt-1 p-1">{{ post.image2.title }}</h5>
                     </div>
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ post.description }}</h5>
                       <div v-if="post.tags.length > 0" class="d-flex">
-                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{ tag }}</span>
+                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{
+      tag }}</span>
                       </div>
                       <span class="mt-2 card-text d-flex justify-content-end">
                         <span class="pr-2">
-                          <i class="fas fa-play-circle"></i>&nbsp;{{post.play_count}}
+                          <i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
                         </span>
                         <small class="text-muted">{{ post.created_at | datetime }}</small>
                       </span>
@@ -208,7 +210,8 @@
               </div>
               <div class="modal-footer">
                 <a type="submit" class="btn btn-secondary fa-pull-left" href="/">{{ $t('game.cancel') }}</a>
-                <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{ $t('game.start') }}</button>
+                <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{
+                  $t('game.start') }}</button>
               </div>
             </form>
           </ValidationObserver>
@@ -350,21 +353,21 @@ export default {
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
         });
-        return;
-      }
+      } else {
 
-      let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
-        $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
-          $('#left-player').hide();
+        let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
+          $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
+            $('#left-player').hide();
+          });
+        }).promise();
+        let loseAnimate = $('#right-player').animate({ top: '2000' }, 500, () => {
+          $('#right-player').hide();
+        }).promise();
+
+        $.when(winAnimate, loseAnimate).then(() => {
+          sendWinnerData();
         });
-      }).promise();
-      let loseAnimate = $('#right-player').animate({ top: '2000' }, 500, () => {
-        $('#right-player').hide();
-      }).promise();
-
-      $.when(winAnimate, loseAnimate).then(() => {
-        sendWinnerData();
-      });
+      }
     },
     rightPlay() {
 
@@ -396,22 +399,22 @@ export default {
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
         });
-        return;
-      }
+      } else {
 
-      let winAnimate = $('#right-player').animate({ left: '-50%' }, 500, () => {
-        $('#right-player').delay(500).animate({ top: '-2000' }, 500, () => {
-          $('#right-player').hide();
+        let winAnimate = $('#right-player').animate({ left: '-50%' }, 500, () => {
+          $('#right-player').delay(500).animate({ top: '-2000' }, 500, () => {
+            $('#right-player').hide();
+          });
+        }).promise();
+
+        let loseAnimate = $('#left-player').animate({ top: '2000' }, 500, () => {
+          $('#left-player').hide();
+        }).promise();
+
+        $.when(winAnimate, loseAnimate).then(() => {
+          sendWinnerData();
         });
-      }).promise();
-
-      let loseAnimate = $('#left-player').animate({ top: '2000' }, 500, () => {
-        $('#left-player').hide();
-      }).promise();
-
-      $.when(winAnimate, loseAnimate).then(() => {
-        sendWinnerData();
-      });
+      }
     },
     resetPlayerPosition() {
       $('#left-player').hide();
@@ -422,7 +425,6 @@ export default {
       $('#left-player').removeClass('zoom-in');
       $('#left-player').show();
 
-      $('#right-player').hide();
       $('#right-player').css('left', '0');
       $('#right-player').css('top', '0');
       $('#right-player').css('opacity', '1');
@@ -443,16 +445,6 @@ export default {
         'loser_id': loser.id
       };
 
-      // let loseAnimation = $('#' + loseObj).animate({top: '2000px'}, 500, () => {
-      //   $('#' + loseObj).hide();
-      //   $('#' + loseObj).css('top', '0');
-      // }).promise();
-      // let winAnimation = $('#' + winObj).animate({left: '50%'}, 500, () => {
-      //   $('#' + winObj).hide();
-      //   $('#' + winObj).css('left', '0');
-      // }).promise();
-      // let loseAnimation = $('#' + winObj).trigger('win');
-      // let winAnimation = $('#' + loseObj).trigger('lose');
       return axios.post(this.voteGameEndpoint, data)
         .then(res => {
           this.isVoting = false;
@@ -488,6 +480,7 @@ export default {
           player.mute();
         }
 
+        // let left player auto play every round
         if (name === 'left' && this.isLeftPlayerInit === false) {
           this.isLeftPlayerInit = true;
           this.initPlayerEventLister(player);

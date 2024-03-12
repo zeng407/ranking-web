@@ -17,6 +17,9 @@ class RankService
     public function getRankReports(Post $post, $limit = 10)
     {
         $reports = RankReport::where('post_id', $post->id)
+            ->whereHas('element', function ($query) {
+                $query->whereNull('deleted_at');
+            })
             ->orderBy('rank')
             ->paginate($limit);
 
