@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
+use App\Listeners\DeleteElementRank;
 use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
 use App\Events\ElementDeleted;
@@ -46,7 +47,7 @@ class EventServiceProvider extends ServiceProvider
             CreateImgurImage::class
         ],
         ElementDeleted::class => [
-            DeleteImgurImage::class
+            DeleteElementRank::class
         ]
     ];
 

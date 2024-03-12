@@ -118,6 +118,9 @@ class RankService
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
             ->where('record_date', today())
+            ->whereHas('element', function ($query) {
+                $query->whereNull('deleted_at');
+            })
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
             ->eachById(function (Rank $rank, $count) {
@@ -134,6 +137,9 @@ class RankService
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::PK_KING)
             ->where('record_date', today())
+            ->whereHas('element', function ($query) {
+                $query->whereNull('deleted_at');
+            })
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
             ->eachById(function (Rank $rank, $count) {
@@ -148,6 +154,9 @@ class RankService
 
         \Log::info("update post [{$post->id}] rank report");
         RankReport::where('post_id', $post->id)
+            ->whereHas('element', function ($query) {
+                $query->whereNull('deleted_at');
+            })
             ->orderByDesc('final_win_rate')
             ->orderByDesc('win_rate')
             ->eachById(function (RankReport $rankReport, $index) use ($post) {

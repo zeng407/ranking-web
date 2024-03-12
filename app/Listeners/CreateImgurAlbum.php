@@ -49,6 +49,10 @@ class CreateImgurAlbum implements ShouldQueue
      */
     public function handle(PostCreated $event)
     {
+        if(app()->isLocal()){
+            return;
+        }
+
         $post = $event->getPost();
         if(!$post){
             logger('Post have been deleted');
