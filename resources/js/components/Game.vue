@@ -18,18 +18,14 @@
         <div class="card game-player left-player" id="left-player">
           <div v-if="isImageSource(le)" @click="clickImage"
             :style="{ backgroundImage: 'url(' + le.thumb_url + ')', height: this.elementHeight + 'px' }"
-            class="game-image"></div>
+            class="game-image">
+          </div>
           <div class="d-flex" v-if="isYoutubeSource(le)" @mouseover="videoHoverIn(le, re)"
             @mouseleave="videoHoverOut(le, re)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-              @ready="doPlay(le, true, 'left')" :player-vars="{
-      controls: 1,
-      autoplay: 1,
-      rel: 0,
-      origin: host,
-      loop: 1,
-      playlist: le.video_id
-    }"></youtube>
+              @ready="doPlay(le, true, 'left')"
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
+            </youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.thumb_url"></video>
@@ -61,7 +57,6 @@
                 @click="leftWin()">Vote
               </button>
             </div>
-
           </div>
         </div>
       </div>
@@ -75,14 +70,9 @@
           <div class="d-flex" v-else-if="isYoutubeSource(re)" @mouseover="videoHoverIn(re, le)"
             @mouseleave="videoHoverOut(re, le)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-              @ready="doPlay(re, false, 'right')" :player-vars="{
-      controls: 1,
-      autoplay: 1,
-      rel: 0,
-      host: host,
-      loop: 1,
-      playlist: re.video_id
-    }"></youtube>
+              @ready="doPlay(re, false, 'right')"
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
+            </youtube>
           </div>
           <div v-else-if="isVideoSource(re)">
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.thumb_url"></video>
@@ -354,7 +344,6 @@ export default {
           sendWinnerData();
         });
       } else {
-
         let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
           $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
             $('#left-player').hide();
@@ -425,6 +414,7 @@ export default {
       $('#left-player').removeClass('zoom-in');
       $('#left-player').show();
 
+      $('#right-player').hide();
       $('#right-player').css('left', '0');
       $('#right-player').css('top', '0');
       $('#right-player').css('opacity', '1');
@@ -509,14 +499,12 @@ export default {
       //default left player un-mute
       if (player) {
         player.unMute();
-        player.stopVideo();
         this.isLeftPlaying = true;
       }
 
       player = this.getPlayer(this.re);
       if (player) {
         player.mute();
-        player.stopVideo();
         this.isRightPlaying = false;
       }
     },
