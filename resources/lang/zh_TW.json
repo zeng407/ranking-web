@@ -14,5 +14,11 @@
     "My Votes": "我的投票",
     "Home": "首頁",
     "Too many requests": "操作過於頻繁，請稍候再試",
-    "Copied": "已複製連結"
+    "Copied": "已複製連結",
+    "Global Rank": "其他人的排名",
+    "none": "無",
+    "My Rank": "我的排名",
+    "rank.win_at_final": "決賽勝率",
+    "rank.win_rate": "1v1勝率",
+    "rank.no_data": "No data"
 }

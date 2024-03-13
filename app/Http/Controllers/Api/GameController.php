@@ -149,26 +149,6 @@ class GameController extends Controller
         }
     }
 
-    public function result(Game $game)
-    {
-        if (!$this->gameService->isGameComplete($game)) {
-            return response()->json([], 404);
-        }
-
-        $rounds = $game->game_1v1_rounds()
-            ->orderBy('remain_elements')
-            ->take(9)
-            ->get();
-
-        $winner = $this->gameService->getWinner($game);
-
-        return GameResultResource::collection($rounds)
-            ->additional([
-                'winner' => $winner,
-                'winner_rank' => $this->rankService->getRankPosition($game->post, $winner)
-            ]);
-    }
-
     protected function getGame($serial): Game
     {
         /** @var Game $game */

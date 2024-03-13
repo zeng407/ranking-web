@@ -51,7 +51,5 @@
     "game.start": "Start",
     "game.cancel": "Cancel",
 
-    "total elements": "total elements : {count}",
-
-    "rank.no_rank": "No data"
+    "total elements": "total elements : {count}"
 }
