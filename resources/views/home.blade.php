@@ -118,7 +118,7 @@
                   </div>
                 </div>
                 <span class="mt-2 card-text float-left">
-                  <button type="button" class="btn btn-outline-dark btn-sm" v-b-popover.right.click="'Copied'"
+                  <button type="button" class="btn btn-outline-dark btn-sm" v-b-popover.right.click="'{{__('Copied')}}'"
                     @click="copyGameUrl('{{route('game.show',$post['serial'])}}', $event)">
                     Link &nbsp;<i class="fas fa-share-square"></i>
                   </button>

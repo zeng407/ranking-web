@@ -236,9 +236,8 @@
                 <label><i class="fa-solid fa-link"></i>&nbsp;{{ $t('Upload from URL') }}</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate" rows="5"
-                    v-model="batchString" aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ,
-                            https://giant.gfycat.com/GroundedLoathsomeHind.mp4" aria-describedby="batchCreateVideo"
-                    placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ, https://giant.gfycat.com/GroundedLoathsomeHind.mp4">
+                    v-model="batchString" aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="batchCreateVideo"
+                    placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
                   </textarea>
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" @click="batchUpload"
@@ -252,23 +251,6 @@
                   <template>
                     <UploadIcon />
                   </template>
-                  <!-- <div class="image-container d-inline-block">
-                    <img class="img-thumbnail zoomable-image" alt="giphy logo" src="/storage/giphy-logo-vector.svg">
-                  </div>
-                  <div class="image-container d-inline-block">
-                    <img class="img-thumbnail zoomable-image" alt="imgur logo" src="/storage/imgur.svg">
-                  </div>
-                  <div class="image-container d-inline-block">
-                    <img class="img-thumbnail zoomable-image" alt="gfycat-icon" src="/storage/gfycat-icon.webp">
-                  </div>
-                  <div class="image-container d-inline-block">
-                    <img class="img-thumbnail zoomable-image" alt="mp4-icon" src="/storage/mp4-icon.png">
-                  </div>
-                    <img class="img-thumbnail zoomable-image" alt="video-icon" src="/storage/video-icon.png">
-                    <img class="img-thumbnail zoomable-image" alt="gif-icon" src="/storage/gif-icon.png">
-                    <img class="img-thumbnail zoomable-image" alt="jpg-icon" src="/storage/jpg-icon.png">
-                    <img class="img-thumbnail zoomable-image" alt="image-icon" src="/storage/image-icon.png">
-                  </div> -->
                 </div>
               </div>
             </div>
@@ -309,8 +291,10 @@
                     <!-- youtube video editor -->
                     <div class="card-body">
                       <!--title edit-->
-                      <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text" :value="element.title"
-                        :maxlength="config.element_title_size" @change="updateElementTitle(element.id, $event)">
+                      <!-- <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text" :value="element.title"
+                        :maxlength="config.element_title_size" @change="updateElementTitle(element.id, $event)"> -->
+                        <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title" :maxlength="config.element_title_size"
+                          rows="4" style="resize: none;" @change="updateElementTitle(element.id, $event)"></textarea>
                       <!--play time range-->
                       <div class="row mb-3">
                         <div class="col-10">
@@ -370,9 +354,8 @@
                       v-if="element.type === 'image'">
 
                     <div class="card-body">
-                      <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
-                        :value="element.title" :maxlength="config.element_title_size"
-                        @change="updateElementTitle(element.id, $event)">
+                        <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title" :maxlength="config.element_title_size"
+                          rows="4" style="resize: none;" @change="updateElementTitle(element.id, $event)"></textarea>
                       <span class="card-text"><small class="text-muted">{{ element.created_at | datetime }}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
