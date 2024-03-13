@@ -8,7 +8,9 @@ return [
     'post_description_size' => 300,
     'post_min_element_count' => 8,
     'post_max_element_count' => 64,
-    'element_title_size' => 70,
+    'element_title_size' => 100,
     'post_max_tags' => 5,
     'tag_name_size' => 15,
+    'anonymous_nickname' => 'Anonymous',
+    'comment_max_length' => 200,
 ];
