@@ -4,12 +4,10 @@
       <h2 class="text-center text-break">{{ game.title }}</h2>
       <div class="d-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
-        <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP {{
-      game.of_round
-    }} </h5>
-        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} / {{
-      game.total_elements
-    }})</h5>
+        <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP
+          {{ game.of_round }} </h5>
+        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} /
+          {{ game.total_elements }})</h5>
       </div>
     </div>
     <div class="row game-body" v-if="game">
@@ -31,8 +29,11 @@
             <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.thumb_url"></video>
           </div>
           <div class="card-body text-center">
-            <div class="my-1 overflow-hidden" style="height: 70px">
+            <div class="my-1 font-size-small" style="max-height: 90px" v-if="isMobileScreen">
               <p class="my-1">{{ le.title }}</p>
+            </div>
+            <div class="my-1 font-size-small" style="height: 90px" v-else>
+              <h5 class="my-1">{{ le.title }}</h5>
             </div>
             <button class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
               @click="leftWin()">Vote
@@ -61,6 +62,17 @@
         </div>
       </div>
 
+      <!-- current game status only show for mobile -->
+      <!-- <div class="col-sm-12" v-if="isMobileScreen">
+        <div class="d-flex" style="flex-flow: row wrap">
+          <h5 style="width: 20%"></h5>
+          <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP
+            {{ game.of_round }} </h5>
+          <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} /
+            {{ game.total_elements }})</h5>
+        </div>
+      </div> -->
+
       <!--right part-->
       <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
@@ -81,9 +93,11 @@
           <!-- reverse when device size width less md(768px)-->
           <div class="card-body text-center"
             :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
-            <div class="my-1 overflow-hidden" style="height: 70px"
-              :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
-              <p class="my-1">{{ re.title }}</p>
+            <div class="my-1 flex-column-reverse d-flex" style="max-height: 90px" v-if="isMobileScreen">
+              <p class="my-1 font-size-small">{{ re.title }}</p>
+            </div>
+            <div class="my-1" style="height: 90px" v-else>
+              <h5 class="my-1">{{ re.title }}</h5>
             </div>
             <button class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
               @click="rightWin()">Vote
@@ -116,7 +130,7 @@
     <!-- Modal -->
     <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
       aria-labelledby="gameSettingPanelLabel" aria-hidden="true">
-      <div class="modal-dialog">
+      <div :class="{'modal-dialog' : true, 'modal-lg': !isMobileScreen}">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
@@ -137,35 +151,21 @@
                   </div>
                   <div class="row no-gutters">
                     <div class="col-6">
-                      <div :style="{
-      'background': 'url(' + post.image1.url + ')',
-      'width': '100%',
-      'height': '300px',
-      'background-repeat': 'no-repeat',
-      'background-size': 'cover',
-      'background-position': 'center center',
-      'display': 'flex'
-    }"></div>
+                      <div
+                        :style="{ 'background': 'url(' + post.image1.url + ')', 'width': '100%', 'height': '300px', 'background-repeat': 'no-repeat', 'background-size': 'cover', 'background-position': 'center center', 'display': 'flex' }">
+                      </div>
                       <h5 class="text-center mt-1 p-1">{{ post.image1.title }}</h5>
                     </div>
                     <div class="col-6">
-                      <div :style="{
-      'background': 'url(' + post.image2.url + ')',
-      'width': '100%',
-      'height': '300px',
-      'background-repeat': 'no-repeat',
-      'background-size': 'cover',
-      'background-position': 'center center',
-      'display': 'flex'
-    }">
+                      <div
+                        :style="{ 'background': 'url(' + post.image2.url + ')', 'width': '100%', 'height': '300px', 'background-repeat': 'no-repeat', 'background-size': 'cover', 'background-position': 'center center', 'display': 'flex' }">
                       </div>
                       <h5 class="text-center mt-1 p-1">{{ post.image2.title }}</h5>
                     </div>
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ post.description }}</h5>
                       <div v-if="post.tags.length > 0" class="d-flex">
-                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{
-      tag }}</span>
+                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{ tag}}</span>
                       </div>
                       <span class="mt-2 card-text d-flex justify-content-end">
                         <span class="pr-2">
@@ -447,8 +447,7 @@ export default {
             this.nextRound();
             this.destroyElements();
           }
-        })
-
+        });
     },
     showGameSettingPanel: function () {
       $('#gameSettingPanel').modal('show');
