@@ -96,12 +96,12 @@
               <div class="col-6">
                 <div class="post-image" style="background-image: url('{{ $post['image1']['url'] }}')"></div>
 
-                <p class="text-center mt-1">{{ $post['image1']['title'] }}</p>
+                <p class="text-center mt-1 p-1">{{ $post['image1']['title'] }}</p>
               </div>
               <div class="col-6">
                 <div class="post-image" style="background-image: url('{{ $post['image2']['url'] }}')"></div>
   
-                <p class="text-center mt-1">{{ $post['image2']['title'] }}</p>
+                <p class="text-center mt-1 p-1">{{ $post['image2']['title'] }}</p>
               </div>
               <div class="card-body pt-0 text-center">
                 <p class="text-break">{{ $post['description'] }}</p>

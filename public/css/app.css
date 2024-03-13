@@ -22117,10 +22117,11 @@ input[type=color].form-control:disabled {
 .game-image {
   width: 100%;
   background-repeat: no-repeat;
-  background-size: cover;
+  background-size: contain;
   background-position: center center;
   background-color: #fff;
   display: flex;
+  cursor: pointer;
 }
 
 .game-image:hover {
@@ -22311,4 +22312,8 @@ input[type=color].form-control:disabled {
   color: #fff;
   background-color: #98CCFD;
   border-color: #98CCFD;
+}
+
+.font-size-small {
+  font-size: small;
 }
