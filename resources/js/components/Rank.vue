@@ -81,7 +81,7 @@ export default {
             console.log(error);
             Swal.fire({
               title: 'Error!',
-              text: 'Something went wrong. Please try again later.',
+              text: error.response.data.message,
               icon: 'error',
               button: 'OK'
             });

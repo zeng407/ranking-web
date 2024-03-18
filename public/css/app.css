@@ -22408,3 +22408,7 @@ input[type=color].form-control:disabled {
 .w-100 {
   width: 100%;
 }
+
+::-webkit-scrollbar {
+  display: none;
+}
