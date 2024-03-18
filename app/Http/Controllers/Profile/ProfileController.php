@@ -20,7 +20,7 @@ class ProfileController extends Controller
             'avatar_url' => ['sometimes', 'required', 'image', 'max:' . config('setting.avatar_max_size')],
         ]);
 
-        if($validatedData['name'] !== $request->user()->name) {
+        if(isset($validatedData['name']) && $validatedData['name'] !== $request->user()->name) {
             if($request->user()->name_updated_at === null || today()->diffInDays($request->user()->name_updated_at->toDateString()) >= config('setting.name_change_duration')){
                 $validatedData['name_updated_at'] = now();
             } else {
