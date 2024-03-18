@@ -38,7 +38,7 @@ class ElementController extends Controller
         $post = $this->getPost($request->input('post_serial'));
 
         // check elements count
-        if ($post->elements()->count() > config('setting.post_max_element_count')) {
+        if ($post->elements()->count() >= config('setting.post_max_element_count')) {
             return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
         }
 

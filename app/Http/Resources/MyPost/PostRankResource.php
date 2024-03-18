@@ -26,9 +26,9 @@ class PostRankResource extends JsonResource
         return [
             'element' => GameElementResource::make($this->element),
             'final_win_position' => $this->final_win_position,
-            'final_win_rate' => (int)$this->final_win_rate,
+            'final_win_rate' => round($this->final_win_rate,1),
             'win_position' => $this->win_position,
-            'win_rate' => (int)$this->win_rate,
+            'win_rate' => round($this->win_rate,1),
             'rank' => $this->rank
         ];
     }

@@ -24,7 +24,7 @@ use App\Services\PostService;
 
 class MyPostController extends Controller
 {
-    const ELEMENTS_PER_PAGE = 50;
+    const ELEMENTS_PER_PAGE = 64;
 
     protected ElementService $elementService;
     protected RankService $rankService;
@@ -63,7 +63,7 @@ class MyPostController extends Controller
         $this->authorize('read', $post);
 
         $input = $request->validate([
-            'per_page' => 'integer|max:50',
+            'per_page' => 'integer|max:64',
             'page' => 'integer',
             'filter' => 'array'
         ]);

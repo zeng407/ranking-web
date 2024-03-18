@@ -26,13 +26,13 @@ class RankService
         return $reports;
     }
 
-    public function getRankPosition(Post $post, Element $element)
+    public function getRankPosition(Post $post, Element $element): ?int
     {
         $report = RankReport::where('post_id', $post->id)
             ->where('element_id', $element->id)
             ->first();
 
-        return $report->rank;
+        return $report?->rank;
     }
 
     public function createElementRank(Game $game, Element $element)

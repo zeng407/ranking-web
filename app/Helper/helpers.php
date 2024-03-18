@@ -94,8 +94,12 @@ if (!function_exists('url_basename')) {
 }
 
 if (!function_exists('get_page_title')) {
-    function get_page_title($object, $base = "殘酷二選一")
+    function get_page_title($object, ?string $base = null)
     {
+        if($base === null) {
+            $base = config('app.name', '殘酷二選一');
+        }
+
         if ($object instanceof \App\Models\Post) {
             $title = str_replace(" \t\n\r\0\x0B", "", $object->title);
             return "{$title} | {$base}";

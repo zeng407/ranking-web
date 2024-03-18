@@ -23,8 +23,10 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'name_updated_at',
         'email',
         'password',
+        'avatar_url',
     ];
 
     /**
@@ -44,6 +46,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'name_updated_at' => 'datetime',
     ];
 
     public function posts()

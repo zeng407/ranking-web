@@ -1,4 +1,6 @@
-@extends('layouts.app', ['title' => $post])
+@extends('layouts.app', [
+    'title' => $post
+  ])
 
 @section('header')
   <meta name="robots" content="noindex"/>
@@ -20,6 +22,8 @@
         batch-create-endpoint="{{route('api.element.batch-create')}}"
 
         get-tags-options-endpoint="{{route('api.tag.index')}}"
+        get-comments-endpoint="{{route('api.public-post.comment.index', $serial)}}"
+        default-avatar-url="{{asset('storage/default-avatar.webp')}}"
     >
     </edit-post>
 

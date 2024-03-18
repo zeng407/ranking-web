@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Post;
 
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Comment\CommentResource;
+use App\Http\Resources\Game\GameResultResource;
+use App\Http\Resources\Rank\PostRankResource;
+use App\Models\Element;
 use App\Models\Game;
 use App\Models\Post;
 use App\Services\GameService;
@@ -29,8 +33,9 @@ class GameController extends Controller
     {
         $serial = $request->route('post');
         $post = $this->postService->getPost($serial);
+        abort_if(!$post, 404);
         $element = $this->getElementForOG($post);
-        
+
         return view('game.show', [
             'serial' => $serial,
             'post' => $post,
@@ -41,19 +46,29 @@ class GameController extends Controller
     public function rank(Request $request)
     {
         $serial = $request->route('post');
+        $gameSerial = $request->query('g');
+        $game = Game::where('serial', $gameSerial)->first();
         $post = $this->postService->getPost($serial);
-        $element = $this->getElementForOG($post);
+        $reports = $this->rankService->getRankReports($post, 10);
+        
+        $gameResult = null;
+        if ($game && $this->gameService->isGameComplete($game)) {
+            $gameResult = $this->gameService->getGameResult($request, $game);
+        }
+
         return view('game.rank', [
             'serial' => $serial,
             'post' => $post,
-            'element' => $element
+            'ogElement' => $this->getElementForOG($post),
+            'reports' => $reports,
+            'gameResult' => $gameResult,
         ]);
     }
 
-    protected function getElementForOG(Post $post, $limit = 10)
+    protected function getElementForOG(Post $post, $limit = 10): ?Element
     {
         $reports = $this->rankService->getRankReports($post, 1)->items();
-        if(count($reports) > 0){
+        if (count($reports) > 0) {
             return $reports[0]->element;
         }
         return $post->elements()->first();

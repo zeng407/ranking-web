@@ -1,225 +1,168 @@
-<template>
-  <!--  Main -->
-  <div class="container">
-    <div class="fa-3x text-center" v-if="isLoading">
-      <i class="fas fa-spinner fa-spin"></i>
-    </div>
-    <div v-if="rankInfo">
-      <h2>{{ rankInfo.data.title }}</h2>
-      <p>{{ rankInfo.data.description }}</p>
-    </div>
-    <b-tabs content-class="mt-3" v-if="!isLoading">
-      <b-tab :title="$t('My Rank')" v-if="gameResult">
-        <div class="card my-2 card-hover">
-          <div class="card-header rank-header">
-            <h2 class="text-left">1</h2>
-            <div class="text-center d-none d-md-block">{{ gameResult.winner.title }}</div>
-            <div class="text-right">
-              {{ $t('Global Rank') }}:{{ gameResult.winner_rank ? gameResult.winner_rank : '無' }}
-            </div>
-          </div>
-          <div class="card-body text-center rank-card">
-            <div class="text-center d-block d-md-none">{{ gameResult.winner.title }}</div>
-            <youtube v-if="isYoutubeSource(gameResult.winner)" width="100%" height="270" :ref="gameResult.winner.id"
-              :videoId="gameResult.winner.video_id" :player-vars="{
-                controls: 1,
-                autoplay: 0,
-                start: gameResult.winner.video_start_second,
-                rel: 0,
-                origin: host
-              }"></youtube>
-            <video v-else-if="isVideoSource(gameResult.winner)" width="100%" height="270" loop autoplay muted playsinline
-              :src="gameResult.winner.thumb_url"></video>
-            <img v-else-if="isImageSource(gameResult.winner)" :src="gameResult.winner.thumb_url" height="270" class="w-100"
-              :alt="gameResult.winner.title">
-          </div>
-        </div>
-        <div class="card my-2 card-hover" v-for="(rank, index) in gameResult.data">
-          <div class="card-header rank-header">
-            <h2 class="text-left">{{ index + 2 }}</h2>
-            <div class="text-center d-none d-md-block">{{ rank.loser.title }}</div>
-            <div class="text-right">
-              {{ $t('Global Rank') }}:{{ rank.rank ? rank.rank : '無' }}
-            </div>
-          </div>
-          <div class="card-body text-center rank-card">
-            <div class="text-center d-block d-md-none">{{ rank.loser.title }}</div>
-            <youtube v-if="isYoutubeSource(rank.loser)" width="100%" height="270" :ref="rank.loser.id"
-              :videoId="rank.loser.video_id" :player-vars="{
-                controls: 1,
-                autoplay: 0,
-                start: rank.loser.video_start_second,
-                end: rank.loser.video_end_second,
-                rel: 0,
-                origin: host
-              }"></youtube>
-            <video v-else-if="isVideoSource(rank.loser)" width="100%" height="270" loop autoplay muted playsinline
-              :src="rank.loser.thumb_url"></video>
-            <img v-else-if="isImageSource(rank.loser)" :src="rank.loser.thumb_url" height="270" class="w-100" :alt="rank.loser.title">
-          </div>
-        </div>
-      </b-tab>
-      <b-tab :title="$t('Global Rank')">
-        <div v-if="rankReportData && !loadingPage" class="card my-2 card-hover" v-for="(rank, index) in rankReportData.data">
-          <div class="card-header rank-header">
-            <h2 class="text-left">{{ rank.rank }}</h2>
-            <div class="text-center d-none d-md-block">{{ rank.element.title }}</div>
-            <div class="text-right">
-              <span v-if="rank.final_win_rate"> {{ $t('edit_post.rank.win_at_final') }}:{{ rank.final_win_rate | percent}}<br></span>
-              <span v-if="rank.win_rate > 0"> {{ $t('edit_post.rank.win_rate') }}:{{ rank.win_rate | percent }}</span>
-              <span v-else> {{ $t('edit_post.rank.win_rate') }}:{{ '0' | percent }}</span>
-            </div>
-          </div>
-          <div class="card-body text-center rank-card">
-            <div class="text-center d-block d-md-none">{{ rank.element.title }}</div>
-            <youtube v-if="isYoutubeSource(rank.element)" width="100%" height="270" :ref="rank.element.id"
-              :videoId="rank.element.video_id" :player-vars="{
-                controls: 1,
-                autoplay: 0,
-                start: rank.element.video_start_second,
-                end: rank.element.video_end_second,
-                rel: 0,
-                origin: host
-              }"></youtube>
-            <video v-else-if="isVideoSource(rank.element)" width="100%" height="270" loop autoplay muted playsinline
-              :src="rank.element.thumb_url"></video>
-            <img v-else-if="isImageSource(rank.element)" :src="rank.element.thumb_url" height="270" class="w-100"
-              :alt="rank.element.title">
-            <!-- <div class="d-flex flex-column align-items-start"> -->
-              <!-- <div class="align-self-center">{{ rank.element.title }}</div> -->
-              <!-- <div class="align-self-end text-right mt-2"> -->
-              <!-- <span v-if="rank.final_win_rate"> {{
-                  $t('edit_post.rank.win_at_final')
-                }}:{{ rank.final_win_rate | percent }}<br></span>
-                <span v-if="rank.win_rate > 0"> {{ $t('edit_post.rank.win_rate') }}:{{ rank.win_rate | percent }}</span>
-                <span v-else> {{ $t('edit_post.rank.win_rate') }}:{{ '0' | percent }}</span> -->
-              <!-- </div> -->
-            <!-- </div> -->
-          </div>
-        </div>
-
-        <div v-if="rankReportData && rankReportData.data.length == 0">
-          <div class="card my-2 card-hover">
-            <div class="card-body text-center rank-card">
-              <div class="align-self-center">{{ $t('rank.no_rank') }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-12" v-if="rankReportData && rankReportData.meta.last_page > 1">
-            <b-pagination v-model="currentPage" :total-rows="rankReportData.meta.total"
-              :per-page="rankReportData.meta.per_page" first-number last-number @change="handlePageChange"
-              align="center"></b-pagination>
-          </div>
-        </div>
-      </b-tab>
-    </b-tabs>
-  </div>
-</template>
-
 <script>
+import Swal from 'sweetalert2';
 export default {
+  name: 'rank',
   mounted() {
-    this.loadGameResult();
-    this.loadRankReport();
-    this.loadRankData();
-    this.host = window.location.origin;
+    this.loadCommnets();
+  },
+  data() {
+    return {
+      commentInput: '',
+      comments: [],
+      meta: {
+        current_page: 1,
+        last_page: 1
+      },
+      profile: {
+        nickname: '',
+        avatar_url: '',
+        champions: []
+      }
+    }
   },
   props: {
-    postSerial: String,
-    getRankEndpoint: String,
-    getRankReportEndpoint: String,
-    getGameResultEndpoint: String
-
+    commentMaxLength: {
+      type: String,
+      required: true
+    },
+    indexCommentEndpoint: {
+      type: String,
+      required: true
+    },
+    createCommentEndpoint: {
+      type: String,
+      required: true
+    },
+    reportCommentEndpoint: {
+      type: String,
+      required: true
+    }
   },
   computed: {
-    isLoading: function () {
-      return this.loadingGameResult || this.loadingGameReport;
+    commentWords() {
+      return this.commentInput.length;
     },
-  },
-  data: function () {
-    return {
-      host: '',
-      currentTab: '',
-      rankInfo: null,
-      rankReportData: {
-        data: {},
-        meta: {}
-      },
-      currentPage: 1,
-      gameResult: null,
-      loadingGameResult: true,
-      loadingGameReport: true,
-      loadingPage: true
+    validComment() {
+      return this.commentInput.trim().length > 0 && this.commentInput.length <= this.commentMaxLength
     }
   },
   methods: {
-    loadRankData: function () {
-      axios.get(this.getRankEndpoint)
-        .then(res => {
-          this.rankInfo = res.data;
+    loadCommnets: function (page = 1) {
+      const urlParams = {
+        page: page
+      }
+      axios.get(this.indexCommentEndpoint, {
+        params: urlParams
+      })
+        .then(response => {
+          this.comments = response.data.data;
+          this.meta = response.data.meta;
+          this.profile = response.data.profile;
+        })
+        .catch(error => {
+          console.log(error);
         });
     },
-    loadGameResult: function () {
+    clickTab: function (tab) {
       const urlParams = new URLSearchParams(window.location.search);
-      if (!urlParams.has('g')) {
-        this.loadingGameResult = false;
-        this.currentTab = '1'
-        return;
-      }
-      this.currentTab = '0';
-      const api = this.getGameResultEndpoint.replace('_serial', urlParams.get('g'));
-      axios.get(api)
-        .then(res => {
-          this.gameResult = res.data;
+      urlParams.set('tab', tab);
+      const newUrl = window.location.pathname + '?' + urlParams.toString();
+      window.history.replaceState(null, null, newUrl);
+    },
+    submitComment() {
+      if (this.commentInput.length > 0 && this.commentInput.length <= this.commentMaxLength) {
+        axios.post(this.createCommentEndpoint, {
+          content: this.commentInput
         })
-        .finally(() => {
-          this.loadingGameResult = false;
-        });
-    },
-    loadRankReport: function (page = 1) {
-      this.loadingPage = true;
-      const filter = {
-        'page': page
-      };
-      axios.get(this.getRankReportEndpoint, { params: filter })
-        .then(res => {
-          this.rankReportData = res.data;
-          this.currentPage = res.data.meta.current_page;
-        })
-        .finally(() => {
-          this.loadingGameReport = false;
-          this.loadingPage = false;
-        });
-    },
-    handlePageChange: function (page) {
-      this.loadRankReport(page);
-    },
-    isYoutubeSource: function (element) {
-      return element.type === 'video' && element.video_source === 'youtube';
-    },
-    isVideoSource: function (element) {
-      return element.type === 'video';
-    },
-    isImageSource: function (element) {
-      return element.type === 'image';
-    },
-    getPlayer(element) {
-      return _.get(this.$refs, element.id + '.0.player', null);
-    },
-    doPlay(element) {
-      const player = this.getPlayer(element);
-      if (player) {
-        window.player = player;
-        player.cueVideoById({
-          videoId: element.video_id,
-          startSeconds: element.video_start_second,
-          endSeconds: element.video_end_second
-        });
+          .then(response => {
+            window.location.reload();
+          })
+          .catch(error => {
+            console.log(error);
+            Swal.fire({
+              title: 'Error!',
+              text: 'Something went wrong. Please try again later.',
+              icon: 'error',
+              button: 'OK'
+            });
+          });
       }
+    },
+    changePage: function (page) {
+      this.loadCommnets(page);
+    },
+    reportComment: function (comment) {
+      const commentId = comment.id;
+
+      Swal.fire({
+        title: this.$t('Are you sure?'),
+        text: 'Are you sure you want to report this comment?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'No',
+        html: `Comment: <br><b> ${comment.content} </b><br> <strong>By: <i>${comment.nickname}</i></strong>`,
+        input: 'select',
+        inputOptions: {
+          'Spam': this.$t('Spam'),
+          'Inappropriate': this.$t('Inappropriate'),
+          'Hate Speech': this.$t('Hate Speech'),
+          'Harassment': this.$t('Harassment'),
+          'Other': this.$t('Other')
+        },
+        inputPlaceholder: this.$t("Please select a reason for reporting"),
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (result.value === 'Other') {
+            Swal.fire({
+              title: this.$t('Please specify the reason'),
+              input: 'text',
+              inputPlaceholder: this.$t('Please specify the reason'),
+              showCancelButton: true,
+              confirmButtonText: this.$t('Submit'),
+              cancelButtonText: this.$t('Cancel'),
+              inputValidator: (value) => {
+                if (!value) {
+                  return this.$t('report_comment_other_reason_required');
+                }
+              }
+            }).then((result) => {
+              if (result.isConfirmed) {
+                const reportReason = result.value;
+                const payload = {
+                  reason: reportReason
+                }
+                this.performReportingComment(commentId, payload);
+              }
+            });
+            return;
+          } else {
+            const reportReason = result.value;
+            const payload = {
+              reason: this.$t(reportReason)
+            }
+            this.performReportingComment(commentId, payload);
+          }
+        }
+      });
+    },
+    performReportingComment: function (commentId, payload) {
+      axios.post(this.reportCommentEndpoint.replace('_comment_id', commentId), payload)
+        .then(response => {
+          Swal.fire({
+            title: this.$t('Reported!'),
+            icon: 'success'
+          });
+        })
+        .catch(error => {
+          console.log(error);
+          Swal.fire({
+            title: 'Error!',
+            text: this.$t('Something went wrong. Please try again later.'),
+            icon: 'error',
+          });
+        });
     }
   }
 }
-
 </script>

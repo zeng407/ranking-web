@@ -66,12 +66,13 @@ Vue.use(VueCookies);
  * BootstrapVue
  */
 
-import {PaginationPlugin, AlertPlugin, TabsPlugin, VBPopover} from 'bootstrap-vue';
+import {PaginationPlugin, AlertPlugin, TabsPlugin, VBPopover, VBTooltipPlugin} from 'bootstrap-vue';
 // Make BootstrapVue available throughout your project
 Vue.use(PaginationPlugin);
 Vue.use(AlertPlugin);
 Vue.use(TabsPlugin);
 Vue.use(VBPopover);
+Vue.use(VBTooltipPlugin)
 // Optionally install the BootstrapVue icon components plugin
 // Vue.use(IconsPlugin);
 

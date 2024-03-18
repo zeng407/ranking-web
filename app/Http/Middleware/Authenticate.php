@@ -19,7 +19,7 @@ class Authenticate extends Middleware
             if ($this->auth->guard($guard)->check()) {
                 if($this->auth->guard($guard)->user()->isBanned()){
                     $this->auth->guard($guard)->logout();
-                    $request->session()->flash('error', 'Your account has been banned.');
+                    session()->flash('error', 'Your account has been banned.');
                     return $this->authenticate($request, $guards);
                 }
                 return $this->auth->shouldUse($guard);
