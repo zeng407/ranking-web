@@ -193,7 +193,7 @@ class PostTest extends TestCase
                 ->andReturn($video);
         });
         
-
+        session(['key' => 'value']);
         $res = $this->post(route('api.element.batch-create'), $data);
         $res->assertOk();
         $this->assertEquals($post->elements()->first()->id, $res->json('data.0.id'));

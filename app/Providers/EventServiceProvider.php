@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
+use App\Listeners\CreateGameResult;
 use App\Listeners\DeleteElementRank;
 use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
@@ -32,6 +33,7 @@ class EventServiceProvider extends ServiceProvider
 //            SendEmailVerificationNotification::class,
 //        ],
         GameComplete::class => [
+            CreateGameResult::class,
             UpdatePostRank::class
         ],
         GameElementVoted::class => [

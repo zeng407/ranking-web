@@ -3,9 +3,6 @@
 namespace App\Http\Resources\Game;
 
 use App\Models\Element;
-use App\Models\Game;
-use App\Models\Game1V1Round;
-use App\Models\GameElement;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**

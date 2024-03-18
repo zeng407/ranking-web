@@ -22293,7 +22293,6 @@ input[type=color].form-control:disabled {
 }
 
 .card-hover:hover {
-  transform: scale(1.01);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -22316,4 +22315,96 @@ input[type=color].form-control:disabled {
 
 .font-size-small {
   font-size: small;
+}
+
+.font-size-large {
+  font-size: large;
+}
+
+.bg-default {
+  background-color: #f8fafc;
+}
+
+.avatar-container {
+  margin-right: 20px;
+  width: 64px;
+  text-align: -webkit-center;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (max-width: 992px) {
+  .avatar-container {
+    width: 15%;
+  }
+}
+@media (max-width: 768px) {
+  .avatar-container {
+    width: 20%;
+  }
+}
+@media (max-width: 576px) {
+  .avatar-container {
+    display: none;
+  }
+}
+.avatar {
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 50%;
+  position: relative;
+}
+
+.avatar img {
+  -o-object-fit: cover;
+     object-fit: cover;
+  -o-object-position: top center;
+     object-position: top center;
+  border-radius: 50%;
+  width: 64px;
+  height: 100%;
+}
+
+.comment-container {
+  width: 90%;
+}
+
+@media (max-width: 992px) {
+  .comment-container {
+    width: 85%;
+  }
+}
+@media (max-width: 768px) {
+  .comment-container {
+    width: 80%;
+  }
+}
+@media (max-width: 576px) {
+  .comment-container {
+    display: none;
+  }
+}
+.break-all {
+  word-break: break-all;
+}
+
+.text-align-end {
+  text-align: end;
+}
+
+.white-space-normal {
+  white-space: normal;
+}
+
+.white-space-pre-line {
+  white-space: pre-line;
+}
+
+.overflow-scroll {
+  overflow: scroll;
+}
+
+.w-100 {
+  width: 100%;
 }

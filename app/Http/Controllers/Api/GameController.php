@@ -7,14 +7,15 @@ use App\Events\GameComplete;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Game\GameResultResource;
 use App\Http\Resources\Game\GameRoundResource;
-
 use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
 use App\Models\Game1V1Round;
 use App\Models\Post;
+use App\Rules\GameElementRule;
 use App\Services\GameService;
 use App\Services\RankService;
 use Illuminate\Http\Request;
+use Ramsey\Uuid\Uuid;
 
 class GameController extends Controller
 {
@@ -52,7 +53,10 @@ class GameController extends Controller
     {
         $request->validate([
             'post_serial' => 'required',
-            'element_count' => ['required', 'integer', 'min:' . config('setting.post_min_element_count'),
+            'element_count' => [
+                'required',
+                'integer',
+                'min:' . config('setting.post_min_element_count'),
                 'max:' . config('setting.post_max_element_count')
             ]
         ]);
@@ -74,9 +78,12 @@ class GameController extends Controller
     {
         $request->validate([
             'game_serial' => 'required',
-            'winner_id' => 'required',
-            'loser_id' => 'required',
+            'winner_id' => ['required'],
+            'loser_id' => ['required'],
         ]);
+
+        //todo lock transaction
+
         /** @var Game $game */
         $game = $this->getGame($request->game_serial);
 
@@ -85,53 +92,16 @@ class GameController extends Controller
          */
         $this->authorize('play', $game);
 
-        /** @var Game1V1Round $lastRound */
-        $lastRound = $game->game_1v1_rounds()->latest('id')->first();
-        if ($lastRound === null) {
-            $round = 1;
-            $ofRound = (int)ceil($game->element_count / 2);
-            $remain = $game->element_count - 1;
-        } else if ($lastRound->current_round + 1 > $lastRound->of_round) {
-            $round = 1;
-            $ofRound = (int)ceil($lastRound->remain_elements / 2);
-            $remain = $lastRound->remain_elements - 1;
-        } else {
-            $round = $lastRound->current_round + 1;
-            $ofRound = $lastRound->of_round;
-            $remain = $lastRound->remain_elements - 1;
-        }
-        $data = [
-            'current_round' => $round,
-            'of_round' => $ofRound,
-            'remain_elements' => $remain,
-            'winner_id' => $request->winner_id,
-            'loser_id' => $request->loser_id,
-            'complete_at' => now(),
-        ];
-        \Log::info('saving game : ' . $game->serial, $data);
-        /** @var Game1V1Round $gameRound */
-        $gameRound = $game->game_1v1_rounds()->create($data);
-
-        // update winner
-        $game->elements()
-            ->wherePivot('is_eliminated', false)
-            ->updateExistingPivot($request->winner_id, [
-                'win_count' => \DB::raw('win_count + 1')
-            ]);
-
-        // update loser
-        $game->elements()
-            ->wherePivot('is_eliminated', false)
-            ->updateExistingPivot($request->loser_id, [
-                'is_eliminated' => true
-            ]);
+        //todo critical bug: if user vote illegal element, it will be error
+        $gameRound = $this->gameService->updateGameRounds($game, $request->winner_id, $request->loser_id);
 
         event(new GameElementVoted($game, $gameRound->winner));
         event(new GameElementVoted($game, $gameRound->loser));
 
         // update rank when game complete
         if ($this->gameService->isGameComplete($game)) {
-            event(new GameComplete($game));
+            $anonymousId = session()->get('anonymous_id', 'unknown');
+            event(new GameComplete($request->user(), $anonymousId, $game, $gameRound->winner));
         }
 
         return response()->json([

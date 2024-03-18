@@ -15,7 +15,7 @@
 @import "~bootstrap-vue";
 
 [v-cloak] {
-  display: none;
+    display: none;
 }
 
 .post-image {
@@ -220,7 +220,6 @@
         0.3s -webkit-transform cubic-bezier(0.155, 1.105, 0.295, 1.12);
 }
 .card-hover:hover {
-    transform: scale(1.01);
     box-shadow:
         0 10px 20px rgba(0, 0, 0, 0.12),
         0 4px 8px rgba(0, 0, 0, 0.06);
@@ -232,17 +231,105 @@
     }
 }
 .red-card {
-    color:#fff;
+    color: #fff;
     background-color: $red-light;
     border-color: $red-light;
-    
 }
 .blue-card {
-    color:#fff;
+    color: #fff;
     background-color: $blue-light;
     border-color: $blue-light;
 }
 
 .font-size-small {
     font-size: small;
+}
+.font-size-large {
+    font-size: large;
+}
+
+.bg-default {
+    background-color: #f8fafc;
+}
+
+.avatar-container {
+    margin-right: 20px;
+    width: 64px;
+    text-align: -webkit-center;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@media (max-width: 992px) {
+    .avatar-container {
+        width: 15%;
+    }
+}
+@media (max-width: 768px) {
+    .avatar-container {
+        width: 20%;
+    }
+}
+@media (max-width: 576px) {
+    .avatar-container {
+        display: none;
+    }
+}
+
+.avatar {
+    width:64px;
+    height:64px;
+    overflow: hidden;
+    border-radius:50%;
+    position: relative;
+}
+.avatar img {
+    object-fit: cover;
+    object-position: top center;
+    border-radius: 50%;
+    width: 64px;
+    height: 100%;
+}
+
+.comment-container {
+    width: 90%;
+}
+@media (max-width: 992px) {
+    .comment-container {
+        width: 85%;
+    }
+}
+@media (max-width: 768px) {
+    .comment-container {
+        width: 80%;
+    }
+}
+@media (max-width: 576px) {
+    .comment-container {
+        display: none;
+    }
+}
+
+.break-all {
+    word-break: break-all;
+}
+
+.text-align-end {
+    text-align: end;
+}
+
+.white-space-normal {
+    white-space: normal;
+}
+
+.white-space-pre-line {
+    white-space: pre-line;
+}
+
+.overflow-scroll {
+    overflow: scroll;
+}
+
+.w-100 {
+    width: 100%;
 }

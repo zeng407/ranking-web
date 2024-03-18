@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Game;
 
-use App\Models\Game;
 use App\Models\Game1V1Round;
 use App\Services\RankService;
 use Illuminate\Http\Resources\Json\JsonResource;

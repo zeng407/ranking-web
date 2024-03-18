@@ -11,14 +11,16 @@
       </span>
     </div>
 
-    <!-- tabs -->
     <div class="row">
 
-      <div class="col-2">
+      <!-- tabs -->
+      <div class="col-md-2">
         <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
           <a class="nav-link active" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
             aria-controls="v-pills-post-info" aria-selected="true">
+            <i v-if="isEditing" class="fa-xl fa-solid fa-triangle-exclamation" style="color:red" v-b-tooltip.hover
+              :title="$t('Unsaved')"></i>
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-info-circle"></i>
             </span>
@@ -38,10 +40,17 @@
             </span>
             {{ $t('edit_post.tab.rank') }}
           </a>
+          <!-- <a class="nav-link" id="v-pills-comments-tab" data-toggle="pill" href="#v-pills-comments" role="tab"
+            aria-controls="v-pills-comments" aria-selected="false" @click="clickCommentTab">
+            <span class="d-inline-block text-center" style="width: 30px">
+              <i class="fa-solid fa-comment-dots"></i>
+            </span>
+            {{ $t('edit_post.tab.comments') }}
+          </a> -->
         </div>
       </div>
 
-      <div class="col-10">
+      <div class="col-sm-12 col-md-10">
         <div class="tab-content" id="v-pills-tabContent">
 
           <!-- tab info -->
@@ -68,7 +77,14 @@
                       <button class="btn btn-primary" v-if="!isEditing" @click="clickEdit">
                         <i class="fas fa-edit"></i> {{ $t('edit_post.info.edit') }}
                       </button>
-                      <button class="btn btn-primary" v-else @click="savePost"
+
+                      <!-- Editing -->
+                      <button class="btn btn-secondary mr-3" v-if="isEditing" @click="cancelEdit"
+                        :disabled="loading['SAVING_POST']">
+                        <i class="fa-solid fa-rectangle-xmark"></i>
+                        {{ $t('edit_post.info.cancel_save') }}
+                      </button>
+                      <button class="btn btn-primary" v-if="isEditing" @click="savePost"
                         :disabled="invalid || loading['SAVING_POST']">
                         <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
                         <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
@@ -88,7 +104,8 @@
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="post.title" required
-                          :disabled="!isEditing || loading['SAVING_POST']" :maxlength="config.post_title_size">
+                          autocomplete="off" :disabled="!isEditing || loading['SAVING_POST']"
+                          :maxlength="config.post_title_size">
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                     </div>
@@ -177,7 +194,7 @@
                       <div v-else>
                         <input class="form-control" disabled="disabled" :value="$t('post_policy.' + post.policy)">
                         <small class="form-text text-muted" v-if="post.policy === 'public'">{{
-                          $t('edit_post.at_least_element_number_hint') }}</small>
+        $t('edit_post.at_least_element_number_hint') }}</small>
                       </div>
                     </div>
                   </div>
@@ -236,8 +253,8 @@
                 <label><i class="fa-solid fa-link"></i>&nbsp;{{ $t('Upload from URL') }}</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate" rows="5"
-                    v-model="batchString" aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ" aria-describedby="batchCreateVideo"
-                    placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                    v-model="batchString" aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                    aria-describedby="batchCreateVideo" placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
                   </textarea>
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" @click="batchUpload"
@@ -264,8 +281,8 @@
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
               <div class="form-inline">
-                <input class="form-control mr-sm-2" v-model="filters.title_like" type="search" :placeholder="$t('Search')"
-                  aria-label="Search" @change="loadElements(1)">
+                <input class="form-control mr-sm-2" v-model="filters.title_like" type="search"
+                  :placeholder="$t('Search')" aria-label="Search" @change="loadElements(1)">
                 <i class="fa-solid fa-magnifying-glass" v-if="!filters.title_like"></i>
                 <i class="fas fa-filter" v-if="filters.title_like"></i>
               </div>
@@ -279,13 +296,13 @@
                   <div class="card mb-3" v-show="isYoutubeSource(element)">
                     <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
                       :ref="element.id" @ready="doPlay(element)" :player-vars="{
-                        controls: 1,
-                        autoplay: 0,
-                        start: element.video_start_second,
-                        end: element.video_end_second,
-                        rel: 0,
-                        origin: host
-                      }"></youtube>
+        controls: 1,
+        autoplay: 0,
+        start: element.video_start_second,
+        end: element.video_end_second,
+        rel: 0,
+        origin: host
+      }"></youtube>
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
                       v-show="isYoutubeSource(element) && !element.loadedVideo">
                     <!-- youtube video editor -->
@@ -293,8 +310,9 @@
                       <!--title edit-->
                       <!-- <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text" :value="element.title"
                         :maxlength="config.element_title_size" @change="updateElementTitle(element.id, $event)"> -->
-                        <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title" :maxlength="config.element_title_size"
-                          rows="4" style="resize: none;" @change="updateElementTitle(element.id, $event)"></textarea>
+                      <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
+                        :maxlength="config.element_title_size" rows="4" style="resize: none;"
+                        @change="updateElementTitle(element.id, $event)"></textarea>
                       <!--play time range-->
                       <div class="row mb-3">
                         <div class="col-10">
@@ -320,7 +338,8 @@
                         </div>
                       </div>
                       <!--create time-->
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime }}</small></span>
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime
+                          }}</small></span>
                       <!--delete button-->
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
@@ -338,7 +357,8 @@
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
                         :value="element.title" :maxlength="config.element_title_size"
                         @change="updateElementTitle(element.id, $event)">
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime }}</small></span>
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime
+                          }}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
@@ -354,9 +374,11 @@
                       v-if="element.type === 'image'">
 
                     <div class="card-body">
-                        <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title" :maxlength="config.element_title_size"
-                          rows="4" style="resize: none;" @change="updateElementTitle(element.id, $event)"></textarea>
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime }}</small></span>
+                      <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
+                        :maxlength="config.element_title_size" rows="4" style="resize: none;"
+                        @change="updateElementTitle(element.id, $event)"></textarea>
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime
+                          }}</small></span>
                       <a class="btn btn-danger float-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
@@ -428,9 +450,83 @@
             </div>
           </div>
 
+          <!-- tab comments -->
+          <!-- <div class="tab-pane fade" id="v-pills-comments" role="tabpanel" aria-labelledby="v-pills-comments-tab">
+            <div class="row">
+              <div class="col-12">
+                <div class="card">
+                  <div v-if="loading['COMMENTS']">
+                    <div class="text-center">
+                      <i class="fa-3x fas fa-spinner fa-spin"></i>
+                    </div>
+                  </div>
+
+                  <div class="card-body">
+                    <div v-for="comment in comments.data">
+                      <div class="d-flex justify-content-between w-100">
+                        
+                        <div class="avatar-container">
+                          <div class="avatar">
+                            <img v-if="comment.avatar_url" :src="comment.avatar_url" :alt="comment.nickname">
+                            <img v-else :src="defaultAvatarUrl" :alt="comment.nickname">
+                          </div>
+                        </div>
+                        <div class="comment-container">
+                          
+                          <div class="d-flex justify-content-between">
+                            <span class="text-black-50 font-size-large" style="overflow-wrap:anywhere"><small>{{comment.nickname}}</small></span>
+                            <div class="ml-auto">
+                              <div class="text-align-end">
+                                <div class="dropdown">
+                                  <span href="#" role="button" id="reportDropdown" data-toggle="dropdown"
+                                    aria-haspopup="true" aria-expanded="false">
+                                    <i class="fa-xl fa-solid fa-ellipsis-vertical cursor-pointer text-center"
+                                      style="width: 20px"></i>
+                                  </span>
+
+                                  <div class="dropdown-menu dropdown-menu-right" aria-labelledby="reportDropdown">
+                                    <a class="dropdown-item"  href="#"><i
+                                        class="fa-solid fa-triangle-exclamation"></i>&nbsp;REPORT</a>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="overflow-hidden">
+                            <template v-for="champion in comment.champions">
+                              <span class="badge badge-secondary mr-1 mb-1" :title="champion">{{ champion }}</span>
+                            </template>
+                          </div>
+                          
+                          <p class="break-all white-space-pre-line overflow-scroll" style="max-height: 200px;">
+                            {{ comment.content }}</p>
+                          
+                          <div class="text-right text-muted">
+                            {{ comment.created_at | datetime }}
+                          </div>
+                        </div>
+                      </div>
+                    <hr class="my-4">
+                    </div>
+
+                    <div v-if="comments.data.length == 0" class="text-center">
+                      <p>{{ $t('No comments') }}</p>
+                    </div>
+                  </div>
+                  
+                  
+                  <b-pagination v-if="comments.meta.last_page > 1" v-model="comments.meta.current_page" :total-rows="comments.meta.total"
+                    :per-page="comments.meta.per_page" @input="changeCommentPage" class="justify-content-center"></b-pagination>
+                </div>
+              </div>
+            </div>
+          </div> -->
+          
         </div>
       </div>
     </div>
+  </div>
   </div>
 </template>
 
@@ -462,6 +558,8 @@ export default {
     createImageElementEndpoint: String,
     batchCreateEndpoint: String,
     getTagsOptionsEndpoint: String,
+    getCommentsEndpoint: String,
+    defaultAvatarUrl: String
   },
   data: function () {
     return {
@@ -474,10 +572,12 @@ export default {
         UPLOADING_IMAGE: false,
         UPLOADING_VIDEO_URL: false,
         BATCH_UPLOADING: false,
-        DELETING_POST: false
+        DELETING_POST: false,
+        COMMENTS: false,
       },
       uploadingFiles: {},
       post: null,
+      keep_post: null,
       isEditing: false,
       elements: {
         data: [],
@@ -512,8 +612,17 @@ export default {
       tagInput: "",
       oldTagInput: "",
       tags: [],
+      keep_tags: [],
       tagsOptions: [],
       tagLocalStash: {},
+
+      //comment
+      comments: {
+        data: [],
+        meta: {
+          last_page: 1,
+        }
+      },
 
     }
   },
@@ -554,6 +663,8 @@ export default {
         .then(res => {
           this.post = res.data.data;
           this.tags = res.data.data.tags;
+          this.keep_post = _.cloneDeep(res.data.data);
+          this.keep_tags = _.cloneDeep(res.data.data.tags);
         })
         .finally(() => {
           this.uploadLoadingStatus('LOADING_POST', false);
@@ -562,6 +673,21 @@ export default {
     },
     clickEdit: function () {
       this.isEditing = true;
+    },
+    cancelEdit: function () {
+      Swal.fire({
+        title: this.$t("Are you sure?"),
+        text: this.$t("You will lose all unsaved changes!"),
+        icon: "warning",
+        showCancelButton: true,
+      })
+        .then((willDelete) => {
+          if (willDelete.isConfirmed) {
+            this.isEditing = false;
+            this.post = _.cloneDeep(this.keep_post);
+            this.tags = _.cloneDeep(this.keep_tags);
+          }
+        });
     },
     savePost: function () {
       this.uploadLoadingStatus('SAVING_POST', true);
@@ -583,6 +709,46 @@ export default {
         .finally(() => {
           this.uploadLoadingStatus('SAVING_POST', false);
         });
+    },
+    deletePost: function () {
+      this.uploadLoadingStatus('DELETING_POST', true);
+      Swal.fire({
+        title: this.$t('Enter Password'),
+        input: 'password',
+        inputAttributes: {
+          autocapitalize: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: this.$t('Delete'),
+        cancelButtonText: this.$t('Cancel'),
+        showLoaderOnConfirm: true,
+        preConfirm: (password) => {
+          return axios.delete(this.updatePostEndpoint, { data: { password: password } })
+            .then(res => {
+            })
+            .catch(error => {
+              Swal.showValidationMessage(this.$t(`Request failed`));
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.uploadLoadingStatus('LOADING_POST', true);
+          Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            toast: true,
+            title: this.$t('Deleted!'),
+            text: this.$t('Your post has been deleted.'),
+            icon: 'success',
+            timer: 3000
+          }).then(res => {
+            window.location.href = '/account/post';
+          });
+        }
+      }).finally(() => {
+        this.uploadLoadingStatus('DELETING_POST', false);
+      });
     },
 
     /** Elements **/
@@ -652,6 +818,18 @@ export default {
           }
         });
     },
+    pushDeleting(element) {
+      this.deletingElement.push(element.id);
+    },
+    removeDeleting(element) {
+      _.remove(this.deletingElement, (v) => {
+        return v === element.id;
+      });
+    },
+    isDeleting: function (element) {
+      return this.deletingElement.includes(element.id);
+    },
+
     /** Tag */
     addTag: function () {
       const tag = this.tagInput.trim().replace("#", "");
@@ -700,9 +878,9 @@ export default {
       }
 
       if (this.tagLocalStash[this.tagInput]) {
-          this.tagsOptions = this.tagLocalStash[this.tagInput];
-          return;
-        }
+        this.tagsOptions = this.tagLocalStash[this.tagInput];
+        return;
+      }
 
       if (this.tagInputTimeout) {
         clearTimeout(this.tagInputTimeout);
@@ -724,20 +902,6 @@ export default {
             }
           });
       }, 500);
-
-
-    },
-    /** Other */
-    pushDeleting(element) {
-      this.deletingElement.push(element.id);
-    },
-    removeDeleting(element) {
-      _.remove(this.deletingElement, (v) => {
-        return v === element.id;
-      });
-    },
-    isDeleting: function (element) {
-      return this.deletingElement.includes(element.id);
     },
 
     /** Image **/
@@ -755,20 +919,29 @@ export default {
             this.elements.data.push(res.data.data);
             this.elements.meta.total++;
             this.deleteProgressBarValue(file);
+            Swal.fire({
+              position: "top-end",
+              showConfirmButton: false,
+              title: this.$t("Uploaded!"),
+              toast: true,
+              text: this.$t("The image has been uploaded."),
+              icon: "success",
+              timer: 3000
+            });
           })
           .catch((err) => {
             this.showAlert(err.response.data.message, 'danger');
           });
       });
     },
+
+    /** Video **/
     isVideoSource: function (element) {
       return element.type === 'video';
     },
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
     },
-
-    /** Video **/
     batchUpload: function () {
       if (this.loading['BATCH_UPLOADING']) {
         return;
@@ -831,47 +1004,6 @@ export default {
           element[key] = seconds;
           this.$set(this.elements.data, index, element);
         })
-    },
-
-    deletePost: function () {
-      this.uploadLoadingStatus('DELETING_POST', true);
-      Swal.fire({
-        title: this.$t('Enter Password'),
-        input: 'password',
-        inputAttributes: {
-          autocapitalize: 'off'
-        },
-        showCancelButton: true,
-        confirmButtonText: this.$t('Delete'),
-        cancelButtonText: this.$t('Cancel'),
-        showLoaderOnConfirm: true,
-        preConfirm: (password) => {
-          return axios.delete(this.updatePostEndpoint, { data: { password: password } })
-            .then(res => {
-            })
-            .catch(error => {
-              Swal.showValidationMessage(this.$t(`Request failed`));
-            });
-        },
-        allowOutsideClick: () => !Swal.isLoading()
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.uploadLoadingStatus('LOADING_POST', true);
-          Swal.fire({
-            position: "top-end",
-            showConfirmButton: false,
-            toast: true,
-            title: this.$t('Deleted!'),
-            text: this.$t('Your post has been deleted.'),
-            icon: 'success',
-            timer: 3000
-          }).then(res => {
-            window.location.href = '/account/post';
-          });
-        }
-      }).finally(() => {
-        this.uploadLoadingStatus('DELETING_POST', false);
-      });
     },
 
     updateProgressBarValue: function (file, progressEvent) {
@@ -944,8 +1076,25 @@ export default {
     },
     handleRankPageChange: function (page) {
       this.loadRankReport(page);
-    }
-
+    },
+    clickCommentTab: function () {
+      if (this.comments.data.length === 0) {
+        this.loadComments();
+      }
+    },
+    loadComments: function () {
+      this.uploadLoadingStatus('COMMENTS', true);
+      axios.get(this.getCommentsEndpoint)
+        .then(res => {
+          this.comments = res.data;
+        })
+        .finally(() => {
+          this.uploadLoadingStatus('COMMENTS', false);
+        });
+    },
+    changeCommentPage: function (page) {
+      this.loadComments(page);
+    },
   }
 }
 

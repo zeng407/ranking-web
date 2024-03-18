@@ -1,5 +1,11 @@
 {
     "rank.win_at_final": "Champion",
     "rank.win_rate": "1v1",
-    "rank.no_data": "No data"
+    "rank.no_data": "No data",
+    "comment.report": "Report",
+    "comment.leave_comment": "Leave a comment",
+    "title.rank": "Rank",
+    "comment.submit": "Submit",
+    "nickname_length": "Nickname must be between 1 and 20 characters",
+    "nickname_update_rate": "Can be changed once per day"
 }

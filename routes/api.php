@@ -23,7 +23,8 @@ Route::post('game/vote', [GameController::class, 'vote'])->name('api.game.vote')
 
 /** Comment */
 Route::get('post/{post:serial}/comments', [PublicPostController::class, 'getComments'])->name('api.public-post.comment.index');
-Route::put('post/{post:serial}/comments', [PublicPostController::class, 'createComment'])->name('api.public-post.comment.put');
+Route::post('post/{post:serial}/comments', [PublicPostController::class, 'createComment'])->name('api.public-post.comment.create');
+Route::post('post/{post:serial}/comment/{comment:id}/report', [PublicPostController::class, 'report'])->name('api.public-post.comment.report');
 
 /** Auth */
 Route::middleware(['auth'])->group(function () {

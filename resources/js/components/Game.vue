@@ -62,17 +62,6 @@
         </div>
       </div>
 
-      <!-- current game status only show for mobile -->
-      <!-- <div class="col-sm-12" v-if="isMobileScreen">
-        <div class="d-flex" style="flex-flow: row wrap">
-          <h5 style="width: 20%"></h5>
-          <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP
-            {{ game.of_round }} </h5>
-          <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} /
-            {{ game.total_elements }})</h5>
-        </div>
-      </div> -->
-
       <!--right part-->
       <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
@@ -164,8 +153,8 @@
                     </div>
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ post.description }}</h5>
-                      <div v-if="post.tags.length > 0" class="d-flex">
-                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{ tag}}</span>
+                      <div v-if="post.tags.length > 0" class="d-flex flex-wrap">
+                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{tag}}</span>
                       </div>
                       <span class="mt-2 card-text d-flex justify-content-end">
                         <span class="pr-2">
@@ -198,7 +187,7 @@
                   </div>
                 </div>
               </div>
-              <div class="modal-footer">
+              <div class="modal-footer mb-sm-0 mb-4">
                 <a type="submit" class="btn btn-secondary fa-pull-left" href="/">{{ $t('game.cancel') }}</a>
                 <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{
                   $t('game.start') }}</button>
@@ -443,7 +432,7 @@ export default {
             this.$cookies.remove(this.postSerial);
             this.showGameResult();
           } else {
-            this.$cookies.set(this.postSerial, this.gameSerial, "1d");
+            this.$cookies.set(this.postSerial, this.gameSerial, "3d");
             this.nextRound();
             this.destroyElements();
           }

@@ -76,6 +76,11 @@ class Post extends Model
         return $this->belongsToMany(Tag::class, 'post_tags')->withTimestamps();
     }
 
+    public function comments()
+    {
+        return $this->belongsToMany(Comment::class, 'post_comments');
+    }
+
     /**
      * functions
      */

@@ -118,6 +118,7 @@ class GameTest extends TestCase
             'remain_elements' => 2
         ]);
 
+        session(['key' => 'value']);
         $this->vote($game, $log, [
             'current_round' => 1,
             'of_round' => 1,
@@ -194,6 +195,7 @@ class GameTest extends TestCase
             'winner_id' => $winner,
             'loser_id' => $loser,
         ];
+        session(['key' => 'value']);
         $res = $this->post(route('api.game.vote', $data));
         $res->assertOk();
 
