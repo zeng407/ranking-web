@@ -38,5 +38,10 @@
     "Update Avatar": "更新頭像",
     "You can change your name only once in :days days": "每 :days 天可更改一次暱稱",
     "Some problems occurred, please check the form below for errors": "資料有誤，請檢查表單內容",
-    "Too Many Requests": "操作過於頻繁，請稍候再試"
+    "Too Many Requests": "操作過於頻繁，請稍候再試",
+    "Current Password": "目前密碼",
+    "New Password": "新密碼",
+    "Confirm New Password": "再輸入一次新密碼",
+    "Update Password": "更新密碼"
+
 }

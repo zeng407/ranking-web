@@ -22409,6 +22409,10 @@ input[type=color].form-control:disabled {
   width: 100%;
 }
 
+.w-auto {
+  width: auto;
+}
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }

@@ -25,13 +25,22 @@
                                         @method('put')
                                         <div class="form-group">
                                             <label for="name">{{ __('Avatar') }}</label>
-                                            <div class="avatar">
-                                                <img :src="avatarUrl" class="cursor-pointer" alt="{{ __('Avatar') }}"
-                                                    @click="uploadAvatar">
-                                                <input type="file" id="avatar-upload" class=" d-none" name="avatar"
-                                                    @change="handleAvatarChange">
+                                            <div class="d-flex w-100">
+                                                <div class="w-25">
+                                                    <div class="avatar">
+                                                        <img :src="avatarUrl" class="cursor-pointer" alt="{{ __('Avatar') }}"
+                                                            @click="uploadAvatar">
+                                                        <input type="file" id="avatar-upload" class=" d-none" name="avatar"
+                                                            @change="handleAvatarChange">
+                                                    </div>
+                                                </div>
+                                                <div class="w-auto pl-3">
+                                                    <img :src="avatarUrl" class="cursor-pointer w-100" style="max-height: 300px" alt="{{ __('Avatar') }}"
+                                                        @click="uploadAvatar">
+                                                </div>
                                             </div>
-                                            <button type="submit" class="btn btn-primary"
+                                            
+                                            <button type="submit" class="btn btn-primary m-1"
                                                 :disabled="!isAvatarChanged">{{ __('Update Avatar') }}</button>
                                         </div>
 
@@ -54,7 +63,7 @@
                                                 class="form-text text-muted">{{ __('nickname_update_rate') }}&nbsp;(@{{ nicknameLength }}
                                                 / @{{ nicknameMaxLength }})</small>
 
-                                            <button type="submit" class="btn btn-primary"
+                                            <button type="submit" class="btn btn-primary m-1 p-1"
                                                 :disabled="!isNicknameChanged">{{ __('Update Nickname') }}</button>
                                         </div>
                                     </form>
@@ -84,6 +93,7 @@
                     <div class="card mr-4 mb-4">
                         <div class="card-header">{{ __('Change Password') }}</div>
                         <div class="card-body">
+                            <div class="row">
                             <div class="col-6">
                                 <form method="POST" action="{{route('profile.update.password')}}">
                                     @csrf
@@ -113,6 +123,7 @@
                                     </div>
                                     <button type="submit" class="btn btn-primary">{{ __('Update Password') }}</button>
                                 </form>
+                            </div>
                             </div>
                         </div>
 
