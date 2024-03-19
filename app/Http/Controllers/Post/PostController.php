@@ -22,9 +22,17 @@ class PostController extends Controller
         /** @see PostPolicy::update() */
         $this->authorize('update', $post);
 
+        $config = [
+            'post_max_element_count' => config('setting.post_max_element_count'),
+            'post_title_size' => config('setting.post_title_size'),
+            'post_content_size' => config('setting.post_content_size'),
+            'element_title_size' => config('setting.element_title_size'),
+        ];
+
         return view('account.post.edit', [
             'serial' => $post->serial,
-            'post' => $post
+            'post' => $post,
+            'config' => $config,
         ]);
     }
 

@@ -193,8 +193,7 @@
                       </ValidationProvider>
                       <div v-else>
                         <input class="form-control" disabled="disabled" :value="$t('post_policy.' + post.policy)">
-                        <small class="form-text text-muted" v-if="post.policy === 'public'">{{
-        $t('edit_post.at_least_element_number_hint') }}</small>
+                        <small class="form-text text-muted" v-if="post.policy === 'public'">{{$t('edit_post.at_least_element_number_hint') }}</small>
                       </div>
                     </div>
                   </div>
@@ -308,8 +307,6 @@
                     <!-- youtube video editor -->
                     <div class="card-body">
                       <!--title edit-->
-                      <!-- <input class="form-control-plaintext bg-light cursor-pointer p-2" type="text" :value="element.title"
-                        :maxlength="config.element_title_size" @change="updateElementTitle(element.id, $event)"> -->
                       <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
                         :maxlength="config.element_title_size" rows="4" style="resize: none;"
                         @change="updateElementTitle(element.id, $event)"></textarea>
@@ -527,7 +524,6 @@
       </div>
     </div>
   </div>
-  </div>
 </template>
 
 <script>
@@ -535,7 +531,6 @@ import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
 import Swal from 'sweetalert2';
 import UploadIcon from './partials/UploadIcon.vue';
-import { config } from 'vue/types/umd';
 
 
 export default {
