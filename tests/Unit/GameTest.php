@@ -73,7 +73,7 @@ class GameTest extends TestCase
         $post->post_policy->save();
 
         $res = $this->get(route('api.game.next-round', $game->serial));
-        \Log::debug($res->content());
+        logger($res->content());
         $res->assertStatus(403);
     }
 
