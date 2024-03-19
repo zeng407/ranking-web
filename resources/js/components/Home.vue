@@ -56,7 +56,7 @@ export default {
       };
       // Remove null values from the query
       query = Object.fromEntries(Object.entries(query).filter(([_, v]) => v !== null && v !== ''));
-      window.location.hre = '?' + new URLSearchParams(query).toString();
+      window.location.href = '?' + new URLSearchParams(query).toString();
     },
     addTag: function (tag) {
       this.filters.keyword = tag;
