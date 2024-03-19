@@ -14,9 +14,8 @@
       <!--left part-->
       <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
         <div class="card game-player left-player" id="left-player">
-          <div v-if="isImageSource(le)" @click="clickImage"
-            :style="{ backgroundImage: 'url(' + le.thumb_url + ')', height: this.elementHeight + 'px' }"
-            class="game-image">
+          <div class="game-image-container" v-if="isImageSource(le)">
+          <img class="game-image" @click="clickImage" :src="le.thumb_url" :style="{height: this.elementHeight + 'px'}">
           </div>
           <div class="d-flex" v-if="isYoutubeSource(le)" @mouseover="videoHoverIn(le, re)"
             @mouseleave="videoHoverOut(le, re)">
@@ -65,9 +64,12 @@
       <!--right part-->
       <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
-          <div v-if="isImageSource(re)" @click="clickImage"
+          <!-- <div v-if="isImageSource(re)" @click="clickImage"
             :style="{ backgroundImage: 'url(' + re.thumb_url + ')', height: this.elementHeight + 'px' }"
-            class="game-image"></div>
+            class="game-image"></div> -->
+          <div v-if="isImageSource(re)" class="game-image-container">
+            <img class="game-image" @click="clickImage" :src="re.thumb_url" :style="{height: this.elementHeight + 'px'}">
+          </div>
           <div class="d-flex" v-else-if="isYoutubeSource(re)" @mouseover="videoHoverIn(re, le)"
             @mouseleave="videoHoverOut(re, le)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
@@ -140,14 +142,14 @@
                   </div>
                   <div class="row no-gutters">
                     <div class="col-6">
-                      <div
-                        :style="{ 'background': 'url(' + post.image1.url + ')', 'width': '100%', 'height': '300px', 'background-repeat': 'no-repeat', 'background-size': 'cover', 'background-position': 'center center', 'display': 'flex' }">
+                      <div class="post-image-container">
+                        <img :src="post.image1.url"></img>
                       </div>
                       <h5 class="text-center mt-1 p-1">{{ post.image1.title }}</h5>
                     </div>
                     <div class="col-6">
-                      <div
-                        :style="{ 'background': 'url(' + post.image2.url + ')', 'width': '100%', 'height': '300px', 'background-repeat': 'no-repeat', 'background-size': 'cover', 'background-position': 'center center', 'display': 'flex' }">
+                      <div class="post-image-container">
+                        <img :src="post.image2.url"></img>
                       </div>
                       <h5 class="text-center mt-1 p-1">{{ post.image2.title }}</h5>
                     </div>
@@ -201,6 +203,8 @@
 </template>
 
 <script>
+import { post } from 'jquery';
+
 const MD_WIDTH_SIZE = 768;
 export default {
   mounted() {
@@ -517,14 +521,23 @@ export default {
       // nothing
     },
     clickImage(event) {
+      // const obj = $(event.target);
+      // const size = obj.css('background-size');
+      // if (size === 'contain') {
+      //   obj.css('background-size', 'cover');
+      // } else if (size === 'cover') {
+      //   obj.css('background-size', 'contain');
+      // } else {
+      //   obj.css('background-size', 'contain');
+      // }
       const obj = $(event.target);
-      const size = obj.css('background-size');
+      const size = obj.css('object-fit');
       if (size === 'contain') {
-        obj.css('background-size', 'cover');
+        obj.css('object-fit', 'cover');
       } else if (size === 'cover') {
-        obj.css('background-size', 'contain');
+        obj.css('object-fit', 'contain');
       } else {
-        obj.css('background-size', 'contain');
+        obj.css('object-fit', 'contain');
       }
     },
     isImageSource: function (element) {
