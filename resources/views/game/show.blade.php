@@ -4,6 +4,18 @@
     'ogImage' => $element->thumb_url,
     'ogDescription' => $post->description])
 
+@section('header')
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "NewsArticle",
+        "headline": "{{get_page_title($post->title)}}",
+        "datePublished": "{{$post->created_at->toIso8601String()}}",
+        "dateModified": "{{$post->updated_at->toIso8601String()}}"
+    }
+    </script>
+@endsection
+
 @section('content')
     <game
         post-serial="{{$serial}}"

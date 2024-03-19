@@ -24,13 +24,11 @@
     <meta name="description" content="{{ get_page_description($post ?? null) }}">
     <meta property="og:site_name" content="{{ get_page_title($ogTitle ?? null) }}" />
     <meta property="og:title" content="{{ get_page_title($ogTitle ?? null) }}" />
-    <meta property="og:image" content="{{ $ogImage ?? asset('/storage/logo.png') }}" />
+    <meta property="og:image" content="{{ $ogImage ?? asset('/storage/og-image.jpeg') }}" />
     <meta property="og:description" content="{{ $ogDescription ?? get_page_description($post ?? null) }}" />
     <link rel="icon" href="/favicon.ico">
 
-
     @yield('header')
-
     {{-- CSRF Token --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -50,12 +48,13 @@
     <div itemscope itemtype="https://schema.org/WebSite">
         <meta itemprop="url" content="{{ config('app.url') }}" />
         <meta itemprop="name" content="{{ config('app.name') }}" />
+        <meta itemprop="alternateName" content="{{config('app.short_name')}}"/>
     </div>
 
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm">
             <div class="container-fluid">
-                <a class="navbar-brand" href="{{ url('/') }}">
+                <a class="navbar-brand" href="{{ route('home') }}">
                     {{ config('app.short_name') }}
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse"

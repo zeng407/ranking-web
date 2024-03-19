@@ -36,7 +36,7 @@ Route::get('/lang/{locale}', function($locale){
     return redirect()->home();
 })->name('lang');
 
-Route::get('', [HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('post/{post:serial}/game', [GameController::class, 'show'])->name('game.show');
 Route::get('post/{post:serial}/rank', [GameController::class, 'rank'])->name('game.rank');
 

@@ -27,6 +27,13 @@ class GameService
         return $elements;
     }
 
+    public function setCandidates(Game $game, string $candidates)
+    {
+        $game->update([
+            'candidates' => $candidates
+        ]);
+    }
+
     public function createGame(Post $post, $elementCount): Game
     {
         /** @var Game $game */
