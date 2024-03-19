@@ -53,5 +53,6 @@
     "game.cancel": "Cancel",
 
     "total elements": "total materials : {count}",
-    "report_comment_other_reason_required": "You need to write something!"
+    "report_comment_other_reason_required": "You need to write something!",
+    "Max :number elements": "Max {number} elements"
 }

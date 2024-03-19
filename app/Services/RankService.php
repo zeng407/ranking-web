@@ -37,7 +37,7 @@ class RankService
 
     public function createElementRank(Game $game, Element $element)
     {
-        \Log::debug("handle GameElementVoted $element->id");
+        logger("handle GameElementVoted $element->id");
         $post = $game->post;
         $topRankCounts = Game::where('games.post_id', $post->id)
             ->whereHas('game_1v1_rounds', function ($query) use ($element) {

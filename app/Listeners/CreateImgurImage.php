@@ -54,16 +54,16 @@ class CreateImgurImage implements ShouldQueue
         
         $element = $event->getElement();
         if(!$element){
-            logger('Element have been deleted');
+            \Log::info('Element have been deleted');
             return;
         }
 
         $post = $event->getPost();
         if(!$post->fresh()){
-            logger('Post have been deleted');
+            \Log::info('Post have been deleted');
             return;
         }
-        logger('[CreateImgurImage] listener handle', ['element_id' => $element->id, 'post_id' => $post->id]);
+        \Log::info('[CreateImgurImage] listener handle', ['element_id' => $element->id, 'post_id' => $post->id]);
         
         if(!$post->imgur_album){
             throw new \Exception("Post has no imgur album");
@@ -77,7 +77,7 @@ class CreateImgurImage implements ShouldQueue
         );
 
         if (!isset($res['success']) || !$res['success']) {
-            logger('Failed to upload image', ['res' => $res]);
+            \Log::error('Failed to upload image', ['res' => $res]);
             throw new \Exception('Failed to upload image');
         }
 

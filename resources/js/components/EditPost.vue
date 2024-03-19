@@ -276,7 +276,7 @@
 
             <h2 class="mt-5 mb-3"><i class="fa-solid fa-gear"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
 
-            <p>{{ $t('Max 64 elements') }}</p>
+            <p>{{ $t('Max :number elements',{ number: config.post_max_element_count }) }}</p>
             <p>{{ $t('total elements', { count: totalRow }) }}</p>
 
             <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
@@ -296,13 +296,13 @@
                   <div class="card mb-3" v-show="isYoutubeSource(element)">
                     <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
                       :ref="element.id" @ready="doPlay(element)" :player-vars="{
-        controls: 1,
-        autoplay: 0,
-        start: element.video_start_second,
-        end: element.video_end_second,
-        rel: 0,
-        origin: host
-      }"></youtube>
+                      controls: 1,
+                      autoplay: 0,
+                      start: element.video_start_second,
+                      end: element.video_end_second,
+                      rel: 0,
+                      origin: host
+                    }"></youtube>
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
                       v-show="isYoutubeSource(element) && !element.loadedVideo">
                     <!-- youtube video editor -->
@@ -535,6 +535,7 @@ import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
 import Swal from 'sweetalert2';
 import UploadIcon from './partials/UploadIcon.vue';
+import { config } from 'vue/types/umd';
 
 
 export default {

@@ -25,7 +25,7 @@ class RankScheduleExecutor
     public function createRankReports()
     {
         Post::eachById(function (Post $post, $count) {
-            \Log::debug("[createRankReport] post {$post->id} {$post->serial}");
+            logger("[createRankReport] post {$post->id} {$post->serial}");
             $this->rankService->createRankReport($post);
         });
 

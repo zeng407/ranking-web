@@ -22,7 +22,7 @@ class GameElementVoted
      */
     public function __construct(Game $game, Element $element)
     {
-        \Log::debug("GameElementVoted $element->id");
+        logger("GameElementVoted $element->id");
         $this->element = $element;
         $this->game = $game;
     }

@@ -46,25 +46,25 @@ class ElementService
 
     public function massStore(string $sourceUrl, string $path, Post $post, $params = []): ?Element
     {
-        \Log::debug("guess {$sourceUrl} ...");
+        logger("guess {$sourceUrl} ...");
         $guess = new ElementSourceGuess($sourceUrl);
         if ($guess->isImage) {
-            \Log::debug("got Image");
+            logger("got Image");
             return $this->storeImage($sourceUrl, $path, $post, $params);
         }
 
         if ($guess->isVideo) {
-            \Log::debug("got Video");
+            logger("got Video");
             return $this->storeVideo($sourceUrl, $path, $post, $params);
         }
 
         if ($guess->isYoutube) {
-            \Log::debug("got Youtube");
+            logger("got Youtube");
             return $this->storeYoutubeVideo($sourceUrl, $post, $params);
         }
 
         if ($guess->isGFY) {
-            \Log::debug("got GFY");
+            logger("got GFY");
             return $this->storeGfycat($sourceUrl, $post, $params);
         }
 
@@ -298,7 +298,7 @@ class ElementService
             //video/*
 
             $headers = get_headers($url, true);
-            \Log::debug($headers);
+            logger($headers);
             return isset($headers['Content-Type'])
                 && explode('/', $headers['Content-Type'])[0] === 'video';
         } catch (\Exception $exception) {

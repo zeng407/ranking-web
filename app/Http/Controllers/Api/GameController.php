@@ -88,7 +88,7 @@ class GameController extends Controller
         $game = $this->getGame($request->input('game_serial'));
         $request->validate([
             'winner_id' => ['required', 'different:loser_id', new GameCandicateRule($game)],
-            'loser_id' => ['required', 'different:winner', new GameCandicateRule($game)]
+            'loser_id' => ['required', 'different:winner_id', new GameCandicateRule($game)]
         ]);
 
         /**

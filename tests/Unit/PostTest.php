@@ -153,7 +153,7 @@ class PostTest extends TestCase
 
         $path = $res->json('path');
         Storage::disk()->assertExists($path);
-        \Log::debug($res->content());
+        logger($res->content());
         $this->assertEquals($post->elements()->first()->id, $res->json('data.id'));
         $this->assertEquals($res->json('data.type'), ElementType::IMAGE);
     }

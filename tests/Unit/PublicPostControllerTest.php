@@ -42,4 +42,26 @@ class PublicPostControllerTest extends TestCase
             'post_id' => $post->id,
         ]);
     }
+
+    public function test_report_comment()
+    {
+        
+        $user = User::factory()->create();
+        $comment = Comment::factory()->has(Post::factory(), 'posts')->create();
+        $reason = 'Test report reason';
+        $post = $comment->getPost();
+        $this->be($user);
+
+        $response = $this->post(route('api.public-post.comment.report', [$post->serial, $comment->id]), [
+            'reason' => $reason
+        ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('reported_comments', [
+            'comment_id' => $comment->id,
+            'reason' => $reason,
+            'reporter_id' => $user->id,
+        ]);
+    }
 }

@@ -104,7 +104,7 @@ class CommentBuilder
             'content' => $this->content,
             'label' => $this->getLabel(),
             'anonymous_mode' => $this->getAnonymousMode(),
-            'delete_hash' => Uuid::uuid4(),
+            'delete_hash' => Uuid::uuid4()->toString(),
             'ip' => $this->getIp()
         ]);
     }

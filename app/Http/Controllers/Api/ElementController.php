@@ -42,7 +42,7 @@ class ElementController extends Controller
             return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
         }
 
-        $path = Auth::id() . '/' . $request->input('post_serial');
+        $path = $request->input('post_serial');
         $element = $this->elementService->storePublicImage($request->file('file'), $path, $post);
         return PostElementResource::make($element);
     }
@@ -92,7 +92,7 @@ class ElementController extends Controller
 
         // check elements count
         if ($post->elements()->count() + $urlCount > config('setting.post_max_element_count')) {
-            \Log::debug("{$post->serial} OVER_ELEMENT_SIZE");
+            logger("{$post->serial} OVER_ELEMENT_SIZE");
             return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
         }
 
@@ -110,8 +110,8 @@ class ElementController extends Controller
                     $elementParams['title'] = mb_substr($title,0,config('setting.element_title_size'));
                 }
                 $element = $this->elementService->massStore($url, $path, $post, $elementParams);
-                \Log::debug("massStore return");
-                \Log::debug($element);
+                logger("massStore return");
+                logger($element);
                 if (!$element) {
                     $errors[] = $url;
                     continue;
@@ -124,7 +124,7 @@ class ElementController extends Controller
         }
 
         if ($elements === []) {
-            \Log::debug("NO_ELEMENT_CREATED");
+            logger("NO_ELEMENT_CREATED");
             return api_response(ApiResponseCode::NO_ELEMENT_CREATED, 422, [
                 'error_url' => head($errors),
                 'error_urls' => $errors
