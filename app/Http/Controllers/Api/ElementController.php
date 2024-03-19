@@ -42,7 +42,7 @@ class ElementController extends Controller
             return api_response(ApiResponseCode::OVER_ELEMENT_SIZE, 422);
         }
 
-        $path = Auth::id() . '/' . $request->input('post_serial');
+        $path = $request->input('post_serial');
         $element = $this->elementService->storePublicImage($request->file('file'), $path, $post);
         return PostElementResource::make($element);
     }
