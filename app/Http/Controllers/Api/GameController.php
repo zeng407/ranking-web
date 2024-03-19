@@ -11,6 +11,7 @@ use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
 use App\Models\Game1V1Round;
 use App\Models\Post;
+use App\Rules\GameCandicateRule;
 use App\Rules\GameElementRule;
 use App\Services\GameService;
 use App\Services\RankService;
@@ -45,6 +46,7 @@ class GameController extends Controller
         $this->authorize('play', $game);
 
         $elements = $this->gameService->takeGameElements($game, 2);
+        $this->gameService->setCandidates($game, $elements->pluck('id')->implode(','));
 
         return GameRoundResource::make($game, $elements);
     }
@@ -78,14 +80,16 @@ class GameController extends Controller
     {
         $request->validate([
             'game_serial' => 'required',
-            'winner_id' => ['required'],
-            'loser_id' => ['required'],
         ]);
 
         //todo lock transaction
 
         /** @var Game $game */
-        $game = $this->getGame($request->game_serial);
+        $game = $this->getGame($request->input('game_serial'));
+        $request->validate([
+            'winner_id' => ['required', 'different:loser_id', new GameCandicateRule($game)],
+            'loser_id' => ['required', 'different:winner', new GameCandicateRule($game)]
+        ]);
 
         /**
          * @see GamePolicy::play()

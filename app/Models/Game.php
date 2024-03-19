@@ -18,7 +18,8 @@ class Game extends Model
      */
     protected $fillable = [
         'serial',
-        'element_count'
+        'element_count',
+        'candidates',
     ];
 
     public function post()
