@@ -189,13 +189,13 @@ class GameTest extends TestCase
 
         $log['winner'][$winner]++;
         $log['loser'][$loser]++;
-
         $data = [
             'game_serial' => $game->serial,
             'winner_id' => $winner,
             'loser_id' => $loser,
         ];
         session(['key' => 'value']);
+        logger($data);
         $res = $this->post(route('api.game.vote', $data));
         $res->assertOk();
 

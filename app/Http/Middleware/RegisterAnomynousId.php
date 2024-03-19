@@ -19,8 +19,8 @@ class RegisterAnomynousId
     {
         $anonymousId = session()->get('anonymous_id');
         if($anonymousId == null){
-            $anonymousId = Uuid::uuid4();
-            logger('[RegisterAnomynousId] generated new anonymous id', ['anonymousId' => $anonymousId->toString()]);
+            $anonymousId = Uuid::uuid4()->toString();
+            logger('[RegisterAnomynousId] generated new anonymous id', ['anonymousId' => $anonymousId]);
             session()->put('anonymous_id', $anonymousId);
         }
         return $next($request);

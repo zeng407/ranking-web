@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @mixin IdeHelperCommentAbuseReport
  */
-class CommentAbuseReport extends Model
+class ReportedComment extends Model
 {
     use HasFactory;
 

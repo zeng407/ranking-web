@@ -47,7 +47,7 @@ class Comment extends Model
 
     public function abuse_reports()
     {
-        return $this->hasMany(CommentAbuseReport::class);
+        return $this->hasMany(ReportedComment::class);
     }
 
     /**

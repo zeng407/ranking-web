@@ -39,7 +39,7 @@ class GameService
     {
         /** @var Game $game */
         $game = $post->games()->create([
-            'serial' => Uuid::uuid1(),
+            'serial' => Uuid::uuid1()->toString(),
             'element_count' => $elementCount
         ]);
 

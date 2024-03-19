@@ -17,7 +17,7 @@ class CommentFactory extends Factory
             'user_id' => function () {
                 return \App\Models\User::factory()->create()->id;
             },
-            'delete_hash' => Uuid::uuid4(),
+            'delete_hash' => Uuid::uuid4()->toString(),
             'anonymous_id' => $this->faker->uuid,
             'nickname' => $this->faker->name,
             'ip' => $this->faker->ipv4,
