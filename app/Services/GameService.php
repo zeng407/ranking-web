@@ -12,6 +12,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
 use Illuminate\Http\Request;
+use Ramsey\Uuid\Uuid;
 
 class GameService
 {
@@ -38,7 +39,7 @@ class GameService
     {
         /** @var Game $game */
         $game = $post->games()->create([
-            'serial' => \Str::random(8),
+            'serial' => Uuid::uuid1(),
             'element_count' => $elementCount
         ]);
 
