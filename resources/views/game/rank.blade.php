@@ -174,7 +174,7 @@
                                     </template>
                                 </div>
                                 {{-- comment --}}
-                                <p class="break-all white-space-pre-line overflow-scroll" style="max-height: 200px;">@{{comment.content}}</p>
+                                <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">@{{comment.content}}</p>
                                 {{-- timestamp --}}
                                 <div class="text-right text-muted">
                                     @{{comment.created_at | datetime}}
@@ -224,7 +224,7 @@
                             </div>
 
                             {{-- comment --}}
-                            <p class="break-all white-space-pre-line overflow-scroll" style="max-height: 200px;">@{{comment.content}}</p>
+                            <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">@{{comment.content}}</p>
                         </div>
                         <hr class="my-4">
                     </div>
