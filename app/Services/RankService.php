@@ -20,7 +20,7 @@ class RankService
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
-            ->orderBy('win_position')
+            ->orderBy('rank')
             ->paginate($limit);
 
         return $reports;
@@ -157,8 +157,8 @@ class RankService
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
-            ->orderByDesc('final_win_rate')
             ->orderByDesc('win_rate')
+            ->orderByDesc('final_win_rate')
             ->eachById(function (RankReport $rankReport, $index) use ($post) {
                 $rankReport->update([
                     'rank' => $index + 1
