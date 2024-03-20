@@ -19,14 +19,14 @@ class CreateImgurImage implements ShouldQueue
      *
      * @var int
      */
-    public $tries = 15;
+    public $tries = 5;
 
     /**
      * The number of seconds to wait before retrying the job.
      *
      * @var int
      */
-    public $backoff = 300;
+    public $backoff = 1200;
 
     /**
      * Create the event listener.
@@ -63,6 +63,12 @@ class CreateImgurImage implements ShouldQueue
             \Log::info('Post have been deleted');
             return;
         }
+
+        if($element->imgur_image){
+            \Log::info('Element already have imgur image', ['element_id' => $element->id, 'post_id' => $post->id]);
+            return;
+        }
+
         \Log::info('[CreateImgurImage] listener handle', ['element_id' => $element->id, 'post_id' => $post->id]);
         
         if(!$post->imgur_album){

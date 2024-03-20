@@ -87,9 +87,6 @@
                             <h2 class="text-left">{{ $rank->rank }}</h2>
                             <div class="text-center d-none d-md-block">{{ $rank->element->title }}</div>
                             <div class="text-right">
-                                @if($rank->final_win_rate)
-                                    {{ __('rank.win_at_final') }}:&nbsp;{{ round($rank->final_win_rate,1) }}%<br>
-                                @endif
                                 @if($rank->win_rate)
                                     {{ __('rank.win_rate') }}:&nbsp;{{ round($rank->win_rate,1) }}%
                                 @else
@@ -152,7 +149,7 @@
                             <div class="comment-container">
                                 {{--nickname--}}
                                 <div class="d-flex justify-content-between">
-                                    <span class="text-black-50 font-size-large" style="overflow-wrap:anywhere"><small>@{{ comment.nickname }}</small></span>
+                                    <span class="text-black-50 font-size-large" style="overflow-wrap:anywhere"><h5>@{{ comment.nickname }}</h5></span>
                                     <div class="ml-auto">
                                         <div class="text-align-end">
                                             <div class="dropdown">
@@ -168,11 +165,11 @@
                                     </div>
                                 </div>
                                 {{-- champions --}}
-                                <div class="overflow-hidden">
+                                <h5 class="overflow-hidden">
                                     <template v-for="champion in comment.champions">
-                                        <span class="badge badge-secondary mr-1 mb-1" :title="champion">@{{champion}}</span>
+                                        <h5 class="badge badge-secondary mr-1 mb-1" :title="champion">@{{champion}}</h5>
                                     </template>
-                                </div>
+                                </h5>
                                 {{-- comment --}}
                                 <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">@{{comment.content}}</p>
                                 {{-- timestamp --}}
@@ -195,7 +192,7 @@
                                 
                                 <div>
                                     {{--nickname--}}
-                                    <span class="text-black-50 font-size-large text-break"><small> @{{ comment.nickname }}</small></span>
+                                    <span class="text-black-50 font-size-large text-break"><h5> @{{ comment.nickname }}</h5></span>
                                     {{-- timestamp --}}
                                     <div class="text-muted">
                                         @{{comment.created_at | datetime}}
@@ -217,11 +214,11 @@
                             </div>
                                 
                             {{-- champions --}}
-                            <div class="overflow-hidden">
+                            <h5 class="overflow-hidden">
                                 <template v-for="champion in comment.champions">
-                                    <span class="badge badge-secondary mr-1 mb-1" :title="champion">@{{champion}}</span>
+                                    <h5 class="badge badge-secondary mr-1 mb-1" :title="champion">@{{champion}}</h5>
                                 </template>
-                            </div>
+                            </h5>
 
                             {{-- comment --}}
                             <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">@{{comment.content}}</p>
@@ -244,7 +241,7 @@
                     <div class="row">
                         {{-- comment input --}}
                         <div class="col-12">
-                            {{__('Nickname')}}: <span class="text-black-50 font-size-large text-break"><small>@{{profile.nickname}}</small></span>
+                            {{__('Nickname')}}: <span class="text-black-50 font-size-large text-break"><h5>@{{profile.nickname}}</h5></span>
                             <div class="overflow-hidden" v-if="profile.champions.length > 0">
                                 {{__('Vote result')}}:
                                 {{-- champions --}}

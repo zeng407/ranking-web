@@ -15,7 +15,8 @@
       <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
         <div class="card game-player left-player" id="left-player">
           <div class="game-image-container" v-if="isImageSource(le)">
-          <img class="game-image" @click="clickImage" :src="le.thumb_url" :style="{height: this.elementHeight + 'px'}">
+            <img class="game-image" @click="clickImage" :src="le.thumb_url" :style="{height: this.elementHeight + 'px'}">
+
           </div>
           <div class="d-flex" v-if="isYoutubeSource(le)" @mouseover="videoHoverIn(le, re)"
             @mouseleave="videoHoverOut(le, re)">
@@ -64,10 +65,7 @@
       <!--right part-->
       <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
-          <!-- <div v-if="isImageSource(re)" @click="clickImage"
-            :style="{ backgroundImage: 'url(' + re.thumb_url + ')', height: this.elementHeight + 'px' }"
-            class="game-image"></div> -->
-          <div v-if="isImageSource(re)" class="game-image-container">
+          <div class="game-image-container" v-if="isImageSource(re)">
             <img class="game-image" @click="clickImage" :src="re.thumb_url" :style="{height: this.elementHeight + 'px'}">
           </div>
           <div class="d-flex" v-else-if="isYoutubeSource(re)" @mouseover="videoHoverIn(re, le)"

@@ -406,7 +406,7 @@
                 <tr>
                   <th scope="col">#</th>
                   <th scope="col" style="width: 70%"></th>
-                  <th scope="col">{{ $t('edit_post.rank.win_at_final') }}</th>
+
                   <th scope="col">{{ $t('edit_post.rank.win_rate') }}</th>
                 </tr>
               </thead>
@@ -432,7 +432,6 @@
                       <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
                     </div>
                   </td>
-                  <td>{{ rank.final_win_rate | percent }}</td>
                   <td>{{ rank.win_rate | percent }}</td>
                 </tr>
               </tbody>

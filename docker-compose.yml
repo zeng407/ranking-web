@@ -25,6 +25,7 @@ services:
             - mysql
             - redis
             - minio
+            - selenium
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -49,6 +50,16 @@ services:
                 - '-p${DB_PASSWORD}'
             retries: 3
             timeout: 5s
+    mysql_test:
+        image: 'mysql/mysql-server:8.0'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_DATABASE: '${DB_DATABASE}'
+            MYSQL_USER: '${DB_USERNAME}'
+            MYSQL_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        networks:
+            - sail
     redis:
         image: 'redis:alpine'
         ports:
@@ -85,6 +96,14 @@ services:
                 - 'http://localhost:9000/minio/health/live'
             retries: 3
             timeout: 5s
+    selenium:
+        image: seleniarm/standalone-chromium
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        volumes:
+            - '/dev/shm:/dev/shm'
+        networks:
+            - sail
 networks:
     sail:
         driver: bridge

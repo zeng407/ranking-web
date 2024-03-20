@@ -18,17 +18,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        User::factory(10)->has(
-            Post::factory(rand(2, 5))->has(
+        User::factory(1)->has(
+            Post::factory(11)->has(
                 PostPolicy::factory()->public(),
                 'post_policy'
             )
         )->create();
 
         User::each(function (User $user) {
-            $user->posts()->each(function (Post $post) {
-                Element::factory(rand(4, 32))->hasAttached($post)->create();
-                Element::factory(rand(4, 10))->hasAttached($post)->video()->create();
+            $elements = [128,65,63,32,33,8,7,1,9,0,0];
+            $user->posts()->each(function (Post $post) use( &$elements) {
+                Element::factory(array_shift($elements))->hasAttached($post)->create();
             });
         });
 

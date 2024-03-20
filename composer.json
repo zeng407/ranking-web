@@ -24,6 +24,7 @@
         "brianium/paratest": "^6.8",
         "facade/ignition": "^2.5",
         "fakerphp/faker": "^1.16",
+        "laravel/dusk": "^6.25",
         "laravel/sail": "^1.25",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^5.10",

@@ -20,7 +20,7 @@ class RankService
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
-            ->orderBy('rank')
+            ->orderBy('win_position')
             ->paginate($limit);
 
         return $reports;
