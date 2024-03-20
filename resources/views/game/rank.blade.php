@@ -87,9 +87,6 @@
                             <h2 class="text-left">{{ $rank->rank }}</h2>
                             <div class="text-center d-none d-md-block">{{ $rank->element->title }}</div>
                             <div class="text-right">
-                                @if($rank->final_win_rate)
-                                    {{ __('rank.win_at_final') }}:&nbsp;{{ round($rank->final_win_rate,1) }}%<br>
-                                @endif
                                 @if($rank->win_rate)
                                     {{ __('rank.win_rate') }}:&nbsp;{{ round($rank->win_rate,1) }}%
                                 @else
