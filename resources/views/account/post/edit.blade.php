@@ -8,7 +8,7 @@
 
 @section('content')
     <edit-post
-        :config="{{json_encode($config)}}"`
+        :config="{{json_encode($config)}}"
         play-game-route="{{route('game.show', $serial)}}"
 
         show-post-endpoint="{{route('api.post.show', $serial)}}"

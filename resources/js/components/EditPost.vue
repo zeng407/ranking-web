@@ -532,7 +532,6 @@ import moment from 'moment';
 import Swal from 'sweetalert2';
 import UploadIcon from './partials/UploadIcon.vue';
 
-
 export default {
   mounted() {
     bsCustomFileInput.init();
@@ -723,7 +722,7 @@ export default {
             .then(res => {
             })
             .catch(error => {
-              Swal.showValidationMessage(this.$t(`Request failed`));
+              Swal.showValidationMessage(this.$t('Request failed'));
             });
         },
         allowOutsideClick: () => !Swal.isLoading()
