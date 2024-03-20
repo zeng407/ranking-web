@@ -56,7 +56,7 @@
                             <h2 class="text-left">{{ (int)$index + 2 }}</h2>
                             <div class="text-center d-none d-md-block">{{ $rank->loser->title }}</div>
                             <div class="text-right">
-                                {{ __('Global Rank') }}:&nbsp;{{ $rank->rank ?? __('none') }}
+                                {{ __('Global Rank') }}:&nbsp;{{ $rank->win_position ?? __('none') }}
                             </div>
                         </div>
                         <div class="card-body text-center rank-card">
@@ -84,7 +84,7 @@
                     @foreach ($reports as $index => $rank)
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
-                            <h2 class="text-left">{{ $rank->rank }}</h2>
+                            <h2 class="text-left">{{ $rank->win_position }}</h2>
                             <div class="text-center d-none d-md-block">{{ $rank->element->title }}</div>
                             <div class="text-right">
                                 @if($rank->win_rate)

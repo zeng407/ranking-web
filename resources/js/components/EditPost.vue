@@ -421,7 +421,7 @@
               </tbody>
               <tbody v-if="rank.rankReportData && !loading['LOADING_RANK']">
                 <tr v-for="(rank, index) in rank.rankReportData.data">
-                  <th scope="row">{{ rank.rank }}</th>
+                  <th scope="row">{{ rank.win_position }}</th>
                   <td style="overflow: scroll">
                     <div>
                       <img :src="rank.element.thumb_url" height="300px" :alt="rank.element.title">
