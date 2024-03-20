@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @mixin IdeHelperCommentAbuseReport
+ * @mixin IdeHelperReportedComment
  */
 class ReportedComment extends Model
 {

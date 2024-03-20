@@ -83,6 +83,7 @@ class ElementService
             'path' => $path,
             'source_url' => $url,
             'thumb_url' => $thumb,
+            'thumb2_url' => $thumb,
             'type' => ElementType::IMAGE,
             'title' => mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'))
         ]);
@@ -111,6 +112,7 @@ class ElementService
         }
 
         $title = $params['title'] ?? $fileInfo['filename'];
+        $localUrl = Storage::url($path);
 
         $element = $post->elements()->updateOrCreate([
             'source_url' => $sourceUrl,
@@ -118,6 +120,7 @@ class ElementService
             'path' => $path,
             'source_url' => $sourceUrl,
             'thumb_url' => $sourceUrl,
+            'thumb2_url' => $localUrl,
             'type' => ElementType::IMAGE,
             'title' => $title
         ]);

@@ -30,6 +30,7 @@ class Element extends Model
         'path',
         'source_url',
         'thumb_url',
+        'thumb2_url',
         'title',
         'type',
         'video_source',
