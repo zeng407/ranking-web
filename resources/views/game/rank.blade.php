@@ -133,7 +133,7 @@
 
             {{-- Comment --}}
             <hr class="my-4">
-            <h5>{{ __('Comment') }}(@{{meta.total}})</h5>
+            <h5 class="d-inline">{{ __('Comment') }}(@{{meta.total}})</h5>
             <div class="card mb-4">
                 {{-- Comments --}}
                 <div class="card-body">
@@ -165,16 +165,16 @@
                                     </div>
                                 </div>
                                 {{-- champions --}}
-                                <h5 class="overflow-hidden">
+                                <h5 class="overflow-hidden" v-if="comment.champions.length > 0">
                                     <template v-for="champion in comment.champions">
-                                        <h5 class="badge badge-secondary mr-1 mb-1" :title="champion">@{{champion}}</h5>
+                                        <h5 class="badge badge-secondary mr-1 mb-1 rounded-0" :title="champion">@{{champion}}</h5>
                                     </template>
                                 </h5>
                                 {{-- comment --}}
                                 <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">@{{comment.content}}</p>
                                 {{-- timestamp --}}
                                 <div class="text-right text-muted">
-                                    @{{comment.created_at | datetime}}
+                                    @{{comment.created_at | formNow}}
                                 </div>  
                             </div>
                         </div>
@@ -195,7 +195,7 @@
                                     <span class="text-black-50 font-size-large text-break"><h5> @{{ comment.nickname }}</h5></span>
                                     {{-- timestamp --}}
                                     <div class="text-muted">
-                                        @{{comment.created_at | datetime}}
+                                        @{{comment.created_at | formNow}}
                                     </div>  
                                 </div>
                                 <div class="ml-auto">
@@ -214,7 +214,7 @@
                             </div>
                                 
                             {{-- champions --}}
-                            <h5 class="overflow-hidden">
+                            <h5 class="overflow-hidden" v-if="comment.champions.length">
                                 <template v-for="champion in comment.champions">
                                     <h5 class="badge badge-secondary mr-1 mb-1" :title="champion">@{{champion}}</h5>
                                 </template>
@@ -241,13 +241,13 @@
                     <div class="row">
                         {{-- comment input --}}
                         <div class="col-12">
-                            {{__('Nickname')}}: <span class="text-black-50 font-size-large text-break"><h5>@{{profile.nickname}}</h5></span>
+                            {{__('Nickname')}}: <span class="text-black-50 font-size-large text-break"><h5 class="d-inline">@{{profile.nickname}}</h5></span>
                             <div class="overflow-hidden" v-if="profile.champions.length > 0">
                                 {{__('Vote result')}}:
                                 {{-- champions --}}
                                 <h5 class="d-inline">
                                     <template v-for="champion in profile.champions">
-                                        <span class="badge badge-secondary mr-1 mb-1" :title="champion">@{{champion}}</span>
+                                        <span class="badge badge-secondary mr-1 mb-1 rounded-0" :title="champion">@{{champion}}</span>
                                     </template>
                                 </h5>
                             </div>

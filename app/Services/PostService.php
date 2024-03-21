@@ -99,7 +99,7 @@ class PostService
         return $commentBuilder->build();
     }
 
-    public function getUserLastVotes(Post $post, ?User $user, string $anonymousId, int $number = 3): array
+    public function getUserLastVotes(Post $post, ?User $user, string $anonymousId, int $number = 1): array
     {
         $champions = UserGameResult::where(function ($query) use ($user, $anonymousId) {
             if ($user instanceof User) {

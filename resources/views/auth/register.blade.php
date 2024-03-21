@@ -21,7 +21,8 @@
                                     <input id="name" type="text"
                                         class="form-control @error('name') is-invalid @enderror" name="name"
                                         value="{{ old('name') }}" required autocomplete="name" autofocus maxlength="{{config('setting.user_name_max_size')}}">
-
+                                    <small id="nameHelp" class="form-text text-muted">
+                                        {{ __('Can be modified later') }}
                                     @error('name')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>

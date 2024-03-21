@@ -18,11 +18,12 @@
             <img class="game-image" @click="clickImage" :src="le.thumb_url" :style="{height: this.elementHeight + 'px'}">
 
           </div>
-          <div class="d-flex" v-if="isYoutubeSource(le)" @mouseover="videoHoverIn(le, re)"
+          <div class="d-flex" v-if="isYoutubeSource(le)" @mouseover="videoHoverIn('0', '1')"
             @mouseleave="videoHoverOut(le, re)">
-            <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
+            <youtube :videoId="le.video_id" width="100%" :height="elementHeight" ref="0"
               @ready="doPlay(le, true, 'left')"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id, 
+                  start: le.video_start_second, end: le.video_end_second }">
             </youtube>
           </div>
           <div v-else-if="isVideoSource(le)">
@@ -68,11 +69,11 @@
           <div class="game-image-container" v-if="isImageSource(re)">
             <img class="game-image" @click="clickImage" :src="re.thumb_url" :style="{height: this.elementHeight + 'px'}">
           </div>
-          <div class="d-flex" v-else-if="isYoutubeSource(re)" @mouseover="videoHoverIn(re, le)"
+          <div class="d-flex" v-else-if="isYoutubeSource(re)" @mouseover="videoHoverIn('1', '0')"
             @mouseleave="videoHoverOut(re, le)">
-            <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
+            <youtube :videoId="re.video_id" width="100%" :height="elementHeight" ref="1"
               @ready="doPlay(re, false, 'right')"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id, start: re.video_start_second, end: re.video_end_second }">
             </youtube>
           </div>
           <div v-else-if="isVideoSource(re)">
@@ -326,6 +327,7 @@ export default {
         this.vote(this.le, this.re);
       }
 
+      $('#left-player').css('z-index', '100');
       if (this.isMobileScreen) {
         let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
@@ -371,6 +373,7 @@ export default {
         this.vote(this.re, this.le);
       }
 
+      $('#right-player').css('z-index', '100');
       if (this.isMobileScreen) {
         let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500, () => {
@@ -398,6 +401,7 @@ export default {
     },
     resetPlayerPosition() {
       $('#left-player').hide();
+      $('#left-player').css('z-index', '0');
       $('#left-player').css('left', '0');
       $('#left-player').css('top', '0');
       $('#left-player').css('opacity', '1');
@@ -406,6 +410,7 @@ export default {
       $('#left-player').show();
 
       $('#right-player').hide();
+      $('#right-player').css('z-index', '0');
       $('#right-player').css('left', '0');
       $('#right-player').css('top', '0');
       $('#right-player').css('opacity', '1');
@@ -447,12 +452,16 @@ export default {
       const url = this.getRankRoute.replace('_serial', this.postSerial) + '?g=' + this.gameSerial;
       window.open(url, '_self');
     },
-    getPlayer(element) {
-      return _.get(this.$refs, element.id + '.player', null);
+    getPlayer(ref) {
+      return _.get(this.$refs, ref + '.player', null);
     },
     doPlay(element, loud = false, name) {
-      const player = this.getPlayer(element);
-
+      let player = null;
+      if(name === 'left'){
+        player = this.getPlayer('0');
+      }else{
+        player = this.getPlayer('1');
+      }
       if (player) {
         if (loud) {
           player.unMute();
@@ -460,16 +469,15 @@ export default {
           player.mute();
         }
 
-        // let left player auto play every round
-        if (name === 'left' && this.isLeftPlayerInit === false) {
+        if (name === 'left' && !this.isLeftPlayerInit) {
           this.isLeftPlayerInit = true;
           this.initPlayerEventLister(player);
-        } else if (name === 'right' && this.isRightPlaying === false) {
-          this.isLeftPlayerInit = true
+        } else if (name === 'right' && !this.isRightPlayerInit) {
+          this.isRightPlayerInit = true
           this.initPlayerEventLister(player);
         }
-
-        player.loadVideoById({
+        
+        player.cueVideoById({
           videoId: element.video_id,
           startSeconds: element.video_start_second,
           endSeconds: element.video_end_second
@@ -478,21 +486,30 @@ export default {
     },
     initPlayerEventLister(player) {
       player.addEventListener('onStateChange', (event) => {
+        // -1 – 未啟動
+        // 0 - 已結束
+        // 1 – 播放
+        // 2 – 已暫停
+        // 3 – 緩衝處理中
+        // 5 – 隱藏影片播放器
         if (event.target.getPlayerState() === 0) {
+          player.playVideo();
+        }
+        if (event.target.getPlayerState() === 5) {
           player.playVideo();
         }
       });
     },
     destroyElements() {
       let player = null;
-      player = this.getPlayer(this.le);
+      player = this.getPlayer(0);
       //default left player un-mute
       if (player) {
         player.unMute();
         this.isLeftPlaying = true;
       }
 
-      player = this.getPlayer(this.re);
+      player = this.getPlayer(1);
       if (player) {
         player.mute();
         this.isRightPlaying = false;
@@ -519,15 +536,6 @@ export default {
       // nothing
     },
     clickImage(event) {
-      // const obj = $(event.target);
-      // const size = obj.css('background-size');
-      // if (size === 'contain') {
-      //   obj.css('background-size', 'cover');
-      // } else if (size === 'cover') {
-      //   obj.css('background-size', 'contain');
-      // } else {
-      //   obj.css('background-size', 'contain');
-      // }
       const obj = $(event.target);
       const size = obj.css('object-fit');
       if (size === 'contain') {
@@ -550,9 +558,6 @@ export default {
     isGfycatSource: function (element) {
       return element.type === 'video' && element.video_source === 'gfycat';
     },
-    // isMobileScreen() {
-    //   return this.clientWidth < MD_WIDTH_SIZE;
-    // },
   },
 
   beforeMount() {
