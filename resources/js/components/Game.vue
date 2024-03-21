@@ -14,20 +14,16 @@
       <!--left part-->
       <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
         <div class="card game-player left-player" id="left-player">
-          <div class="game-image-container" v-if="isImageSource(le)">
+          <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
             <img class="game-image" @click="clickImage" :src="le.thumb_url" :style="{height: this.elementHeight + 'px'}">
 
           </div>
-          <div class="d-flex" v-if="isYoutubeSource(le)" @mouseover="videoHoverIn(le, re)"
-            @mouseleave="videoHoverOut(le, re)">
+          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-              @ready="doPlay(le, true, 'left')"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id}">
             </youtube>
           </div>
-          <div v-else-if="isVideoSource(le)">
-            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="le.thumb_url"></video>
-          </div>
+          <video v-else-if="isVideoSource(le)" width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
           <div class="card-body text-center">
             <div class="my-1 font-size-small" style="max-height: 90px" v-if="isMobileScreen">
               <p class="my-1">{{ le.title }}</p>
@@ -65,19 +61,15 @@
       <!--right part-->
       <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
-          <div class="game-image-container" v-if="isImageSource(re)">
+          <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
             <img class="game-image" @click="clickImage" :src="re.thumb_url" :style="{height: this.elementHeight + 'px'}">
           </div>
-          <div class="d-flex" v-else-if="isYoutubeSource(re)" @mouseover="videoHoverIn(re, le)"
-            @mouseleave="videoHoverOut(re, le)">
+          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-              @ready="doPlay(re, false, 'right')"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id}">
             </youtube>
           </div>
-          <div v-else-if="isVideoSource(re)">
-            <video width="100%" :height="elementHeight" loop autoplay muted playsinline :src="re.thumb_url"></video>
-          </div>
+          <video v-else-if="isVideoSource(re)" width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="re.thumb_url"></video>
 
           <!-- reverse when device size width less md(768px)-->
           <div class="card-body text-center"
@@ -296,12 +288,19 @@ export default {
       axios.get(url)
         .then(res => {
           this.game = res.data.data;
+        })
+        .then(() => {
           this.doPlay(this.le, true, 'left');
           this.doPlay(this.re, false, 'right');
         })
         .then(() => {
           this.resetPlayerPosition();
           this.scrollToLastPosition();
+        }).then(() => {
+          setInterval(() => {
+            $('#left-player').show();
+            $('#right-player').show();
+          }, 200);
         });
     },
     leftPlay() {
@@ -325,7 +324,9 @@ export default {
       let sendWinnerData = () => {
         this.vote(this.le, this.re);
       }
-
+      
+      $('#left-player').css('z-index', '100');
+      $('#right-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
         let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
@@ -371,6 +372,8 @@ export default {
         this.vote(this.re, this.le);
       }
 
+      $('#right-player').css('z-index', '100');
+      $('#left-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
         let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500, () => {
@@ -397,13 +400,14 @@ export default {
       }
     },
     resetPlayerPosition() {
+    
       $('#left-player').hide();
       $('#left-player').css('left', '0');
       $('#left-player').css('top', '0');
       $('#left-player').css('opacity', '1');
       $('#left-player').css('scale', '1');
       $('#left-player').removeClass('zoom-in');
-      $('#left-player').show();
+      $('#left-player').css('z-index', '0');
 
       $('#right-player').hide();
       $('#right-player').css('left', '0');
@@ -411,11 +415,12 @@ export default {
       $('#right-player').css('opacity', '1');
       $('#right-player').css('scale', '1');
       $('#right-player').removeClass('zoom-in');
-      $('#right-player').show();
+      $('#right-player').css('z-index', '0');
+
+      $('.game-image-container img').css('object-fit', 'contain');
     },
     scrollToLastPosition() {
       if (this.rememberedScrollPosition !== null) {
-        // console.log(this.rememberedScrollPosition);
         window.scrollTo(0, this.rememberedScrollPosition);
       }
     },
@@ -436,7 +441,7 @@ export default {
           } else {
             this.$cookies.set(this.postSerial, this.gameSerial, "3d");
             this.nextRound();
-            this.destroyElements();
+            this.unMutePlayer();
           }
         });
     },
@@ -452,38 +457,40 @@ export default {
     },
     doPlay(element, loud = false, name) {
       const player = this.getPlayer(element);
-
       if (player) {
         if (loud) {
           player.unMute();
         } else {
           player.mute();
         }
-
-        // let left player auto play every round
-        if (name === 'left' && this.isLeftPlayerInit === false) {
-          this.isLeftPlayerInit = true;
-          this.initPlayerEventLister(player);
-        } else if (name === 'right' && this.isRightPlaying === false) {
-          this.isLeftPlayerInit = true
-          this.initPlayerEventLister(player);
+        this.initPlayerEventLister(player);
+        if(player.getPlayerState() !== 1) {
+          setTimeout(() => {
+            player.loadVideoById({
+            videoId: element.video_id,
+            startSeconds: element.video_start_second,
+            endSeconds: element.video_end_second
+          });
+          }, 200);
         }
 
-        player.loadVideoById({
-          videoId: element.video_id,
-          startSeconds: element.video_start_second,
-          endSeconds: element.video_end_second
-        });
       }
     },
     initPlayerEventLister(player) {
       player.addEventListener('onStateChange', (event) => {
-        if (event.target.getPlayerState() === 0) {
+        let status = event.target.getPlayerState();
+        // -1 – 未啟動
+        // 0 - 已結束
+        // 1 – 播放
+        // 2 – 已暫停
+        // 3 – 緩衝處理中
+        // 5 – 隱藏影片
+        if (status === 0 || status === 5) {
           player.playVideo();
         }
       });
     },
-    destroyElements() {
+    unMutePlayer() {
       let player = null;
       player = this.getPlayer(this.le);
       //default left player un-mute
@@ -515,19 +522,7 @@ export default {
       }
 
     },
-    videoHoverOut(myElement, theirElement) {
-      // nothing
-    },
     clickImage(event) {
-      // const obj = $(event.target);
-      // const size = obj.css('background-size');
-      // if (size === 'contain') {
-      //   obj.css('background-size', 'cover');
-      // } else if (size === 'cover') {
-      //   obj.css('background-size', 'contain');
-      // } else {
-      //   obj.css('background-size', 'contain');
-      // }
       const obj = $(event.target);
       const size = obj.css('object-fit');
       if (size === 'contain') {
@@ -550,9 +545,6 @@ export default {
     isGfycatSource: function (element) {
       return element.type === 'video' && element.video_source === 'gfycat';
     },
-    // isMobileScreen() {
-    //   return this.clientWidth < MD_WIDTH_SIZE;
-    // },
   },
 
   beforeMount() {
