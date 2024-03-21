@@ -997,6 +997,15 @@ export default {
         .then((res) => {
           element[key] = seconds;
           this.$set(this.elements.data, index, element);
+          Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            title: this.$t("Updated!"),
+            toast: true,
+            text: this.$t("The element has been updated."),
+            icon: "success",
+            timer: 3000
+          });
         })
     },
 
