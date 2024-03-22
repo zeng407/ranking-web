@@ -40,6 +40,7 @@ class PublicPostResource extends JsonResource
         return [
             'title' => $this->title,
             'serial' => $this->serial,
+            'is_private' => $this->isPrivate(),
             'description' => $this->description,
             'image1' => [
                 'url' => optional($image1)->thumb_url,

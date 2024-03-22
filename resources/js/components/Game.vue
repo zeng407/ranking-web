@@ -116,7 +116,7 @@
           <div class="modal-header">
             <h5 class="modal-title" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
           </div>
-          <ValidationObserver v-slot="{ invalid }" v-if="post">
+          <ValidationObserver v-slot="{ invalid }">
             <form @submit.prevent>
               <div class="modal-body">
                 <div class="alert alert-danger" v-if="processingGameSerial">
@@ -126,7 +126,13 @@
                     {{ $t('game.continue') }}
                   </span>
                 </div>
-                <div class="card">
+                <div class="alert alert-danger" v-if="error403WhenLoad">
+                  {{ $t('game.403') }}
+                </div>
+                <div class="alert alert-warning" v-if="post && post.is_private">
+                  {{ $t('game.pivate_text') }}
+                </div>
+                <div class="card" v-if="post">
                   <div class="card-header text-center">
                     <h3>{{ post.title }}</h3>
                   </div>
@@ -157,12 +163,12 @@
                     </div>
                   </div>
                 </div>
-                <div class="row mt-2">
+                <div class="row mt-2" v-if="post">
                   <div class="col-12">
                     <ValidationProvider rules="required" v-slot="{ errors }">
                       <div class="input-group mb-3">
                         <div class="input-group-prepend">
-                          <label class="input-group-text" for="elementsCount">{{ $t('game.rounds') }}</label>
+                          <label class="input-group-text" for="elementsCount">{{ $t('Number of participants') }}</label>
                         </div>
                         <select v-model="elementsCount" class="custom-select" id="elementsCount" required>
                           <option value="" disabled selected="selected">{{ $t('game.select') }}</option>
@@ -179,9 +185,10 @@
                   </div>
                 </div>
               </div>
-              <div class="modal-footer mb-sm-0 mb-4">
+
+              <div class="modal-footer mb-sm-0 mb-4" >
                 <a type="submit" class="btn btn-secondary fa-pull-left" href="/">{{ $t('game.cancel') }}</a>
-                <button type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{
+                <button v-if="post" type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{
                   $t('game.start') }}</button>
               </div>
             </form>
@@ -227,6 +234,7 @@ export default {
       rememberedScrollPosition: null,
       isLeftPlayerInit: false,
       isRightPlayerInit: false,
+      error403WhenLoad: false
     }
   },
   computed: {
@@ -260,7 +268,13 @@ export default {
     loadGameSetting: function () {
       axios.get(this.getGameSettingEndpoint)
         .then(res => {
+          this.error403WhenLoad = false;
           this.post = res.data.data;
+        })
+        .catch(error => {
+          if(error.response.status === 403){
+            this.error403WhenLoad = true;
+          }
         });
     },
     createGame: function () {
@@ -272,6 +286,10 @@ export default {
         .then(res => {
           this.gameSerial = res.data.game_serial;
           this.nextRound();
+        }).catch(error => {
+          if(error.response.status === 403){
+            this.error403WhenLoad = true;
+          }
         });
       $('#gameSettingPanel').modal('hide');
     },

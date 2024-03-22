@@ -23,7 +23,9 @@ class LocalePrefixRoute
             if (in_array($locale, config('app.locales'))) {
                 Session::put('locale', $locale);
                 App::setLocale($locale);
-            }                    
+            }else{
+                return redirect()->route('home');
+            }
         }
         return $next($request);
     }

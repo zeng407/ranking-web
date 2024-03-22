@@ -89,6 +89,10 @@ class Post extends Model
     {
         return $this->post_policy->access_policy === PostAccessPolicy::PUBLIC;
     }
+    public function isPrivate()
+    {
+        return $this->post_policy->access_policy === PostAccessPolicy::PRIVATE;
+    }
 
     /**
      * scope
