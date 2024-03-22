@@ -51,6 +51,8 @@
     "game.setting": "Setting",
     "game.start": "Start",
     "game.cancel": "Cancel",
+    "game.403": "Unable to retrieve data, the author may have closed this vote. Please refresh or choose another vote.",
+    "game.pivate_text": "This is your private post, only you can vote.",
 
     "total elements": "total materials : {count}",
     "report_comment_other_reason_required": "You need to write something!",

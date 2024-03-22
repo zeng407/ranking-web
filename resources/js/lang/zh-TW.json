@@ -54,13 +54,15 @@
     "edit_post.info.cancel_save": "取消編輯",
     "You will lose all unsaved changes!": "要取消編輯嗎?",
 
-    "game.rounds": "回合數",
+    "Number of participants": "參賽人數",
     "game.select": "選擇",
     "game.continue": "繼續",
     "game.continue_hint": "繼續上次未完的投票嗎", 
     "game.setting": "設定",
     "game.start": "開始",
     "game.cancel": "回首頁",
+    "game.403": "無法取得資料，作者可能已關閉此投票，請重新整理或選擇其他投票",
+    "game.pivate_text": "此為你的私人投稿，僅你可以進行投票",
 
     "rank.no_rank": "尚未有資料",
     "Are you sure you want to report this comment?": "要檢舉此留言嗎?",
@@ -111,5 +113,6 @@
     "Submit": "送出",
     "Something went wrong. Please try again later.": "發生錯誤，請稍後再試",
     "Reported!": "已送出檢舉",
-    "No comments": "尚無留言"
+    "No comments": "尚無留言",
+    "Oops...": "糟糕..."
 }
