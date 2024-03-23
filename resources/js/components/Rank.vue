@@ -75,7 +75,11 @@ export default {
           content: this.commentInput
         })
           .then(response => {
-            window.location.reload();
+            this.commentInput = '';
+            this.loadCommnets();
+            // Scroll to the comment position
+            const navbarHeight = 60;
+            $("html, body").animate({ scrollTop: $('#comments-total').offset().top - navbarHeight }, 1000);
           })
           .catch(error => {
             console.log(error);

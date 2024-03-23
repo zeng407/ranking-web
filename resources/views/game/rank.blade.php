@@ -14,10 +14,19 @@
     >
         {{-- Main --}}
         <div class="container" v-cloak>
-            <div>
-                <h2>{{ $post->title }}</h2>
-                <p>{{ $post->description }}</p>
+            
+            <div class="row mb-3">
+                <div class="col-auto">
+                    <a class="btn btn-outline-dark btn-sm" href="{{route('home')}}">{{__('rank.return_home')}}&nbsp;<i class="fa-solid fa-home"></i></a>
+                    <a class="btn btn-outline-dark btn-sm ml-auto" href={{route('game.show', $post->serial)}}>{{__('rank.play')}}&nbsp;<i class="fa-solid fa-play"></i></a>
+                    {{-- <button class="btn btn-outline-dark btn-sm">{{__('rank.share')}}&nbsp;<i class="fa-solid fa-share-square"></i></button> --}}
+                </div>
             </div>
+            <hr>
+
+            <h2>{{ $post->title }}</h2>
+            <p>{{ $post->description }}</p>
+
             <b-tabs content-class="mt-3" nav-wrapper-class="@if($gameResult) sticky-top bg-default @endif">
                 @if($gameResult)
                 <b-tab :title="$t('My Rank')" {{request('tab') == 0 ? 'active':''}} @click="clickTab('0')">
@@ -119,21 +128,28 @@
                     <div class="card my-2 card-hover">
                         <div class="card-body text-center rank-card">
                             <div class="align-self-center">
-                                {{ __('rank.no_data') }}
+                                <small>{{ __('rank.no_data') }}</small>
                             </div>
                         </div>
                     </div>
                     @endif
                     {{-- Pagination --}}
-                    <div class="row justify-content-center pt-2">
-                        {{ $reports->appends(request()->except('page'))->appends(['tab'=>1])->links() }}
+                    <div class="d-none d-md-block">
+                        <div class="row justify-content-center pt-2">
+                            {{ $reports->onEachSide(2)->appends(request()->except('page'))->appends(['tab'=>1])->links() }}
+                        </div>
+                    </div>
+                    <div class="d-block d-md-none">
+                        <div class="d-flex justify-content-center pt-2">
+                            @include('layouts.partials.mobile-pagination', ['paginator' => $reports])
+                        </div>
                     </div>
                 </b-tab>
             </b-tabs>
 
             {{-- Comment --}}
             <hr class="my-4">
-            <h5 class="d-inline">{{ __('Comment') }}(@{{meta.total}})</h5>
+            <h5 id="comments-total" class="d-inline">{{ __('Comment') }}(@{{meta.total}})</h5>
             <div class="card mb-4">
                 {{-- Comments --}}
                 <div class="card-body">

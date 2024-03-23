@@ -7,5 +7,13 @@
     "title.rank": "Rank",
     "comment.submit": "Submit",
     "nickname_length": "Nickname must be between 1 and 20 characters",
-    "nickname_update_rate": "Can be changed once per day"
+    "nickname_update_rate": "Can be changed once per day",
+    "home.posts": "Posts",
+    "home.start": "Start",
+    "home.rank": "Ranking",
+    "rank.return_home": "Home",
+    "rank.play": "Start",
+    "rank.share": "Share",
+
+    "":""
 }

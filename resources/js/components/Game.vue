@@ -15,15 +15,17 @@
       <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
         <div class="card game-player left-player" id="left-player">
           <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
-            <img class="game-image" @click="clickImage" :src="le.thumb_url" :style="{height: this.elementHeight + 'px'}">
+            <img class="game-image" @click="clickImage" :src="le.thumb_url"
+              :style="{ height: this.elementHeight + 'px' }">
 
           </div>
           <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id}">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
             </youtube>
           </div>
-          <video v-else-if="isVideoSource(le)" width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
+          <video v-else-if="isVideoSource(le)" width="100%" :height="elementHeight" loop autoplay muted controls
+            playsinline :src="le.thumb_url"></video>
           <div class="card-body text-center">
             <div class="my-1 font-size-small" style="max-height: 90px" v-if="isMobileScreen">
               <p class="my-1">{{ le.title }}</p>
@@ -31,7 +33,7 @@
             <div class="my-1 font-size-small" style="height: 90px" v-else>
               <h5 class="my-1">{{ le.title }}</h5>
             </div>
-            <button class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
+            <button id="left-btn" class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
               @click="leftWin()">Vote
             </button>
             <div class="row" v-if="isYoutubeSource(le)">
@@ -62,14 +64,16 @@
       <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
           <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
-            <img class="game-image" @click="clickImage" :src="re.thumb_url" :style="{height: this.elementHeight + 'px'}">
+            <img class="game-image" @click="clickImage" :src="re.thumb_url"
+              :style="{ height: this.elementHeight + 'px' }">
           </div>
           <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id}">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
             </youtube>
           </div>
-          <video v-else-if="isVideoSource(re)" width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="re.thumb_url"></video>
+          <video v-else-if="isVideoSource(re)" width="100%" :height="elementHeight" loop autoplay muted controls
+            playsinline :src="re.thumb_url"></video>
 
           <!-- reverse when device size width less md(768px)-->
           <div class="card-body text-center"
@@ -80,7 +84,7 @@
             <div class="my-1" style="height: 90px" v-else>
               <h5 class="my-1">{{ re.title }}</h5>
             </div>
-            <button class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
+            <button id="right-btn" class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
               @click="rightWin()">Vote
             </button>
             <div class="row" v-if="isYoutubeSource(re)">
@@ -111,10 +115,13 @@
     <!-- Modal -->
     <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
       aria-labelledby="gameSettingPanelLabel" aria-hidden="true">
-      <div :class="{'modal-dialog' : true, 'modal-lg': !isMobileScreen}">
+      <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
+            <h5 class="modal-title align-self-center" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
+            <a type="submit" class="btn btn-outline-secondary" href="/">{{ $t('game.cancel') }}
+              <i class="fas fa-times"></i>
+              </a>
           </div>
           <ValidationObserver v-slot="{ invalid }">
             <form @submit.prevent>
@@ -152,7 +159,8 @@
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ post.description }}</h5>
                       <div v-if="post.tags.length > 0" class="d-flex flex-wrap">
-                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#{{tag}}</span>
+                        <span class="badge badge-secondary m-1" v-for="tag in post.tags"
+                          style="font-size:medium">#{{ tag }}</span>
                       </div>
                       <span class="mt-2 card-text d-flex justify-content-end">
                         <span class="pr-2">
@@ -186,10 +194,10 @@
                 </div>
               </div>
 
-              <div class="modal-footer mb-sm-0 mb-4" >
-                <a type="submit" class="btn btn-secondary fa-pull-left" href="/">{{ $t('game.cancel') }}</a>
-                <button v-if="post" type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{
-                  $t('game.start') }}</button>
+              <div class="modal-footer mb-sm-0 mb-4">
+                <button v-if="post" type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{$t('game.start') }}
+                  <i class="fas fa-play"></i>
+                </button>
               </div>
             </form>
           </ValidationObserver>
@@ -201,6 +209,7 @@
 
 <script>
 import { post } from 'jquery';
+import Swal from 'sweetalert2';
 
 const MD_WIDTH_SIZE = 768;
 export default {
@@ -272,7 +281,7 @@ export default {
           this.post = res.data.data;
         })
         .catch(error => {
-          if(error.response.status === 403){
+          if (error.response.status === 403) {
             this.error403WhenLoad = true;
           }
         });
@@ -287,7 +296,7 @@ export default {
           this.gameSerial = res.data.game_serial;
           this.nextRound();
         }).catch(error => {
-          if(error.response.status === 403){
+          if (error.response.status === 403) {
             this.error403WhenLoad = true;
           }
         });
@@ -306,19 +315,42 @@ export default {
       axios.get(url)
         .then(res => {
           this.game = res.data.data;
-        })
-        .then(() => {
           this.doPlay(this.le, true, 'left');
           this.doPlay(this.re, false, 'right');
-        })
-        .then(() => {
           this.resetPlayerPosition();
           this.scrollToLastPosition();
-        }).then(() => {
           setInterval(() => {
             $('#left-player').show();
             $('#right-player').show();
           }, 200);
+        })
+        .catch(error => {
+          if (error.response.status === 429) {
+            let timerInterval;
+            Swal.fire({
+              html: this.$t('You have voted too quickly. Please try again later.') + "(<b></b>)",
+              timer: 5000,
+              timerProgressBar: true,
+              icon: "error",
+              didOpen: () => {
+                Swal.showLoading();
+                const timer = Swal.getPopup().querySelector("b");
+                timerInterval = setInterval(() => {
+                  let timeInMs = Swal.getTimerLeft();
+                  let timeInSec = timeInMs / 1000;
+                  timer.textContent = `${timeInSec.toFixed(1)}s`; // toFixed(1) will round to 1 decimal place
+                }, 100);
+              },
+              willClose: () => {
+                clearInterval(timerInterval);
+              }
+            }).then(result => {
+              /* Read more about handling dismissals below */
+              if (result.dismiss === Swal.DismissReason.timer) {
+                this.nextRound();
+              }
+            });
+          }
         });
     },
     leftPlay() {
@@ -342,7 +374,7 @@ export default {
       let sendWinnerData = () => {
         this.vote(this.le, this.re);
       }
-      
+
       $('#left-player').css('z-index', '100');
       $('#right-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
@@ -418,7 +450,7 @@ export default {
       }
     },
     resetPlayerPosition() {
-    
+
       $('#left-player').hide();
       $('#left-player').css('left', '0');
       $('#left-player').css('top', '0');
@@ -461,6 +493,22 @@ export default {
             this.nextRound();
             this.unMutePlayer();
           }
+        })
+        .catch(error => {
+          if (error.response.status === 429) {
+            Swal.fire({
+              icon: 'error',
+              toast: true,
+              text: this.$t('You have voted too quickly. Please try again later.'),
+            });
+            this.resetPlayerPosition();
+            this.scrollToLastPosition();
+            setInterval(() => {
+              $('#left-player').show();
+              $('#right-player').show();
+            }, 200);
+            this.isVoting = false;
+          }
         });
     },
     showGameSettingPanel: function () {
@@ -482,13 +530,13 @@ export default {
           player.mute();
         }
         this.initPlayerEventLister(player);
-        if(player.getPlayerState() !== 1) {
+        if (player.getPlayerState() !== 1) {
           setTimeout(() => {
             player.loadVideoById({
-            videoId: element.video_id,
-            startSeconds: element.video_start_second,
-            endSeconds: element.video_end_second
-          });
+              videoId: element.video_id,
+              startSeconds: element.video_start_second,
+              endSeconds: element.video_end_second
+            });
           }, 200);
         }
 

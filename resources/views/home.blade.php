@@ -1,7 +1,8 @@
 @extends('layouts.app', [
   'title' => __('Home'),
   'ogTitle' => config('app.name'),
-  'ogImage' => asset('/storage/og-image.jpeg')
+  'ogImage' => asset('/storage/og-image.jpeg'),
+  'stickyNav' => 'sticky-top'
   ])
 
 @section('content')
@@ -113,18 +114,18 @@
                 <div class="row">
                   <div class="col-6">
                     <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}" target="_blank">
-                      <i class="fas fa-play"></i> Play
+                      <i class="fas fa-play"></i> {{__('home.start')}}
                     </a>
                   </div>
                   <div class="col-6">
                     <a class="btn btn-secondary btn-block" href="{{route('game.rank', $post['serial']) }}" target="_blank">
-                      <i class="fas fa-trophy"></i> Rank
+                      <i class="fas fa-trophy"></i> {{__('home.rank')}}
                     </a>
                   </div>
                 </div>
                 <span class="mt-2 card-text float-left">
                   <button type="button" class="btn btn-outline-dark btn-sm" v-b-popover.right.click="'{{__('Copied')}}'"
-                    @click="copyGameUrl('{{route('game.show',$post['serial'])}}', $event)">
+                    @click="share('{{route('game.show',$post['serial'])}}', '{{$post['title']}}', '{{$post['description']}}' ,$event)">
                     {{__('Share')}} &nbsp;<i class="fas fa-share-square"></i>
                   </button>
                 </span>
