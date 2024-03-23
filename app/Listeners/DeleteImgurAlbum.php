@@ -34,6 +34,8 @@ class DeleteImgurAlbum implements ShouldQueue
     public function handle(PostDeleted $event)
     {
         logger('[DeleteImgurAlbum] listener handle', ['post_id' => $event->getPost()->id]);
-        $this->imgurService->deleteAlbum($event->getPost()->imgur_album->album_id);
+        if($event->getPost()->imgur_album){
+            $this->imgurService->deleteAlbum($event->getPost()->imgur_album->album_id);
+        }
     }
 }
