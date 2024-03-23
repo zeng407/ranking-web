@@ -62,11 +62,19 @@ export default {
       this.filters.keyword = tag;
       this.loadData();
     },
-    copyGameUrl: function (url, event) {
-      navigator.clipboard.writeText(url);
-      setTimeout(() => {
-        this.$root.$emit('bv::hide::popover');
-      }, 1000);
+    share: function (url, title, description, event) {
+      if (navigator.share) {
+        navigator.share({
+          title: title,
+          text: description,
+          url: url,
+        }).catch(console.error);
+      }else{
+        navigator.clipboard.writeText(url);
+        setTimeout(() => {
+          this.$root.$emit('bv::hide::popover');
+        }, 1000);
+      }
     },
     search: function () {
       this.loadData();

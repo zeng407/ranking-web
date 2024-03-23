@@ -20,7 +20,7 @@
     "My Rank": "我的排名",
     "rank.win_at_final": "冠軍",
     "rank.win_rate": "勝率",
-    "rank.no_data": "No data",
+    "rank.no_data": "尚無資料",
     "Comment": "留言",
     "comment.report": "檢舉",
     "comment.leave_comment": "寫下評論",
@@ -44,7 +44,14 @@
     "Confirm New Password": "再輸入一次新密碼",
     "Update Password": "更新密碼",
     "Can be modified later": "可在之後修改",
-    "Share": "分享"
+    "Share": "分享",
+    "home.posts": "殘酷二選一",
+    "home.start": "開始投票",
+    "home.rank": "排行榜",
+    "rank.return_home": "回首頁",
+    "rank.play": "前往投票",
+    "rank.share": "分享此排行榜",
 
 
+    "":""
 }

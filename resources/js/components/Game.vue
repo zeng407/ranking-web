@@ -118,7 +118,10 @@
       <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
+            <h5 class="modal-title align-self-center" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
+            <a type="submit" class="btn btn-outline-secondary" href="/">{{ $t('game.cancel') }}
+              <i class="fas fa-times"></i>
+              </a>
           </div>
           <ValidationObserver v-slot="{ invalid }">
             <form @submit.prevent>
@@ -192,9 +195,9 @@
               </div>
 
               <div class="modal-footer mb-sm-0 mb-4">
-                <a type="submit" class="btn btn-secondary fa-pull-left" href="/">{{ $t('game.cancel') }}</a>
-                <button v-if="post" type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{
-      $t('game.start') }}</button>
+                <button v-if="post" type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{$t('game.start') }}
+                  <i class="fas fa-play"></i>
+                </button>
               </div>
             </form>
           </ValidationObserver>
