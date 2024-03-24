@@ -87,7 +87,7 @@
       <div class="row justify-content-center pt-4">
         
   
-        @foreach($posts as $post)
+        @foreach($posts as $index => $post)
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
@@ -124,8 +124,8 @@
                   </div>
                 </div>
                 <span class="mt-2 card-text float-left">
-                  <button type="button" class="btn btn-outline-dark btn-sm" v-b-popover.right.click="'{{__('Copied')}}'"
-                    @click="share('{{route('game.show',$post['serial'])}}', '{{$post['title']}}', '{{$post['description']}}' ,$event)">
+                  <button id="shareButton{{$index}}" type="button" class="btn btn-outline-dark btn-sm" v-b-popover.right.click="'{{__('Copied')}}'"
+                    @click="share('{{route('game.show',$post['serial'])}}',$event)">
                     {{__('Share')}} &nbsp;<i class="fas fa-share-square"></i>
                   </button>
                 </span>

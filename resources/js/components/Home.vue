@@ -62,18 +62,17 @@ export default {
       this.filters.keyword = tag;
       this.loadData();
     },
-    share: function (url, title, description, event) {
+    share: function (url, event) {
       if (navigator.share) {
+        this.$root.$emit('bv::hide::popover');
         navigator.share({
-          title: title,
-          text: description,
           url: url,
         }).catch(console.error);
-      }else{
+      }else{  
         navigator.clipboard.writeText(url);
         setTimeout(() => {
           this.$root.$emit('bv::hide::popover');
-        }, 1000);
+        }, 3000);
       }
     },
     search: function () {
