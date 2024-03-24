@@ -1,6 +1,5 @@
 @extends('layouts.app', [
   'title' => __('Home'),
-  'ogTitle' => config('app.name'),
   'ogImage' => asset('/storage/og-image.jpeg'),
   'stickyNav' => 'sticky-top'
   ])
