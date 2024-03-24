@@ -243,7 +243,7 @@ export default {
       post: null,
       elementsCount: "",
       isVoting: false,
-      isLeftPlaying: true,
+      isLeftPlaying: false,
       isRightPlaying: false,
       rememberedScrollPosition: null,
       isLeftPlayerInit: false,
@@ -332,7 +332,6 @@ export default {
           setTimeout(() => {
             $('#left-player').show();
             $('#right-player').show();
-            this.unMuteLeftPlayer();
           }, 200);
         })
         .catch(error => {
