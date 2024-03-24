@@ -31,10 +31,7 @@ Auth::routes([
     'confirm' => false,
 ]);
 
-Route::get('/lang/{locale}', function($locale){
-    Session::put('locale', $locale);
-    return redirect()->home();
-})->name('lang');
+Route::get('/lang/{locale}', [HomeController::class, 'lang'])->name('lang');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('post/{post:serial}/game', [GameController::class, 'show'])->name('game.show');

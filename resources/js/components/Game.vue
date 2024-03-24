@@ -325,8 +325,6 @@ export default {
           this.game = res.data.data;
         })
         .then(async () => {
-          console.log('do play');
-          console.log(this.isLeftPlaying, this.isRightPlaying);
           const left = this.doPlay(this.le, this.isLeftPlaying == true, 'left');
           const right = this.doPlay(this.re, this.isRightPlaying == true, 'right');
 
@@ -540,7 +538,6 @@ export default {
       const player = this.getPlayer(element);
       if (player) {
         if (loud) {
-          console.log('unmute '+ name + ' player');
           player.unMute();
         } else {
           player.mute();

@@ -45,4 +45,11 @@ class HomeController extends Controller
             'posts' => $posts
         ]);
     }
+
+    public function lang(Request $request , $locale)
+    {
+        session()->put('locale', $locale);
+        app()->setLocale($locale);
+        return $this->index($request);
+    }
 }
