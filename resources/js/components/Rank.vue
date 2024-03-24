@@ -185,7 +185,9 @@ export default {
       const url = window.location.href;
       if (navigator.share) {
         navigator.share({
-          url: url
+          url: url,
+          title: this.$t('My Voting Game Result'),
+          text: this.$t('Check out my result on this voting game!'),
         }).catch(console.error);
       }else{  
         this.$refs['share-popover'].$emit('open');
