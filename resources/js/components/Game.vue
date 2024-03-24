@@ -38,7 +38,7 @@
             </button>
             <div class="row" v-if="isYoutubeSource(le)">
               <div class="col-3">
-                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying, 'blue-btn-popping': isLeftPlaying}" :disabled="isVoting"
+                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying}" :disabled="isVoting"
                   @click="leftPlay()">
                   <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
@@ -89,7 +89,7 @@
             </button>
             <div class="row" v-if="isYoutubeSource(re)">
               <div class="col-3">
-                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying, 'red-btn-popping': isRightPlaying}" :disabled="isVoting"
+                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying}" :disabled="isVoting"
                   @click="rightPlay()">
                   <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
@@ -302,10 +302,7 @@ export default {
       axios.post(this.createGameEndpoint, data)
         .then(res => {
           this.gameSerial = res.data.game_serial;
-          const promise = this.nextRound(false);
-          promise.then(() => {
-            this.leftPlay();
-          });
+          this.nextRound(false);
         }).catch(error => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
@@ -317,10 +314,7 @@ export default {
       const gameSerial = this.$cookies.get(this.postSerial);
       if (gameSerial) {
         this.gameSerial = gameSerial;
-        const promise = this.nextRound(false);
-        promise.then(() => {
-          this.leftPlay();
-        });
+        this.nextRound(false);
       }
       $('#gameSettingPanel').modal('hide');
     },
@@ -337,6 +331,7 @@ export default {
           const right = this.doPlay(this.re, this.isRightPlaying == true, 'right');
 
           await Promise.all([left, right]);
+
           if(reset){
             this.resetPlayerPosition();
             this.scrollToLastPosition();
@@ -541,7 +536,7 @@ export default {
     getPlayer(element) {
       return _.get(this.$refs, element.id + '.player', null);
     },
-    async doPlay(element, loud = false, name) {
+    doPlay(element, loud = false, name) {
       const player = this.getPlayer(element);
       if (player) {
         if (loud) {
@@ -552,21 +547,15 @@ export default {
         }
         this.initPlayerEventLister(player);
         if (player.getPlayerState() !== 1) {
-          return new Promise((resolve) => {
-            setTimeout(() => {
-              player.loadVideoById({
-                videoId: element.video_id,
-                startSeconds: element.video_start_second,
-                endSeconds: element.video_end_second
-              });
-              resolve(true);
-            }, 300);
-          });
-        }else{
-          return true;
+          setTimeout(() => {
+            player.loadVideoById({
+              videoId: element.video_id,
+              startSeconds: element.video_start_second,
+              endSeconds: element.video_end_second
+            });
+          }, 300);
         }
       }
-      return false;
     },
     initPlayerEventLister(player) {
       player.addEventListener('onStateChange', (event) => {
