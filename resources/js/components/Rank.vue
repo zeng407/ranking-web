@@ -186,8 +186,8 @@ export default {
       if (navigator.share) {
         navigator.share({
           url: url,
-          title: $t('My Voting Game Result'),
-          text: $t('Check out my result on this voting game!'),
+          title: this.$t('My Voting Game Result'),
+          text: this.$t('Check out my result on this voting game!'),
         }).catch(console.error);
       }else{  
         this.$refs['share-popover'].$emit('open');
