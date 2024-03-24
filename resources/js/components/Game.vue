@@ -243,7 +243,7 @@ export default {
       post: null,
       elementsCount: "",
       isVoting: false,
-      isLeftPlaying: true,
+      isLeftPlaying: false,
       isRightPlaying: false,
       rememberedScrollPosition: null,
       isLeftPlayerInit: false,
@@ -329,10 +329,12 @@ export default {
           this.doPlay(this.re, false, 'right');
           this.resetPlayerPosition();
           this.scrollToLastPosition();
+          this.isLeftPlaying = false;
+          this.isRightPlaying = false;
           setTimeout(() => {
             $('#left-player').show();
             $('#right-player').show();
-            this.unMuteLeftPlayer();
+            this.unMuteLeftPlayer();  
           }, 200);
         })
         .catch(error => {
@@ -365,18 +367,18 @@ export default {
         });
     },
     leftPlay() {
-      this.isLeftPlaying = true;
-      this.isRightPlaying = false;
       const myPlayer = this.getPlayer(this.le);
       if (myPlayer) {
         // window.p1 = myPlayer;
         myPlayer.unMute();
+        this.isLeftPlaying = true;
       }
 
       const theirPlayer = this.getPlayer(this.re);
       if (theirPlayer) {
         // window.p2 = theirPlayer;
         theirPlayer.mute();
+        this.isRightPlaying = false;
       }
     },
     leftWin() {
@@ -412,7 +414,6 @@ export default {
       }
     },
     rightPlay() {
-
       this.isLeftPlaying = false;
       this.isRightPlaying = true;
       const myPlayer = this.getPlayer(this.re);
@@ -517,7 +518,6 @@ export default {
             setTimeout(() => {
               $('#left-player').show();
               $('#right-player').show();
-              this.unMuteLeftPlayer();
             }, 200);
             this.isVoting = false;
           }
@@ -573,15 +573,7 @@ export default {
       if(this.le){
         player = this.getPlayer(this.le);
         if (player) {
-          player.unMute();
-          this.isLeftPlaying = true;
-        }
-      }
-      if(this.re){
-        player = this.getPlayer(this.re);
-        if (player) {
-          player.mute();
-          this.isRightPlaying = false;
+          this.leftPlay();
         }
       }
     },
