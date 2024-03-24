@@ -19,7 +19,7 @@
               :style="{ height: this.elementHeight + 'px' }">
 
           </div>
-          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re)">
+          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
             </youtube>
@@ -38,7 +38,7 @@
             </button>
             <div class="row" v-if="isYoutubeSource(le)">
               <div class="col-3">
-                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying, 'blue-btn-popping': isLeftPlaying}" :disabled="isVoting"
+                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying}" :disabled="isVoting"
                   @click="leftPlay()">
                   <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
@@ -67,7 +67,7 @@
             <img class="game-image" @click="clickImage" :src="re.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
           </div>
-          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le)">
+          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
             </youtube>
@@ -89,7 +89,7 @@
             </button>
             <div class="row" v-if="isYoutubeSource(re)">
               <div class="col-3">
-                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying, 'red-btn-popping': isRightPlaying}" :disabled="isVoting"
+                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying}" :disabled="isVoting"
                   @click="rightPlay()">
                   <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
@@ -302,7 +302,7 @@ export default {
       axios.post(this.createGameEndpoint, data)
         .then(res => {
           this.gameSerial = res.data.game_serial;
-          this.nextRound();
+          this.nextRound(false);
         }).catch(error => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
@@ -314,28 +314,32 @@ export default {
       const gameSerial = this.$cookies.get(this.postSerial);
       if (gameSerial) {
         this.gameSerial = gameSerial;
-        this.nextRound();
+        this.nextRound(false);
       }
       $('#gameSettingPanel').modal('hide');
     },
-    nextRound: function () {
+    nextRound:  function (reset = true) {
       const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
-      axios.get(url)
+      return axios.get(url)
         .then(res => {
           this.game = res.data.data;
         })
-        .then(() => {
-          this.doPlay(this.le, false, 'left');
-          this.doPlay(this.re, false, 'right');
-          this.resetPlayerPosition();
-          this.scrollToLastPosition();
-          this.isLeftPlaying = false;
-          this.isRightPlaying = false;
-          setTimeout(() => {
-            $('#left-player').show();
-            $('#right-player').show();
-            this.unMuteLeftPlayer();  
-          }, 200);
+        .then(async () => {
+          console.log('do play');
+          console.log(this.isLeftPlaying, this.isRightPlaying);
+          const left = this.doPlay(this.le, this.isLeftPlaying == true, 'left');
+          const right = this.doPlay(this.re, this.isRightPlaying == true, 'right');
+
+          await Promise.all([left, right]);
+
+          if(reset){
+            this.resetPlayerPosition();
+            this.scrollToLastPosition();
+            setTimeout(() => {
+              $('#left-player').show();
+              $('#right-player').show();
+            }, 300);
+          }
         })
         .catch(error => {
           if (error.response.status === 429) {
@@ -503,7 +507,6 @@ export default {
           } else {
             this.$cookies.set(this.postSerial, this.gameSerial, "3d");
             this.nextRound();
-            
           }
         })
         .catch(error => {
@@ -518,7 +521,7 @@ export default {
             setTimeout(() => {
               $('#left-player').show();
               $('#right-player').show();
-            }, 200);
+            }, 300);
             this.isVoting = false;
           }
         });
@@ -537,6 +540,7 @@ export default {
       const player = this.getPlayer(element);
       if (player) {
         if (loud) {
+          console.log('unmute '+ name + ' player');
           player.unMute();
         } else {
           player.mute();
@@ -549,9 +553,8 @@ export default {
               startSeconds: element.video_start_second,
               endSeconds: element.video_end_second
             });
-          }, 200);
+          }, 300);
         }
-
       }
     },
     initPlayerEventLister(player) {
@@ -577,7 +580,7 @@ export default {
         }
       }
     },
-    videoHoverIn(myElement, theirElement) {
+    videoHoverIn(myElement, theirElement, left) {
       if (this.isMobileScreen) {
         return;
       }
@@ -591,6 +594,14 @@ export default {
       if (theirPlayer) {
         // window.p2 = theirPlayer;
         theirPlayer.mute();
+      }
+
+      if(left){
+        this.isLeftPlaying = true;
+        this.isRightPlaying = false;
+      }else{
+        this.isLeftPlaying = false;
+        this.isRightPlaying = true;
       }
 
     },
