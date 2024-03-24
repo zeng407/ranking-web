@@ -124,10 +124,13 @@
                   </div>
                 </div>
                 <span class="mt-2 card-text float-left">
-                  <button id="shareButton{{$index}}" type="button" class="btn btn-outline-dark btn-sm" v-b-popover.right.click="'{{__('Copied')}}'"
-                    @click="share('{{route('game.show',$post['serial'])}}',$event)">
+                  <button id="popover-button-event{{$index}}" type="button" class="btn btn-outline-dark btn-sm"
+                    @click="share('{{route('game.show',$post['serial'])}}',{{$index}})">
                     {{__('Share')}} &nbsp;<i class="fas fa-share-square"></i>
                   </button>
+                  <b-popover ref="popover{{$index}}" target="popover-button-event{{$index}}" :disabled="true">
+                    Hello <strong>World!</strong>
+                  </b-popover>
                 </span>
                 <span class="mt-2 card-text float-right">
                   <span class="pr-2">

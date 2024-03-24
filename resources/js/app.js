@@ -66,13 +66,14 @@ Vue.use(VueCookies);
  * BootstrapVue
  */
 
-import {PaginationPlugin, AlertPlugin, TabsPlugin, VBPopover, VBTooltipPlugin} from 'bootstrap-vue';
+import {PaginationPlugin, AlertPlugin, TabsPlugin, PopoverPlugin, VBTooltipPlugin} from 'bootstrap-vue';
 // Make BootstrapVue available throughout your project
 Vue.use(PaginationPlugin);
 Vue.use(AlertPlugin);
 Vue.use(TabsPlugin);
-Vue.use(VBPopover);
+Vue.use(PopoverPlugin);
 Vue.use(VBTooltipPlugin)
+
 // Optionally install the BootstrapVue icon components plugin
 // Vue.use(IconsPlugin);
 
@@ -113,7 +114,8 @@ Vue.filter('formNow', function (value, locale = 'zh-tw') {
 });
 
 
-Vue.directive('b-popover', VBPopover);
+
+
 
 const app = new Vue({
     el: '#app',
