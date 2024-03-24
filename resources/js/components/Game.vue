@@ -38,7 +38,7 @@
             </button>
             <div class="row" v-if="isYoutubeSource(le)">
               <div class="col-3">
-                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :disabled="isVoting"
+                <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying, 'blue-btn-popping': isLeftPlaying}" :disabled="isVoting"
                   @click="leftPlay()">
                   <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
@@ -89,7 +89,7 @@
             </button>
             <div class="row" v-if="isYoutubeSource(re)">
               <div class="col-3">
-                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"
+                <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying, 'red-btn-popping': isRightPlaying}" :disabled="isVoting"
                   @click="rightPlay()">
                   <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
                   <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
@@ -323,13 +323,16 @@ export default {
       axios.get(url)
         .then(res => {
           this.game = res.data.data;
-          this.doPlay(this.le, true, 'left');
+        })
+        .then(() => {
+          this.doPlay(this.le, false, 'left');
           this.doPlay(this.re, false, 'right');
           this.resetPlayerPosition();
           this.scrollToLastPosition();
-          setInterval(() => {
+          setTimeout(() => {
             $('#left-player').show();
             $('#right-player').show();
+            this.unMuteLeftPlayer();
           }, 200);
         })
         .catch(error => {
@@ -499,7 +502,7 @@ export default {
           } else {
             this.$cookies.set(this.postSerial, this.gameSerial, "3d");
             this.nextRound();
-            this.unMutePlayer();
+            
           }
         })
         .catch(error => {
@@ -511,9 +514,10 @@ export default {
             });
             this.resetPlayerPosition();
             this.scrollToLastPosition();
-            setInterval(() => {
+            setTimeout(() => {
               $('#left-player').show();
               $('#right-player').show();
+              this.unMuteLeftPlayer();
             }, 200);
             this.isVoting = false;
           }
@@ -564,19 +568,21 @@ export default {
         }
       });
     },
-    unMutePlayer() {
+    unMuteLeftPlayer() {
       let player = null;
-      player = this.getPlayer(this.le);
-      //default left player un-mute
-      if (player) {
-        player.unMute();
-        this.isLeftPlaying = true;
+      if(this.le){
+        player = this.getPlayer(this.le);
+        if (player) {
+          player.unMute();
+          this.isLeftPlaying = true;
+        }
       }
-
-      player = this.getPlayer(this.re);
-      if (player) {
-        player.mute();
-        this.isRightPlaying = false;
+      if(this.re){
+        player = this.getPlayer(this.re);
+        if (player) {
+          player.mute();
+          this.isRightPlaying = false;
+        }
       }
     },
     videoHoverIn(myElement, theirElement) {
