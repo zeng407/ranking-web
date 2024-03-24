@@ -19,7 +19,7 @@
               :style="{ height: this.elementHeight + 'px' }">
 
           </div>
-          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re)">
+          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
             </youtube>
@@ -67,7 +67,7 @@
             <img class="game-image" @click="clickImage" :src="re.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
           </div>
-          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le)">
+          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
             </youtube>
@@ -591,7 +591,7 @@ export default {
         }
       }
     },
-    videoHoverIn(myElement, theirElement) {
+    videoHoverIn(myElement, theirElement, left) {
       if (this.isMobileScreen) {
         return;
       }
@@ -605,6 +605,14 @@ export default {
       if (theirPlayer) {
         // window.p2 = theirPlayer;
         theirPlayer.mute();
+      }
+
+      if(left){
+        this.isLeftPlaying = true;
+        this.isRightPlaying = false;
+      }else{
+        this.isLeftPlaying = false;
+        this.isRightPlaying = true;
       }
 
     },
