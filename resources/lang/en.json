@@ -10,10 +10,11 @@
     "nickname_update_rate": "Can be changed once per day",
     "home.posts": "Posts",
     "home.start": "Start",
-    "home.rank": "Ranking",
+    "home.rank": "Rank",
     "rank.return_home": "Home",
     "rank.play": "Start",
-    "rank.share": "Share",
+    "rank.share": "Share this rank",
+    "rank.share-result": "Share my result",
 
     "":""
 }

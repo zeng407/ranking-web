@@ -166,6 +166,34 @@ export default {
             icon: 'error',
           });
         });
+    },
+    share: function() {
+      const url = window.location.origin + window.location.pathname;
+      if (navigator.share) {
+        navigator.share({
+          url: url
+        }).catch(console.error);
+      }else{  
+        this.$refs['popover'].$emit('open');
+        navigator.clipboard.writeText(url);
+        setTimeout(() => {
+          this.$root.$emit('bv::hide::popover');
+        }, 2000);
+      }
+    },
+    shareResult: function() {
+      const url = window.location.href;
+      if (navigator.share) {
+        navigator.share({
+          url: url
+        }).catch(console.error);
+      }else{  
+        this.$refs['share-popover'].$emit('open');
+        navigator.clipboard.writeText(url);
+        setTimeout(() => {
+          this.$root.$emit('bv::hide::popover');
+        }, 2000);
+      }
     }
   }
 }

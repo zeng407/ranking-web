@@ -119,9 +119,14 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title align-self-center" id="gameSettingPanelLabel">{{ $t('game.setting') }}</h5>
-            <a type="submit" class="btn btn-outline-secondary" href="/">{{ $t('game.cancel') }}
-              <i class="fas fa-times"></i>
+            <div>
+              <a class="btn btn-outline-secondary" :href="gameRankUrl">
+                {{$t('game.rank')}}&nbsp;<i class="fas fa-trophy"></i>
               </a>
+              <a class="btn btn-outline-secondary" href="/">
+                {{ $t('game.cancel') }}&nbsp;<i class="fas fa-times"></i>
+              </a>
+            </div>
           </div>
           <ValidationObserver v-slot="{ invalid }">
             <form @submit.prevent>
@@ -129,8 +134,8 @@
                 <div class="alert alert-danger" v-if="processingGameSerial">
                   <i class="fas fa-exclamation-triangle"></i>{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
-                    <i class="fas fa-play"></i>
-                    {{ $t('game.continue') }}
+                    
+                    {{ $t('game.continue') }}&nbsp;<i class="fas fa-play"></i>
                   </span>
                 </div>
                 <div class="alert alert-danger" v-if="error403WhenLoad">
@@ -195,8 +200,8 @@
               </div>
 
               <div class="modal-footer mb-sm-0 mb-4">
-                <button v-if="post" type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">{{$t('game.start') }}
-                  <i class="fas fa-play"></i>
+                <button v-if="post" type="submit" class="btn btn-primary" :disabled="invalid" @click="createGame">
+                  {{$t('game.start') }}&nbsp;<i class="fas fa-play"></i>
                 </button>
               </div>
             </form>
@@ -247,6 +252,9 @@ export default {
     }
   },
   computed: {
+    gameRankUrl: function () {
+      return this.getRankRoute.replace('_serial', this.postSerial);
+    },
     isMobileScreen: function () {
       return $(window).width() < MD_WIDTH_SIZE;
     },

@@ -66,7 +66,7 @@ export default {
       
       if (navigator.share) {
         navigator.share({
-          url: url,
+          url: url
         }).catch(console.error);
       }else{  
         this.$refs['popover' + id].$emit('open');

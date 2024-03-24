@@ -19,7 +19,12 @@
                 <div class="col-auto">
                     <a class="btn btn-outline-dark btn-sm" href="{{route('home')}}">{{__('rank.return_home')}}&nbsp;<i class="fa-solid fa-home"></i></a>
                     <a class="btn btn-outline-dark btn-sm ml-auto" href={{route('game.show', $post->serial)}}>{{__('rank.play')}}&nbsp;<i class="fa-solid fa-play"></i></a>
-                    {{-- <button class="btn btn-outline-dark btn-sm">{{__('rank.share')}}&nbsp;<i class="fa-solid fa-share-square"></i></button> --}}
+                    <button @click="share" id="popover-button-event" type="button" class="btn btn-outline-dark btn-sm">{{__('rank.share')}}&nbsp;<i class="fa-solid fa-share-square"></i></button>
+                    <b-popover ref="popover" target="popover-button-event" :disabled="true">{{__('Copied')}}</b-popover>
+                    @if($gameResult)
+                        <button @click="shareResult" id="share-result-button-event" type="button" class="btn btn-primary btn-sm">{{__('rank.share-result')}}&nbsp;<i class="fa-solid fa-share-square"></i></button>
+                        <b-popover ref="share-popover" target="share-result-button-event" :disabled="true">{{__('Copied')}}</b-popover>
+                    @endif
                 </div>
             </div>
             <hr>
