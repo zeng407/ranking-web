@@ -87,7 +87,7 @@
       <div class="row justify-content-center pt-4">
         
   
-        @foreach($posts as $post)
+        @foreach($posts as $index => $post)
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
@@ -113,21 +113,24 @@
                 <p class="text-break">{{ $post['description'] }}</p>
                 <div class="row">
                   <div class="col-6">
-                    <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}" target="_blank">
+                    <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}">
                       <i class="fas fa-play"></i> {{__('home.start')}}
                     </a>
                   </div>
                   <div class="col-6">
-                    <a class="btn btn-secondary btn-block" href="{{route('game.rank', $post['serial']) }}" target="_blank">
+                    <a class="btn btn-secondary btn-block" href="{{route('game.rank', $post['serial']) }}">
                       <i class="fas fa-trophy"></i> {{__('home.rank')}}
                     </a>
                   </div>
                 </div>
                 <span class="mt-2 card-text float-left">
-                  <button type="button" class="btn btn-outline-dark btn-sm" v-b-popover.right.click="'{{__('Copied')}}'"
-                    @click="share('{{route('game.show',$post['serial'])}}', '{{$post['title']}}', '{{$post['description']}}' ,$event)">
+                  <button id="popover-button-event{{$index}}" type="button" class="btn btn-outline-dark btn-sm"
+                    @click="share('{{route('game.show',$post['serial'])}}',{{$index}})">
                     {{__('Share')}} &nbsp;<i class="fas fa-share-square"></i>
                   </button>
+                  <b-popover ref="popover{{$index}}" target="popover-button-event{{$index}}" :disabled="true">
+                    {{__('Copied')}}</strong>
+                  </b-popover>
                 </span>
                 <span class="mt-2 card-text float-right">
                   <span class="pr-2">
