@@ -302,7 +302,10 @@ export default {
       axios.post(this.createGameEndpoint, data)
         .then(res => {
           this.gameSerial = res.data.game_serial;
-          this.nextRound();
+          const promise = this.nextRound(false);
+          promise.then(() => {
+            this.leftPlay();
+          });
         }).catch(error => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
@@ -314,28 +317,34 @@ export default {
       const gameSerial = this.$cookies.get(this.postSerial);
       if (gameSerial) {
         this.gameSerial = gameSerial;
-        this.nextRound();
+        const promise = this.nextRound(false);
+        promise.then(() => {
+          this.leftPlay();
+        });
       }
       $('#gameSettingPanel').modal('hide');
     },
-    nextRound: function () {
+    nextRound:  function (reset = true) {
       const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
-      axios.get(url)
+      return axios.get(url)
         .then(res => {
           this.game = res.data.data;
         })
-        .then(() => {
-          this.doPlay(this.le, false, 'left');
-          this.doPlay(this.re, false, 'right');
-          this.resetPlayerPosition();
-          this.scrollToLastPosition();
-          this.isLeftPlaying = false;
-          this.isRightPlaying = false;
-          setTimeout(() => {
-            $('#left-player').show();
-            $('#right-player').show();
-            this.unMuteLeftPlayer();  
-          }, 200);
+        .then(async () => {
+          console.log('do play');
+          console.log(this.isLeftPlaying, this.isRightPlaying);
+          const left = this.doPlay(this.le, this.isLeftPlaying == true, 'left');
+          const right = this.doPlay(this.re, this.isRightPlaying == true, 'right');
+
+          await Promise.all([left, right]);
+          if(reset){
+            this.resetPlayerPosition();
+            this.scrollToLastPosition();
+            setTimeout(() => {
+              $('#left-player').show();
+              $('#right-player').show();
+            }, 300);
+          }
         })
         .catch(error => {
           if (error.response.status === 429) {
@@ -503,7 +512,6 @@ export default {
           } else {
             this.$cookies.set(this.postSerial, this.gameSerial, "3d");
             this.nextRound();
-            
           }
         })
         .catch(error => {
@@ -518,7 +526,7 @@ export default {
             setTimeout(() => {
               $('#left-player').show();
               $('#right-player').show();
-            }, 200);
+            }, 300);
             this.isVoting = false;
           }
         });
@@ -533,26 +541,32 @@ export default {
     getPlayer(element) {
       return _.get(this.$refs, element.id + '.player', null);
     },
-    doPlay(element, loud = false, name) {
+    async doPlay(element, loud = false, name) {
       const player = this.getPlayer(element);
       if (player) {
         if (loud) {
+          console.log('unmute '+ name + ' player');
           player.unMute();
         } else {
           player.mute();
         }
         this.initPlayerEventLister(player);
         if (player.getPlayerState() !== 1) {
-          setTimeout(() => {
-            player.loadVideoById({
-              videoId: element.video_id,
-              startSeconds: element.video_start_second,
-              endSeconds: element.video_end_second
-            });
-          }, 200);
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              player.loadVideoById({
+                videoId: element.video_id,
+                startSeconds: element.video_start_second,
+                endSeconds: element.video_end_second
+              });
+              resolve(true);
+            }, 300);
+          });
+        }else{
+          return true;
         }
-
       }
+      return false;
     },
     initPlayerEventLister(player) {
       player.addEventListener('onStateChange', (event) => {
