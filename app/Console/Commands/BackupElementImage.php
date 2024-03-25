@@ -59,9 +59,12 @@ class BackupElementImage extends Command
                             $this->warn('Cannot download image: ' . $element->id);
                             continue;
                         }
+                        $path = $file->getPath();
+                    }else{
+                        $path = $element->path;
                     }
                     
-                    $element->thumb2_url = \Storage::url($file->getPath());
+                    $element->thumb2_url = \Storage::url($path);
                     $element->save();
                     $counter++;
                     $this->info('Backup element image: ' . $element->id . ' - ' . $element->thumb2_url);
