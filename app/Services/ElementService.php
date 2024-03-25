@@ -9,6 +9,7 @@ use App\Enums\VideoSource;
 use App\Models\Element;
 use App\Models\Post;
 use App\Repositories\ElementRepository;
+use App\Services\Models\StoragedImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use App\Events\ImageElementCreated;
@@ -93,26 +94,36 @@ class ElementService
         return $element;
     }
 
+    public function downloadImage(string $url, string $directory): ?StoragedImage
+    {
+        $content = $this->getContent($url);
+        $fileInfo = pathinfo($url);
+        $basename = str_replace('.', '_' ,$fileInfo['basename']) . '_' . random_str(8);
+
+        $path = rtrim($directory, '/') . '/' . $basename;
+        $isSuccess = Storage::put($path, $content, 'public');
+        if (!$isSuccess) {
+            return null;
+        }
+        return new StoragedImage($url, $path, $fileInfo);
+    }
+
     public function storeImage(string $sourceUrl, string $path, Post $post, $params = []): ?Element
     {
         try {
-            $content = $this->getContent($sourceUrl);
-            $fileInfo = pathinfo($sourceUrl);
-            $basename = $fileInfo['basename'] . '_' . random_str(8);
+            $storageImage = $this->downloadImage($sourceUrl, $path);
 
-            $path = rtrim($path, '/') . '/' . $basename;
-            $isSuccess = Storage::put($path, $content, 'public');
-
-            if (!$isSuccess) {
+            if ($storageImage === null) {
                 return null;
             }
+            $fileInfo = $storageImage->getFileInfo();
         } catch (\Exception $exception) {
             report($exception);
             return null;
         }
-
+        
         $title = $params['title'] ?? $fileInfo['filename'];
-        $localUrl = Storage::url($path);
+        $localUrl = Storage::url($storageImage->getPath());
 
         $element = $post->elements()->updateOrCreate([
             'source_url' => $sourceUrl,

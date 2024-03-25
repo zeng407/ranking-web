@@ -95,7 +95,7 @@
             <div class="row no-gutters">
               <div class="col-6">
                 <div class="post-image-container">
-                  <img src="{{$post['image1']['url']}}">
+                  <img src="{{$post['image1']['url']}}" @@error="onImageError('{{$post['image1']['url2']}}', $event)">
                 </div>
 
                 <p class="text-center mt-1 p-1">{{ $post['image1']['title'] }}</p>
@@ -103,7 +103,7 @@
               <div class="col-6">
 
                 <div class="post-image-container">
-                  <img src="{{$post['image2']['url']}}">
+                  <img src="{{$post['image2']['url']}}" @@error="onImageError('{{$post['image2']['url2']}}', $event)">
                 </div>
   
                 <p class="text-center mt-1 p-1">{{ $post['image2']['title'] }}</p>

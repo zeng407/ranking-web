@@ -83,8 +83,12 @@ class CreateImgurImage implements ShouldQueue
         );
 
         if (!isset($res['success']) || !$res['success']) {
-            \Log::error('Failed to upload image', ['res' => $res]);
-            throw new \Exception('Failed to upload image');
+            if($this->handle400NoSupportType($res)){
+                return;
+            } else {
+                \Log::error('Failed to upload image', ['res' => $res]);
+                throw new \Exception('Failed to upload image');
+            }
         }
 
         $element->imgur_image()->create([
@@ -98,8 +102,15 @@ class CreateImgurImage implements ShouldQueue
         $element->update([
             'thumb_url' => $res['data']['link'],
         ]);
+    }
 
-        //todo delete old imgur image where in local disk
-        \Storage::delete($element->path);
+    public function handle400NoSupportType($res)
+    {
+        if(isset($res['status']) && $res['status'] == 400){
+            \Log::error('Imgur not support this type', ['res' => $res]);;
+            return true;
+        }
+
+        return false;
     }
 }

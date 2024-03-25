@@ -40,6 +40,7 @@ export default {
         range: this.range
       },
       timeRangeText: '',
+      errorImages: []
     }
   },
   watch: {
@@ -83,7 +84,17 @@ export default {
       this.filters.range = value;
       this.timeRangeText = event.target.text;
       this.loadData();
-    }
+    },
+    onImageError: function (replaceUrl, event) {
+      if(this.errorImages.includes(replaceUrl)) {
+        return;
+      }
+
+      if(replaceUrl !== null) {
+        event.target.src = replaceUrl;
+      }
+      this.errorImages.push(replaceUrl);
+    },
   }
 }
 </script>

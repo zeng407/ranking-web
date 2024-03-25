@@ -97,7 +97,7 @@ class ElementController extends Controller
         }
 
         try {
-            $path = Auth::id() . '/' . $request->post_serial;
+            $path = $request->post_serial;
             $elements = [];
             $errors = [];
             foreach ($urls as $urlStr) {
