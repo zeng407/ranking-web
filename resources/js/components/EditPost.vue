@@ -264,9 +264,7 @@
                   </div>
                 </div>
                 <div class="mt-3">
-                  <template>
                     <UploadIcon />
-                  </template>
                 </div>
               </div>
             </div>
@@ -367,7 +365,7 @@
                 <!-- image player -->
                 <div class="col-lg-4 col-md-6" v-if="element.type === 'image'">
                   <div class="card mb-3">
-                    <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                    <img @error="onImageError(element, $event)" :src="element.thumb_url" class="card-img-top" :alt="element.title"
                       v-if="element.type === 'image'">
 
                     <div class="card-body">
@@ -617,6 +615,9 @@ export default {
           last_page: 1,
         }
       },
+
+      //onImageError
+      errorImages: [],
 
     }
   },
@@ -927,6 +928,16 @@ export default {
             this.showAlert(err.response.data.message, 'danger');
           });
       });
+    },
+    onImageError: function (element, event) {
+      if(this.errorImages.includes(element.id)) {
+        return;
+      }
+
+      if(element.thumb2_url !== null) {
+        event.target.src = element.thumb2_url;
+      }
+      this.errorImages.push(element.id);
     },
 
     /** Video **/

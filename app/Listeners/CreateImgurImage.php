@@ -98,8 +98,5 @@ class CreateImgurImage implements ShouldQueue
         $element->update([
             'thumb_url' => $res['data']['link'],
         ]);
-
-        //todo delete old imgur image where in local disk
-        \Storage::delete($element->path);
     }
 }

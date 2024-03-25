@@ -43,12 +43,17 @@ class PublicPostResource extends JsonResource
             'is_private' => $this->isPrivate(),
             'description' => $this->description,
             'image1' => [
-                'url' => optional($image1)->thumb_url,
-                'title' => optional($image1)->title
+                'id' => $image1?->id,
+                'url' => $image1?->thumb_url,
+                'url2' => $image1?->thumb2_url,
+                'title' => $image1?->title,
+
             ],
             'image2' => [
-                'url' => optional($image2)->thumb_url,
-                'title' => optional($image2)->title
+                'id' => $image2?->id,
+                'url' => $image2?->thumb_url,
+                'url2' => $image2?->thumb2_url,
+                'title' => $image2?->title
             ],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

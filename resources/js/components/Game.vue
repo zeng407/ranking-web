@@ -15,7 +15,7 @@
       <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
         <div class="card game-player left-player" id="left-player">
           <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
-            <img class="game-image" @click="clickImage" :src="le.thumb_url"
+            <img @click="clickImage" @error="onImageError(le.id, le.thumb2_url,$event)" class="game-image" :src="le.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
 
           </div>
@@ -64,7 +64,7 @@
       <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
           <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
-            <img class="game-image" @click="clickImage" :src="re.thumb_url"
+            <img @click="clickImage" @error="onImageError(re.id, re.thumb2_url, $event)" class="game-image" :src="re.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
           </div>
           <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
@@ -151,13 +151,13 @@
                   <div class="row no-gutters">
                     <div class="col-6">
                       <div class="post-image-container">
-                        <img :src="post.image1.url"></img>
+                        <img @error="onImageError(post.image1.id, post.image1.url2, $event)" :src="post.image1.url"></img>
                       </div>
                       <h5 class="text-center mt-1 p-1">{{ post.image1.title }}</h5>
                     </div>
                     <div class="col-6">
                       <div class="post-image-container">
-                        <img :src="post.image2.url"></img>
+                        <img @error="onImageError(post.image2.id, post.image2.url2, $event)" :src="post.image2.url"></img>
                       </div>
                       <h5 class="text-center mt-1 p-1">{{ post.image2.title }}</h5>
                     </div>
@@ -248,7 +248,8 @@ export default {
       rememberedScrollPosition: null,
       isLeftPlayerInit: false,
       isRightPlayerInit: false,
-      error403WhenLoad: false
+      error403WhenLoad: false,
+      errorImages: []
     }
   },
   computed: {
@@ -333,6 +334,7 @@ export default {
           if(reset){
             this.resetPlayerPosition();
             this.scrollToLastPosition();
+            this.errorImages = [];
             setTimeout(() => {
               $('#left-player').show();
               $('#right-player').show();
@@ -624,6 +626,16 @@ export default {
     },
     isGfycatSource: function (element) {
       return element.type === 'video' && element.video_source === 'gfycat';
+    },
+    onImageError: function (id, replaceUrl, event) {
+      if(this.errorImages.includes(id)) {
+        return;
+      }
+
+      if(replaceUrl !== null) {
+        event.target.src = replaceUrl;
+      }
+      this.errorImages.push(id);
     },
   },
 
