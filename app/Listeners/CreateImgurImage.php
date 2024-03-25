@@ -83,7 +83,9 @@ class CreateImgurImage implements ShouldQueue
         );
 
         if (!isset($res['success']) || !$res['success']) {
-            if(!$this->handle400NoSupportType($res)){
+            if($this->handle400NoSupportType($res)){
+                return;
+            } else {
                 \Log::error('Failed to upload image', ['res' => $res]);
                 throw new \Exception('Failed to upload image');
             }
