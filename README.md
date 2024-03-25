@@ -62,6 +62,12 @@ AWS_USE_PATH_STYLE_ENDPOINT=true
 ### Register Youtube API
 - [YouTube Data API v3](https://console.cloud.google.com/apis/library/youtube.googleapis.com?hl=zh-TW&project=plasma-circle-334908)
 
+After registering, put your API key in the .env file:
+
+```
+YOUTUBE_API_KEY=put_your_api_key_here
+```
+
 # Troubleshooting
 
 ## You may encounter permission issues when using Docker. Make sure your user is in the Docker group.
