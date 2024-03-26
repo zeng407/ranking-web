@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\ApiResponseCode;
+use App\Enums\ElementType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MyPost\PostElementResource;
 use App\Models\Element;
 use App\Models\Post;
 use App\Policies\ElementPolicy;
 use App\Services\ElementService;
+use App\Services\ElementSourceGuess;
 use App\Services\YoutubeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +33,7 @@ class ElementController extends Controller
         $this->authorize('create', Element::class);
 
         $request->validate([
-            'post_serial' => 'required',
+            'post_serial' => 'required|string',
             'file' => 'required|image|max:8192',
         ]);
 
@@ -53,7 +55,7 @@ class ElementController extends Controller
         $this->authorize('create', Element::class);
 
         $request->validate([
-            'post_serial' => 'required',
+            'post_serial' => 'required|string',
             'url' => 'required|string',
         ]);
         $urls = $request->input('url');
@@ -130,6 +132,7 @@ class ElementController extends Controller
                 'error_urls' => $errors
             ]);
         }
+        
         return PostElementResource::collection($elements);
     }
 
@@ -139,14 +142,74 @@ class ElementController extends Controller
         $this->authorize('update', $element);
 
         $data = $request->validate([
+            'post_serial' => 'required|string',
             'title' => ['sometimes', 'string', 'max:' . config('setting.element_title_size')],
             'video_start_second' => 'sometimes|integer',
             'video_end_second' => 'sometimes|integer',
+            'url' => 'sometimes|url',
+            'path_id' => 'sometimes|string',
         ]);
+
+        $post = $this->getPost($request->input('post_serial'));
+
+        if(isset($data['url'])){
+            // This will update the element whose 'source_url' matches 'old_source_url'.
+            $element = $this->elementService->massStore(
+                $data['url'],
+                $post->serial,
+                $post,
+                 [
+                    'old_source_url' => $element->source_url,
+                    'title' => $element->title
+                ]
+            );
+            if(!$element){
+                return api_response(ApiResponseCode::INVALID_URL, 422);
+            }
+        } elseif (isset($data['path_id'])){
+            $path = \Cache::get($data['path_id']);
+            if($path == null){
+                return api_response(ApiResponseCode::INVALID_PATH, 422);
+            }
+
+            if(\Storage::exists($path)){
+                $url = \Storage::url($path);
+                $data['thumb_url'] = $url;
+                $data['source_url'] = $url;
+                $data['type'] = ElementType::IMAGE;
+                $data['video_source'] = null;
+                $data['video_id'] = null;
+                $data['video_duration_second'] = null;
+                $data['video_start_second'] = null;
+                $data['video_end_second'] = null;
+            }
+            
+        }
+        unset($data['url']);
+        unset($data['path_id']);
 
         $element->update($data);
 
         return PostElementResource::make($element);
+    }
+
+    public function upload(Request $request, Element $element)
+    {
+        /** @see ElementPolicy::update() */
+        $this->authorize('update', $element);
+
+        $request->validate([
+            'post_serial' => 'required|string',
+            'file' => 'required|image|max:8192',
+        ]);
+        $post = $this->getPost($request->input('post_serial'));
+        $path = $this->elementService->moveUploadedFile($request->file('file'), $post->serial);
+        $pathId = hash('sha256', $path);
+        \Cache::put($pathId, $path, now()->addMinutes(10));
+        return response()->json([
+            'path_id' => $pathId,
+            'url' => \Storage::url($path),
+        ]);
     }
 
     public function delete(Request $request, Element $element)

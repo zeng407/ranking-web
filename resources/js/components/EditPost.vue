@@ -40,13 +40,6 @@
             </span>
             {{ $t('edit_post.tab.rank') }}
           </a>
-          <!-- <a class="nav-link" id="v-pills-comments-tab" data-toggle="pill" href="#v-pills-comments" role="tab"
-            aria-controls="v-pills-comments" aria-selected="false" @click="clickCommentTab">
-            <span class="d-inline-block text-center" style="width: 30px">
-              <i class="fa-solid fa-comment-dots"></i>
-            </span>
-            {{ $t('edit_post.tab.comments') }}
-          </a> -->
         </div>
       </div>
 
@@ -232,7 +225,7 @@
                 <label for="image-upload"><i class="fa-solid fa-upload"></i>&nbsp;{{ $t('Upload from Local') }}</label>
                 <div class="custom-file form-group">
                   <input type="file" class="custom-file-input" id="image-upload" multiple @change="uploadImages">
-                  <label class="custom-file-label" for="image-upload">Choose File...</label>
+                  <label class="custom-file-label" for="image-upload">{{$t('Choose File...')}}</label>
                 </div>
               </div>
             </div>
@@ -288,9 +281,9 @@
             <div class="row">
               <template v-for="(element, index) in elements.data">
                 <!-- show video card -->
-                <div class="col-lg-4 col-md-6" v-show="isVideoSource(element)">
+                <div class="col-lg-4 col-md-6" v-if="isVideoSource(element)">
                   <!-- youtube source -->
-                  <div class="card mb-3" v-show="isYoutubeSource(element)">
+                  <div class="card mb-3" v-if="isYoutubeSource(element)">
                     <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
                       :ref="element.id" @ready="doPlay(element)" :player-vars="{
                       controls: 1,
@@ -327,24 +320,31 @@
                         </div>
                         <!--play button-->
                         <div class="col-2">
-                          <a class="btn btn-danger float-right" @click="clickPlayButton(index, element)">
+                          <a class="btn btn-danger fa-pull-right" @click="clickPlayButton(index, element)">
                             <i class="fas fa-play-circle"></i>
                           </a>
                         </div>
                       </div>
                       <!--create time-->
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime
-                          }}</small></span>
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
                       <!--delete button-->
-                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
                       </a>
+                      <!--edit button-->
+                      <EditElement v-if="post"
+                        :post-serial="post.serial"
+                        :element-id="String(element.id)"
+                        :source-url="element.source_url"
+                        :update-element-route="updateElementEndpoint" 
+                        :upload-element-route="uploadElementEndpoint"
+                        @elementUpdated="handleElementUpdated"/>
                     </div>
                   </div>
 
                   <!-- simple video source -->
-                  <div class="card mb-3" v-show="!isYoutubeSource(element)">
+                  <div class="card mb-3" v-if="!isYoutubeSource(element)">
                     <!-- load the video player -->
                     <video width="100%" height="270" loop autoplay muted playsinline :src="element.thumb_url"></video>
                     <!-- editor -->
@@ -352,15 +352,22 @@
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
                         :value="element.title" :maxlength="config.element_title_size"
                         @change="updateElementTitle(element.id, $event)">
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime
-                          }}</small></span>
-                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
+                      <!--delete button-->
+                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
                       </a>
+                      <!--edit button-->
+                      <EditElement v-if="post"
+                        :post-serial="post.serial"
+                        :element-id="String(element.id)"
+                        :source-url="element.source_url"
+                        :update-element-route="updateElementEndpoint" 
+                        :upload-element-route="uploadElementEndpoint"
+                        @elementUpdated="handleElementUpdated"/>
                     </div>
                   </div>
-
                 </div>
                 <!-- image player -->
                 <div class="col-lg-4 col-md-6" v-if="element.type === 'image'">
@@ -369,15 +376,24 @@
                       v-if="element.type === 'image'">
 
                     <div class="card-body">
+                      <!-- title -->
                       <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
                         :maxlength="config.element_title_size" rows="4" style="resize: none;"
                         @change="updateElementTitle(element.id, $event)"></textarea>
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime
-                          }}</small></span>
-                      <a class="btn btn-danger float-right" @click="deleteElement(element)">
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
+                      <!-- delete button -->
+                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
                         <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
                       </a>
+                      <!--edit button-->
+                      <EditElement v-if="post"
+                        :post-serial="post.serial"
+                        :element-id="String(element.id)"
+                        :source-url="element.source_url"
+                        :update-element-route="updateElementEndpoint" 
+                        :upload-element-route="uploadElementEndpoint"
+                        @elementUpdated="handleElementUpdated"/>
                     </div>
                   </div>
                 </div>
@@ -420,7 +436,7 @@
               <tbody v-if="rank.rankReportData && !loading['LOADING_RANK']">
                 <tr v-for="(rank, index) in rank.rankReportData.data">
                   <th scope="row">{{ rank.rank }}</th>
-                  <td style="overflow: scroll">
+                  <td class="overflow-scroll hide-scrollbar">
                     <div>
                       <img :src="rank.element.thumb_url" height="300px" :alt="rank.element.title">
 
@@ -443,80 +459,6 @@
               </div>
             </div>
           </div>
-
-          <!-- tab comments -->
-          <!-- <div class="tab-pane fade" id="v-pills-comments" role="tabpanel" aria-labelledby="v-pills-comments-tab">
-            <div class="row">
-              <div class="col-12">
-                <div class="card">
-                  <div v-if="loading['COMMENTS']">
-                    <div class="text-center">
-                      <i class="fa-3x fas fa-spinner fa-spin"></i>
-                    </div>
-                  </div>
-
-                  <div class="card-body">
-                    <div v-for="comment in comments.data">
-                      <div class="d-flex justify-content-between w-100">
-                        
-                        <div class="avatar-container">
-                          <div class="avatar">
-                            <img v-if="comment.avatar_url" :src="comment.avatar_url" :alt="comment.nickname">
-                            <img v-else :src="defaultAvatarUrl" :alt="comment.nickname">
-                          </div>
-                        </div>
-                        <div class="comment-container">
-                          
-                          <div class="d-flex justify-content-between">
-                            <span class="text-black-50 font-size-large" style="overflow-wrap:anywhere"><small>{{comment.nickname}}</small></span>
-                            <div class="ml-auto">
-                              <div class="text-align-end">
-                                <div class="dropdown">
-                                  <span href="#" role="button" id="reportDropdown" data-toggle="dropdown"
-                                    aria-haspopup="true" aria-expanded="false">
-                                    <i class="fa-xl fa-solid fa-ellipsis-vertical cursor-pointer text-center"
-                                      style="width: 20px"></i>
-                                  </span>
-
-                                  <div class="dropdown-menu dropdown-menu-right" aria-labelledby="reportDropdown">
-                                    <a class="dropdown-item"  href="#"><i
-                                        class="fa-solid fa-triangle-exclamation"></i>&nbsp;REPORT</a>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div class="overflow-hidden">
-                            <template v-for="champion in comment.champions">
-                              <span class="badge badge-secondary mr-1 mb-1" :title="champion">{{ champion }}</span>
-                            </template>
-                          </div>
-                          
-                          <p class="break-all white-space-pre-line overflow-scroll" style="max-height: 200px;">
-                            {{ comment.content }}</p>
-                          
-                          <div class="text-right text-muted">
-                            {{ comment.created_at | datetime }}
-                          </div>
-                        </div>
-                      </div>
-                    <hr class="my-4">
-                    </div>
-
-                    <div v-if="comments.data.length == 0" class="text-center">
-                      <p>{{ $t('No comments') }}</p>
-                    </div>
-                  </div>
-                  
-                  
-                  <b-pagination v-if="comments.meta.last_page > 1" v-model="comments.meta.current_page" :total-rows="comments.meta.total"
-                    :per-page="comments.meta.per_page" @input="changeCommentPage" class="justify-content-center"></b-pagination>
-                </div>
-              </div>
-            </div>
-          </div> -->
-          
         </div>
       </div>
     </div>
@@ -528,6 +470,7 @@ import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
 import Swal from 'sweetalert2';
 import UploadIcon from './partials/UploadIcon.vue';
+import EditElement from './partials/EditElement.vue';
 
 export default {
   mounted() {
@@ -546,11 +489,11 @@ export default {
     getRankEndpoint: String,
     updatePostEndpoint: String,
     updateElementEndpoint: String,
+    uploadElementEndpoint: String,
     deleteElementEndpoint: String,
     createImageElementEndpoint: String,
     batchCreateEndpoint: String,
     getTagsOptionsEndpoint: String,
-    getCommentsEndpoint: String,
     defaultAvatarUrl: String
   },
   data: function () {
@@ -565,7 +508,6 @@ export default {
         UPLOADING_VIDEO_URL: false,
         BATCH_UPLOADING: false,
         DELETING_POST: false,
-        COMMENTS: false,
       },
       uploadingFiles: {},
       post: null,
@@ -607,14 +549,6 @@ export default {
       keep_tags: [],
       tagsOptions: [],
       tagLocalStash: {},
-
-      //comment
-      comments: {
-        data: [],
-        meta: {
-          last_page: 1,
-        }
-      },
 
       //onImageError
       errorImages: [],
@@ -760,8 +694,16 @@ export default {
           this.elements = res.data;
         })
     },
+    handleElementUpdated: function (data) {
+      const index = _.findIndex(this.elements.data, {
+        id: data.data.id
+      });
+      this.$set(this.elements.data, index, data.data);
+      console.log('handleElementUpdated', data.data, index);
+    },
     updateElementTitle: function (id, event) {
       const data = {
+        post_serial: this.post.serial,
         title: event.target.value
       };
       const url = this.updateElementEndpoint.replace('_id', id);
@@ -928,6 +870,7 @@ export default {
             this.showAlert(err.response.data.message, 'danger');
           });
       });
+      event.target.value = '';
     },
     onImageError: function (element, event) {
       if(this.errorImages.includes(element.id)) {
@@ -1001,7 +944,8 @@ export default {
         return;
       }
       const data = {
-        [key]: seconds
+        [key]: seconds,
+        post_serial: this.post.serial
       };
       const url = this.updateElementEndpoint.replace('_id', element.id);
       axios.put(url, data)
@@ -1090,24 +1034,6 @@ export default {
     },
     handleRankPageChange: function (page) {
       this.loadRankReport(page);
-    },
-    clickCommentTab: function () {
-      if (this.comments.data.length === 0) {
-        this.loadComments();
-      }
-    },
-    loadComments: function () {
-      this.uploadLoadingStatus('COMMENTS', true);
-      axios.get(this.getCommentsEndpoint)
-        .then(res => {
-          this.comments = res.data;
-        })
-        .finally(() => {
-          this.uploadLoadingStatus('COMMENTS', false);
-        });
-    },
-    changeCommentPage: function (page) {
-      this.loadComments(page);
     },
   }
 }

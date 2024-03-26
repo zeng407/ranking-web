@@ -46,26 +46,19 @@ class ElementService
             ->first();
     }
 
-    public function massStore(string $sourceUrl, string $path, Post $post, $params = []): ?Element
+    public function massStore(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
     {
-        logger("guess {$sourceUrl} ...");
-        $guess = new ElementSourceGuess($sourceUrl);
+        $guess = $this->guessSourceType($sourceUrl);
         if ($guess->isImage) {
             logger("got Image");
-            return $this->storeImage($sourceUrl, $path, $post, $params);
-        }
-
-        if ($guess->isVideo) {
+            return $this->storeImage($sourceUrl, $directory, $post, $params);
+        } elseif ($guess->isVideo) {
             logger("got Video");
-            return $this->storeVideo($sourceUrl, $path, $post, $params);
-        }
-
-        if ($guess->isYoutube) {
+            return $this->storeVideo($sourceUrl, $directory, $post, $params);
+        } elseif ($guess->isYoutube) {
             logger("got Youtube");
             return $this->storeYoutubeVideo($sourceUrl, $post, $params);
-        }
-
-        if ($guess->isGFY) {
+        } elseif ($guess->isGFY) {
             logger("got GFY");
             return $this->storeGfycat($sourceUrl, $post, $params);
         }
@@ -73,10 +66,15 @@ class ElementService
         return null;
     }
 
+    protected function guessSourceType(string $url)
+    {
+        logger("guess {$url} ...");
+        return new ElementSourceGuess($url);
+    }
+
     public function storePublicImage(UploadedFile $file, string $directory, Post $post)
     {
-        $path = $file->storeAs($directory, $this->generateFileName().'.'.$file->getClientOriginalExtension());
-        Storage::setVisibility($path, 'public');
+        $path = $this->moveUploadedFile($file, $directory);
 
         $url = Storage::url($path);
         $thumb = $url;
@@ -93,6 +91,13 @@ class ElementService
         event(new ImageElementCreated($element, $post));
 
         return $element;
+    }
+
+    public function moveUploadedFile(UploadedFile $file, string $directory): string|bool
+    {
+        $path = $file->storeAs($directory, $this->generateFileName().'.'.$file->getClientOriginalExtension());
+        Storage::setVisibility($path, 'public');
+        return $path;
     }
 
     public function downloadImage(string $url, string $directory): ?StoragedImage
@@ -112,10 +117,10 @@ class ElementService
         return new StoragedImage($url, $path, $fileInfo);
     }
 
-    public function storeImage(string $sourceUrl, string $path, Post $post, $params = []): ?Element
+    public function storeImage(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
     {
         try {
-            $storageImage = $this->downloadImage($sourceUrl, $path);
+            $storageImage = $this->downloadImage($sourceUrl, $directory);
 
             if ($storageImage === null) {
                 return null;
@@ -130,7 +135,7 @@ class ElementService
         $localUrl = Storage::url($storageImage->getPath());
 
         $element = $post->elements()->updateOrCreate([
-            'source_url' => $sourceUrl,
+            'source_url' => $params['old_source_url'] ?? $sourceUrl,
         ], [
             'path' => $storageImage->getPath(),
             'source_url' => $sourceUrl,
@@ -170,32 +175,23 @@ class ElementService
         return $content;
     }
 
-    public function storeVideo(string $sourceUrl, string $path, Post $post, $params = []): ?Element
+    public function storeVideo(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
     {
-        try {
-            $fileInfo = pathinfo($sourceUrl);
-            $basename = $fileInfo['basename'] . '_' . random_str(8);
-            $content = file_get_contents($sourceUrl);
-
-            $path = rtrim($path, '/') . '/' . $basename;
-            $isSuccess = Storage::put($path, $content, 'public');
-
-            if (!$isSuccess) {
-                return null;
-            }
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
+        // try {
+        //     $fileInfo = pathinfo($sourceUrl);
+        // } catch (\Exception $exception) {
+        //     report($exception);
+        //     return null;
+        // }
 
         //todo make thumb from video
     
-        $title = $params['title'] ?? $fileInfo['filename'];
+        $title = $params['title'] ?? 'video';
 
         $element = $post->elements()->updateOrCreate([
-            'source_url' => $sourceUrl,
+            'source_url' => $params['old_source_url'] ?? $sourceUrl,
         ], [
-            'path' => $path,
+            'path' => null,
             'source_url' => $sourceUrl,
             'thumb_url' => $sourceUrl,
             'type' => ElementType::VIDEO,
@@ -216,7 +212,7 @@ class ElementService
             $title = $params['title'] ?? $info->gfyItem->title;
 
             $element = $post->elements()->updateOrCreate([
-                'source_url' => $info->gfyItem->mp4Url,
+                'source_url' => $params['old_source_url'] ?? $info->gfyItem->mp4Url,
             ], [
                 'source_url' => $info->gfyItem->mp4Url,
                 'thumb_url' => $info->gfyItem->posterUrl,
@@ -259,8 +255,8 @@ class ElementService
 
             $title = $params['title'] ?? $title;
             $element = $post->elements()->updateOrCreate([
-                'source_url' => $sourceUrl,
-            ],
+                    'source_url' => $params['old_source_url'] ?? $sourceUrl,
+                ],
                 [
                     'source_url' => $sourceUrl,
                     'thumb_url' => $thumbUrl,

@@ -31,11 +31,11 @@ class PublicPostResource extends JsonResource
             $image1 = $ranks->pop()->element;
             $image2 = $ranks->pop()->element;
         }else{
-            $elements = $this->elements()->inRandomOrder()->take(2)->get();
+            $elements = $this->elements->inRandomOrder()->take(2)->get();
             $image1 = $elements->pop();
             $image2 = $elements->pop();
         }
-        $elementsCount = $this->elements()->count();
+        $elementsCount = $this->elements->count();
 
         return [
             'title' => $this->title,

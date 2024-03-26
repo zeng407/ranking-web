@@ -5,6 +5,9 @@
     "Title": "標題",
     "Tag": "標籤",
     "Visibility": "發佈",
+    "Edit": "編輯",
+    "Close": "關閉",
+    "Save changes": "儲存",
 
     "post_policy.private": "私人",
     "post_policy.public": "公開",
@@ -53,6 +56,10 @@
     "edit_post.tag.enter": "輸入",
     "edit_post.info.cancel_save": "取消編輯",
     "You will lose all unsaved changes!": "要取消編輯嗎?",
+
+    "edit.element.upload-image": "上傳圖片",
+    "Current URL": "目前網址",
+    "Please delete first, then upload the URL": "請先刪除，再上傳網址",
 
     "Number of participants": "參賽人數",
     "game.select": "選擇",
@@ -118,5 +125,8 @@
     "Oops...": "糟糕...",
     "You have voted too quickly. Please try again later.": "你投太快了，請稍後再試",
     "Check out my result on this voting game!": "快來看看我的投票結果!",
-    "My Voting Game Result": "我的投票結果"
+    "My Voting Game Result": "我的投票結果",
+    "Choose File...": "選擇檔案...",
+
+    "":""
 }
