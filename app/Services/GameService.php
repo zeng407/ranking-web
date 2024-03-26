@@ -113,14 +113,14 @@ class GameService
             $remain = $lastRound->remain_elements - 1;
         }
         $data = [
+            'post_id' => $game->post_id,
             'current_round' => $round,
             'of_round' => $ofRound,
             'remain_elements' => $remain,
             'winner_id' => $winnerId,
-            'loser_id' => $loserId,
-            'complete_at' => now(),
+            'loser_id' => $loserId
         ];
-        \Log::info('saving game : ' . $game->serial, $data);
+        \Log::info('saving game : ' . $game->id, $data);
 
         // update winner
         $game->elements()

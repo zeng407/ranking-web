@@ -114,7 +114,7 @@ class RankService
 
     public function createRankReport(Post $post)
     {
-        \Log::info("update post [{$post->id}] CHAMPION rank");
+        \Log::info("start update post [{$post->id}] rank report..."); 
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
             ->where('record_date', today())
@@ -133,7 +133,7 @@ class RankService
                 ]);
             });
 
-        \Log::info("update post [{$post->id}] PK_KING rank");
+        
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::PK_KING)
             ->where('record_date', today())
@@ -152,7 +152,7 @@ class RankService
                 ]);
             });
 
-        \Log::info("update post [{$post->id}] rank report");
+        
         RankReport::where('post_id', $post->id)
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
@@ -164,5 +164,7 @@ class RankService
                     'rank' => $index + 1
                 ]);
             });
+
+        \Log::info("end update post [{$post->id}] rank report");
     }
 }
