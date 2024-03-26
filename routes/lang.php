@@ -17,7 +17,7 @@ use App\Http\Controllers\Post\GameController;
 */
 
 
-Route::prefix('{locale}')->middleware('locale.prefix')->group(function () {
+Route::prefix('lang/{locale}')->middleware('locale.prefix')->group(function () {
     Route::get('/', [HomeController::class, 'index']);
     Route::get('/hot', [HomeController::class, 'hot']);
     Route::get('/new', [HomeController::class, 'new']);

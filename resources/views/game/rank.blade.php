@@ -14,7 +14,7 @@
     >
         {{-- Main --}}
         <div class="container" v-cloak>
-            
+            @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
             <div class="row mb-3">
                 <div class="col-auto">
                     <a class="btn btn-outline-dark btn-sm m-1" href="{{route('home')}}">{{__('rank.return_home')}}&nbsp;<i class="fa-solid fa-home"></i></a>

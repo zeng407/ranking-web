@@ -133,3 +133,13 @@ if (!function_exists('find_role_id')) {
         return $role->id;
     }
 }
+
+
+if (!function_exists('url_path_without_locale')) {
+    function url_path_without_locale()
+    {
+        $path = request()->path();
+        $path = preg_replace('#^lang/[^/]+/#', '', $path);
+        return $path;
+    }
+}
