@@ -64,9 +64,13 @@ class BackupElementImage extends Command
                         $path = $element->path;
                     }
                     
-                    $element->thumb2_url = \Storage::url($path);
-                    $element->save();
-                    $counter++;
+                    $url = \Storage::url($path);
+                    if($url != $element->thumb2_url){
+                        $element->path = $path;
+                        $element->thumb2_url = $url;
+                        $element->save();
+                        $counter++;
+                    }
                     $this->info('Backup element image: ' . $element->id . ' - ' . $element->thumb2_url);
                 } catch (\Exception $e) {
                     \Log::error($e->getMessage());
