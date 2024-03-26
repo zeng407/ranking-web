@@ -99,9 +99,6 @@ class CreateImgurImage implements ShouldQueue
             'delete_hash' => $res['data']['deletehash'],
             'link' => $res['data']['link'],
         ]);
-        $element->update([
-            'thumb_url' => $res['data']['link'],
-        ]);
     }
 
     public function handle400NoSupportType($res)

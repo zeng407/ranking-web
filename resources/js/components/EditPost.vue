@@ -934,8 +934,8 @@ export default {
         return;
       }
 
-      if(element.thumb2_url !== null) {
-        event.target.src = element.thumb2_url;
+      if(element.thumb_url2 !== null) {
+        event.target.src = element.thumb_url2;
       }
       this.errorImages.push(element.id);
     },

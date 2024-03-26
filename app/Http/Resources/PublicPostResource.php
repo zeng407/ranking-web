@@ -45,14 +45,14 @@ class PublicPostResource extends JsonResource
             'image1' => [
                 'id' => $image1?->id,
                 'url' => $image1?->thumb_url,
-                'url2' => $image1?->thumb2_url,
+                'url2' => $image1?->imgur_image?->link,
                 'title' => $image1?->title,
 
             ],
             'image2' => [
                 'id' => $image2?->id,
                 'url' => $image2?->thumb_url,
-                'url2' => $image2?->thumb2_url,
+                'url2' => $image2?->imgur_image?->link,
                 'title' => $image2?->title
             ],
             'created_at' => $this->created_at,

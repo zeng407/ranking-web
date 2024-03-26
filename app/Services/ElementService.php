@@ -75,7 +75,7 @@ class ElementService
 
     public function storePublicImage(UploadedFile $file, string $directory, Post $post)
     {
-        $path = $file->storeAs($directory, $this->generateFileName());
+        $path = $file->storeAs($directory, $this->generateFileName().'.'.$file->getClientOriginalExtension());
         Storage::setVisibility($path, 'public');
 
         $url = Storage::url($path);
@@ -86,7 +86,6 @@ class ElementService
             'path' => $path,
             'source_url' => $url,
             'thumb_url' => $thumb,
-            'thumb2_url' => $thumb,
             'type' => ElementType::IMAGE,
             'title' => $title
         ]);
@@ -101,6 +100,9 @@ class ElementService
         $content = $this->getContent($url);
         $fileInfo = pathinfo($url);
         $basename = $this->generateFileName();
+        if(isset($fileInfo['extension'])){
+            $basename .= '.' . $fileInfo['extension'];
+        }
 
         $path = rtrim($directory, '/') . '/' . $basename;
         $isSuccess = Storage::put($path, $content, 'public');
@@ -132,8 +134,7 @@ class ElementService
         ], [
             'path' => $storageImage->getPath(),
             'source_url' => $sourceUrl,
-            'thumb_url' => $sourceUrl,
-            'thumb2_url' => $localUrl,
+            'thumb_url' => $localUrl,
             'type' => ElementType::IMAGE,
             'title' => $title
         ]);
@@ -187,6 +188,7 @@ class ElementService
             return null;
         }
 
+        //todo make thumb from video
     
         $title = $params['title'] ?? $fileInfo['filename'];
 
