@@ -59,6 +59,13 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Post updated successfully!');
     }
 
+    public function deletePost($postId)
+    {
+        $post = Post::findOrFail($postId);
+        $post->delete();
+        return redirect()->route('admin.post.index')->with('success', 'Post deleted successfully!');
+    }
+
     public function indexElement($postId)
     {
         $elements = Element::where('post_id', $postId)->orderByDesc('id')->paginate(10);
