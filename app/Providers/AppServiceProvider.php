@@ -24,7 +24,10 @@ class AppServiceProvider extends ServiceProvider
     {
         if ($this->app->isLocal()) {
             $this->app->register(\Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class);
+            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+            $this->app->register(TelescopeServiceProvider::class);
         }
+
     }
 
     /**
@@ -47,5 +50,15 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.force_https')) {
             \URL::forceScheme('https');
         }
+
+        \Illuminate\Database\Eloquent\Model::preventLazyLoading(!$this->app->isProduction());
+        \Illuminate\Database\Eloquent\Model::handleLazyLoadingViolationUsing(function ($model, $relation) {
+            $class = get_class($model);
+         
+            info("Attempted to lazy load [{$relation}] on model [{$class}].");
+        });
+        
+        
+
     }
 }

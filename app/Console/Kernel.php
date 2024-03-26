@@ -23,6 +23,10 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('sitemap:generate')->name('Generate Sitemap')->daily();
 
+        if(app()->isLocal()){
+            $schedule->command('telescope:prune')->daily();
+        }
+
     }
 
     /**

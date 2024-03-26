@@ -26,6 +26,7 @@
         "fakerphp/faker": "^1.16",
         "laravel/dusk": "^6.25",
         "laravel/sail": "^1.25",
+        "laravel/telescope": "^5.0",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^5.10",
         "phpunit/phpunit": "^9.5.10"
@@ -67,6 +68,7 @@
     "extra": {
         "laravel": {
             "dont-discover": [
+                "laravel/telescope"
             ]
         },
         "google/apiclient-services": [
