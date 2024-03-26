@@ -30,13 +30,16 @@ class PostService
         return Post::where('serial', $serial)->first();
     }
 
-    public function getLists(array $conditions, array $sorter = [], array $paginationOptions = [])
+    public function getLists(array $conditions, array $sorter = [], array $paginationOptions = [], array $with = [])
     {
         //trim null or empty
         $conditions = array_filter($conditions, fn($value) => !is_null($value) && $value !== '');
         $sorter = array_filter($sorter, fn($value) => !is_null($value) && $value !== '');
 
         $query = $this->repo->filter($conditions);
+        if($with){
+            $query = $query->with($with);
+        }
 
         if ($sortBy = data_get($sorter, 'sort_by')) {
             $dir = data_get($sorter, 'sort_dir') === 'desc' ? 'desc' : 'asc';

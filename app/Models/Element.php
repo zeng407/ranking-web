@@ -39,6 +39,8 @@ class Element extends Model
         'video_end_second'
     ];
 
+    protected $with = ['imgur_image'];
+
     public function posts()
     {
         return $this->belongsToMany(

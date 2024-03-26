@@ -32,6 +32,7 @@ class Post extends Model
         'description',
     ];
 
+    protected $with = ['post_policy', 'tags', 'elements'];
 
     /**
      * relations
