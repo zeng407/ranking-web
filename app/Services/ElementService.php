@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use App\Events\ImageElementCreated;
 use App\Events\ElementDeleted;
+use Ramsey\Uuid\Uuid;
 
 class ElementService
 {
@@ -72,21 +73,22 @@ class ElementService
         return null;
     }
 
-    public function storePublicImage(UploadedFile $file, string $path, Post $post)
+    public function storePublicImage(UploadedFile $file, string $directory, Post $post)
     {
-        $saveDir = $path;
-        $path = $file->store($saveDir);
+        $path = $file->storeAs($directory, $this->generateFileName());
         Storage::setVisibility($path, 'public');
 
         $url = Storage::url($path);
         $thumb = $url;
+        $title = mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'));
+        $title = preg_replace('/[\n\r\t]/', '', $title);
         $element = $post->elements()->create([
             'path' => $path,
             'source_url' => $url,
             'thumb_url' => $thumb,
             'thumb2_url' => $thumb,
             'type' => ElementType::IMAGE,
-            'title' => mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'))
+            'title' => $title
         ]);
         
         event(new ImageElementCreated($element, $post));
@@ -98,7 +100,7 @@ class ElementService
     {
         $content = $this->getContent($url);
         $fileInfo = pathinfo($url);
-        $basename = str_replace('.', '_' ,$fileInfo['basename']) . '_' . random_str(8);
+        $basename = $this->generateFileName();
 
         $path = rtrim($directory, '/') . '/' . $basename;
         $isSuccess = Storage::put($path, $content, 'public');
@@ -128,7 +130,7 @@ class ElementService
         $element = $post->elements()->updateOrCreate([
             'source_url' => $sourceUrl,
         ], [
-            'path' => $path,
+            'path' => $storageImage->getPath(),
             'source_url' => $sourceUrl,
             'thumb_url' => $sourceUrl,
             'thumb2_url' => $localUrl,
@@ -138,6 +140,11 @@ class ElementService
         event(new ImageElementCreated($element, $post));
 
         return $element;
+    }
+
+    protected function generateFileName()
+    {
+        return Uuid::uuid4()->toString();
     }
 
     protected function getContent(string $sourceUrl)

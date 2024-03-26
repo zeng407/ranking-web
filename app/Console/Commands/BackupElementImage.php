@@ -64,6 +64,7 @@ class BackupElementImage extends Command
                         $path = $element->path;
                     }
                     
+                    $element->path = $path;
                     $element->thumb2_url = \Storage::url($path);
                     $element->save();
                     $counter++;
