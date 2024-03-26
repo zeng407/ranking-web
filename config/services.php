@@ -31,6 +31,7 @@ return [
     ],
 
     'imgur' => [
+        'enabled' => env('IMGUR_ENABLED', false),
         'client_id' => env('IMGUR_CLIENT_ID'),
         'client_secret' => env('IMGUR_CLIENT_SECRET'),
         'access_token' => env('IMGUR_ACCESS_TOKEN'),
