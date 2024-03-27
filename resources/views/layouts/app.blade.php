@@ -19,6 +19,15 @@
 
     {{-- SEO --}}
     <title>{{ get_page_title($title ?? '') }}</title>
+    <script type="application/ld+json">
+        {
+          "@context" : "https://schema.org",
+          "@type" : "WebSite",
+          "alternateName": ["{!! str_replace(',' ,'","',config('app.short_names'))!!}"],
+          "name" : "{{config('app.name')}}",
+          "url" : "{{config('app.url')}}"
+        }
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ get_page_description($post ?? null) }}">
@@ -44,13 +53,6 @@
 </head>
 
 <body class="d-flex flex-column min-vh-100">
-    {{-- SEO --}}
-    <div itemscope itemtype="https://schema.org/WebSite">
-        <meta itemprop="url" content="{{ config('app.url') }}" />
-        <meta itemprop="name" content="{{ config('app.name') }}" />
-        <meta itemprop="alternateName" content="{{config('app.short_name')}}"/>
-    </div>
-
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{isset($stickyNav) && $stickyNav  ? 'sticky-top' : '' }}">
             <div class="container-fluid">
