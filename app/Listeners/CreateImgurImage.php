@@ -63,7 +63,7 @@ class CreateImgurImage implements ShouldQueue
         }
 
         $post = $event->getPost()->fresh();
-        if(!$post || $post->is_deleted){
+        if(!$post || $post->deleted_at){
             \Log::info('Post have been deleted');
             return;
         }
