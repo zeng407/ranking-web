@@ -34,6 +34,8 @@ class RankReport extends Model
         'win_rate'
     ];
 
+    protected $with = ['element'];
+
     public function post()
     {
         return $this->belongsTo(Post::class);

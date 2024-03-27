@@ -34,11 +34,13 @@
                                     @for ($i = 0; $i < config('setting.post_max_tags'); $i++)
                                         <div class="col-3 mb-1">
                                             <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text" id="hashtag">#</span>
-                                            </div>
-                                            <input class="form-control" name="tags[{{ $i }}]" type="text" maxlength="15"
-                                            aria-label="hashtag" aria-describedby="hashtag" value="{{ data_get($post->tags, "$i.name") }}" placeholder="第{{$i+1}}個標籤"></input>
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="hashtag">#</span>
+                                                </div>
+                                                <input class="form-control" name="tags[{{ $i }}]" type="text"
+                                                    maxlength="15" aria-label="hashtag" aria-describedby="hashtag"
+                                                    value="{{ data_get($post->tags, "$i.name") }}"
+                                                    placeholder="第{{ $i + 1 }}個標籤"></input>
                                             </div>
                                         </div>
                                     @endfor
@@ -65,8 +67,16 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <button class="form-control btn btn-outline-danger" type="submit">更新</button>
+                                    <button class="form-control btn btn-outline-primary" type="submit">更新</button>
                                 </div>
+                            </div>
+                        </form>
+                        <form action="{{ route('admin.post.delete', $post->id) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button class="form-control btn btn-outline-danger" type="submit" onclick="return confirm('Are you sure you want to delete this item?')">
+                                <i class="fas fa-trash"></i> {{ __('Delete') }}
+                            </button>
                         </form>
                     </div>
                 </div>

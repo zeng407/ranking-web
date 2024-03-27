@@ -30,7 +30,6 @@ class Element extends Model
         'path',
         'source_url',
         'thumb_url',
-        'thumb2_url',
         'title',
         'type',
         'video_source',
@@ -39,6 +38,8 @@ class Element extends Model
         'video_start_second',
         'video_end_second'
     ];
+
+    protected $with = ['imgur_image'];
 
     public function posts()
     {

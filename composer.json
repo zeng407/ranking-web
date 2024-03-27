@@ -8,6 +8,7 @@
         "php": "^8.2",
         "ext-json": "*",
         "ext-redis": "*",
+        "doctrine/dbal": "^3.8",
         "fruitcake/laravel-cors": "^2.0",
         "google/apiclient": "^2.12.1",
         "guzzlehttp/guzzle": "^7.0.1",
@@ -26,6 +27,7 @@
         "fakerphp/faker": "^1.16",
         "laravel/dusk": "^6.25",
         "laravel/sail": "^1.25",
+        "laravel/telescope": "^5.0",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^5.10",
         "phpunit/phpunit": "^9.5.10"
@@ -67,6 +69,7 @@
     "extra": {
         "laravel": {
             "dont-discover": [
+                "laravel/telescope"
             ]
         },
         "google/apiclient-services": [

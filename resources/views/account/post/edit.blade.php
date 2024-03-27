@@ -17,6 +17,7 @@
         update-post-endpoint="{{route('api.post.update', $serial)}}"
 
         update-element-endpoint="{{route('api.element.update', '_id')}}"
+        upload-element-endpoint="{{route('api.element.upload', '_id')}}"
         delete-element-endpoint="{{route('api.element.delete', '_id')}}"
         create-image-element-endpoint="{{route('api.element.create-image')}}"
         batch-create-endpoint="{{route('api.element.batch-create')}}"

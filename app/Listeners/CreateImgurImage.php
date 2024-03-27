@@ -48,6 +48,10 @@ class CreateImgurImage implements ShouldQueue
      */
     public function handle(ImageElementCreated $event)
     {
+        if(!config('services.imgur.enabled')){
+            return;
+        }
+
         if(app()->isLocal()){
             return;
         }
@@ -59,11 +63,12 @@ class CreateImgurImage implements ShouldQueue
         }
 
         $post = $event->getPost();
-        if(!$post->fresh()){
+        if(!$post->fresh() || $post->is_deleted){
             \Log::info('Post have been deleted');
             return;
         }
 
+        //todo handle element already have imgur image but we need to reupload
         if($element->imgur_image){
             \Log::info('Element already have imgur image', ['element_id' => $element->id, 'post_id' => $post->id]);
             return;
@@ -98,9 +103,6 @@ class CreateImgurImage implements ShouldQueue
             'description' => $res['data']['description'],
             'delete_hash' => $res['data']['deletehash'],
             'link' => $res['data']['link'],
-        ]);
-        $element->update([
-            'thumb_url' => $res['data']['link'],
         ]);
     }
 

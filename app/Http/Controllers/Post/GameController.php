@@ -5,9 +5,6 @@ namespace App\Http\Controllers\Post;
 
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Comment\CommentResource;
-use App\Http\Resources\Game\GameResultResource;
-use App\Http\Resources\Rank\PostRankResource;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Post;

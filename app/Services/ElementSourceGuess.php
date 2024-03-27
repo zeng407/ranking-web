@@ -28,9 +28,9 @@ class ElementSourceGuess
         } elseif ($this->isVideoUrl($this->source)) {
             $this->isVideo = true;
         } elseif ($this->isYoutube($this->source)) {
-                $this->isYoutube = true;
+            $this->isYoutube = true;
         } elseif ($this->isGfy($this->source)) {
-                $this->isGFY = true;
+            $this->isGFY = true;
         }
     }
 
@@ -39,7 +39,8 @@ class ElementSourceGuess
         try {
             if (@getimagesize($sourceUrl) || in_array(pathinfo($sourceUrl)['extension'], ['jpg', 'png', 'gif'])) {
                 return true;
-            };
+            }
+
         } catch (\Exception $exception) {
         }
         return false;
@@ -58,9 +59,9 @@ class ElementSourceGuess
             //video/webm
             //video/*
             $headers = get_headers($url, true);
-            if (isset($headers['Content-Type'])) {
+            if (isset ($headers['Content-Type'])) {
                 logger($headers['Content-Type']);
-                foreach ((array)$headers['Content-Type'] as $content) {
+                foreach ((array) $headers['Content-Type'] as $content) {
                     if (explode('/', $content)[0] === 'video') {
                         return true;
                     }

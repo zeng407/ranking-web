@@ -31,11 +31,11 @@ class PublicPostResource extends JsonResource
             $image1 = $ranks->pop()->element;
             $image2 = $ranks->pop()->element;
         }else{
-            $elements = $this->elements()->inRandomOrder()->take(2)->get();
+            $elements = $this->elements->shuffle()->take(2);
             $image1 = $elements->pop();
             $image2 = $elements->pop();
         }
-        $elementsCount = $this->elements()->count();
+        $elementsCount = $this->elements->count();
 
         return [
             'title' => $this->title,
@@ -45,14 +45,14 @@ class PublicPostResource extends JsonResource
             'image1' => [
                 'id' => $image1?->id,
                 'url' => $image1?->thumb_url,
-                'url2' => $image1?->thumb2_url,
+                'url2' => $image1?->imgur_image?->link,
                 'title' => $image1?->title,
 
             ],
             'image2' => [
                 'id' => $image2?->id,
                 'url' => $image2?->thumb_url,
-                'url2' => $image2?->thumb2_url,
+                'url2' => $image2?->imgur_image?->link,
                 'title' => $image2?->title
             ],
             'created_at' => $this->created_at,

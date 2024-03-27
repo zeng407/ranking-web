@@ -41,5 +41,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('account/elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');
     Route::post('account/elements/batch', [ElementController::class, 'batchCreate'])->name('api.element.batch-create');
     Route::put('account/element/{element}', [ElementController::class, 'update'])->name('api.element.update');
+    Route::post('account/element/{element}/upload', [ElementController::class, 'upload'])->name('api.element.upload');
     Route::delete('account/element/{element}', [ElementController::class, 'delete'])->name('api.element.delete');
 });

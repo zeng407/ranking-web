@@ -49,7 +49,12 @@ class CreateImgurAlbum implements ShouldQueue
      */
     public function handle(PostCreated $event)
     {
+        if(!config('services.imgur.enabled')){
+            return;
+        }
+        
         if(app()->isLocal()){
+            logger('CreateImgurAlbum listener handle', ['local' => true]);
             return;
         }
 
