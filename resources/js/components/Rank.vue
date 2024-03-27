@@ -168,7 +168,7 @@ export default {
         });
     },
     share: function() {
-      const url = window.location.origin + window.location.pathname;
+      const url = window.location.origin + window.location.pathname + '?utm_medium=share';
       if (navigator.share) {
         navigator.share({
           url: url
@@ -182,7 +182,12 @@ export default {
       }
     },
     shareResult: function() {
-      const url = window.location.href;
+
+      //get parameter g
+      const urlParams = new URLSearchParams(window.location.search);
+      const g = urlParams.get('g');
+      const url = window.location.origin + window.location.pathname + '?s=' + g + '&utm_medium=share';
+
       if (navigator.share) {
         navigator.share({
           url: url,

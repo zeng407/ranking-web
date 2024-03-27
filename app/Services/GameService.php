@@ -122,19 +122,21 @@ class GameService
         ];
         \Log::info('saving game : ' . $game->id, $data);
 
-        // update winner
-        $game->elements()
-            ->wherePivot('is_eliminated', false)
-            ->updateExistingPivot($winnerId, [
-                'win_count' => \DB::raw('win_count + 1')
-            ]);
-
-        // update loser
-        $game->elements()
-            ->wherePivot('is_eliminated', false)
-            ->updateExistingPivot($loserId, [
-                'is_eliminated' => true
-            ]);
+        \DB::transaction(function () use ($game, $winnerId, $loserId) {
+            // update winner
+            $game->elements()
+                ->wherePivot('is_eliminated', false)
+                ->updateExistingPivot($winnerId, [
+                    'win_count' => \DB::raw('win_count + 1')
+                ]);
+        
+                // update loser
+            $game->elements()
+                ->wherePivot('is_eliminated', false)
+                ->updateExistingPivot($loserId, [
+                    'is_eliminated' => true
+                ]);
+        });
 
         return $game->game_1v1_rounds()->create($data);
     }

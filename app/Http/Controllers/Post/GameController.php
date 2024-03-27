@@ -43,7 +43,9 @@ class GameController extends Controller
     public function rank(Request $request)
     {
         $serial = $request->route('post');
-        $gameSerial = $request->query('g');
+        // g is for game, which user played complete game
+        // s is for share, which user shared the game result
+        $gameSerial = $request->query('g') ?? $request->query('s');
         $game = Game::where('serial', $gameSerial)->first();
         $post = $this->postService->getPost($serial);
         $reports = $this->rankService->getRankReports($post, 10);
@@ -59,6 +61,7 @@ class GameController extends Controller
             'ogElement' => $this->getElementForOG($post),
             'reports' => $reports,
             'gameResult' => $gameResult,
+            'shared' => $request->query('s') ? true : false
         ]);
     }
 

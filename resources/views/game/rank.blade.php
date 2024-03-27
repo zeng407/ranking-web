@@ -21,7 +21,7 @@
                     <a class="btn btn-outline-dark btn-sm m-1" href={{route('game.show', $post->serial)}}>{{__('rank.play')}}&nbsp;<i class="fa-solid fa-play"></i></a>
                     <button @click="share" id="popover-button-event" type="button" class="btn btn-outline-dark btn-sm m-1">{{__('rank.share')}}&nbsp;<i class="fa-solid fa-share-square"></i></button>
                     <b-popover ref="popover" target="popover-button-event" :disabled="true">{{__('Copied')}}</b-popover>
-                    @if($gameResult)
+                    @if($gameResult && !$shared)
                         <button @click="shareResult" id="share-result-button-event" type="button" class="btn btn-primary btn-sm m-1">{{__('rank.share-result')}}&nbsp;<i class="fa-solid fa-share-square"></i></button>
                         <b-popover ref="share-popover" target="share-result-button-event" :disabled="true">{{__('Copied')}}</b-popover>
                     @endif
