@@ -6,7 +6,7 @@ use App\Services\PostService;
 use Tests\TestCase;
 use App\Services\ImgurService;
 
-class ImgurServiceTest extends TestCase
+class ImgurTest extends TestCase
 {
     public function testGetAccountInfo()
     {
@@ -48,6 +48,8 @@ class ImgurServiceTest extends TestCase
         Http::fake([
             'album' => Http::response($expectedResult, 200),
         ]);
+
+        config(['app.env' => 'production']);
 
         /** @var User */
         $user = User::factory()->create();

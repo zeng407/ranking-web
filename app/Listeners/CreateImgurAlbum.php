@@ -54,6 +54,7 @@ class CreateImgurAlbum implements ShouldQueue
         }
         
         if(app()->isLocal()){
+            logger('CreateImgurAlbum listener handle', ['local' => true]);
             return;
         }
 

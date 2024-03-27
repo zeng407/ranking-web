@@ -699,7 +699,15 @@ export default {
         id: data.data.id
       });
       this.$set(this.elements.data, index, data.data);
-      console.log('handleElementUpdated', data.data, index);
+      Swal.fire({
+        position: "top-end",
+        showConfirmButton: false,
+        title: this.$t("Updated!"),
+        toast: true,
+        text: this.$t("The element has been updated."),
+        icon: "success",
+        timer: 3000
+      });
     },
     updateElementTitle: function (id, event) {
       const data = {

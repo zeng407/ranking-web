@@ -31,7 +31,7 @@ class PublicPostResource extends JsonResource
             $image1 = $ranks->pop()->element;
             $image2 = $ranks->pop()->element;
         }else{
-            $elements = $this->elements->inRandomOrder()->take(2)->get();
+            $elements = $this->elements->shuffle()->take(2);
             $image1 = $elements->pop();
             $image2 = $elements->pop();
         }

@@ -34,6 +34,7 @@ class GameTest extends TestCase
         $this->assertNotNull($data[0]['image2']['title']);
     }
 
+
     public function test_create_game()
     {
         $post = $this->seedPost();
