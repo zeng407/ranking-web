@@ -516,7 +516,6 @@
 import bsCustomFileInput from 'bs-custom-file-input';
 import moment from 'moment';
 import Swal from 'sweetalert2';
-import UploadIcon from './partials/UploadIcon.vue';
 import EditElement from './partials/EditElement.vue';
 import UploadGuide from './partials/UploadGuide.vue';
 
