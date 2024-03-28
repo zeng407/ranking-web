@@ -64,7 +64,7 @@ export default {
       this.loadData();
     },
     share: function (url, id) {
-      url = url + '?utm_source=share';
+      url = url + '?utm_medium=share';
       if (navigator.share) {
         navigator.share({
           url: url
