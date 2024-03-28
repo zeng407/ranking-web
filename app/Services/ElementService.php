@@ -85,7 +85,7 @@ class ElementService
         
         // validate video id 
         // example : 1H2cyhWYXrE?si=btfjgIQDNUoNuriT&amp;clip=UgkxeWL6j9ODyTnJpJe6Ris_NgNzLFls3SyG&amp;clipt=ELidBRjQkgY
-        $validate = preg_match('/^[a-zA-Z0-9?&;=_-]+$/', $videoUrl) && strlen($videoUrl) <= 99;
+        $validate = preg_match('/^[a-zA-Z0-9?&;=_-]+$/', $videoUrl) && strlen($videoUrl) <= 120;
         if (!$validate){
             return null;
         }
