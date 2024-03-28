@@ -30,7 +30,9 @@ class YoutubeService
         try {
             //try getting v={video_id} format
             parse_str(parse_url($url, PHP_URL_QUERY), $result);
-            return $result['v'];
+            if (isset($result['v'])){
+                return $result['v'];
+            }
         } catch (\Throwable $throwable) {
             $errors[] = $throwable->getMessage();
         }
@@ -45,10 +47,13 @@ class YoutubeService
         }
 
         try {
-            //try getting url?v={video_id} format
+            //try getting video_id format from youtube url https://www.youtube.com/watch/ or clip url https://www.youtube.com/clip/xxxxx
             preg_match("/^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(-nocookie)?\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/", $url, $matches);
             logger("return  matches ");
             logger($matches);
+            if($matches && isset($matches[6]) && $matches[6] == 'clip'){
+                return str_replace('/','',$matches[7] ?? '');
+            }
             return $matches[6];
         } catch (\Throwable $throwable) {
             $errors[] = $throwable->getMessage();

@@ -76,4 +76,35 @@ class ImgurService
         }
         return $res;
     }
+
+    public function parseGalleryAlbumId(string $url)
+    {
+        $matches = [];
+        preg_match('/^https?:\/\/imgur\.com\/(gallery|a)\/([a-zA-Z0-9]+)$/', $url, $matches);
+        return $matches[2] ?? null;
+    }
+
+    public function getGalleryAlbumImages(string $albumId)
+    {
+        $this->client->withHeaders([
+            'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
+        ]);
+        $res = $this->client->get("gallery/album/$albumId");
+        $res = json_decode($res->getBody()->getContents(), true);
+
+        return $res;
+
+    }
+
+    public function getImage(string $imageId)
+    {
+        $this->client->withHeaders([
+            'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
+        ]);
+        $res = $this->client->get("image/$imageId");
+        $res = json_decode($res->getBody()->getContents(), true);
+
+        return $res;
+
+    }
 }
