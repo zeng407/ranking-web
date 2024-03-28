@@ -603,7 +603,7 @@ export default {
     }
   },
   components: {
-    UploadIcon
+    
   },
   computed: {
     totalRow: function () {
