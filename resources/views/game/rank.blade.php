@@ -54,6 +54,8 @@
                                     :autoplay="false" 
                                     :rel="0" origin="{{ request()->getSchemeAndHttpHost() }}">
                                 </youtube-player>
+                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube_embed')
+                                {!! inject_youtube_embed($gameResult->winner->source_url) !!}
                             @elseif($gameResult->winner->type === 'video')
                                 <video width="100%" height="270" loop autoplay muted playsinline
                                     src="{{ $gameResult->winner->thumb_url }}"></video>
@@ -83,6 +85,8 @@
                                     :autoplay="false" 
                                     :rel="0" 
                                     origin="{{ request()->getSchemeAndHttpHost() }}">
+                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube_embed')
+                                {!! inject_youtube_embed($rank->loser->source_url) !!}
                             @elseif($rank->loser->type === 'video')
                                 <video width="100%" height="270" loop autoplay muted playsinline src="{{$rank->loser->thumb_url}}"></video>    
                             @elseif($rank->loser->type === 'image')
@@ -120,6 +124,8 @@
                                     :rel="0" 
                                     origin="{{ request()->getSchemeAndHttpHost() }}">
                                 </youtube-player>
+                            @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'youtube_embed')
+                                {!! inject_youtube_embed($rank->element->source_url) !!}
                             @elseif($rank->element->type === 'video')
                                 <video width="100%" height="270" loop autoplay muted playsinline src="{{$rank->element->thumb_url}}"></video>
                             @elseif($rank->element->type === 'image')

@@ -60,6 +60,20 @@ class ElementController extends Controller
         ]);
         $urls = $request->input('url');
 
+        // if the url is a youtube video embed and iframe
+        if (
+            preg_match('/https:\/\/www\.youtube\.com\/embed\/([a-zA-Z0-9_-]+)/', $urls)&& 
+            preg_match('/^<iframe.*?src="(.*?)".*?<\/iframe>$/', $urls)
+        ) {
+            $post = $this->getPost($request->post_serial);
+            $element = $this->elementService->storeYoutubeEmbed($urls, $post);
+            if($element === null){
+                return api_response(ApiResponseCode::INVALID_URL, 422);
+            }
+            return PostElementResource::collection([$element]);
+        }
+
+
         try {
             // url string to array and trim url
             // example: convert "example1.com, www.example.com" to

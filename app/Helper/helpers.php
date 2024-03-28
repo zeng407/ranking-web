@@ -143,3 +143,13 @@ if (!function_exists('url_path_without_locale')) {
         return $path;
     }
 }
+
+if(!function_exists('inject_youtube_embed')){
+    function inject_youtube_embed($embedCode, $width = '100%', $height = '270')
+    {
+        // replace width and height
+        $embedCode = preg_replace('/width="\d+"/', "width=\"{$width}\"", $embedCode);
+        $embedCode = preg_replace('/height="\d+"/', "height=\"{$height}\"", $embedCode);
+        return $embedCode;
+    }
+}

@@ -105,10 +105,10 @@
     "The element has been deleted.": "素材已刪除" ,
     "The element has been updated.": "素材已更新",
     "Updated": "已更新",
+    "Updated!": "已更新!",
     "Your element has been updated.": "素材已更新",
     "Hashtag already exists": "標籤已存在",
     "Maximum number of tags reached": "已達到最大標籤數",
-    "Updated!": "已更新!",
     "Please select a reason for reporting": "請選擇檢舉原因",
 
     "Spam": "垃圾訊息",
@@ -127,6 +127,8 @@
     "Check out my result on this voting game!": "快來看看我的投票結果!",
     "My Voting Game Result": "我的投票結果",
     "Choose File...": "選擇檔案...",
+    "Upload guide": "上傳教學",
+    "Support formats": "支援格式",
 
     "":""
 }

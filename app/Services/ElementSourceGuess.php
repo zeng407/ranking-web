@@ -7,6 +7,8 @@ class ElementSourceGuess
 {
     protected $source;
     public $isImage;
+    public $isImgur;
+
     public $isVideo;
 
     public $isYoutube;
@@ -25,7 +27,9 @@ class ElementSourceGuess
     {
         if ($this->isImageUrl($this->source)) {
             $this->isImage = true;
-        } elseif ($this->isVideoUrl($this->source)) {
+        } elseif ($this->isImgurUrl($this->source)) {
+            $this->isImgur = true;
+        }elseif ($this->isVideoUrl($this->source)) {
             $this->isVideo = true;
         } elseif ($this->isYoutube($this->source)) {
             $this->isYoutube = true;
@@ -37,10 +41,27 @@ class ElementSourceGuess
     protected function isImageUrl($sourceUrl)
     {
         try {
-            if (@getimagesize($sourceUrl) || in_array(pathinfo($sourceUrl)['extension'], ['jpg', 'png', 'gif'])) {
+            if (@getimagesize($sourceUrl) || in_array(pathinfo($sourceUrl)['extension'] ?? '', ['jpg', 'png', 'gif'])) {
                 return true;
             }
 
+        } catch (\Exception $exception) {
+            logger($exception->getMessage());
+        }
+        return false;
+    }
+
+    protected function isImgurUrl(string $url)
+    {
+        try {
+            // check if the url is a imgur image by regex
+            // https://imgur.com/gallery/8nLFCVP
+            if (
+                preg_match('/^https?:\/\/imgur\.com\/(gallery|a)\/[a-zA-Z0-9]+$/', $url) ||
+                preg_match('/^https?:\/\/imgur\.com\/[a-zA-Z0-9]+$/', $url)
+            ) {
+                return true;
+            }
         } catch (\Exception $exception) {
         }
         return false;

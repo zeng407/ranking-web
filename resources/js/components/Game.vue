@@ -24,6 +24,9 @@
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
             </youtube>
           </div>
+          <div v-if="isYoutubeEmbedSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
+            <YoutubeEmbed :element="le" width="100%" :height="elementHeight" v-if="le"/>
+          </div>
           <video v-else-if="isVideoSource(le)" width="100%" :height="elementHeight" loop autoplay muted controls
             playsinline :src="le.thumb_url"></video>
           <div class="card-body text-center">
@@ -71,6 +74,9 @@
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
             </youtube>
+          </div>
+          <div v-else-if="isYoutubeEmbedSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, true)">
+            <YoutubeEmbed :element="re" width="100%" :height="elementHeight" v-if="re"/>
           </div>
           <video v-else-if="isVideoSource(re)" width="100%" :height="elementHeight" loop autoplay muted controls
             playsinline :src="re.thumb_url"></video>
@@ -623,6 +629,9 @@ export default {
     },
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
+    },
+    isYoutubeEmbedSource: function (element) {
+      return element.type === 'video' && element.video_source === 'youtube_embed';
     },
     isGfycatSource: function (element) {
       return element.type === 'video' && element.video_source === 'gfycat';

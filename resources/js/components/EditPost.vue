@@ -245,9 +245,7 @@
                 <label><i class="fa-solid fa-link"></i>&nbsp;{{ $t('Upload from URL') }}</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate" rows="5"
-                    v-model="batchString" aria-label="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                    aria-describedby="batchCreateVideo" placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-                  </textarea>
+                    v-model="batchString" aria-describedby="batchCreateVideo"></textarea>
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" type="button" @click="batchUpload"
                       :disabled="loading['BATCH_UPLOADING']">
@@ -257,7 +255,7 @@
                   </div>
                 </div>
                 <div class="mt-3">
-                    <UploadIcon />
+                    <UploadGuide />
                 </div>
               </div>
             </div>
@@ -342,9 +340,58 @@
                         @elementUpdated="handleElementUpdated"/>
                     </div>
                   </div>
-
+                  <!-- youtube embed source -->
+                  <div class="card mb-3" v-if="isYoutubeEmbedSource(element)">
+                    <YoutubeEmbed :element="element" v-if="element"/>
+                    <!-- youtube video editor -->
+                    <div class="card-body">
+                      <!--title edit-->
+                      <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
+                        :maxlength="config.element_title_size" rows="4" style="resize: none;"
+                        @change="updateElementTitle(element.id, $event)"></textarea>
+                      <!--play time range-->
+                      <div class="row mb-3">
+                        <div class="col-10">
+                          <div class="input-group">
+                            <div class="input-group-prepend d-lg-none d-xl-block">
+                              <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
+                            </div>
+                            <input type="text" class="form-control" name="video_start_second" placeholder="0:00"
+                              aria-label="start" @change="updateVideoScope(index, element, $event)"
+                              :value="toTimeFormat(element.video_start_second)">
+                            <div class="input-group-prepend"><span class="input-group-text">~</span></div>
+                            <input type="text" class="form-control" name="video_end_second"
+                              :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
+                              :value="toTimeFormat(element.video_end_second)"
+                              @change="updateVideoScope(index, element, $event)">
+                          </div>
+                        </div>
+                        <!--play button-->
+                        <div class="col-2">
+                          <a class="btn btn-danger fa-pull-right" @click="clickPlayButton(index, element)">
+                            <i class="fas fa-play-circle"></i>
+                          </a>
+                        </div>
+                      </div>
+                      <!--create time-->
+                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
+                      <!--delete button-->
+                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                      </a>
+                      <!--edit button-->
+                      <EditElement v-if="post"
+                        :post-serial="post.serial"
+                        :element-id="String(element.id)"
+                        :source-url="element.source_url"
+                        :update-element-route="updateElementEndpoint" 
+                        :upload-element-route="uploadElementEndpoint"
+                        @elementUpdated="handleElementUpdated"/>
+                    </div>
+                  </div>
                   <!-- simple video source -->
-                  <div class="card mb-3" v-if="!isYoutubeSource(element)">
+                  <div class="card mb-3" v-else>
                     <!-- load the video player -->
                     <video width="100%" height="270" loop autoplay muted playsinline :src="element.thumb_url"></video>
                     <!-- editor -->
@@ -471,6 +518,7 @@ import moment from 'moment';
 import Swal from 'sweetalert2';
 import UploadIcon from './partials/UploadIcon.vue';
 import EditElement from './partials/EditElement.vue';
+import UploadGuide from './partials/UploadGuide.vue';
 
 export default {
   mounted() {
@@ -898,6 +946,9 @@ export default {
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
     },
+    isYoutubeEmbedSource: function (element) {
+      return element.type === 'video' && element.video_source === 'youtube_embed';
+    },
     batchUpload: function () {
       if (this.loading['BATCH_UPLOADING']) {
         return;
@@ -919,7 +970,7 @@ export default {
             // }
             setTimeout(() => {
               this.dismissAlert();
-              this.showAlert(data.title, 'success');
+              this.showAlert((data.title) ? data.title : this.$t('Uploaded!'), 'success');
             }, waittime);
             waittime += 500;
           });
