@@ -13,28 +13,6 @@ use Tests\TestCase;
 
 class GameTest extends TestCase
 {
-    public function test_index_public_post()
-    {
-        $post = $this->seedPost();
-
-        $res = $this->get(route('api.public-post.index'));
-        $res->assertOk();
-
-        $json = $res->decodeResponseJson();
-        $data = $json->json('data');
-        $this->assertIsArray($data);
-        $this->assertEquals(1, count($data));
-
-        $this->assertEquals($post->serial, $data[0]['serial']);
-        $this->assertEquals($post->title, $data[0]['title']);
-        $this->assertEquals($post->description, $data[0]['description']);
-        $this->assertNotNull($data[0]['image1']['url']);
-        $this->assertNotNull($data[0]['image1']['title']);
-        $this->assertNotNull($data[0]['image2']['url']);
-        $this->assertNotNull($data[0]['image2']['title']);
-    }
-
-
     public function test_create_game()
     {
         $post = $this->seedPost();

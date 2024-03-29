@@ -25,7 +25,7 @@ class PostController extends Controller
         $config = [
             'post_max_element_count' => config('setting.post_max_element_count'),
             'post_title_size' => config('setting.post_title_size'),
-            'post_content_size' => config('setting.post_content_size'),
+            'post_description_size' => config('setting.post_description_size'),
             'element_title_size' => config('setting.element_title_size'),
         ];
 

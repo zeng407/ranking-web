@@ -81,19 +81,24 @@
             </div>
             <div class="row no-gutters">
               <div class="col-6">
-                <div class="post-image-container">
-                  <img src="{{$post['image1']['url']}}" @@error="onImageError('{{$post['image1']['url2']}}', $event)">
+                <div class="post-element-container">
+                  @if($post['element1']['type'] === \App\Enums\ElementType::IMAGE || $post['element1']['video_source'] === \App\Enums\VideoSource::YOUTUBE || $post['element1']['video_source'] === \App\Enums\VideoSource::YOUTUBE_EMBED)
+                  <img src="{{$post['element1']['url']}}" @@error="onImageError('{{$post['element1']['url2']}}', $event)">
+                  @else
+                  <video src="{{$post['element1']['url']}}#t=1'"></video>
+                  @endif
                 </div>
-
-                <p class="text-center mt-1 p-1">{{ $post['image1']['title'] }}</p>
+                <p class="text-center mt-1 p-1">{{ $post['element1']['title'] }}</p>
               </div>
               <div class="col-6">
-
-                <div class="post-image-container">
-                  <img src="{{$post['image2']['url']}}" @@error="onImageError('{{$post['image2']['url2']}}', $event)">
+                <div class="post-element-container">
+                  @if($post['element2']['type'] === \App\Enums\ElementType::IMAGE || $post['element2']['video_source'] === \App\Enums\VideoSource::YOUTUBE || $post['element2']['video_source'] === \App\Enums\VideoSource::YOUTUBE_EMBED)
+                  <img src="{{$post['element2']['url']}}" @@error="onImageError('{{$post['element2']['url2']}}', $event)">
+                  @else
+                  <video src="{{$post['element2']['url']}}#t=1'"></video>
+                  @endif
                 </div>
-  
-                <p class="text-center mt-1 p-1">{{ $post['image2']['title'] }}</p>
+                <p class="text-center mt-1 p-1">{{ $post['element2']['title'] }}</p>
               </div>
               <div class="card-body pt-0 text-center">
                 <p class="text-break">{{ $post['description'] }}</p>

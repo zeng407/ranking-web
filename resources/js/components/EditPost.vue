@@ -341,7 +341,7 @@
                     </div>
                   </div>
                   <!-- youtube embed source -->
-                  <div class="card mb-3" v-if="isYoutubeEmbedSource(element)">
+                  <div class="card mb-3" v-else-if="isYoutubeEmbedSource(element)">
                     <YoutubeEmbed :element="element" v-if="element"/>
                     <!-- youtube video editor -->
                     <div class="card-body">
@@ -448,7 +448,7 @@
             </div>
 
             <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow"
-              :per-page="perPage" first-number last-number @change="handleElementPageChange"
+              :per-page="elements.meta.per_page" first-number last-number @change="handleElementPageChange"
               align="center"></b-pagination>
           </div>
 
@@ -570,7 +570,6 @@ export default {
       deletingElement: [],
 
       currentPage: 1,
-      perPage: 50,
       youtubeUrl: "",
       videoUrl: "",
       batchString: "",
@@ -803,6 +802,7 @@ export default {
                   icon: "success",
                   timer: 3000
                 });
+                this.loadElements(this.currentPage);
               })
               .finally(() => {
                 this.removeDeleting(element);

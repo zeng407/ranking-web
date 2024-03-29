@@ -8,9 +8,6 @@ use App\Http\Controllers\Api\GameController;
 use App\Http\Controllers\Api\PublicPostController;
 use App\Http\Controllers\Api\RankController;
 
-/** Home */
-Route::get('/', [PublicPostController::class, 'index'])->name('api.public-post.index');
-
 /** Tag */
 Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
 

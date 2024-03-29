@@ -24,7 +24,7 @@ use App\Services\PostService;
 
 class MyPostController extends Controller
 {
-    const ELEMENTS_PER_PAGE = 128;
+    const ELEMENTS_PER_PAGE = 10;
 
     protected ElementService $elementService;
     protected RankService $rankService;
@@ -75,7 +75,10 @@ class MyPostController extends Controller
             ElementFilter::TITLE_LIKE
         ]);
 
-        $data = $this->elementService->getLists($condition, $paginationOptions);
+        $data = $this->elementService->getList($condition, [
+            'sort_by' => 'id',
+            'sort_dir' => 'desc'
+        ], $paginationOptions);
 
         return PostElementResource::collection($data);
     }

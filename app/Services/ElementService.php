@@ -10,6 +10,7 @@ use App\Models\Element;
 use App\Models\Post;
 use App\Repositories\ElementRepository;
 use App\Services\Models\StoragedImage;
+use App\Services\Traits\HasRepository;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use App\Events\ImageElementCreated;
@@ -18,24 +19,13 @@ use Ramsey\Uuid\Uuid;
 
 class ElementService
 {
+    use HasRepository;
+    
     protected $repo;
 
     public function __construct(ElementRepository $elementRepository)
     {
         $this->repo = $elementRepository;
-    }
-
-    public function getLists(array $conditions, array $paginationOptions = [])
-    {
-        $query = $this->repo->filter($conditions);
-
-        $perPage = 15;
-
-        if (isset ($paginationOptions['per_page'])) {
-            $perPage = $paginationOptions['per_page'];
-        }
-
-        return $query->paginate($perPage);
     }
 
     public function getExistsElement(string $sourceUrl, Post $post): ?Element
@@ -206,14 +196,16 @@ class ElementService
             }
             
             $title = $params['title'] ?? $image['title'];
-            $localUrl = Storage::url($storageImage->getPath());
+            $thumb = Storage::url($storageImage->getPath());
+
+            $type = $this->guessMediaType($image['type']);
             $element = $post->elements()->updateOrCreate([
                 'source_url' => $params['old_source_url'] ?? $sourceUrl,
             ], [
                 'path' => $storageImage->getPath(),
                 'source_url' => $sourceUrl,
-                'thumb_url' => $localUrl,
-                'type' => ElementType::IMAGE,
+                'thumb_url' => $thumb,
+                'type' => $type,
                 'title' => $title
             ]);
 
@@ -233,6 +225,19 @@ class ElementService
         }
 
         return $element;
+    }
+
+    protected function guessMediaType(string $type)
+    {
+        // 'viode/mp4
+        if(strpos($type, 'video') !== false) {
+            return ElementType::VIDEO;
+        }else if(strpos($type, 'image') !== false) {
+            return ElementType::IMAGE;
+        }else {
+            \Log::warning("unknown media type: {$type}");
+            return ElementType::IMAGE;
+        }
     }
 
     protected function getImageFromImgurGallery(string $sourceUrl): ?array

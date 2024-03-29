@@ -24,13 +24,18 @@ class HomeController extends Controller
         $sort = $request->query('sort_by', 'hot');
         $range = $request->query('range', 'month');
         $tags = $this->tagService->get(null);
-        $posts = $this->postService->getLists([
+
+        if ($sort === 'hot') {
+            $range = data_get($sort, 'sort_range', 'month');
+            $sort = 'hot_' . $range;
+        }
+
+        $posts = $this->postService->getList([
             PostFilter::PUBLIC => true,
             PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
             PostFilter::KEYWORD_LIKE => $request->query('k')
         ],[
             'sort_by' => $sort,
-            'sort_range' => $range,
             'sort_dir' => $request->query('sort_dir'),
         ]);
 
@@ -39,8 +44,8 @@ class HomeController extends Controller
         }
     
         return view('home', [
-            'sort' => $sort,
-            'range'=> $range,
+            'sort' => $request->query('sort_by', 'hot'),
+            'range'=> $request->query('range', 'month'),
             'tags' => $tags,
             'posts' => $posts
         ]);

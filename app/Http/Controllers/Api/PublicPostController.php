@@ -24,20 +24,6 @@ class PublicPostController extends Controller
         $this->postService = $postService;
     }
 
-    public function index(Request $request)
-    {
-        $posts = $this->postService->getLists([
-            PostFilter::PUBLIC => true,
-            PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
-            PostFilter::KEYWORD_LIKE => $request->query('k')
-        ], [
-            'sort_by' => $request->query('sort_by'),
-            'sort_dir' => $request->query('sort_dir'),
-        ]);
-
-        return PublicPostResource::collection($posts);
-    }
-
     public function getComments(Request $request, Post $post)
     {
         $user = $request->user();

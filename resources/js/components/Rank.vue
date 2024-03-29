@@ -168,7 +168,7 @@ export default {
         });
     },
     share: function() {
-      const url = window.location.origin + window.location.pathname + '?utm_medium=share';
+      const url = window.location.origin + window.location.pathname + '?utm_medium=share_rank';
       if (navigator.share) {
         navigator.share({
           url: url
@@ -186,7 +186,7 @@ export default {
       //get parameter g
       const urlParams = new URLSearchParams(window.location.search);
       const g = urlParams.get('g');
-      const url = window.location.origin + window.location.pathname + '?s=' + g + '&utm_medium=share';
+      const url = window.location.origin + window.location.pathname + '?s=' + g + '&utm_medium=share_result';
 
       if (navigator.share) {
         navigator.share({
