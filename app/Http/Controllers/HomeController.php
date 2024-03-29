@@ -26,8 +26,8 @@ class HomeController extends Controller
         $tags = $this->tagService->get(null);
 
         if ($sort === 'hot') {
-            $$range = data_get($sort, 'sort_range', 'month');
-            $sort = 'hot_' . $$range;
+            $range = data_get($sort, 'sort_range', 'month');
+            $sort = 'hot_' . $range;
         }
 
         $posts = $this->postService->getList([
@@ -44,8 +44,8 @@ class HomeController extends Controller
         }
     
         return view('home', [
-            'sort' => $sort,
-            'range'=> $range,
+            'sort' => $request->query('sort_by', 'hot'),
+            'range'=> $request->query('range', 'month'),
             'tags' => $tags,
             'posts' => $posts
         ]);

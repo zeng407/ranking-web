@@ -49,7 +49,6 @@ class PublicPostResource extends JsonResource
                 'url' => $element1?->thumb_url,
                 'url2' => $element1?->imgur_image?->link,
                 'title' => $element1?->title,
-
             ],
             'element2' => [
                 'video_source' => $element2->video_source,

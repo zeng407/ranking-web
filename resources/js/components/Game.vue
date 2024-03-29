@@ -165,7 +165,7 @@
                     </div>
                     <div class="col-6">
                       <div class="post-element-container">
-                        <img v-if="post.element1.type == 'image' || post.element2.video_source == 'youtube' || post.element2.video_source == 'youtube_embed'" @error="onImageError(post.element2.id, post.element2.url2, $event)" :src="post.element2.url"></img>
+                        <img v-if="post.element2.type == 'image' || post.element2.video_source == 'youtube' || post.element2.video_source == 'youtube_embed'" @error="onImageError(post.element2.id, post.element2.url2, $event)" :src="post.element2.url"></img>
                         <video v-else :src="post.element2.url+'#t=1'"></video>
                       </div>
                       <h5 class="text-center mt-1 p-1">{{ post.element2.title }}</h5>
