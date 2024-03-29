@@ -14,10 +14,13 @@ use App\Events\PostCreated;
 use App\Events\PostDeleted;
 use App\Models\Comment;
 use App\Services\Builders\CommentBuilder;
+use App\Services\Traits\HasRepository;
 use Ramsey\Uuid\Uuid;
 
 class PostService
 {
+    use HasRepository;
+    
     protected $repo;
 
     public function __construct(PostRepository $elementRepository)
@@ -28,31 +31,6 @@ class PostService
     public function getPost($serial): ?Post
     {
         return Post::where('serial', $serial)->first();
-    }
-
-    public function getLists(array $conditions, array $sorter = [], array $paginationOptions = [], array $with = [])
-    {
-        //trim null or empty
-        $conditions = array_filter($conditions, fn($value) => !is_null($value) && $value !== '');
-        $sorter = array_filter($sorter, fn($value) => !is_null($value) && $value !== '');
-
-        $query = $this->repo->filter($conditions);
-        if($with){
-            $query = $query->with($with);
-        }
-
-        if ($sortBy = data_get($sorter, 'sort_by')) {
-            $dir = data_get($sorter, 'sort_dir') === 'desc' ? 'desc' : 'asc';
-            if ($sortBy === 'hot') {
-                $sortRange = data_get($sorter, 'sort_range', 'month');
-                $sortBy = 'hot_' . $sortRange;
-            }
-            $query = $this->repo->sorter($query, $sortBy, $dir);
-        }
-
-        $perPage = data_get($paginationOptions, 'per_page', 15);
-
-        return $query->paginate($perPage);
     }
 
     public function create(User $user, array $data)

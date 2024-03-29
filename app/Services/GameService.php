@@ -143,19 +143,20 @@ class GameService
 
     public function createVotedChampion(?User $user, string $anonymousId, Game $game, Element $element)
     {
+        $title = $element->title ?? '';
         if($user){
             UserGameResult::create([
                 'user_id' => $user->id,
                 'game_id' => $game->id,
                 'champion_id' => $element->id,
-                'champion_name' => $element->title
+                'champion_name' => $title
             ]);
         }else{
             UserGameResult::create([
                 'anonymous_id' => $anonymousId,
                 'game_id' => $game->id,
                 'champion_id' => $element->id,
-                'champion_name' => $element->title
+                'champion_name' => $title
             ]);
         }
     }

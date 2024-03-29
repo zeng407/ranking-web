@@ -17,18 +17,18 @@
           <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
             <img @click="clickImage" @error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
-
           </div>
           <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
             </youtube>
           </div>
-          <div v-if="isYoutubeEmbedSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
+          <div v-else-if="isYoutubeEmbedSource(le)" class="d-flex">
             <YoutubeEmbed :element="le" width="100%" :height="elementHeight" v-if="le"/>
           </div>
-          <video v-else-if="isVideoSource(le)" width="100%" :height="elementHeight" loop autoplay muted controls
-            playsinline :src="le.thumb_url"></video>
+          <div v-else-if="isVideoSource(le)">
+            <video width="100%" :height="elementHeight" loop autoplay controls playsinline :src="le.thumb_url"></video>
+          </div>
           <div class="card-body text-center">
             <div class="my-1 font-size-small" style="max-height: 90px" v-if="isMobileScreen">
               <p class="my-1">{{ le.title }}</p>
@@ -75,11 +75,12 @@
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
             </youtube>
           </div>
-          <div v-else-if="isYoutubeEmbedSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, true)">
+          <div v-else-if="isYoutubeEmbedSource(re)" class="d-flex">
             <YoutubeEmbed :element="re" width="100%" :height="elementHeight" v-if="re"/>
           </div>
-          <video v-else-if="isVideoSource(re)" width="100%" :height="elementHeight" loop autoplay muted controls
-            playsinline :src="re.thumb_url"></video>
+          <div v-else-if="isVideoSource(re)">
+            <video width="100%" :height="elementHeight" loop autoplay controls playsinline :src="re.thumb_url"></video>
+          </div>
 
           <!-- reverse when device size width less md(768px)-->
           <div class="card-body text-center"
@@ -156,16 +157,18 @@
                   </div>
                   <div class="row no-gutters">
                     <div class="col-6">
-                      <div class="post-image-container">
-                        <img @error="onImageError(post.image1.id, post.image1.url2, $event)" :src="post.image1.url"></img>
+                      <div class="post-element-container">
+                        <img v-if="post.element1.type == 'image' || post.element1.video_source == 'youtube' || post.element1.video_source == 'youtube_embed'" @error="onImageError(post.element1.id, post.element1.url2, $event)" :src="post.element1.url"></img>
+                        <video v-else :src="post.element1.url+'#t=1'"></video>
                       </div>
-                      <h5 class="text-center mt-1 p-1">{{ post.image1.title }}</h5>
+                      <h5 class="text-center mt-1 p-1">{{ post.element1.title }}</h5>
                     </div>
                     <div class="col-6">
-                      <div class="post-image-container">
-                        <img @error="onImageError(post.image2.id, post.image2.url2, $event)" :src="post.image2.url"></img>
+                      <div class="post-element-container">
+                        <img v-if="post.element1.type == 'image' || post.element2.video_source == 'youtube' || post.element2.video_source == 'youtube_embed'" @error="onImageError(post.element2.id, post.element2.url2, $event)" :src="post.element2.url"></img>
+                        <video v-else :src="post.element2.url+'#t=1'"></video>
                       </div>
-                      <h5 class="text-center mt-1 p-1">{{ post.image2.title }}</h5>
+                      <h5 class="text-center mt-1 p-1">{{ post.element2.title }}</h5>
                     </div>
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ post.description }}</h5>

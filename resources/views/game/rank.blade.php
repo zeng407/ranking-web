@@ -57,7 +57,7 @@
                             @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($gameResult->winner->source_url) !!}
                             @elseif($gameResult->winner->type === 'video')
-                                <video width="100%" height="270" loop autoplay muted playsinline
+                                <video width="100%" height="270" loop controls playsinline
                                     src="{{ $gameResult->winner->thumb_url }}"></video>
                             @elseif($gameResult->winner->type === 'image')
                                 <img src="{{ $gameResult->winner->thumb_url }}" height="270" class="w-100"
@@ -88,7 +88,7 @@
                             @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($rank->loser->source_url) !!}
                             @elseif($rank->loser->type === 'video')
-                                <video width="100%" height="270" loop autoplay muted playsinline src="{{$rank->loser->thumb_url}}"></video>    
+                                <video width="100%" height="270" loop controls playsinline src="{{$rank->loser->thumb_url}}"></video>    
                             @elseif($rank->loser->type === 'image')
                                 <img src="{{$rank->loser->thumb_url}}" height="270" class="w-100" alt="{{$rank->loser->title}}">
                             @endif
