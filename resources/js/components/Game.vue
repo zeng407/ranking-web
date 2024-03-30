@@ -525,14 +525,20 @@ export default {
               toast: true,
               text: this.$t('You have voted too quickly. Please try again later.'),
             });
-            this.resetPlayerPosition();
-            this.scrollToLastPosition();
-            setTimeout(() => {
-              $('#left-player').show();
-              $('#right-player').show();
-            }, 300);
-            this.isVoting = false;
+          }else{
+            Swal.fire({
+              icon: 'error',
+              toast: true,
+              text: this.$t('An error occurred. Please try again later.'),
+            });
           }
+          this.resetPlayerPosition();
+          this.scrollToLastPosition();
+          setTimeout(() => {
+            $('#left-player').show();
+            $('#right-player').show();
+          }, 300);
+          this.isVoting = false;
         });
     },
     showGameSettingPanel: function () {

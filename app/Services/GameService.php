@@ -124,18 +124,26 @@ class GameService
 
         \DB::transaction(function () use ($game, $winnerId, $loserId) {
             // update winner
-            $game->elements()
-                ->wherePivot('is_eliminated', false)
-                ->updateExistingPivot($winnerId, [
-                    'win_count' => \DB::raw('win_count + 1')
+            $gameElement = $game->elements()
+                ->where('element_id', $winnerId)
+                ->where('is_eliminated', false)
+                ->first();
+            if($gameElement){
+                $gameElement->update([
+                    'win_count' => $gameElement->win_count + 1
                 ]);
-        
-                // update loser
-            $game->elements()
-                ->wherePivot('is_eliminated', false)
-                ->updateExistingPivot($loserId, [
+            }
+
+            // update loser
+            $gameElement = $game->elements()
+                ->where('element_id', $loserId)
+                ->where('is_eliminated', false)
+                ->first();
+            if($gameElement){
+                $gameElement->update([
                     'is_eliminated' => true
                 ]);
+            }
         });
 
         return $game->game_1v1_rounds()->create($data);
