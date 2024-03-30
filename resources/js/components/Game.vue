@@ -18,7 +18,14 @@
             <img @click="clickImage" @error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
           </div>
-          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
+          <div v-if="isDataLoading">
+            <div class="d-flex justify-content-center align-items-center" :style="{height: elementHeight}">
+              <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
             </youtube>
@@ -70,7 +77,14 @@
             <img @click="clickImage" @error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
           </div>
-          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
+          <div v-if="isDataLoading">
+            <div class="d-flex justify-content-center align-items-center" :style="{height: elementHeight}">
+              <div class="spinner-border text-danger" role="status">
+                <span class="sr-only">Loading...</span>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
             </youtube>
@@ -248,10 +262,13 @@ export default {
       elementHeight: 450,
       gameSerial: null,
       game: null,
+      le: null,
+      re: null,
       status: null,
       post: null,
       elementsCount: "",
       isVoting: false,
+      isDataLoading: false,
       isLeftPlaying: false,
       isRightPlaying: false,
       rememberedScrollPosition: null,
@@ -278,18 +295,18 @@ export default {
     processingGameSerial: function () {
       return this.$cookies.get(this.postSerial);
     },
-    le: function () {
-      if (this.game) {
-        return this.game.elements[0]
-      }
-      return null;
-    },
-    re: function () {
-      if (this.game) {
-        return this.game.elements[1]
-      }
-      return null;
-    }
+    // le: function () {
+    //   if (this.game) {
+    //     return this.game.elements[0]
+    //   }
+    //   return null;
+    // },
+    // re: function () {
+    //   if (this.game) {
+    //     return this.game.elements[1]
+    //   }
+    //   return null;
+    // }
   },
   methods: {
     loadGameSetting: function () {
@@ -333,13 +350,12 @@ export default {
       return axios.get(url)
         .then(res => {
           this.game = res.data.data;
+          this.le = this.game.elements[0];
+          this.re = this.game.elements[1];
         })
         .then(async () => {
-          const left = this.doPlay(this.le, this.isLeftPlaying == true, 'left');
-          const right = this.doPlay(this.re, this.isRightPlaying == true, 'right');
-
-          await Promise.all([left, right]);
-
+          this.doPlay(this.le, this.isLeftPlaying == true, 'left');
+          this.doPlay(this.re, this.isRightPlaying == true, 'right');
           if(reset){
             this.resetPlayerPosition();
             this.scrollToLastPosition();
@@ -371,13 +387,14 @@ export default {
                 clearInterval(timerInterval);
               }
             }).then(result => {
-              /* Read more about handling dismissals below */
               if (result.dismiss === Swal.DismissReason.timer) {
                 this.nextRound();
               }
             });
           }
-        });
+        }).finally(() => {
+          this.isDataLoading = false;
+        })
     },
     leftPlay() {
       const myPlayer = this.getPlayer(this.le);
@@ -506,9 +523,9 @@ export default {
         'loser_id': loser.id
       };
 
+      this.isDataLoading = true;
       return axios.post(this.voteGameEndpoint, data)
         .then(res => {
-          this.isVoting = false;
           this.status = res.data.status;
           if (this.status === 'end_game') {
             this.$cookies.remove(this.postSerial);
@@ -538,8 +555,10 @@ export default {
             $('#left-player').show();
             $('#right-player').show();
           }, 300);
+        }).finally(() => {
           this.isVoting = false;
-        });
+          this.isDataLoading = false;
+        })
     },
     showGameSettingPanel: function () {
       $('#gameSettingPanel').modal('show');

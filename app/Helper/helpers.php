@@ -114,7 +114,7 @@ if (!function_exists('get_page_title')) {
 if (!function_exists('get_page_description')) {
     function get_page_description($object)
     {
-        $base = "殘酷二選一，多種主題：歌曲、明星、動漫、寵物、食物、電影...，從64組候選人中一輪一輪淘汰，最後選出你心中的第一名。";
+        $base = "殘酷二選一，多種主題：歌曲、明星、動漫、寵物、食物、電影...，從128組候選人中一輪一輪淘汰，最後選出你心中的第一名。";
         if ($object instanceof \App\Models\Post) {
             $description = str_replace(" \t\n\r\0\x0B", "", $object->description);
             return "{$description} | {$base}";
