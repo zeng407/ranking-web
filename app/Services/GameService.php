@@ -4,6 +4,7 @@
 namespace App\Services;
 
 
+use App\Helper\Locker;
 use App\Http\Resources\Game\GameResultResource;
 use App\Models\Element;
 use App\Models\Game;
@@ -123,6 +124,9 @@ class GameService
         logger('saving game : ' . $game->id, $data);
 
         try {
+            $lock = Locker::lockUpdateGameElement($game);
+            $lock->block(5);
+            
             \DB::transaction(function () use ($game, $winnerId, $loserId) {
                 // update winner
                 $gameElement = $game->game_elements()
@@ -153,8 +157,12 @@ class GameService
                 }
             });
 
+            logger('lock release', ['game_id' => $game->id]);
+            $lock->release();
         } catch (\Exception $e) {
-            logger('game update failed', ['game_id' => $game->id, 'winner_id' => $winnerId, 'loser_id' => $loserId]);
+            \Log::error('game update failed', ['game_id' => $game->id, 'winner_id' => $winnerId, 'loser_id' => $loserId]);
+            report($e);
+            $lock->release();
             throw $e;
         }
         return $game->game_1v1_rounds()->create($data);

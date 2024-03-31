@@ -4,13 +4,7 @@ namespace Tests\Unit;
 
 use App\Enums\PostAccessPolicy;
 use App\Http\Controllers\Api\GameController;
-use App\Models\Element;
 use App\Models\Game;
-use App\Models\Post;
-use App\Models\PostPolicy;
-use App\Models\User;
-use App\Services\GameService;
-use Carbon\Carbon;
 use Tests\TestCase;
 use Tests\TestHelper;
 
@@ -140,6 +134,55 @@ class GameTest extends TestCase
         ]);
 
     }
+
+    // public function testUpdateGameRoundsDeadlock()
+    // {
+    //     $post = $this->seedPost(8);
+    //     $games = [
+    //         $this->createGame($post, 8),
+    //     ];
+    //     $pids = [];
+    //     //use file as cache driver
+    //     config(['cache.default' => 'file']);
+    //     for ($i = 0; $i < 5; $i++) {
+            
+    //         $pid = pcntl_fork();
+    //         if ($pid == -1) {
+    //             throw new \Exception('Could not fork');
+    //         } else if ($pid) {
+    //             // In the parent process
+    //             $pids[] = $pid;
+    //         } else {
+    //             // In the child process
+    //             $elements = 31;
+    //             while ($elements--) {
+    //                 try{
+    //                     $this->vote($games[0], $log);
+    //                     // avoid middleware 'throttle:api', when testing
+    //                     \Carbon\Carbon::setTestNow(Carbon::now()->addSeconds(3));
+    //                 }catch (\Exception $e){
+    //                     report($e);
+    //                     exit(1);
+    //                 }
+    //             }
+    //             exit(0);
+    //         }
+    //     }
+
+    //     foreach ($pids as $pid) {
+    //         // Wait for the child processes to finish
+    //         pcntl_waitpid($pid, $status);
+    //     }
+
+    //     if(isset($log)){
+    //         dump($log);
+    //     }
+    //     // $this->assertDatabaseHas('game_1v1_rounds', [
+    //     //     'current_round' => 1,
+    //     //     'of_round' => 1,
+    //     //     'remain_elements' => 1,
+    //     // ]);
+    // }
 
     protected function vote(Game $game, &$log, $assert = [])
     {
