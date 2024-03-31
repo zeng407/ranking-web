@@ -96,7 +96,6 @@ class GameController extends Controller
          */
         $this->authorize('play', $game);
 
-        //todo critical bug: if user vote illegal element, it will be error
         $gameRound = $this->gameService->updateGameRounds($game, $request->winner_id, $request->loser_id);
 
         event(new GameElementVoted($game, $gameRound->winner));

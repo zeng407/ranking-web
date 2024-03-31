@@ -32,6 +32,11 @@ class Game extends Model
         return $this->hasMany(Game1V1Round::class);
     }
 
+    public function game_elements()
+    {
+        return $this->hasMany(GameElement::class);
+    }
+
     public function elements()
     {
         return $this->belongsToMany(
