@@ -28,6 +28,8 @@ class Game1V1Round extends Model
         'complete_at',
     ];
 
+    protected $with = ['winner', 'loser', 'game'];
+
     public function game()
     {
         return $this->belongsTo(Game::class);

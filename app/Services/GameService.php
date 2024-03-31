@@ -4,6 +4,7 @@
 namespace App\Services;
 
 
+use App\Helper\Locker;
 use App\Http\Resources\Game\GameResultResource;
 use App\Models\Element;
 use App\Models\Game;
@@ -120,24 +121,50 @@ class GameService
             'winner_id' => $winnerId,
             'loser_id' => $loserId
         ];
-        \Log::info('saving game : ' . $game->id, $data);
+        logger('saving game : ' . $game->id, $data);
 
-        \DB::transaction(function () use ($game, $winnerId, $loserId) {
-            // update winner
-            $game->elements()
-                ->wherePivot('is_eliminated', false)
-                ->updateExistingPivot($winnerId, [
-                    'win_count' => \DB::raw('win_count + 1')
-                ]);
-        
+        try {
+            $lock = Locker::lockUpdateGameElement($game);
+            $lock->block(5);
+            
+            \DB::transaction(function () use ($game, $winnerId, $loserId) {
+                // update winner
+                $gameElement = $game->game_elements()
+                    ->where('element_id', $winnerId)
+                    ->where('is_eliminated', false)
+                    ->first();
+                if($gameElement){
+                    $gameElement->update([
+                        'win_count' => $gameElement->win_count + 1
+                    ]);
+                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $winnerId, 'win_count' => $gameElement->win_count]);
+                }else{
+                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $winnerId]);
+                }
+
                 // update loser
-            $game->elements()
-                ->wherePivot('is_eliminated', false)
-                ->updateExistingPivot($loserId, [
-                    'is_eliminated' => true
-                ]);
-        });
+                $gameElement = $game->game_elements()
+                    ->where('element_id', $loserId)
+                    ->where('is_eliminated', false)
+                    ->first();
+                if($gameElement){
+                    $gameElement->update([
+                        'is_eliminated' => true
+                    ]);
+                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $loserId, 'is_eliminated' => $gameElement->is_eliminated]);
+                }else{
+                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $loserId]);
+                }
+            });
 
+            logger('lock release', ['game_id' => $game->id]);
+            $lock->release();
+        } catch (\Exception $e) {
+            \Log::error('game update failed', ['game_id' => $game->id, 'winner_id' => $winnerId, 'loser_id' => $loserId]);
+            report($e);
+            $lock->release();
+            throw $e;
+        }
         return $game->game_1v1_rounds()->create($data);
     }
 

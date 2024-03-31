@@ -3,16 +3,15 @@
 namespace Tests\Unit;
 
 use App\Enums\PostAccessPolicy;
-use App\Models\Element;
+use App\Http\Controllers\Api\GameController;
 use App\Models\Game;
-use App\Models\Post;
-use App\Models\PostPolicy;
-use App\Models\User;
-use App\Services\GameService;
 use Tests\TestCase;
+use Tests\TestHelper;
 
 class GameTest extends TestCase
 {
+    use TestHelper;
+
     public function test_create_game()
     {
         $post = $this->seedPost();
@@ -33,7 +32,7 @@ class GameTest extends TestCase
     public function test_show_game()
     {
         $post = $this->seedPost();
-        $game = $this->seedGame($post, 8);
+        $game = $this->createGame($post, 8);
 
         $res = $this->get(route('api.game.next-round', $game->serial));
         $res->assertOk();
@@ -46,7 +45,7 @@ class GameTest extends TestCase
     public function test_game_private()
     {
         $post = $this->seedPost();
-        $game = $this->seedGame($post, 1);
+        $game = $this->createGame($post, 1);
 
         $post->post_policy->access_policy = PostAccessPolicy::PRIVATE;
         $post->post_policy->save();
@@ -59,7 +58,7 @@ class GameTest extends TestCase
     public function test_vote_game_8()
     {
         $post = $this->seedPost();
-        $game = $this->seedGame($post, 8);
+        $game = $this->createGame($post, 8);
 
         $this->vote($game, $log, [
             'current_round' => 1,
@@ -108,7 +107,7 @@ class GameTest extends TestCase
     public function test_vote_game_5()
     {
         $post = $this->seedPost();
-        $game = $this->seedGame($post, 5);
+        $game = $this->createGame($post, 5);
 
         $this->vote($game, $log, [
             'current_round' => 1,
@@ -136,48 +135,65 @@ class GameTest extends TestCase
 
     }
 
-//    public function test_game_complete()
-//    {
-//        $post = $this->seedPost();
-//        $game = $this->seedGame($post, 1);
-//
-//        $res = $this->get(route('api.game.show', $game->serial));
-//        return $res->assertStatus(404);
-//    }
+    // public function testUpdateGameRoundsDeadlock()
+    // {
+    //     $post = $this->seedPost(8);
+    //     $games = [
+    //         $this->createGame($post, 8),
+    //     ];
+    //     $pids = [];
+    //     //use file as cache driver
+    //     config(['cache.default' => 'file']);
+    //     for ($i = 0; $i < 5; $i++) {
+            
+    //         $pid = pcntl_fork();
+    //         if ($pid == -1) {
+    //             throw new \Exception('Could not fork');
+    //         } else if ($pid) {
+    //             // In the parent process
+    //             $pids[] = $pid;
+    //         } else {
+    //             // In the child process
+    //             $elements = 31;
+    //             while ($elements--) {
+    //                 try{
+    //                     $this->vote($games[0], $log);
+    //                     // avoid middleware 'throttle:api', when testing
+    //                     \Carbon\Carbon::setTestNow(Carbon::now()->addSeconds(3));
+    //                 }catch (\Exception $e){
+    //                     report($e);
+    //                     exit(1);
+    //                 }
+    //             }
+    //             exit(0);
+    //         }
+    //     }
 
-    protected function vote(Game $game, &$log, $round)
+    //     foreach ($pids as $pid) {
+    //         // Wait for the child processes to finish
+    //         pcntl_waitpid($pid, $status);
+    //     }
+
+    //     if(isset($log)){
+    //         dump($log);
+    //     }
+    //     // $this->assertDatabaseHas('game_1v1_rounds', [
+    //     //     'current_round' => 1,
+    //     //     'of_round' => 1,
+    //     //     'remain_elements' => 1,
+    //     // ]);
+    // }
+
+    protected function vote(Game $game, &$log, $assert = [])
     {
-        if (!isset($log['winner'])) {
-            $log['winner'] = [];
-        }
-        if (!isset($log['loser'])) {
-            $log['loser'] = [];
-        }
-
-        $res = $this->get(route('api.game.next-round', $game->serial));
-        $elements = $res->json('data.elements');
-        $winner = $elements[0]['id'];
-        $loser = $elements[1]['id'];
-
-        if (!isset($log['winner'][$winner])) {
-            $log['winner'][$winner] = 0;
-        }
-        if (!isset($log['loser'][$loser])) {
-            $log['loser'][$loser] = 0;
+        $result = $this->voteGame($game, $log);
+        $result['res']->assertOk();
+        if ($result['res']->json('status') != GameController::PROCESSING) {
+            return;
         }
 
-        $log['winner'][$winner]++;
-        $log['loser'][$loser]++;
-        $data = [
-            'game_serial' => $game->serial,
-            'winner_id' => $winner,
-            'loser_id' => $loser,
-        ];
-        session(['key' => 'value']);
-        logger($data);
-        $res = $this->post(route('api.game.vote', $data));
-        $res->assertOk();
-
+        $winner = $result['winner'];
+        $loser = $result['loser'];
         $this->assertDatabaseHas('game_elements', [
             'game_id' => $game->id,
             'element_id' => $winner,
@@ -190,35 +206,16 @@ class GameTest extends TestCase
             'win_count' => $log['winner'][$loser] ?? 0,
             'is_eliminated' => true
         ]);
-        $this->assertDatabaseHas('game_1v1_rounds', [
-            'current_round' => $round['current_round'],
-            'of_round' => $round['of_round'],
-            'remain_elements' => $round['remain_elements'],
-            'winner_id' => $winner,
-            'loser_id' => $loser,
-        ]);
+        if ($assert) {
+            $this->assertDatabaseHas('game_1v1_rounds', [
+                'current_round' => $assert['current_round'],
+                'of_round' => $assert['of_round'],
+                'remain_elements' => $assert['remain_elements'],
+                'winner_id' => $winner,
+                'loser_id' => $loser,
+            ]);
+        }
+
     }
 
-    protected function seedPost(): Post
-    {
-        /** @var User $user */
-        $user = User::factory()->has(
-            Post::factory()->has(
-                PostPolicy::factory()->public(), 'post_policy'
-            )
-        )->create();
-
-        $user->posts()->each(function (Post $post) {
-            Element::factory(30)->hasAttached($post)->create();
-        });
-
-        return $user->posts()->first();
-    }
-
-    protected function seedGame(Post $post, $elementCount): Game
-    {
-        $game = app(GameService::class)->createGame($post, $elementCount);
-
-        return $game;
-    }
 }
