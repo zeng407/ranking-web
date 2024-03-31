@@ -122,28 +122,49 @@ class GameService
         ];
         \Log::info('saving game : ' . $game->id, $data);
 
+        // \DB::transaction(function () use ($game, $winnerId, $loserId) {
+        //     // update winner
+        //     $gameElement = $game->game_elements()
+        //         ->where('element_id', $winnerId)
+        //         ->where('is_eliminated', false)
+        //         ->first();
+        //     if($gameElement){
+        //         $gameElement->update([
+        //             'win_count' => $gameElement->win_count + 1
+        //         ]);
+        //         \Log::info('game element updated', ['game_id' => $game->id, 'element_id' => $winnerId, 'win_count' => $gameElement->win_count]);
+        //     }else{
+        //         \Log::info('game element not found', ['game_id' => $game->id, 'element_id' => $winnerId]);
+        //     }
+
+        //     // update loser
+        //     $gameElement = $game->game_elements()
+        //         ->where('element_id', $loserId)
+        //         ->where('is_eliminated', false)
+        //         ->first();
+        //     if($gameElement){
+        //         $gameElement->update([
+        //             'is_eliminated' => true
+        //         ]);
+        //         \Log::info('game element updated', ['game_id' => $game->id, 'element_id' => $loserId, 'is_eliminated' => $gameElement->is_eliminated]);
+        //     }else{
+        //         \Log::info('game element not found', ['game_id' => $game->id, 'element_id' => $loserId]);
+        //     }
+        // });
         \DB::transaction(function () use ($game, $winnerId, $loserId) {
             // update winner
-            $gameElement = $game->elements()
-                ->where('element_id', $winnerId)
-                ->where('is_eliminated', false)
-                ->first();
-            if($gameElement){
-                $gameElement->update([
-                    'win_count' => $gameElement->win_count + 1
+            $game->elements()
+                ->wherePivot('is_eliminated', false)
+                ->updateExistingPivot($winnerId, [
+                    'win_count' => \DB::raw('win_count + 1')
                 ]);
-            }
-
-            // update loser
-            $gameElement = $game->elements()
-                ->where('element_id', $loserId)
-                ->where('is_eliminated', false)
-                ->first();
-            if($gameElement){
-                $gameElement->update([
+        
+                // update loser
+            $game->elements()
+                ->wherePivot('is_eliminated', false)
+                ->updateExistingPivot($loserId, [
                     'is_eliminated' => true
                 ]);
-            }
         });
 
         return $game->game_1v1_rounds()->create($data);
