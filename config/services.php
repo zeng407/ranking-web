@@ -36,6 +36,9 @@ return [
         'client_secret' => env('IMGUR_CLIENT_SECRET'),
         'access_token' => env('IMGUR_ACCESS_TOKEN'),
         'refresh_token' => env('IMGUR_REFRESH_TOEKN'),
+    ],
+    'google_analytics' => [
+        'id' => env('GOOGLE_ANALYTICS_ID', ''),
     ]
 
 ];
