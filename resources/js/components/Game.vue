@@ -2,7 +2,7 @@
   <div class="container-fluid">
     <div v-if="game">
       <h2 class="text-center text-break">{{ game.title }}</h2>
-      <div class="d-flex" style="flex-flow: row wrap">
+      <div class="d-none d-sm-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
         <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP
           {{ game.of_round }} </h5>
@@ -12,25 +12,25 @@
     </div>
     <div class="row game-body" v-if="game">
       <!--left part-->
-      <div class="col-md-6 pr-md-1 mb-2 mb-md-0">
+      <div class="col-sm-12 col-md-6 pr-md-1 mb-2 mb-md-0">
         <div class="card game-player left-player" id="left-player">
           <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
             <img @click="clickImage" @error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
           </div>
-          <div v-if="isDataLoading">
+          <div v-show="isDataLoading">
             <div class="d-flex justify-content-center align-items-center" :style="{height: elementHeight}">
               <div class="spinner-border text-primary" role="status">
                 <span class="sr-only">Loading...</span>
               </div>
             </div>
           </div>
-          <div v-else-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
+          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
             </youtube>
           </div>
-          <div v-else-if="isYoutubeEmbedSource(le)" class="d-flex">
+          <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
             <YoutubeEmbed :element="le" width="100%" :height="elementHeight" v-if="le"/>
           </div>
           <div v-else-if="isVideoSource(le)">
@@ -70,26 +70,36 @@
         </div>
       </div>
 
+      <!-- mobile rounds session -->
+      <div id="rounds-session" class="col-sm-12 d-md-none">
+        <div class="d-flex d-sm-none justify-content-end" style="flex-flow: row wrap">
+          <h5 class="ml-auto mr-auto">ROUND {{ game.current_round }} / TOP
+            {{ game.of_round }} </h5>
+          <h5 class="position-absolute">({{ game.remain_elements }} /
+            {{ game.total_elements }})</h5>
+        </div>
+      </div>
+
       <!--right part-->
-      <div class="col-md-6 pl-md-1 mb-4 mb-md-0">
+      <div class="col-sm-12 col-md-6 pl-md-1 mb-4 mb-md-0">
         <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
           <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
             <img @click="clickImage" @error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
               :style="{ height: this.elementHeight + 'px' }">
           </div>
-          <div v-if="isDataLoading">
+          <div v-show="isDataLoading">
             <div class="d-flex justify-content-center align-items-center" :style="{height: elementHeight}">
               <div class="spinner-border text-danger" role="status">
                 <span class="sr-only">Loading...</span>
               </div>
             </div>
           </div>
-          <div v-else-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
+          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
               :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
             </youtube>
           </div>
-          <div v-else-if="isYoutubeEmbedSource(re)" class="d-flex">
+          <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
             <YoutubeEmbed :element="re" width="100%" :height="elementHeight" v-if="re"/>
           </div>
           <div v-else-if="isVideoSource(re)">
@@ -354,16 +364,27 @@ export default {
           this.re = this.game.elements[1];
         })
         .then(async () => {
-          this.doPlay(this.le, this.isLeftPlaying == true, 'left');
-          this.doPlay(this.re, this.isRightPlaying == true, 'right');
+          
           if(reset){
             this.resetPlayerPosition();
             this.scrollToLastPosition();
+            this.resetPlayingStatus();
             this.errorImages = [];
+            this.isDataLoading = false;
             setTimeout(() => {
               $('#left-player').show();
               $('#right-player').show();
+              $('#rounds-session').show();
+              $('#left-player').css('opacity', '1');
+              $('#right-player').css('opacity', '1');
+              $('#rounds-session').css('opacity', '1');
+              
+              this.doPlay(this.le, this.isLeftPlaying, 'left');
+              this.doPlay(this.re, this.isRightPlaying, 'right');
             }, 300);
+          }else{
+            this.doPlay(this.le, this.isLeftPlaying, 'left');
+            this.doPlay(this.re, this.isRightPlaying, 'right');
           }
         })
         .catch(error => {
@@ -417,13 +438,14 @@ export default {
       let sendWinnerData = () => {
         this.vote(this.le, this.re);
       }
-
+      
       $('#left-player').css('z-index', '100');
       $('#right-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
+        $('#rounds-session').animate({opacity: 0}, 500, "linear");
         let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
-          $('#right-player').hide();
+          // $('#right-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
@@ -439,6 +461,7 @@ export default {
         }).promise();
 
         $.when(winAnimate, loseAnimate).then(() => {
+          this.pauseAllVideo();
           sendWinnerData();
         });
       }
@@ -463,15 +486,17 @@ export default {
       let sendWinnerData = () => {
         this.vote(this.re, this.le);
       }
-
+      
       $('#right-player').css('z-index', '100');
       $('#left-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
+        $('#rounds-session').animate({opacity: 0}, 500, "linear");
         let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500, () => {
-          $('#left-player').hide();
+          // $('#left-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
+          this.pauseAllVideo();
           sendWinnerData();
         });
       } else {
@@ -493,28 +518,44 @@ export default {
     },
     resetPlayerPosition() {
 
-      $('#left-player').hide();
+      // $('#left-player').hide();
       $('#left-player').css('left', '0');
       $('#left-player').css('top', '0');
-      $('#left-player').css('opacity', '1');
+      $('#left-player').css('opacity', '0');
       $('#left-player').css('scale', '1');
       $('#left-player').removeClass('zoom-in');
       $('#left-player').css('z-index', '0');
 
-      $('#right-player').hide();
+      // $('#right-player').hide();
       $('#right-player').css('left', '0');
       $('#right-player').css('top', '0');
-      $('#right-player').css('opacity', '1');
+      $('#right-player').css('opacity', '0');
       $('#right-player').css('scale', '1');
       $('#right-player').removeClass('zoom-in');
       $('#right-player').css('z-index', '0');
-
+      
+      // $('#rounds-session').hide();
+      $('#rounds-session').css('opacity', '0');
       $('.game-image-container img').css('object-fit', 'contain');
     },
     scrollToLastPosition() {
       if (this.rememberedScrollPosition !== null) {
         window.scrollTo(0, this.rememberedScrollPosition);
       }
+    },
+    pauseAllVideo(){
+      const player = this.getPlayer(this.le);
+      if (player) {
+        player.pauseVideo();
+        player.seekTo(this.le.start_second);
+      }
+
+      const player2 = this.getPlayer(this.re);
+      if (player2) {
+        player2.pauseVideo();
+        player2.seekTo(this.re.start_second);
+      }
+
     },
     vote: function (winner, loser) {
       const data = {
@@ -551,14 +592,25 @@ export default {
           }
           this.resetPlayerPosition();
           this.scrollToLastPosition();
+          this.resetPlayingStatus();
+          
           setTimeout(() => {
             $('#left-player').show();
             $('#right-player').show();
+            $('#rounds-session').show();
+            $('#left-player').css('opacity', '1');
+            $('#right-player').css('opacity', '1');
+            $('#rounds-session').css('opacity', '1');
+            this.isDataLoading = false;
           }, 300);
         }).finally(() => {
           this.isVoting = false;
-          this.isDataLoading = false;
         })
+    },
+    resetPlayingStatus() {
+      if(this.isLeftPlaying && this.isRightPlaying){
+        this.isRightPlaying = false;
+      }
     },
     showGameSettingPanel: function () {
       $('#gameSettingPanel').modal('show');
@@ -579,15 +631,12 @@ export default {
           player.mute();
         }
         this.initPlayerEventLister(player);
-        if (player.getPlayerState() !== 1) {
-          setTimeout(() => {
-            player.loadVideoById({
-              videoId: element.video_id,
-              startSeconds: element.video_start_second,
-              endSeconds: element.video_end_second
-            });
-          }, 300);
-        }
+        player.getPlayerState().then((state) => {
+          //resumed if video is paused
+          if(state === 2){
+            player.playVideo();
+          }
+        });
       }
     },
     initPlayerEventLister(player) {
@@ -599,7 +648,7 @@ export default {
         // 2 – 已暫停
         // 3 – 緩衝處理中
         // 5 – 隱藏影片
-        if (status === 0 || status === 5) {
+        if (status === 0 ) {
           player.playVideo();
         }
       });
