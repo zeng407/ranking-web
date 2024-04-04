@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         )->create();
 
         User::each(function (User $user) {
-            $elements = [128,65,63,32,33,8,7,1,9,0,0];
+            $elements = [256,128,65,63,32,33,8,7,1,9,0,0];
             $user->posts()->each(function (Post $post) use( &$elements) {
                 Element::factory(array_shift($elements))->hasAttached($post)->create();
             });
