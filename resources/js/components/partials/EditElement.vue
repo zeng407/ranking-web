@@ -41,6 +41,11 @@
                   <input type="text" class="form-control" :id="'elementSourceUrl' + elementId" v-model="url"
                     :readonly="preview_image_url" @click="hintDeleteFirst"> </input>
                   <small class="break-all">{{ $t('Current URL') }}:&nbsp;{{sourceUrl}}</small>
+                  <button :id="'popover-copy-taget' + elementId" type="button" class="btn btn-sm btn-outline-dark" @click="copyUrl"><i class="fa-xs fa-regular fa-copy"></i></button>
+                  <b-popover :ref="'popover-copy' + elementId" :target="'popover-copy-taget' + elementId" :disabled="true">
+                    {{$t('Copied')}}
+                  </b-popover>
+
                 </div>
               </div>
             </div>
@@ -163,6 +168,15 @@ export default {
     deleteFile: function () {
       this.preview_image_url = null;
       this.path_id = null;
+    },
+    copyUrl() {
+      navigator.clipboard.writeText(this.sourceUrl)
+        .then(() => {
+          this.$refs['popover-copy' + this.elementId].$emit('open');
+          setTimeout(() => {
+            this.$root.$emit('bv::hide::popover');
+          }, 2000);
+        })
     }
   }
 }

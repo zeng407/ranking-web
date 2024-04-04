@@ -42,8 +42,11 @@
                   <li>https://www.youtube.com/watch?v=xxxxx</li>
                   <li>https://www.youtube.com/watch/xxxxx</li>
                   <li>https://youtu.be/xxxxx</li>
-                  <li>{{ youtubeEmbedSample }}</li>
                 </ul>
+                <h5>{{ $t('Import clip') }}</h5>
+                <div class="alert alert-dark">
+                  {{ youtubeEmbedSample }}
+                </div>
               </div>
               <div class="tab-pane fade" id="pills-imgur" role="tabpanel" aria-labelledby="pills-imgur-tab">
                 <h5>{{$t('Support formats')}}:</h5>

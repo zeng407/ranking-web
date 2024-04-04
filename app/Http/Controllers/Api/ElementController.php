@@ -61,12 +61,8 @@ class ElementController extends Controller
         $urls = $request->input('url');
 
         // if the url is a youtube video embed and iframe
-        if (
-            preg_match('/https:\/\/www\.youtube\.com\/embed\/([a-zA-Z0-9_-]+)/', $urls)&& 
-            preg_match('/^<iframe.*?src="(.*?)".*?<\/iframe>$/', $urls)
-        ) {
-            $post = $this->getPost($request->post_serial);
-            $element = $this->elementService->storeYoutubeEmbed($urls, $post);
+        if ($this->isEmbedString($urls)) {
+            $element = $this->storeYoutubeEmbed($request, $urls);
             if($element === null){
                 return api_response(ApiResponseCode::INVALID_URL, 422);
             }
@@ -160,13 +156,25 @@ class ElementController extends Controller
             'title' => ['sometimes', 'string', 'max:' . config('setting.element_title_size')],
             'video_start_second' => 'sometimes|integer',
             'video_end_second' => 'sometimes|integer',
-            'url' => 'sometimes|url',
+            'url' => 'sometimes|string',
             'path_id' => 'sometimes|string',
         ]);
 
         $post = $this->getPost($request->input('post_serial'));
 
         if(isset($data['url'])){
+
+            // if the url is a youtube video embed and iframe
+            if ($this->isEmbedString($data['url'])) {
+                $element = $this->storeYoutubeEmbed($request, $data['url'], [
+                    'old_source_url' => $element->source_url,
+                ]);
+                if($element === null){
+                    return api_response(ApiResponseCode::INVALID_URL, 422);
+                }
+                return PostElementResource::make($element);
+            }
+
             // This will update the element whose 'source_url' matches 'old_source_url'.
             $element = $this->elementService->massStore(
                 $data['url'],
@@ -232,6 +240,19 @@ class ElementController extends Controller
         $this->authorize('delete', $element);
         $this->elementService->delete($element);
         return response()->json();
+    }
+
+    protected function storeYoutubeEmbed(Request $request, string $urls, array $params = [])
+    {
+        $post = $this->getPost($request->post_serial);
+        $element = $this->elementService->storeYoutubeEmbed($urls, $post, $params);
+        return $element;
+    }
+
+    protected function isEmbedString($string)
+    {
+        return preg_match('/https:\/\/www\.youtube\.com\/embed\/([a-zA-Z0-9_-]+)/', $string) && 
+            preg_match('/^<iframe.*?src="(.*?)".*?<\/iframe>$/', $string);
     }
 
     protected function getPost($serial): Post

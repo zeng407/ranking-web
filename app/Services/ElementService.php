@@ -245,6 +245,9 @@ class ElementService
         try {
             $imgurService = app(ImgurService::class);
             $galleryId = $imgurService->parseGalleryAlbumId($sourceUrl);
+            if($galleryId === null) {
+                return null;
+            }
             logger("galleryId: {$galleryId}");
             $res = $imgurService->getGalleryAlbumImages($galleryId);
             if(isset($res['success']) && $res['success'] && isset($res['status']) && $res['status'] === 200 && isset($res['data']) && isset($res['data']['images'])) {

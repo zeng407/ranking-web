@@ -26,7 +26,6 @@ class HomeController extends Controller
         $tags = $this->tagService->get(null);
 
         if ($sort === 'hot') {
-            $range = data_get($sort, 'sort_range', 'month');
             $sort = 'hot_' . $range;
         }
 
