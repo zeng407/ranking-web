@@ -72,10 +72,10 @@
 
       <!-- mobile rounds session -->
       <div id="rounds-session" class="col-sm-12 d-md-none">
-        <div class="d-flex d-sm-none justify-content-end" style="flex-flow: row wrap">
-          <h5 class="ml-auto mr-auto">ROUND {{ game.current_round }} / TOP
+        <div class="d-flex d-sm-none justify-content-between" style="flex-flow: row wrap">
+          <h5 class="">ROUND {{ game.current_round }} / TOP
             {{ game.of_round }} </h5>
-          <h5 class="position-absolute">({{ game.remain_elements }} /
+          <h5 class="">({{ game.remain_elements }} /
             {{ game.total_elements }})</h5>
         </div>
       </div>
@@ -445,7 +445,6 @@ export default {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
         let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
-          // $('#right-player').hide();
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           sendWinnerData();
@@ -492,9 +491,7 @@ export default {
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
         let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
-        let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500, () => {
-          // $('#left-player').hide();
-        }).promise();
+        let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           this.pauseAllVideo();
           sendWinnerData();
@@ -518,7 +515,6 @@ export default {
     },
     resetPlayerPosition() {
 
-      // $('#left-player').hide();
       $('#left-player').css('left', '0');
       $('#left-player').css('top', '0');
       $('#left-player').css('opacity', '0');
@@ -526,7 +522,6 @@ export default {
       $('#left-player').removeClass('zoom-in');
       $('#left-player').css('z-index', '0');
 
-      // $('#right-player').hide();
       $('#right-player').css('left', '0');
       $('#right-player').css('top', '0');
       $('#right-player').css('opacity', '0');
@@ -534,7 +529,6 @@ export default {
       $('#right-player').removeClass('zoom-in');
       $('#right-player').css('z-index', '0');
       
-      // $('#rounds-session').hide();
       $('#rounds-session').css('opacity', '0');
       $('.game-image-container img').css('object-fit', 'contain');
     },
