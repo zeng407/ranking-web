@@ -608,7 +608,6 @@ export default {
 
       //onImageError
       errorImages: [],
-
     }
   },
   components: {
