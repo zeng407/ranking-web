@@ -15,6 +15,7 @@
     "rank.play": "Start",
     "rank.share": "Share this rank",
     "rank.share-result": "Share my result",
+    "Created": "Created at ${time}",
 
     "":""
 }

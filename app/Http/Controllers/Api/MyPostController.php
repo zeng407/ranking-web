@@ -65,7 +65,9 @@ class MyPostController extends Controller
         $input = $request->validate([
             'per_page' => ['integer', 'max:'.self::ELEMENTS_PER_PAGE],
             'page' => 'integer',
-            'filter' => 'array'
+            'filter' => 'array',
+            'sort_by' => 'nullable|string',
+            'sort_dir' => 'nullable|string|in:asc,desc'
         ]);
 
         $paginationOptions = $this->parsePaginationOptions($input);
@@ -74,11 +76,14 @@ class MyPostController extends Controller
         ], [
             ElementFilter::TITLE_LIKE
         ]);
+        $sort = $this->parseSorter($input, [
+            'id' => 'desc'
+        ]);
+        $with = [ 
+            'rank_reports' => fn($query) => $query->where('post_id', $post->id)
+        ];
 
-        $data = $this->elementService->getList($condition, [
-            'sort_by' => 'id',
-            'sort_dir' => 'desc'
-        ], $paginationOptions);
+        $data = $this->elementService->getList($condition, $sort, $paginationOptions, $with);
 
         return PostElementResource::collection($data);
     }
@@ -178,7 +183,7 @@ class MyPostController extends Controller
     }
 
     protected function parseFilter($input, $preCondition, $only = [])
-    {
+    {        
         if (isset($input['filter'])) {
             $filter = array_filter($input['filter']);
             if (count($only)) {
@@ -188,5 +193,20 @@ class MyPostController extends Controller
         }
 
         return $preCondition;
+    }
+
+    protected function parseSorter($input, $default, $only = [])
+    {
+        if(isset($input['sort_by'])) {
+            $sortBy = count($only) ? Arr::only($input['sort_by'], $only) : $input['sort_by'];
+            $sorter = [
+                'sort_by' => $sortBy,
+                'sort_dir' => $input['sort_dir'] ?? 'asc'
+            ];
+        }else{
+            $sorter = $default;
+        }
+
+        return $sorter;
     }
 }

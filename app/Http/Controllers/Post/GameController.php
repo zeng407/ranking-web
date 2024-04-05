@@ -61,8 +61,15 @@ class GameController extends Controller
             'ogElement' => $this->getElementForOG($post),
             'reports' => $reports,
             'gameResult' => $gameResult,
-            'shared' => $request->query('s') ? true : false
+            'embed' => $request->session()->pull('rank-embed', false)
         ]);
+    }
+
+    public function rankEmbed(Request $request)
+    {
+        // put data in session
+        $request->session()->put('rank-embed', true);
+        return $this->rank($request);
     }
 
     protected function getElementForOG(Post $post, $limit = 10): ?Element

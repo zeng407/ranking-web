@@ -36,6 +36,7 @@ Route::get('/lang/{locale}', [HomeController::class, 'lang'])->name('lang');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('post/{post:serial}/game', [GameController::class, 'show'])->name('game.show');
 Route::get('post/{post:serial}/rank', [GameController::class, 'rank'])->name('game.rank');
+Route::get('post/{post:serial}/rank-embed', [GameController::class, 'rankEmbed'])->name('game.rank-embed');
 
 Route::middleware('auth')->group(function () {
     Route::get('account/profile', [ProfileController::class, 'index'])->name('profile.index');

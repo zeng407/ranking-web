@@ -55,6 +55,11 @@
     "edit_post.rank.win_rate": "勝率",
     "edit_post.tag.enter": "輸入",
     "edit_post.info.cancel_save": "取消編輯",
+    "edit_post.rank": "排名",
+    "edit_post.no_element": "找不到素材",
+    "edit_post.reset_search": "清除搜尋",
+    "edit_post.sort_by_rank": "按排名排序",
+    "edit_post.sort_by_created_time": "按建立時間排序",
     "You will lose all unsaved changes!": "要取消編輯嗎?",
 
     "edit.element.upload-image": "上傳圖片",
@@ -132,6 +137,7 @@
     "Support formats": "支援格式",
     "An error occurred. Please try again later.": "發生錯誤，請稍後再試",
     "Import clip": "匯入剪輯片段",
+    "Created": "建立於 {time}",
 
     "":""
 }
