@@ -36,7 +36,8 @@ class PostElementResource extends JsonResource
             'video_duration_second' => $this->video_duration_second,
             'video_start_second' => $this->video_start_second,
             'video_end_second' => $this->video_end_second,
-            'created_at' => $this->created_at
+            'created_at' => $this->created_at,
+            'rank' => $this->rank_reports->first(),
         ];
     }
 }

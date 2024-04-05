@@ -51,4 +51,9 @@ class Element extends Model
         );
     }
 
+    public function rank_reports()
+    {
+        return $this->hasMany(RankReport::class);
+    }
+
 }

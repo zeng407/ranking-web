@@ -15,7 +15,7 @@
 
       <!-- tabs -->
       <div class="col-md-2">
-        <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+        <div class="nav flex-column nav-pills sticky-top" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
           <a class="nav-link active" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
             aria-controls="v-pills-post-info" aria-selected="true">
@@ -55,7 +55,6 @@
             </div>
 
             <ValidationObserver v-slot="{ invalid }" v-if="post && !loading['LOADING_POST']">
-              <!-- Rank基本資訊 -->
               <div class="row">
                 <div class="col-6">
                   <h2 class="mt-3 mb-3">{{ $t('edit_post.info.head') }}</h2>
@@ -200,6 +199,12 @@
                     <input class="form-control" disabled :value="post.created_at | date">
                   </div>
                 </div>
+                <div class="col-3">
+                  <div class="form-group">
+                    <label class="col-form-label-lg">{{ $t('edit_post.rank.game_plays') }}</label>
+                    <input class="form-control" disabled :value="post.play_count">
+                  </div>
+                </div>
               </div>
               <!-- Delete Post Button -->
               <div class="row" v-if="post && isEditing">
@@ -213,7 +218,7 @@
               </div>
             </ValidationObserver>
           </div>
-
+          
           <!-- tab elements -->
           <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
             <!-- upload image from device -->
@@ -260,22 +265,38 @@
               </div>
             </div>
 
-            <!-- edit -->
+            <!-- search -->
 
             <h2 class="mt-5 mb-3"><i class="fa-solid fa-gear"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
-
             <p>{{ $t('Max :number elements',{ number: config.post_max_element_count }) }}</p>
-            <p>{{ $t('total elements', { count: totalRow }) }}</p>
 
-            <nav class="navbar navbar-light bg-light pr-0 justify-content-end">
+            <nav class="navbar navbar-light bg-light pr-0 pl-0 justify-content-end">
+              <div class="form-inline mr-auto">
+                <h5 class="mr-1">
+                  <span class="badge badge-secondary cursor-pointer" @click="sortByRank">{{ $t('edit_post.sort_by_rank') }}
+                  <i v-if="sorter.sort_by == 'rank' && sorter.sort_dir == 'asc'" class="fa-solid fa-sort-down"></i>
+                  <i v-else-if="sorter.sort_by == 'rank' && sorter.sort_dir == 'desc'" class="fa-solid fa-sort-up"></i>
+                  <i v-else class="fa-solid fa-sort"></i>
+                  </span>
+                </h5>
+                <h5 class="mr-1">
+                  <span class="badge badge-secondary cursor-pointer" @click="sortById">{{ $t('edit_post.sort_by_created_time') }}
+                  <i v-if="sorter.sort_by == 'id' && sorter.sort_dir == 'asc'" class="fa-solid fa-sort-down"></i>
+                  <i v-else-if="sorter.sort_by == 'id' && sorter.sort_dir == 'desc'" class="fa-solid fa-sort-up"></i>
+                  <i v-else class="fa-solid fa-sort"></i>
+                  </span>
+                </h5>
+              </div>
               <div class="form-inline">
-                <input class="form-control mr-sm-2" v-model="filters.title_like" type="search"
+                <input class="form-control mr-sm-2 " v-model="filters.title_like"
                   :placeholder="$t('Search')" aria-label="Search" @change="loadElements(1)">
-                <i class="fa-solid fa-magnifying-glass" v-if="!filters.title_like"></i>
-                <i class="fas fa-filter" v-if="filters.title_like"></i>
+                  <span class="btn-sm btn btn-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <span class="ml-1 btn-sm btn btn-light" @click="resetSearch">{{ $t('edit_post.reset_search') }}</span>
               </div>
             </nav>
+            <p>{{ $t('total elements', { count: totalRow }) }}</p>
 
+            <!-- elements -->
             <div class="row">
               <template v-for="(element, index) in elements.data">
                 <!-- show video card -->
@@ -323,21 +344,28 @@
                           </a>
                         </div>
                       </div>
-                      <!--create time-->
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
-                      <!--delete button-->
-                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
-                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
-                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
-                      </a>
-                      <!--edit button-->
-                      <EditElement v-if="post"
-                        :post-serial="post.serial"
-                        :element-id="String(element.id)"
-                        :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint" 
-                        :upload-element-route="uploadElementEndpoint"
-                        @elementUpdated="handleElementUpdated"/>
+                      <div>
+                        <!--rank-->
+                        <span class="card-text d-inline-block">
+                          <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>
+                          <!--create time-->
+                          <br>
+                          <small class="text-muted">{{ element.created_at | datetime}}</small>
+                        </span>
+                        <!--delete button-->
+                        <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
+                          <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                          <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                        </a>
+                        <!--edit button-->
+                        <EditElement v-if="post"
+                          :post-serial="post.serial"
+                          :element-id="String(element.id)"
+                          :source-url="element.source_url"
+                          :update-element-route="updateElementEndpoint" 
+                          :upload-element-route="uploadElementEndpoint"
+                          @elementUpdated="handleElementUpdated"/>
+                      </div>
                     </div>
                   </div>
                   <!-- youtube embed source -->
@@ -373,8 +401,14 @@
                           </a>
                         </div>
                       </div>
-                      <!--create time-->
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
+                      <!--rank -->
+                      <span class="card-text d-inline-block">
+                        <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>
+                        <!--create time-->
+                        <br>
+                        <small class="text-muted">{{ element.created_at | datetime}}</small>
+                      </span>
+                      
                       <!--delete button-->
                       <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
@@ -390,7 +424,8 @@
                         @elementUpdated="handleElementUpdated"/>
                     </div>
                   </div>
-                  <!-- simple video source -->
+
+                  <!-- video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
                     <video width="100%" height="270" loop autoplay muted playsinline :src="element.thumb_url"></video>
@@ -399,7 +434,12 @@
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
                         :value="element.title" :maxlength="config.element_title_size"
                         @change="updateElementTitle(element.id, $event)">
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
+                      <span class="card-text">
+                        <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>
+                        <!--create time-->
+                        <br>
+                        <small class="text-muted">{{ element.created_at | datetime}}</small>
+                      </span>
                       <!--delete button-->
                       <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
@@ -416,7 +456,8 @@
                     </div>
                   </div>
                 </div>
-                <!-- image player -->
+
+                <!-- image -->
                 <div class="col-lg-4 col-md-6" v-if="element.type === 'image'">
                   <div class="card mb-3">
                     <img @error="onImageError(element, $event)" :src="element.thumb_url" class="card-img-top" :alt="element.title"
@@ -427,7 +468,12 @@
                       <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
                         :maxlength="config.element_title_size" rows="4" style="resize: none;"
                         @change="updateElementTitle(element.id, $event)"></textarea>
-                      <span class="card-text"><small class="text-muted">{{ element.created_at | datetime}}</small></span>
+                      <span class="card-text">
+                        <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>
+                        <!--create time-->
+                        <br>
+                        <small class="text-muted">{{ element.created_at | datetime}}</small>
+                      </span>
                       <!-- delete button -->
                       <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
@@ -449,62 +495,23 @@
 
             <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow"
               :per-page="elements.meta.per_page" first-number last-number @change="handleElementPageChange"
-              align="center"></b-pagination>
+              align="center">
+            </b-pagination>
+
+            <div class="row" v-if="!elements.data || elements.data.length == 0">
+              <div class="col-12">
+                  <h5 class="text-center">
+                    <div class="alert alert-secondary">
+                      <i class="fa-solid fa-circle-exclamation"></i> {{ $t('edit_post.no_element') }}
+                    </div>
+                  </h5>
+              </div>
+            </div>
           </div>
 
           <!-- tab rank -->
           <div class="tab-pane fade" id="v-pills-rank" role="tabpanel" aria-labelledby="v-pills-rank-tab">
-            <div class="row" v-if="!loading['LOADING_POST']">
-              <div class="col-3">
-                <div class="form-group">
-                  <label>{{ $t('edit_post.rank.game_plays') }}</label>
-                  <input class="form-control" disabled :value="post.play_count">
-                </div>
-              </div>
-            </div>
-            <table class="table table-hover" style="table-layout: fixed">
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col" style="width: 70%"></th>
-
-                  <th scope="col">{{ $t('edit_post.rank.win_rate') }}</th>
-                </tr>
-              </thead>
-              <tbody v-if="loading['LOADING_RANK']">
-                <tr>
-                  <td colspan="4">
-                    <div class="fa-3x text-center">
-                      <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-              <tbody v-if="rank.rankReportData && !loading['LOADING_RANK']">
-                <tr v-for="(rank, index) in rank.rankReportData.data">
-                  <th scope="row">{{ rank.rank }}</th>
-                  <td class="overflow-scroll hide-scrollbar">
-                    <div>
-                      <img :src="rank.element.thumb_url" height="300px" :alt="rank.element.title">
-
-                      <a v-if="rank.element.type === 'video'" :href="rank.element.thumb_url" target="_blank">
-                        <p>{{ rank.element.title }}</p>
-                      </a>
-                      <p v-if="rank.element.type === 'image'">{{ rank.element.title }}</p>
-                    </div>
-                  </td>
-                  <td>{{ rank.win_rate | percent }}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="row">
-              <div class="col-12" v-if="rank.rankReportData">
-                <b-pagination v-model="rank.currentPage" :total-rows="rank.rankReportData.meta.total"
-                  :per-page="rank.rankReportData.meta.per_page" first-number last-number @change="handleRankPageChange"
-                  align="center"></b-pagination>
-              </div>
-            </div>
+            <iframe :src="gameRankRoute" width="100%" height="800px" frameborder="0"></iframe>
           </div>
         </div>
       </div>
@@ -523,15 +530,15 @@ export default {
   mounted() {
     bsCustomFileInput.init();
     this.loadPost();
-    this.loadElements();
-    this.loadRankReport();
+    this.resetSearch();
     this.loadTagsOptions();
     this.host = window.location.origin;
   },
   props: {
     config: Object,
-    showPostEndpoint: String,
     playGameRoute: String,
+    gameRankRoute: String,
+    showPostEndpoint: String,
     getElementsEndpoint: String,
     getRankEndpoint: String,
     updatePostEndpoint: String,
@@ -540,8 +547,7 @@ export default {
     deleteElementEndpoint: String,
     createImageElementEndpoint: String,
     batchCreateEndpoint: String,
-    getTagsOptionsEndpoint: String,
-    defaultAvatarUrl: String
+    getTagsOptionsEndpoint: String
   },
   data: function () {
     return {
@@ -583,6 +589,10 @@ export default {
       // search elements
       filters: {
         title_like: null
+      },
+      sorter: {
+        sort_by: 'id',
+        sort_dir: 'asc',
       },
 
       //rank
@@ -733,12 +743,35 @@ export default {
       };
       const params = {
         ...pagination,
-        ...{ filter: this.filters }
+        ...{ filter: this.filters },
+        ...this.sorter
       }
       axios.get(this.getElementsEndpoint, { params: params })
         .then(res => {
           this.elements = res.data;
         })
+    },
+    resetSearch: function () {
+      this.filters.title_like = null;
+      this.sorter = {
+        'sort_by': 'id',
+        'sort_dir': 'asc'
+      };
+      this.loadElements(1);
+    },
+    sortByRank: function () {
+      this.sorter = {
+        'sort_by': 'rank',
+        'sort_dir': (this.sorter.sort_by === 'rank' && this.sorter.sort_dir === 'asc') ? 'desc' : 'asc'
+      };
+      this.loadElements(1);
+    },
+    sortById: function () {
+      this.sorter = {
+        'sort_by': 'id',
+        'sort_dir': (this.sorter.sort_by === 'id' && this.sorter.sort_dir === 'asc') ? 'desc' : 'asc'
+      };
+      this.loadElements(1);
     },
     handleElementUpdated: function (data) {
       const index = _.findIndex(this.elements.data, {
@@ -1092,6 +1125,16 @@ export default {
     },
     handleRankPageChange: function (page) {
       this.loadRankReport(page);
+    },
+    getElementRank(element) {
+      if(element.rank !== null) {
+        return element.rank.rank;
+      }
+      return '-';
+    },
+    formatDate(date) {
+      // use filter to format date
+      return this.$options.filters.datetime(date);
     },
   }
 }

@@ -1,8 +1,9 @@
 @extends('layouts.app', [
-    'title' => $post->title.' | '.__('title.rank'),
-    'ogTitle' => $post->title.' | '.__('title.rank'),
+    'title' => $post->title.' - '.__('title.rank'),
+    'ogTitle' => $post->title.' - '.__('title.rank'),
     'ogImage' => $ogElement?->thumb_url,
     'ogDescription' => $post->description,
+    'embed' => $embed,
 ])
 
 @section('content')
@@ -14,6 +15,7 @@
     >
         {{-- Main --}}
         <div class="container" v-cloak>
+            @if(!$embed)
             @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
             <div class="row mb-3">
                 <div class="col-auto">
@@ -28,9 +30,10 @@
                 </div>
             </div>
             <hr>
-
+            
             <h2>{{ $post->title }}</h2>
             <p>{{ $post->description }}</p>
+            @endif
 
             <b-tabs content-class="mt-3" nav-wrapper-class="@if($gameResult) sticky-top bg-default @endif">
                 @if($gameResult)

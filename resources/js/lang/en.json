@@ -43,6 +43,11 @@
     "edit_post.rank.win_rate": "Winning",
     "edit_post.tag.enter": "Enter",
     "edit_post.info.cancel_save": "Cancel",
+    "edit_post.rank": "Rank",
+    "edit_post.no_element": "No material",
+    "edit_post.reset_search": "Reset",
+    "edit_post.sort_by_rank": "Sort by rank",
+    "edit_post.sort_by_created_time": "Sort by Created Time",
 
     "edit.element.upload-image": "Upload Image",
 

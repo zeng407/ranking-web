@@ -54,6 +54,7 @@
 
 <body class="d-flex flex-column min-vh-100">
     <div id="app">
+        @if(!isset($embed) || !$embed)
         <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{isset($stickyNav) && $stickyNav  ? 'sticky-top' : '' }}">
             <div class="container-fluid">
                 <a class="navbar-brand" href="{{ route('home') }}">
@@ -125,6 +126,7 @@
                 </div>
             </div>
         </nav>
+        @endif
 
         <main class="pt-2">
             @include('layouts.flash')

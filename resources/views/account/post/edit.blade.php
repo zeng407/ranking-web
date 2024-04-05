@@ -10,6 +10,7 @@
     <edit-post
         :config="{{json_encode($config)}}"
         play-game-route="{{route('game.show', $serial)}}"
+        game-rank-route={{route('game.rank-embed', $serial)}}
 
         show-post-endpoint="{{route('api.post.show', $serial)}}"
         get-elements-endpoint="{{route('api.post.elements', $serial)}}"
@@ -24,7 +25,6 @@
 
         get-tags-options-endpoint="{{route('api.tag.index')}}"
         get-comments-endpoint="{{route('api.public-post.comment.index', $serial)}}"
-        default-avatar-url="{{asset('storage/default-avatar.webp')}}"
     >
     </edit-post>
 
