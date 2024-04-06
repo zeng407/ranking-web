@@ -77,7 +77,7 @@
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
-              <h1>{{ $post['title'] }}</h1>
+              <h2>{{ $post['title'] }}</h2>
             </div>
             <div class="row no-gutters">
               <div class="col-6">
