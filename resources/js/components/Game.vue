@@ -37,10 +37,10 @@
             <video width="100%" :height="elementHeight" loop autoplay controls playsinline :src="le.thumb_url"></video>
           </div>
           <div class="card-body text-center">
-            <div class="my-1 font-size-small" style="max-height: 90px" v-if="isMobileScreen">
-              <p class="my-1">{{ le.title }}</p>
+            <div class="my-1" style="max-height: 120px" v-if="isMobileScreen">
+              <h5 class="my-1 font-size-small">{{ le.title }}</h5>
             </div>
-            <div class="my-1 font-size-small" style="height: 90px" v-else>
+            <div class="my-1" style="height: 120px" v-else>
               <h5 class="my-1">{{ le.title }}</h5>
             </div>
             <button id="left-btn" class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
@@ -109,10 +109,10 @@
           <!-- reverse when device size width less md(768px)-->
           <div class="card-body text-center"
             :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
-            <div class="my-1 flex-column-reverse d-flex" style="max-height: 90px" v-if="isMobileScreen">
-              <p class="my-1 font-size-small">{{ re.title }}</p>
+            <div class="my-1 flex-column-reverse d-flex" style="max-height: 120px" v-if="isMobileScreen">
+              <h5 class="my-1 font-size-small">{{ re.title }}</h5>
             </div>
-            <div class="my-1" style="height: 90px" v-else>
+            <div class="my-1" style="height: 120px" v-else>
               <h5 class="my-1">{{ re.title }}</h5>
             </div>
             <button id="right-btn" class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"

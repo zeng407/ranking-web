@@ -22280,10 +22280,6 @@ input[type=color].form-control:disabled {
 
 .rank-header {
   display: flex;
-  align-items: center;
-}
-.rank-header > * {
-  flex-basis: 100%;
 }
 
 .card-hover {

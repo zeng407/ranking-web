@@ -31,7 +31,7 @@
             </div>
             <hr>
             
-            <h2>{{ $post->title }}</h2>
+            <h1>{{ $post->title }}</h1>
             <p>{{ $post->description }}</p>
             @endif
 
@@ -40,15 +40,15 @@
                 <b-tab :title="$t('My Rank')" {{request('tab') == 0 ? 'active':''}} @click="clickTab('0')">
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
-                            <h2 class="text-left">1</h2>
-                            <div class="text-center d-none d-md-block">{{ $gameResult->winner->title }}</div>
-                            <div class="text-right">
+                            <h2 class="text-left w-25">1</h2>
+                            <h2 class="text-center d-none d-md-block w-50">{{ $gameResult->winner->title }}</h2>
+                            <div class="text-right ml-auto">
                                 {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}
                             </div>
                         </div>
                         {{-- Rank #1 --}}
                         <div class="card-body text-center rank-card">
-                            <div class="text-center d-block d-md-none">{{ $gameResult->winner->title }}</div>
+                            <h2 class="text-center d-block d-md-none">{{ $gameResult->winner->title }}</h2>
                             @if($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube')
                                 <youtube-player 
                                     width="100%" height="270" ref-id="{{ $gameResult->winner->id }}"
@@ -72,9 +72,9 @@
                     @foreach ($gameResult->data as $index => $rank)
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
-                            <h2 class="text-left">{{ (int)$index + 2 }}</h2>
-                            <div class="text-center d-none d-md-block">{{ $rank->loser->title }}</div>
-                            <div class="text-right">
+                            <h2 class="text-left w-25">{{ (int)$index + 2 }}</h2>
+                            <h2 class="text-center d-none d-md-block w-50">{{ $rank->loser->title }}</h2>
+                            <div class="text-right ml-auto w-auto">
                                 {{ __('Global Rank') }}:&nbsp;{{ $rank->rank ?? __('none') }}
                             </div>
                         </div>
@@ -105,9 +105,9 @@
                     @foreach ($reports as $index => $rank)
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
-                            <h2 class="text-left">{{ $rank->rank }}</h2>
-                            <div class="text-center d-none d-md-block">{{ $rank->element->title }}</div>
-                            <div class="text-right">
+                            <h2 class="text-left w-25">{{ $rank->rank }}</h2>
+                            <h5 class="text-center d-none d-md-block w-50">{{ $rank->element->title }}</h5>
+                            <div class="text-right ml-auto w-auto">
                                 @if($rank->win_rate)
                                     {{ __('rank.win_rate') }}:&nbsp;{{ round($rank->win_rate,1) }}%
                                 @else
@@ -117,7 +117,7 @@
                             </div>
                         </div>
                         <div class="card-body text-center rank-card">
-                            <div class="text-center d-block d-md-none">{{ $rank->element->title }}</div>
+                            <h5 class="text-center d-block d-md-none">{{ $rank->element->title }}</h5>
                             @if($rank->element->type === 'video' && $rank->element->video_source === 'youtube')
                                 <youtube-player 
                                     width="100%" height="270" ref-id="{{ $rank->element->id }}"
