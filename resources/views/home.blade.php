@@ -77,7 +77,7 @@
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
-              <h3>{{ $post['title'] }}</h3>
+              <h1>{{ $post['title'] }}</h1>
             </div>
             <div class="row no-gutters">
               <div class="col-6">
@@ -88,7 +88,7 @@
                   <video src="{{$post['element1']['url']}}#t=1'"></video>
                   @endif
                 </div>
-                <p class="text-center mt-1 p-1">{{ $post['element1']['title'] }}</p>
+                <h5 class="text-center mt-1 p-1">{{ $post['element1']['title'] }}</h5>
               </div>
               <div class="col-6">
                 <div class="post-element-container">
@@ -98,10 +98,10 @@
                   <video src="{{$post['element2']['url']}}#t=1'"></video>
                   @endif
                 </div>
-                <p class="text-center mt-1 p-1">{{ $post['element2']['title'] }}</p>
+                <h5 class="text-center mt-1 p-1">{{ $post['element2']['title'] }}</h5>
               </div>
               <div class="card-body pt-0 text-center">
-                <p class="text-break">{{ $post['description'] }}</p>
+                <h5 class="text-break">{{ $post['description'] }}</h5>
                 <div class="row">
                   <div class="col-6">
                     <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}">
