@@ -7,7 +7,7 @@
 ])
 
 @section('content')
-    <rank inline-template 
+    <Rank inline-template 
         comment-max-length="{{ config('setting.comment_max_length') }}"
         index-comment-endpoint="{{ route('api.public-post.comment.index', $post->serial) }}"
         create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"

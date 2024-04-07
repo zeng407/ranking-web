@@ -134,7 +134,7 @@ class MyPostController extends Controller
         $post->update($data);
         $post->post_policy()->update(data_get($data, 'policy', []));
         $this->postService->syncTags($post, data_get($data, 'tags', []));
-        return PostResource::make($post);
+        return PostResource::make($post->refresh());
     }
 
     public function delete(Request $request, Post $post)

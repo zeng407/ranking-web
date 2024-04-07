@@ -4,6 +4,7 @@ namespace App\Http\Resources\Game;
 
 use App\Models\Game;
 use App\Models\Game1V1Round;
+use App\Services\GameService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -31,19 +32,18 @@ class GameRoundResource extends JsonResource
     {
         /** @var Game1V1Round $round */
         $round = $this->game_1v1_rounds()->latest('id')->first();
+        $remains = $round ? $round->remain_elements : $this->element_count;
 
         if ($round === null) {
             $currentRound = 1;
             $ofRound = ceil($this->element_count / 2);
         } elseif ($round->current_round + 1 > $round->of_round) {
             $currentRound = 1;
-            $ofRound = ceil($round->of_round / 2);
+            $ofRound = app(GameService::class)->calculateNextRoundNumber($remains);
         } else {
             $currentRound = $round->current_round + 1;
             $ofRound = $round->of_round;
         }
-
-        $remains = $round ? $round->remain_elements : $this->element_count;
 
         return [
             'title' => $this->post->title,

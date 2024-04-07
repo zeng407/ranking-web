@@ -106,7 +106,7 @@ class GameService
             $remain = $game->element_count - 1;
         } else if ($lastRound->current_round + 1 > $lastRound->of_round) {
             $round = 1;
-            $ofRound = (int) ceil($lastRound->remain_elements / 2);
+            $ofRound = $this->calculateNextRoundNumber($lastRound->remain_elements);
             $remain = $lastRound->remain_elements - 1;
         } else {
             $round = $lastRound->current_round + 1;
@@ -166,6 +166,18 @@ class GameService
             throw $e;
         }
         return $game->game_1v1_rounds()->create($data);
+    }
+
+    public function calculateNextRoundNumber($remain)
+    {
+        $ofRound = $remain;
+        for ($i = config('setting.post_max_element_count'); $i >= 1; $i /= 2) {
+            if ($remain > $i) {
+                $ofRound = $remain - $i;
+                break;
+            }
+        }
+        return $ofRound;
     }
 
     public function createVotedChampion(?User $user, string $anonymousId, Game $game, Element $element)

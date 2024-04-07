@@ -84,9 +84,10 @@
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="createPostForm.title" required
-                          maxlength="40">
+                          :maxlength="maxPostTitleLength">
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
+                      <CountWords :words="createPostForm.title" :maxLength="maxPostTitleLength"></CountWords>
                     </div>
                   </div>
                 </div>
@@ -99,10 +100,11 @@
                       </label>
                       <ValidationProvider rules="required" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="createPostForm.description" rows="3"
-                          style="resize: none" maxlength="100" aria-describedby="description-help" required></textarea>
+                          style="resize: none" :maxlength="maxPostDescriptionLength" aria-describedby="description-help" required></textarea>
                         <small id="description-help" class="form-text text-muted">
                           {{ $t('create_game.description.hint') }}
                         </small>
+                        <CountWords :words="createPostForm.description" :maxLength="maxPostDescriptionLength"></CountWords>
                       </ValidationProvider>
                     </div>
                   </div>
@@ -152,6 +154,8 @@
 </template>
 
 <script>
+import CountWords from './partials/CountWords.vue';
+
 
 const LOADING_POSTS = 0;
 const CREATING_POST = 1;
@@ -174,6 +178,8 @@ export default {
     getPostsEndpoint: String,
     editPostRoute: String,
     createPostEndpoint: String,
+    maxPostTitleLength: String,
+    maxPostDescriptionLength: String
   },
   data: function () {
     return {
