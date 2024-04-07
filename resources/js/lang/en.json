@@ -61,6 +61,10 @@
     "game.cancel": "Cancel",
     "game.403": "Unable to retrieve data, the author may have closed this vote. Please refresh or choose another vote.",
     "game.pivate_text": "This is your private post, only you can vote.",
+    "game_round_final": "Final",
+    "game_round_semifinal": "Semifinal",
+    "game_round_quarterfinal": "Quarterfinal",
+    "game_round_of": "TOP{round}",
 
     "total elements": "total materials : {count}",
     "report_comment_other_reason_required": "You need to write something!",

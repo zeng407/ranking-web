@@ -4,10 +4,22 @@
       <h2 class="text-center text-break">{{ game.title }}</h2>
       <div class="d-none d-sm-flex" style="flex-flow: row wrap">
         <h5 style="width: 20%"></h5>
-        <h5 class="text-center align-self-center" style="width: 60%">ROUND {{ game.current_round }} / TOP
-          {{ game.of_round }} </h5>
-        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} /
-          {{ game.total_elements }})</h5>
+        
+        <h5 class="text-center align-self-center" style="width: 60%">
+          <span v-if="currentRemainElement <= 2">{{ $t('game_round_final') }}</span>
+          <span v-else-if="currentRemainElement <= 4">{{ $t('game_round_semifinal') }}</span>
+          <span v-else-if="currentRemainElement <= 8">{{ $t('game_round_quarterfinal') }}</span>
+          <span v-else-if="currentRemainElement <= 16">{{ $t('game_round_of', {round:16}) }}</span>
+          <span v-else-if="currentRemainElement <= 32">{{ $t('game_round_of', {round:32}) }}</span>
+          <span v-else-if="currentRemainElement <= 64">{{ $t('game_round_of', {round:64}) }}</span>
+          <span v-else-if="currentRemainElement <= 128">{{ $t('game_round_of', {round:128}) }}</span>
+          <span v-else-if="currentRemainElement <= 256">{{ $t('game_round_of', {round:256}) }}</span>
+          <span v-else-if="currentRemainElement <= 512">{{ $t('game_round_of', {round:512}) }}</span>
+          <span v-else-if="currentRemainElement <= 1024">{{ $t('game_round_of', {round:1024}) }}</span>
+           {{ game.current_round }} / {{ game.of_round }} </h5>
+        <h5 class="text-right align-self-center" style="width: 20%">({{ game.remain_elements }} /{{ game.total_elements }})
+        
+        </h5>
       </div>
     </div>
     <div class="row game-body" v-if="game">
@@ -73,10 +85,19 @@
       <!-- mobile rounds session -->
       <div id="rounds-session" class="col-sm-12 d-md-none">
         <div class="d-flex d-sm-none justify-content-between" style="flex-flow: row wrap">
-          <h5 class="">ROUND {{ game.current_round }} / TOP
-            {{ game.of_round }} </h5>
-          <h5 class="">({{ game.remain_elements }} /
-            {{ game.total_elements }})</h5>
+          <h5 class="">
+            <span v-if="currentRemainElement <= 2">{{ $t('game_round_final') }}</span>
+            <span v-else-if="currentRemainElement <= 4">{{ $t('game_round_semifinal') }}</span>
+            <span v-else-if="currentRemainElement <= 8">{{ $t('game_round_quarterfinal') }}</span>
+            <span v-else-if="currentRemainElement <= 16">{{ $t('game_round_of', {round:16}) }}</span>
+            <span v-else-if="currentRemainElement <= 32">{{ $t('game_round_of', {round:32}) }}</span>
+            <span v-else-if="currentRemainElement <= 64">{{ $t('game_round_of', {round:64}) }}</span>
+            <span v-else-if="currentRemainElement <= 128">{{ $t('game_round_of', {round:128}) }}</span>
+            <span v-else-if="currentRemainElement <= 256">{{ $t('game_round_of', {round:256}) }}</span>
+            <span v-else-if="currentRemainElement <= 512">{{ $t('game_round_of', {round:512}) }}</span>
+            <span v-else-if="currentRemainElement <= 1024">{{ $t('game_round_of', {round:1024}) }}</span>
+               {{ game.current_round }} / {{ game.of_round }} </h5>
+          <h5 class="">({{ game.remain_elements }} /{{ game.total_elements }})</h5>
         </div>
       </div>
 
@@ -285,7 +306,8 @@ export default {
       isLeftPlayerInit: false,
       isRightPlayerInit: false,
       error403WhenLoad: false,
-      errorImages: []
+      errorImages: [],
+      currentRemainElement: false
     }
   },
   computed: {
@@ -360,6 +382,9 @@ export default {
       return axios.get(url)
         .then(res => {
           this.game = res.data.data;
+          if(this.game.current_round == 1 || this.currentRemainElement == false){
+            this.currentRemainElement = this.game.remain_elements;
+          }
           this.le = this.game.elements[0];
           this.re = this.game.elements[1];
         })

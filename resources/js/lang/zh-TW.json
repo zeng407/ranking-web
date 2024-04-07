@@ -76,6 +76,10 @@
     "game.cancel": "回首頁",
     "game.403": "無法取得資料，作者可能已關閉此投票，請重新整理或選擇其他投票",
     "game.pivate_text": "此為你的私人投稿，僅你可以進行投票",
+    "game_round_final": "決賽",
+    "game_round_semifinal": "4強",
+    "game_round_quarterfinal": "8強",
+    "game_round_of": "{round}強",
 
     "rank.no_rank": "尚未有資料",
     "Are you sure you want to report this comment?": "要檢舉此留言嗎?",

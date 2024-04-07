@@ -100,6 +100,7 @@
                           :maxlength="config.post_title_size">
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
+                      <CountWords v-if="isEditing" :words="post.title" :maxLength="config.post_title_size"></CountWords>
                     </div>
                   </div>
                 </div>
@@ -114,11 +115,11 @@
                         <textarea class="form-control" id="description" v-model="post.description" rows="3"
                           style="resize: none" :maxlength="config.post_description_size"
                           aria-describedby="description-help" required :disabled="!isEditing || loading['SAVING_POST']">
-
                         </textarea>
                         <small id="description-help" class="form-text text-muted">
                           {{ $t('create_game.description.hint') }}
                         </small>
+                        <CountWords v-if="isEditing" :words="post.description" :maxLength="config.post_description_size"></CountWords>
                         <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                     </div>
@@ -193,13 +194,13 @@
               </form>
               <!-- 建立時間 -->
               <div class="row" v-if="post">
-                <div class="col-3">
+                <div class="col-md-3 col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label-lg">{{ $t('edit_post.info.create_time') }}</label>
                     <input class="form-control" disabled :value="post.created_at | date">
                   </div>
                 </div>
-                <div class="col-3">
+                <div class="col-md-3 col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label-lg">{{ $t('edit_post.rank.game_plays') }}</label>
                     <input class="form-control" disabled :value="post.play_count">
@@ -271,7 +272,7 @@
             <p>{{ $t('Max :number elements',{ number: config.post_max_element_count }) }}</p>
 
             <nav class="navbar navbar-light bg-light pr-0 pl-0 justify-content-end">
-              <div class="form-inline mr-auto">
+              <div class="form-inline mr-auto p-0 col-auto">
                 <h5 class="mr-1">
                   <span class="badge badge-secondary cursor-pointer" @click="sortByRank">{{ $t('edit_post.sort_by_rank') }}
                   <i v-if="sorter.sort_by == 'rank' && sorter.sort_dir == 'asc'" class="fa-solid fa-sort-down"></i>
@@ -287,7 +288,7 @@
                   </span>
                 </h5>
               </div>
-              <div class="form-inline">
+              <div class="form-inline p-0 col-md-auto col-sm-12">
                 <input class="form-control mr-sm-2 " v-model="filters.title_like"
                   :placeholder="$t('Search')" aria-label="Search" @change="loadElements(1)">
                   <span class="btn-sm btn btn-light"><i class="fa-solid fa-magnifying-glass"></i></span>
@@ -688,6 +689,8 @@ export default {
         .then(res => {
           this.post = res.data.data;
           this.tags = res.data.data.tags;
+          this.keep_post = _.cloneDeep(res.data.data);
+          this.keep_tags = _.cloneDeep(res.data.data.tags);
           this.isEditing = false;
         })
         .finally(() => {

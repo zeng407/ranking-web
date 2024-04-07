@@ -1,7 +1,10 @@
 <script>
 import Swal from 'sweetalert2';
+import CountWords from './partials/CountWords.vue';
 export default {
-  name: 'rank',
+  components: {
+    CountWords
+  },
   mounted() {
     this.loadCommnets();
   },

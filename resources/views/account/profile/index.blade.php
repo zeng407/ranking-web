@@ -34,7 +34,7 @@
                                                             name="avatar" @change="handleAvatarChange">
                                                     </div>
                                                 </div>
-                                                <div class="w-auto pl-3">
+                                                <div class="w-auto pl-3 d-none d-sm-block">
                                                     <img :src="avatarUrl" class="cursor-pointer w-100"
                                                         style="max-height: 300px" alt="{{ __('Avatar') }}"
                                                         @click="uploadAvatar">
