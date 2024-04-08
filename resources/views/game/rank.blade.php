@@ -41,7 +41,7 @@
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
                             <h2 class="text-left w-25">1</h2>
-                            <h2 class="text-center d-none d-md-block w-50">{{ $gameResult->winner->title }}</h2>
+                            <h5 class="text-center d-none d-md-block w-50">{{ $gameResult->winner->title }}</h5>
                             <div class="text-right ml-auto">
                                 {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}
                             </div>
@@ -79,7 +79,7 @@
                             </div>
                         </div>
                         <div class="card-body text-center rank-card">
-                            <div class="text-center d-block d-md-none">{{ $rank->loser->title }}</div>
+                            <h5 class="text-center d-block d-md-none">{{ $rank->loser->title }}</h5>
                             @if($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube')
                                 <youtube-player 
                                     width="100%" height="270" ref-id="{{ $rank->loser->id }}"
