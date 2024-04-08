@@ -43,7 +43,7 @@
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
-            <YoutubeEmbed :element="le" width="100%" :height="elementHeight" v-if="le"/>
+            <YoutubeEmbed v-if="le" :element="le" width="100%" :height="elementHeight" />
           </div>
           <div v-else-if="isVideoSource(le)">
             <video width="100%" :height="elementHeight" loop autoplay controls playsinline :src="le.thumb_url"></video>
@@ -121,7 +121,7 @@
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
-            <YoutubeEmbed :element="re" width="100%" :height="elementHeight" v-if="re"/>
+            <YoutubeEmbed v-if="re" :element="re" width="100%" :height="elementHeight"/>
           </div>
           <div v-else-if="isVideoSource(re)">
             <video width="100%" :height="elementHeight" loop autoplay controls playsinline :src="re.thumb_url"></video>

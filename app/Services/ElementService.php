@@ -79,11 +79,16 @@ class ElementService
         if (!$validate){
             return null;
         }
-
-        $embedCode = "<iframe width=\"100%\" height=\"270\" src=\"https://www.youtube.com/embed/{$videoUrl}?autoplay=1&playlist={$videoUrl}&loop=1\" title=\"YouTube video player\" " . 
+        $videoParams = explode('?', $videoUrl);
+        $videoId = $videoParams[0];
+        if(isset($videoParams[1])){
+            $embedUrl = $videoId.'?' . $videoParams[1].'&autoplay=1&playlist='.$videoId.'&loop=1';
+        }else{
+            $embedUrl = $videoId.'?autoplay=1&playlist='.$videoId.'&loop=1';
+        }
+        $embedCode = "<iframe width=\"100%\" height=\"270\" src=\"https://www.youtube.com/embed/{$embedUrl}\" title=\"YouTube video player\" " . 
             "frameborder=\"0\" allow=\"accelerometer; loop; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" ". 
             "referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen ></iframe>";
-        $videoId = explode('?', $videoUrl)[0];
         $thumbUrl = "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
         $element = $post->elements()->updateOrCreate([
             'source_url' => $params['old_source_url'] ??  '',

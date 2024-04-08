@@ -150,11 +150,18 @@ if (!function_exists('url_path_without_locale')) {
 }
 
 if(!function_exists('inject_youtube_embed')){
-    function inject_youtube_embed($embedCode, $width = '100%', $height = '270')
+    function inject_youtube_embed($embedCode, $params = [])
     {
+        $width = $params['width'] ?? '100%';
+        $height = $params['height'] ?? '270';
+
         // replace width and height
-        $embedCode = preg_replace('/width="\d+"/', "width=\"{$width}\"", $embedCode);
-        $embedCode = preg_replace('/height="\d+"/', "height=\"{$height}\"", $embedCode);
+        $embedCode = preg_replace('/width="[\d%]+"/', "width=\"{$width}\"", $embedCode);
+        $embedCode = preg_replace('/height="[\d%]+"/', "height=\"{$height}\"", $embedCode);
+
+        if(isset($params['autoplay']) && $params['autoplay'] === false){
+            $embedCode = str_replace('autoplay=1', 'autoplay=0', $embedCode);
+        }
         return $embedCode;
     }
 }
