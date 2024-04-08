@@ -759,6 +759,7 @@ export default {
         'sort_by': 'id',
         'sort_dir': 'asc'
       };
+      this.currentPage = 1;
       this.loadElements(1);
     },
     sortByRank: function () {
@@ -766,6 +767,7 @@ export default {
         'sort_by': 'rank',
         'sort_dir': (this.sorter.sort_by === 'rank' && this.sorter.sort_dir === 'asc') ? 'desc' : 'asc'
       };
+      this.currentPage = 1;
       this.loadElements(1);
     },
     sortById: function () {
@@ -773,6 +775,7 @@ export default {
         'sort_by': 'id',
         'sort_dir': (this.sorter.sort_by === 'id' && this.sorter.sort_dir === 'asc') ? 'desc' : 'asc'
       };
+      this.currentPage = 1;
       this.loadElements(1);
     },
     handleElementUpdated: function (data) {
@@ -1111,32 +1114,11 @@ export default {
     },
 
     /** Rank **/
-    loadRankReport: function (page = 1) {
-      this.uploadLoadingStatus('LOADING_RANK', true);
-      const filter = {
-        'page': page
-      };
-      axios.get(this.getRankEndpoint, { params: filter })
-        .then(res => {
-          this.$set(this.rank, 'rankReportData', res.data);
-          this.$set(this.rank, 'currentPage', res.data.meta.current_page);
-        })
-        .finally(() => {
-          this.uploadLoadingStatus('LOADING_RANK', false);
-        });
-    },
-    handleRankPageChange: function (page) {
-      this.loadRankReport(page);
-    },
     getElementRank(element) {
       if(element.rank !== null) {
         return element.rank.rank;
       }
       return '-';
-    },
-    formatDate(date) {
-      // use filter to format date
-      return this.$options.filters.datetime(date);
     },
   }
 }
