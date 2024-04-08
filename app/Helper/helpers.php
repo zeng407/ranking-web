@@ -114,9 +114,14 @@ if (!function_exists('get_page_title')) {
 if (!function_exists('get_page_description')) {
     function get_page_description($object)
     {
-        $base = "殘酷二選一，多種主題：歌曲、明星、動漫、寵物、食物、電影...，從".config('setting.post_max_element_count')."組候選人中一輪一輪淘汰，最後選出你心中的第一名。";
+        $base = "殘酷二選一，多種投票主題：歌曲、明星、動漫、寵物、食物、電影...，從".config('setting.post_max_element_count')."組候選人中一輪一輪淘汰，最後選出你心中的第一名。";
         if ($object instanceof \App\Models\Post) {
             $description = str_replace(" \t\n\r\0\x0B", "", $object->description);
+            $tags = $object->tags->pluck('name')->toArray();
+            if(count($tags) > 0) {
+                $tags = implode(' #', $tags);
+                $description = "{$description} #{$tags}";
+            }
             return "{$description} | {$base}";
         }
         return $base;
@@ -145,11 +150,18 @@ if (!function_exists('url_path_without_locale')) {
 }
 
 if(!function_exists('inject_youtube_embed')){
-    function inject_youtube_embed($embedCode, $width = '100%', $height = '270')
+    function inject_youtube_embed($embedCode, $params = [])
     {
+        $width = $params['width'] ?? '100%';
+        $height = $params['height'] ?? '270';
+
         // replace width and height
-        $embedCode = preg_replace('/width="\d+"/', "width=\"{$width}\"", $embedCode);
-        $embedCode = preg_replace('/height="\d+"/', "height=\"{$height}\"", $embedCode);
+        $embedCode = preg_replace('/width="[\d%]+"/', "width=\"{$width}\"", $embedCode);
+        $embedCode = preg_replace('/height="[\d%]+"/', "height=\"{$height}\"", $embedCode);
+
+        if(isset($params['autoplay']) && $params['autoplay'] === false){
+            $embedCode = str_replace('autoplay=1', 'autoplay=0', $embedCode);
+        }
         return $embedCode;
     }
 }

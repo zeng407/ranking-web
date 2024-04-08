@@ -371,7 +371,7 @@
                   </div>
                   <!-- youtube embed source -->
                   <div class="card mb-3" v-else-if="isYoutubeEmbedSource(element)">
-                    <YoutubeEmbed :element="element" v-if="element"/>
+                    <YoutubeEmbed :element="element" v-if="element" :autoplay="false"/>
                     <!-- youtube video editor -->
                     <div class="card-body">
                       <!--title edit-->
