@@ -38,8 +38,8 @@ export default {
   methods: {
     loadYoutubeEmbed: function (element) {
       // Remove any existing iframes
-      while (this.$refs.embedDiv.firstChild) {
-        this.$refs.embedDiv.firstChild.remove();
+      while (this.getPlayer(element).firstChild) {
+        this.getPlayer(element).firstChild.remove();
       }
       
       let parser = new DOMParser();
