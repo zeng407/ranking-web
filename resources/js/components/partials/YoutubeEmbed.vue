@@ -1,5 +1,5 @@
 <template>
-  <div :id="'embed'+element.id" :ref="element.id +'.player'" style="width: 100%;">
+  <div :id="'embed'+element.id" ref="embedDiv" style="width: 100%;">
   </div>
 </template>
 
@@ -17,6 +17,7 @@ export default {
       }
     }
   },
+  
   props: {
     element: {
       type: Object,
@@ -37,10 +38,12 @@ export default {
   },
   methods: {
     loadYoutubeEmbed: function (element) {
-      // Remove any existing iframes
-      while (this.getPlayer(element).firstChild) {
-        this.getPlayer(element).firstChild.remove();
+      // remove child
+      while (this.$refs.embedDiv.firstChild) {
+        this.$refs.embedDiv.firstChild.remove();
       }
+      
+      this.thumbnailUrl = element.thumb_url;
       
       let parser = new DOMParser();
       let code = element.source_url;
@@ -56,11 +59,8 @@ export default {
 
       let iframe = doc.querySelector('iframe');
       if (iframe && iframe.src.startsWith('https://www.youtube.com/embed/')) {
-        this.getPlayer(element).appendChild(iframe);
+        this.$refs.embedDiv.appendChild(iframe);
       }
-    },
-    getPlayer(element) {
-      return _.get(this.$refs, element.id + '.player', null);
     },
   }
 };
