@@ -2,7 +2,7 @@
     'title' => $post,
     'ogTitle' => $post->title,
     'ogImage' => $element->thumb_url,
-    'ogDescription' => $post->description])
+    ])
 
 @section('header')
     <script type="application/ld+json">

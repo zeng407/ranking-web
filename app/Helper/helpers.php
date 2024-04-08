@@ -114,9 +114,14 @@ if (!function_exists('get_page_title')) {
 if (!function_exists('get_page_description')) {
     function get_page_description($object)
     {
-        $base = "殘酷二選一，多種主題：歌曲、明星、動漫、寵物、食物、電影...，從".config('setting.post_max_element_count')."組候選人中一輪一輪淘汰，最後選出你心中的第一名。";
+        $base = "殘酷二選一，多種投票主題：歌曲、明星、動漫、寵物、食物、電影...，從".config('setting.post_max_element_count')."組候選人中一輪一輪淘汰，最後選出你心中的第一名。";
         if ($object instanceof \App\Models\Post) {
             $description = str_replace(" \t\n\r\0\x0B", "", $object->description);
+            $tags = $object->tags->pluck('name')->toArray();
+            if(count($tags) > 0) {
+                $tags = implode(' #', $tags);
+                $description = "{$description} #{$tags}";
+            }
             return "{$description} | {$base}";
         }
         return $base;
