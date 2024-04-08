@@ -80,9 +80,9 @@ class ElementService
             return null;
         }
 
-        $embedCode = "<iframe width=\"100%\" height=\"270\" src=\"https://www.youtube.com/embed/{$videoUrl}\" title=\"YouTube video player\" " . 
-            "frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" ". 
-            "referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen></iframe>";
+        $embedCode = "<iframe width=\"100%\" height=\"270\" src=\"https://www.youtube.com/embed/{$videoUrl}?autoplay=1&playlist={$videoUrl}&loop=1\" title=\"YouTube video player\" " . 
+            "frameborder=\"0\" allow=\"accelerometer; loop; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" ". 
+            "referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen ></iframe>";
         $videoId = explode('?', $videoUrl)[0];
         $thumbUrl = "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
         $element = $post->elements()->updateOrCreate([
