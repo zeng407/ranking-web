@@ -37,9 +37,9 @@
               </div>
             </div>
           </div>
-          <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
+          <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0 , origin: host, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
@@ -115,9 +115,9 @@
               </div>
             </div>
           </div>
-          <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
+          <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
@@ -303,8 +303,6 @@ export default {
       isLeftPlaying: false,
       isRightPlaying: false,
       rememberedScrollPosition: null,
-      isLeftPlayerInit: false,
-      isRightPlayerInit: false,
       error403WhenLoad: false,
       errorImages: [],
       currentRemainElement: false
@@ -446,6 +444,7 @@ export default {
       const myPlayer = this.getPlayer(this.le);
       if (myPlayer) {
         // window.p1 = myPlayer;
+        myPlayer.playVideo();
         myPlayer.unMute();
         this.isLeftPlaying = true;
       }
@@ -495,11 +494,13 @@ export default {
       this.isRightPlaying = true;
       const myPlayer = this.getPlayer(this.re);
       if (myPlayer) {
+        myPlayer.playVideo();
         myPlayer.unMute();
       }
 
       const theirPlayer = this.getPlayer(this.le);
       if (theirPlayer) {
+        theirPlayer.pauseVideo();
         theirPlayer.mute();
       }
 
@@ -627,9 +628,8 @@ export default {
         })
     },
     resetPlayingStatus() {
-      if(this.isLeftPlaying && this.isRightPlaying){
-        this.isRightPlaying = false;
-      }
+      this.isLeftPlaying = false;
+      this.isRightPlaying = false;
     },
     showGameSettingPanel: function () {
       $('#gameSettingPanel').modal('show');
@@ -645,6 +645,7 @@ export default {
       const player = this.getPlayer(element);
       if (player) {
         if (loud) {
+        
           player.unMute();
         } else {
           player.mute();
@@ -672,15 +673,6 @@ export default {
         }
       });
     },
-    unMuteLeftPlayer() {
-      let player = null;
-      if(this.le){
-        player = this.getPlayer(this.le);
-        if (player) {
-          this.leftPlay();
-        }
-      }
-    },
     videoHoverIn(myElement, theirElement, left) {
       if (this.isMobileScreen) {
         return;
@@ -688,12 +680,14 @@ export default {
       const myPlayer = this.getPlayer(myElement);
       if (myPlayer) {
         // window.p1 = myPlayer;
+        myPlayer.playVideo();
         myPlayer.unMute();
       }
 
       const theirPlayer = this.getPlayer(theirElement);
       if (theirPlayer) {
         // window.p2 = theirPlayer;
+        theirPlayer.pauseVideo();
         theirPlayer.mute();
       }
 

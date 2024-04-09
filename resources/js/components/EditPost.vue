@@ -378,30 +378,6 @@
                       <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
                         :maxlength="config.element_title_size" rows="4" style="resize: none;"
                         @change="updateElementTitle(element.id, $event)"></textarea>
-                      <!--play time range-->
-                      <div class="row mb-3">
-                        <div class="col-10">
-                          <div class="input-group">
-                            <div class="input-group-prepend d-lg-none d-xl-block">
-                              <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
-                            </div>
-                            <input type="text" class="form-control" name="video_start_second" placeholder="0:00"
-                              aria-label="start" @change="updateVideoScope(index, element, $event)"
-                              :value="toTimeFormat(element.video_start_second)">
-                            <div class="input-group-prepend"><span class="input-group-text">~</span></div>
-                            <input type="text" class="form-control" name="video_end_second"
-                              :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
-                              :value="toTimeFormat(element.video_end_second)"
-                              @change="updateVideoScope(index, element, $event)">
-                          </div>
-                        </div>
-                        <!--play button-->
-                        <div class="col-2">
-                          <a class="btn btn-danger fa-pull-right" @click="clickPlayButton(index, element)">
-                            <i class="fas fa-play-circle"></i>
-                          </a>
-                        </div>
-                      </div>
                       <!--rank -->
                       <span class="card-text d-inline-block">
                         <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>

@@ -43,7 +43,7 @@
                   <li>https://www.youtube.com/watch/xxxxx</li>
                   <li>https://youtu.be/xxxxx</li>
                 </ul>
-                <h5>{{ $t('Import clip') }}</h5>
+                <h5>{{ $t('Import clip or short') }}</h5>
                 <div class="alert alert-dark">
                   {{ youtubeEmbedSample }}
                 </div>
