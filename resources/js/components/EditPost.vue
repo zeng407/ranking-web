@@ -289,7 +289,7 @@
                 </h5>
               </div>
               <div class="form-inline p-0 col-md-auto col-sm-12">
-                <input class="form-control mr-sm-2 " v-model="filters.title_like"
+                <input class="form-control mr-sm-2 " v-model="filters.title_like" type="search"
                   :placeholder="$t('Search')" aria-label="Search" @change="loadElements(1)">
                   <span class="btn-sm btn btn-light"><i class="fa-solid fa-magnifying-glass"></i></span>
                 <span class="ml-1 btn-sm btn btn-light" @click="resetSearch">{{ $t('edit_post.reset_search') }}</span>
@@ -378,30 +378,6 @@
                       <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
                         :maxlength="config.element_title_size" rows="4" style="resize: none;"
                         @change="updateElementTitle(element.id, $event)"></textarea>
-                      <!--play time range-->
-                      <div class="row mb-3">
-                        <div class="col-10">
-                          <div class="input-group">
-                            <div class="input-group-prepend d-lg-none d-xl-block">
-                              <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
-                            </div>
-                            <input type="text" class="form-control" name="video_start_second" placeholder="0:00"
-                              aria-label="start" @change="updateVideoScope(index, element, $event)"
-                              :value="toTimeFormat(element.video_start_second)">
-                            <div class="input-group-prepend"><span class="input-group-text">~</span></div>
-                            <input type="text" class="form-control" name="video_end_second"
-                              :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
-                              :value="toTimeFormat(element.video_end_second)"
-                              @change="updateVideoScope(index, element, $event)">
-                          </div>
-                        </div>
-                        <!--play button-->
-                        <div class="col-2">
-                          <a class="btn btn-danger fa-pull-right" @click="clickPlayButton(index, element)">
-                            <i class="fas fa-play-circle"></i>
-                          </a>
-                        </div>
-                      </div>
                       <!--rank -->
                       <span class="card-text d-inline-block">
                         <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>
