@@ -39,7 +39,7 @@
           </div>
           <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id, start:le.video_start_second }">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
@@ -117,7 +117,7 @@
           </div>
           <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id, start:re.video_start_second }">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
