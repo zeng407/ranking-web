@@ -289,7 +289,7 @@
                 </h5>
               </div>
               <div class="form-inline p-0 col-md-auto col-sm-12">
-                <input class="form-control mr-sm-2 " v-model="filters.title_like"
+                <input class="form-control mr-sm-2 " v-model="filters.title_like" type="search"
                   :placeholder="$t('Search')" aria-label="Search" @change="loadElements(1)">
                   <span class="btn-sm btn btn-light"><i class="fa-solid fa-magnifying-glass"></i></span>
                 <span class="ml-1 btn-sm btn btn-light" @click="resetSearch">{{ $t('edit_post.reset_search') }}</span>

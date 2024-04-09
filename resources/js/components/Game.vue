@@ -39,7 +39,7 @@
           </div>
           <div v-if="isYoutubeSource(le)" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, loop: 1, playlist: le.video_id, start:le.video_start_second }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
@@ -117,7 +117,7 @@
           </div>
           <div v-if="isYoutubeSource(re)" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host, loop: 1, playlist: re.video_id, start:re.video_start_second }">
+              :player-vars="{ controls: 1, autoplay: 1, rel: 0, host: host,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
@@ -649,7 +649,7 @@ export default {
         } else {
           player.mute();
         }
-        this.initPlayerEventLister(player);
+        this.initPlayerEventLister(player, element);
         player.getPlayerState().then((state) => {
           //resumed if video is paused
           if(state === 2){
@@ -658,7 +658,7 @@ export default {
         });
       }
     },
-    initPlayerEventLister(player) {
+    initPlayerEventLister(player, element) {
       player.addEventListener('onStateChange', (event) => {
         let status = event.target.getPlayerState();
         // -1 – 未啟動
@@ -667,8 +667,8 @@ export default {
         // 2 – 已暫停
         // 3 – 緩衝處理中
         // 5 – 隱藏影片
-        if (status === 0 ) {
-          player.playVideo();
+        if (status === 0 || status === -1) {
+          player.seekTo(element.video_start_second, true);
         }
       });
     },
