@@ -689,19 +689,27 @@ export default {
       if (theirPlayer) {
         // window.p2 = theirPlayer;
         // let retry = 0;
-        let interval = setInterval(() => {
-          theirPlayer.getPlayerState().then((state) => {
-            // console.log('retry: '+retry+' | theirPlayer status: '+state);
-            if(state === -1 || state === 3){
-              theirPlayer.mute();
-            }else{
-              theirPlayer.pauseVideo();
-              theirPlayer.mute();
-              clearInterval(interval);
-            }
-            // retry++;
-          });
-        }, 100);
+        theirPlayer.getPlayerState().then((state) => {
+          if(state === -1 || state === 3){
+            let interval = setInterval(() => {
+              theirPlayer.getPlayerState().then((state) => {
+                // console.log('retry: '+retry+' | theirPlayer status: '+state);
+                if(state === -1 || state === 3){
+                  theirPlayer.mute();
+                }else{
+                  theirPlayer.pauseVideo();
+                  theirPlayer.mute();
+                  clearInterval(interval);
+                }
+                // retry++;
+            });
+            }, 100);
+          }else{
+            theirPlayer.pauseVideo();
+            theirPlayer.mute();
+          }
+        });
+        
       }
 
       if(left){
