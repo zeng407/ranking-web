@@ -39,7 +39,7 @@
           </div>
           <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
             <youtube :videoId="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0 , origin: host, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
+              :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0 , origin: host, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
@@ -117,7 +117,7 @@
           </div>
           <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
             <youtube :videoId="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-              :player-vars="{ controls: 1, autoplay: 1, rel: 0, origin: host,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
+              :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0, origin: host,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
             </youtube>
           </div>
           <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
@@ -387,7 +387,6 @@ export default {
           this.re = this.game.elements[1];
         })
         .then(async () => {
-          
           if(reset){
             this.resetPlayerPosition();
             this.scrollToLastPosition();
@@ -646,7 +645,6 @@ export default {
       const player = this.getPlayer(element);
       if (player) {
         if (loud) {
-        
           player.unMute();
         } else {
           player.mute();
