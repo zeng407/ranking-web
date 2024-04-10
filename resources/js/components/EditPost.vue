@@ -569,7 +569,7 @@ export default {
       },
       sorter: {
         sort_by: 'id',
-        sort_dir: 'asc',
+        sort_dir: 'desc',
       },
 
       //rank

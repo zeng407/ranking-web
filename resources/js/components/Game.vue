@@ -452,6 +452,7 @@ export default {
       const theirPlayer = this.getPlayer(this.re);
       if (theirPlayer) {
         // window.p2 = theirPlayer;
+        theirPlayer.pauseVideo();
         theirPlayer.mute();
         this.isRightPlaying = false;
       }
@@ -668,6 +669,7 @@ export default {
         // 2 – 已暫停
         // 3 – 緩衝處理中
         // 5 – 隱藏影片
+        // console.log(element.title +' | '+ status);
         if (status === 0 || status === -1) {
           player.seekTo(element.video_start_second, true);
         }
@@ -677,6 +679,7 @@ export default {
       if (this.isMobileScreen) {
         return;
       }
+
       const myPlayer = this.getPlayer(myElement);
       if (myPlayer) {
         // window.p1 = myPlayer;
@@ -687,8 +690,20 @@ export default {
       const theirPlayer = this.getPlayer(theirElement);
       if (theirPlayer) {
         // window.p2 = theirPlayer;
-        theirPlayer.pauseVideo();
-        theirPlayer.mute();
+        // let retry = 0;
+        let interval = setInterval(() => {
+          theirPlayer.getPlayerState().then((state) => {
+            // console.log('retry: '+retry+' | theirPlayer status: '+state);
+            if(state === -1 || state === 3){
+              theirPlayer.mute();
+            }else{
+              theirPlayer.pauseVideo();
+              theirPlayer.mute();
+              clearInterval(interval);
+            }
+            // retry++;
+          });
+        }, 100);
       }
 
       if(left){
