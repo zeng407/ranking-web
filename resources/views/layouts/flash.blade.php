@@ -13,7 +13,7 @@
 @endif
    
 @if ($message = Session::get('warning'))
-<span class="alert alert-warning alert-dismissible alert-message">
+<span class="alert alert-warning alert-dismissible alert-message" role="alert">
     <button type="button" class="close" data-dismiss="alert">×</button>    
     <strong class="m-2">{{ $message }}</strong>
 </span>

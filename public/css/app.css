@@ -22257,7 +22257,7 @@ input[type=color].form-control:disabled {
   text-align: center;
   opacity: 1;
   animation: alert-message 1s;
-  animation-delay: 3s;
+  animation-delay: 7s;
   animation-fill-mode: forwards;
 }
 
@@ -22434,4 +22434,38 @@ input[type=color].form-control:disabled {
   transition: all 0.4s;
   transform: scaleX(1.4) scaleY(1.6);
   opacity: 0;
+}
+
+.divider-wrapper {
+  display: flex;
+  flex-direction: row;
+  text-transform: uppercase;
+  border: none;
+  font-size: 12px;
+  font-weight: 400;
+  margin: 0;
+  padding: 24px 0 0;
+  align-items: center;
+  justify-content: center;
+  width: 300px;
+  vertical-align: baseline;
+}
+
+.divider-wrapper:before, .divider-wrapper:after {
+  content: "";
+  border-bottom: 1px solid #c2c8d0;
+  flex: 1 0 auto;
+  height: 0.5em;
+  margin: 0;
+}
+
+.divider {
+  text-align: center;
+  flex: 0.2 0 auto;
+  margin: 0;
+  height: 12px;
+}
+
+.text-align-webkit-center {
+  text-align: -webkit-center;
 }
