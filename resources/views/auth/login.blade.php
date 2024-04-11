@@ -7,9 +7,10 @@
 
 @section('content')
 <div class="container">
+    
     @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-6 col-lg-5">
             <div class="card mt-4">
                 <div>
                     <ul class="nav nav-pills mb-3 border-bottom" id="pills-tab" role="tablist">
