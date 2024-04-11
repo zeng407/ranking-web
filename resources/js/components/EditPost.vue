@@ -733,7 +733,7 @@ export default {
       this.filters.title_like = null;
       this.sorter = {
         'sort_by': 'id',
-        'sort_dir': 'asc'
+        'sort_dir': 'desc'
       };
       this.currentPage = 1;
       this.loadElements(1);

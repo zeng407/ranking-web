@@ -58,7 +58,7 @@
         <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{isset($stickyNav) && $stickyNav  ? 'sticky-top' : '' }}">
             <div class="container-fluid">
                 <a class="navbar-brand" href="{{ route('home') }}">
-                    <img src="{{ asset('storage/logo.png') }}" width="30" height="30" class="d-inline-block align-top"
+                    <img src="{{ asset('storage/logo.png') }}" class="d-inline-block align-top home-logo"
                         alt="{{config('app.short_name')}}">
                 </a>
                 <ul class="navbar-nav mr-auto">
@@ -72,9 +72,6 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 
-                    
-                
-
                 <div class="collapse navbar-collapse text-right" id="navbarSupportedContent">
                     {{-- Left Side Of Navbar --}}
                     <ul class="navbar-nav mr-auto">
@@ -85,7 +82,10 @@
                     <ul class="navbar-nav ml-auto">
                         {{-- Authentication Links --}}
                         @guest
-                            @if (Route::has('login'))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('login') }}">{{ __('Login & New Post') }}</a>
+                            </li>
+                            {{-- @if (Route::has('login'))
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
                                 </li>
@@ -95,7 +95,7 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
                                 </li>
-                            @endif
+                            @endif --}}
                         @else
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('post.index') }}">{{ __('My Votes') }}</a>
@@ -103,9 +103,11 @@
                             <li class="nav-item dropdown">
                                 <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
                                     data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    {{ Auth::user()->name }}
+                                    
+                                    <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
+                                        class="rounded-circle" width="30" height="30" style="object-fit: cover" alt="{{ __('Avatar') }}">
+                                    <span class="caret"></span>
                                 </a>
-
                                 <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
                                     <a class="dropdown-item" href="{{route('profile.index')}}">
                                       {{ __('Profile') }}

@@ -130,7 +130,7 @@
                             @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($rank->element->source_url, ['autoplay' => false]) !!}
                             @elseif($rank->element->type === 'video')
-                                <video width="100%" height="270" loop autoplay muted playsinline src="{{$rank->element->thumb_url}}"></video>
+                                <video width="100%" height="270" loop controls playsinline src="{{$rank->element->thumb_url}}"></video>
                             @elseif($rank->element->type === 'image')
                                 <img src="{{$rank->element->thumb_url}}" height="270" class="w-100" alt="{{$rank->element->title}}">
                             @endif

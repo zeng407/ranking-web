@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\ElementType;
+use App\Enums\VideoSource;
 use App\Services\ElementService;
 use Illuminate\Console\Command;
 use App\Models\Element;
@@ -45,7 +46,10 @@ class MakeElementImageThumb extends Command
     {
         $this->info('Make element image thumb');
         $counter = 0;
-        Element::where('type', 'image')
+        Element::where(function($query){
+            $query->where('type', ElementType::IMAGE)
+                ->orWhere('video_type', VideoSource::IMGUR);
+            })
             ->whereHas('posts')
             ->chunkById(100, function ($elements) use (&$counter) {
             foreach ($elements as $element) {

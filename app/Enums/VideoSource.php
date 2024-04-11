@@ -10,4 +10,5 @@ enum VideoSource: string
     const YOUTUBE_EMBED = 'youtube_embed';
     const URL = 'url';
     const GFYCAT = 'gfycat';
+    const IMGUR = 'imgur';
 }

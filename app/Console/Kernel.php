@@ -19,7 +19,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->call(function(){
             app(PostTrendScheduleExecutor::class)->createPostTrends();
-        })->name('createPostTrend')->everyThreeHours()->withoutOverlapping();
+        })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping();
 
         $schedule->command('sitemap:generate')->name('Generate Sitemap')->daily();
 

@@ -16,7 +16,7 @@
       @include('partial.lang')
       <div class="form-inline w-100" >
         <form @submit.prevent class="d-flex w-100 justify-content-center">
-          <div class="mr-2 w-50">
+          <div class="mr-2 w-75">
             <input class="form-control w-100" v-model="filters.keyword" type="search" placeholder="Search"
               aria-label="Search" >
             <div>

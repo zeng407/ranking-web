@@ -6,6 +6,8 @@
     "comment.leave_comment": "Leave a comment",
     "title.rank": "Rank",
     "comment.submit": "Submit",
+    "socialite.failed": "Failed to login",
+    "socialite.connect.success": "Connect successfully",
     "nickname_length": "Nickname must be between 1 and 20 characters",
     "nickname_update_rate": "Can be changed once per day",
     "home.posts": "Posts",
@@ -16,6 +18,7 @@
     "rank.share": "Share this rank",
     "rank.share-result": "Share my result",
     "Created": "Created at ${time}",
+
 
     "":""
 }

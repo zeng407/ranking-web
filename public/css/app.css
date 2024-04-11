@@ -22131,7 +22131,8 @@ input[type=color].form-control:disabled {
 }
 
 .home-logo {
-  height: 40px;
+  height: 30px;
+  width: 30px;
   transition: transform 500ms;
 }
 
@@ -22249,6 +22250,7 @@ input[type=color].form-control:disabled {
 }
 
 .alert-message {
+  display: block;
   position: fixed;
   top: 10px;
   right: 10px;
@@ -22267,6 +22269,7 @@ input[type=color].form-control:disabled {
   }
   100% {
     opacity: 0;
+    display: none;
   }
 }
 .rank-card {

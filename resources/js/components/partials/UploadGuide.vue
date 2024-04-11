@@ -57,6 +57,7 @@
                   <li>https://i.imgur.com/xxxxx.jpg</li>
                   <li>https://i.imgur.com/xxxxx.png</li>
                   <li>https://i.imgur.com/xxxxx.gif</li>
+                  <li>https://i.imgur.com/xxxxx.mp4</li>
                 </ul>
 
               </div>

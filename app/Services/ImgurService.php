@@ -43,7 +43,7 @@ class ImgurService
         ]);
         $res = $this->client->delete('album/' . $albumId);
         $res = json_decode($res->getBody()->getContents(), true);
-        if($res['success']) {
+        if ($res['success']) {
             ImgurAlbum::where('album_id', $albumId)->delete();
         }
         return $res;
@@ -71,7 +71,7 @@ class ImgurService
         ]);
         $res = $this->client->delete('image/' . $imageId);
         $res = json_decode($res->getBody()->getContents(), true);
-        if($res['success']) {
+        if ($res['success']) {
             ImgurImage::where('image_id', $imageId)->delete();
         }
         return $res;
@@ -80,8 +80,13 @@ class ImgurService
     public function parseGalleryAlbumId(string $url)
     {
         $matches = [];
-        preg_match('/^https?:\/\/imgur\.com\/(gallery|a)\/([a-zA-Z0-9]+)$/', $url, $matches);
-        return $matches[2] ?? null;
+        preg_match('/^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a|t\/[a-zA-Z0-9]+)\/([a-zA-Z0-9]+)$/i', $url, $matches);
+        if(isset($matches[1])){
+            return $matches[1];
+        }
+        
+        preg_match('/^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)?\/?([a-zA-Z0-9]+)$/i', $url, $matches);
+        return $matches[1] ?? null;
     }
 
     public function getGalleryAlbumImages(string $albumId)
@@ -93,7 +98,6 @@ class ImgurService
         $res = json_decode($res->getBody()->getContents(), true);
 
         return $res;
-
     }
 
     public function getImage(string $imageId)
@@ -105,6 +109,16 @@ class ImgurService
         $res = json_decode($res->getBody()->getContents(), true);
 
         return $res;
+    }
 
+    public function getAlbumImages(string $albumId)
+    {
+        $this->client->withHeaders([
+            'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
+        ]);
+        $res = $this->client->get("album/$albumId/images");
+        $res = json_decode($res->getBody()->getContents(), true);
+
+        return $res;
     }
 }
