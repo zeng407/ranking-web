@@ -113,6 +113,11 @@ class CreateImgurImage implements ShouldQueue
             return true;
         }
 
+        if(isset($res['status']) && $res['status'] == 415){
+            \Log::error('Invalid type', ['res' => $res]);;
+            return true;
+        }
+
         return false;
     }
 }

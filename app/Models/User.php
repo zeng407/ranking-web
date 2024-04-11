@@ -49,10 +49,28 @@ class User extends Authenticatable
         'name_updated_at' => 'datetime',
     ];
 
+    /**
+     * Relationships
+     */
+
     public function posts()
     {
         return $this->hasMany(Post::class);
     }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, UserRole::class)->withTimestamps();
+    }
+
+    public function user_socialite()
+    {
+        return $this->hasOne(UserSocialite::class);
+    }
+
+    /**
+     * Functions
+     */
 
     public function isAdmin()
     {
@@ -64,10 +82,7 @@ class User extends Authenticatable
         return in_array(\App\Enums\Role::BANNED, CacheService::rememberUserRole($this));
     }
 
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class, UserRole::class)->withTimestamps();
-    }
+    
 
 
 }

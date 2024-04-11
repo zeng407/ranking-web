@@ -50,7 +50,11 @@ class EventServiceProvider extends ServiceProvider
         ],
         ElementDeleted::class => [
             DeleteElementRank::class
-        ]
+        ],
+        \SocialiteProviders\Manager\SocialiteWasCalled::class => [
+            // ... other providers
+            \SocialiteProviders\Google\GoogleExtendSocialite::class.'@handle',
+        ],
     ];
 
     /**

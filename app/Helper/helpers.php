@@ -68,17 +68,27 @@ if (!function_exists('str_mask')) {
         $length = mb_strlen($string);
 
         if ($shownLeft + $shownRight >= $length) {
-            return $string;
+            return str_mask($string, $shownLeft-1, $shownRight-1, $mask, $repeat);
         }
 
-        $masked = mb_substr($string, 0, $shownLeft);
-        $masked .= str_repeat($mask, $repeat);
+        $masked = mb_substr($string, 0, $shownLeft).str_repeat($mask, $repeat);
 
         if ($shownRight > 0) {
             $masked .= mb_substr($string, -1 * $shownRight);
         }
 
         return $masked;
+    }
+}
+
+if (!function_exists('mask_email')) {
+    function mask_email($string, $shownLeft = 0, $shownRight = 0, $mask = '*', $repeat = 4)
+    {
+        $email = explode('@', $string);
+
+        $email[0] = str_mask($email[0], $shownLeft, $shownRight, $mask, $repeat);
+
+        return implode('@', $email);
     }
 }
 
