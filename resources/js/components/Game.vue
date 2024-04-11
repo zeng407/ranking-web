@@ -305,7 +305,8 @@ export default {
       rememberedScrollPosition: null,
       error403WhenLoad: false,
       errorImages: [],
-      currentRemainElement: false
+      currentRemainElement: false,
+      mousePosition: 1 // 1:left , right:0
     }
   },
   computed: {
@@ -677,6 +678,7 @@ export default {
       if (this.isMobileScreen) {
         return;
       }
+      this.mousePosition = left;
 
       const myPlayer = this.getPlayer(myElement);
       if (myPlayer) {
@@ -693,12 +695,18 @@ export default {
           if(state === -1 || state === 3){
             let interval = setInterval(() => {
               theirPlayer.getPlayerState().then((state) => {
+                // console.log('mouse:' + this.mousePosition + ' left:' + left);
+
                 // console.log('retry: '+retry+' | theirPlayer status: '+state);
                 if(state === -1 || state === 3){
                   theirPlayer.mute();
                 }else{
                   theirPlayer.pauseVideo();
                   theirPlayer.mute();
+                  if(this.mousePosition == left){
+                    myPlayer.playVideo();
+                    myPlayer.unMute();
+                  }
                   clearInterval(interval);
                 }
                 // retry++;
