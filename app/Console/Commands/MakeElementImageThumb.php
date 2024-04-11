@@ -46,44 +46,81 @@ class MakeElementImageThumb extends Command
     {
         $this->info('Make element image thumb');
         $counter = 0;
-        Element::where(function($query){
+        Element::where(function ($query) {
             $query->where('type', ElementType::IMAGE)
-                ->orWhere('video_source', VideoSource::IMGUR);
-            })
+                ->orWhere('video_source', VideoSource::IMGUR)
+                ->orWhere('video_source', VideoSource::URL);
+        })
             ->whereHas('posts')
             ->chunkById(100, function ($elements) use (&$counter) {
-            foreach ($elements as $element) {
-                try {
-                    if(!\Storage::exists($element->path)){
-                        $path = dirname($element->path);
-                        $file = $this->elementService->downloadImage($element->source_url, $path)
-                            ?? $this->elementService->downloadImage($element->thumb_url, $path);
-                        if(!$file){
-                            $this->warn('Cannot download image: ' . $element->id);
-                            continue;
+                foreach ($elements as $element) {
+                    try {
+                        if ($element->video_source == VideoSource::URL) {
+                            //create a path
+                            $post = $element->posts()->first();
+                            if (!$post) {
+                                $this->warn('Cannot find post, element_id: ' . $element->id);
+                                continue;
+                            }
+
+                            if ($element->path) {
+                                continue;
+                            }
+
+                            try {
+                                $fileInfo = get_headers($element->source_url, true);
+                                if (!isset ($fileInfo['Content-Length'])) {
+                                    $this->warn('Cannot get Content-Length: ' . $element->id);
+                                    continue;
+                                }
+                                $size = $fileInfo['Content-Length'];
+                                $this->info($element->title . ' size: ' . round($size / 1024 / 1024, 2) . 'MB');
+                                if ($size / 1024 / 1024 >= 10) {
+                                    $this->warn('File size is too big: ' . $element->id . ' ' . ($size / 1024 / 1024) . 'MB');
+                                    continue;
+                                }
+
+                                $tempFile = $this->elementService->downloadImage($element->source_url, $post->serial);
+                                $element->update([
+                                    'path' => $tempFile->getPath(),
+                                    'thumb_url' => \Storage::url($tempFile->getPath())
+                                ]);
+                                $this->info('Element: ' . $element->id . ' ' . $element->thumb_url);
+                                $counter++;
+                            } catch (\Exception $exception) {
+                                report($exception);
+                                continue;
+                            }
                         }
-                        $path = $file->getPath();
-                    }else{
-                        $path = $element->path;
+
+                        if (!\Storage::exists($element->path)) {
+                            $path = dirname($element->path);
+                            $file = $this->elementService->downloadImage($element->source_url, $path)
+                                ?? $this->elementService->downloadImage($element->thumb_url, $path);
+                            if (!$file) {
+                                $this->warn('Cannot download image: ' . $element->id);
+                                continue;
+                            }
+                            $path = $file->getPath();
+                        } else {
+                            $path = $element->path;
+                        }
+
+                        $url = \Storage::url($path);
+                        if ($url != $element->thumb_url) {
+                            $element->path = $path;
+                            $element->thumb_url = $url;
+                            $element->save();
+                            $counter++;
+                            $this->info('Element: ' . $element->id . ' ' . $element->thumb_url);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error($e->getMessage());
                     }
-                    
-                    $url = \Storage::url($path);
-                    if($url != $element->thumb_url){
-                        $element->path = $path;
-                        $element->thumb_url = $url;
-                        $element->save();
-                        $counter++;
-                        $this->info('Element: ' . $element->id. ' ' . $element->thumb_url);
-                    }
-                } catch (\Exception $e) {
-                    \Log::error($e->getMessage());
                 }
-            }
             });
 
         $this->info('Total: ' . $counter);
         return 0;
     }
-
-    
 }
