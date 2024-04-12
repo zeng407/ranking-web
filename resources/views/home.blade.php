@@ -1,11 +1,9 @@
 @extends('layouts.app', [
-  'title' => __('Home'),
   'ogImage' => asset('/storage/og-image.jpeg'),
   'stickyNav' => 'sticky-top'
   ])
 
 @section('content')
-
     <home
       inline-template
       sort-by="{{$sort ?? 'hot'}}"
@@ -77,7 +75,7 @@
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
-              <h2>{{ $post['title'] }}</h2>
+              <h1>{{ $post['title'] }}</h1>
             </div>
             <div class="row no-gutters">
               <div class="col-6">

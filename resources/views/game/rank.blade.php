@@ -31,7 +31,7 @@
             </div>
             <hr>
             
-            <h1>{{ $post->title }}</h1>
+            <h1 class="break-all">{{ $post->title }} - {{__('Ranking')}}</h1>
             <p>{{ $post->description }}</p>
             @endif
 

@@ -19,7 +19,7 @@ class SocialiteService
     public function handleGoogleCallback() : User
     {
         $googleUser = Socialite::driver('google')->user();
-        \Log::info(json_encode($googleUser));
+        logger(json_encode($googleUser));
         $socialite = UserSocialite::where('google_id', $googleUser->id)->first();
         if ($socialite) {
             logger('socialite exists');

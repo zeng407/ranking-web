@@ -1,5 +1,5 @@
 <div class="text-align-webkit-center">
-    <div class="divider-wrapper"><span class="divider">{{__('OR')}}</span></div>
+    <div class="divider-wrapper"><span class="divider">{{__('login.social.header')}}</span></div>
 </div>
 <div class="mt-3">
     <a class="btn btn-outline-light btn-block text-dark border-secondary" href="{{route('auth.redirect.google')}}">

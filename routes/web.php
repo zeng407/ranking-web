@@ -40,7 +40,6 @@ Route::get('post/{post:serial}/rank', [GameController::class, 'rank'])->name('ga
 Route::get('post/{post:serial}/rank-embed', [GameController::class, 'rankEmbed'])->name('game.rank-embed');
 
 /** Oauth */
-
  
 Route::get('/auth/google/redirect', [SocialiteController::class, 'redirectGoogle'])->name('auth.redirect.google');
 Route::get('/auth/google/connect', [SocialiteController::class, 'connectGoogle'])->name('auth.connect.google');
@@ -55,6 +54,8 @@ Route::middleware('auth')->group(function () {
     Route::get('account/post/{post:serial}/edit', [PostController::class, 'edit'])->name('post.edit');
 });
 
-
+/** TOS */
+Route::get('tos', fn() => view_or("tos.".app()->getLocale(), 'privacy'))->name('tos');
+Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy'))->name('privacy');
 
 

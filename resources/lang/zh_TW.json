@@ -57,7 +57,7 @@
     "rank.share": "分享此排行榜",
     "rank.share-result": "分享我的排名",
     "Email already exists.": "此 Email 已被註冊",
-    "OR": "使用社群登入",
+    "login.social.header": "使用社群登入",
     "Login & Register with Google": "使用 Google 登入/註冊",
     "Please reset your password.": "請重設密碼",
     "Password updated successfully": "密碼已更新",
@@ -67,6 +67,11 @@
     "Social media account is already connected.": "連結失敗，此社群帳號已被使用",
     "Quick Login": "快速登入功能",
     "socialite.connect.success": "連結成功",
+    "login.tos": "登入即表示您同意<a href=\":tos\" target=\"_blank\">服務條款</a>及<a href=\":privacy\" target=\"_blank\">隱私權保護政策</a>。",
+    "Privacy Policy": "隱私權保護政策",
+    "Terms of Service": "服務條款",
+    "page.description": "殘酷二選一，多種熱門投票主題：歌曲、明星、動漫、寵物、食物、電影...，從:size組候選人中一輪一輪淘汰，最後選出你心中的第一名。",
+    "Ranking": "排行榜",
 
     "":""
 }

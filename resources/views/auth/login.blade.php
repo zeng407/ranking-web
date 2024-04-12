@@ -6,26 +6,25 @@
 @endsection
 
 @section('content')
-<div class="container">
-    
+<div class=" container-fluid">
     @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
+</div>
+<div class="container">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            <div class="card mt-4">
-                <div>
-                    <ul class="nav nav-pills mb-3 border-bottom" id="pills-tab" role="tablist">
-                        <li class="nav-item w-50" role="presentation">
-                            <button class="w-100 nav-link active" id="pills-login-tab" data-toggle="pill" data-target="#pills-login" type="button" role="tab" aria-controls="pills-login" aria-selected="true">
-                                    {{ __('Login') }}&nbsp;<i class="fas fa-sign-in-alt"></i>
-                            </button>    
-                        </li>
-                        <li class="nav-item w-50" role="presentation">
-                            <button class="w-100 nav-link " id="pills-register-tab" data-toggle="pill" data-target="#pills-register" type="button" role="tab" aria-controls="pills-register" aria-selected="true">
-                                    {{ __('Register With Email') }}&nbsp;<i class="fas fa-envelope"></i>
-                            </button>    
-                        </li>
-                    </ul>
-                </div>
+            <div class="card mb-2">
+                <ul class="nav nav-pills mb-3 border-bottom" id="pills-tab" role="tablist">
+                    <li class="nav-item w-50" role="presentation">
+                        <button class="w-100 nav-link active" id="pills-login-tab" data-toggle="pill" data-target="#pills-login" type="button" role="tab" aria-controls="pills-login" aria-selected="true">
+                                {{ __('Login') }}&nbsp;<i class="fas fa-sign-in-alt"></i>
+                        </button>    
+                    </li>
+                    <li class="nav-item w-50" role="presentation">
+                        <button class="w-100 nav-link " id="pills-register-tab" data-toggle="pill" data-target="#pills-register" type="button" role="tab" aria-controls="pills-register" aria-selected="true">
+                                {{ __('Register With Email') }}&nbsp;<i class="fas fa-envelope"></i>
+                        </button>    
+                    </li>
+                </ul>
 
                 <div class="card-body">
                     <div class="tab-content" id="myTabContent">
@@ -85,7 +84,7 @@
                                 </div>
                             </form>
                             {{-- socialite --}}
-                            @include('auth.partial.socialities')
+                            {{-- @include('auth.partial.socialities') --}}
                         </div>
                         {{-- register --}}
                         <div class="tab-pane fade" id="pills-register" role="tabpanel" aria-labelledby="pills-register-tab">
@@ -168,6 +167,16 @@
                 </div>
             </div>
         </div>
+        <div class="col-12">
+            {{-- TOS --}}
+            <div class="text-align-webkit-center mt-3">
+                <p class=" font-size-small">{!! __('login.tos', ['tos' => route('tos'), 'privacy' => route('privacy')]) !!}</p>
+            </div>
+        </div>
     </div>
 </div>
+@endsection
+
+@section('footer')
+    @include('partial.footer')
 @endsection

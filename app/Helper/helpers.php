@@ -114,7 +114,7 @@ if (!function_exists('get_page_title')) {
             $title = str_replace(" \t\n\r\0\x0B", "", $object->title);
             return "{$title} | {$base}";
         }
-        if(is_string($object)) {
+        if(is_string($object) && strlen($object) > 0) {
             return "{$object} | {$base}";
         }
         return $base;
@@ -124,7 +124,7 @@ if (!function_exists('get_page_title')) {
 if (!function_exists('get_page_description')) {
     function get_page_description($object)
     {
-        $base = "殘酷二選一，多種投票主題：歌曲、明星、動漫、寵物、食物、電影...，從".config('setting.post_max_element_count')."組候選人中一輪一輪淘汰，最後選出你心中的第一名。";
+        $base = __('page.description', ['size' => config('setting.post_max_element_count')]);
         if ($object instanceof \App\Models\Post) {
             $description = str_replace(" \t\n\r\0\x0B", "", $object->description);
             $tags = $object->tags->pluck('name')->toArray();
@@ -173,5 +173,15 @@ if(!function_exists('inject_youtube_embed')){
             $embedCode = str_replace('autoplay=1', 'autoplay=0', $embedCode);
         }
         return $embedCode;
+    }
+}
+
+if(!function_exists('view_or')){
+    function view_or($view, $default, $data = [])
+    {
+        if(view()->exists($view)){
+            return view($view, $data);
+        }
+        return view($default, $data);
     }
 }

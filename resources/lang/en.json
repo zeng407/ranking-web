@@ -10,14 +10,16 @@
     "socialite.connect.success": "Connect successfully",
     "nickname_length": "Nickname must be between 1 and 20 characters",
     "nickname_update_rate": "Can be changed once per day",
-    "home.posts": "Posts",
+    "home.posts": "Games",
     "home.start": "Start",
     "home.rank": "Rank",
     "rank.return_home": "Home",
     "rank.play": "Start",
     "rank.share": "Share this rank",
     "rank.share-result": "Share my result",
-    "Created": "Created at ${time}",
+    "login.social.header": "OR",
+    "login.tos": "By logging in, you agree to the <a href=\":tos\" target=\"_blank\">Terms of Service</a> and <a href=\":privacy\" target=\"_blank\">Privacy Statement</a>.",
+    "page.description": "2 Pick, Pick Your Top Choice: Songs, Celebrities, Anime, Pets, Food, Movies... From a Pool of :size, Round by Round Elimination!",
 
 
     "":""
