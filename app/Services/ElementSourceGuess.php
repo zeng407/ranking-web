@@ -56,8 +56,10 @@ class ElementSourceGuess
         try {
             // check if the url is a imgur image by regex
             // https://imgur.com/gallery/8nLFCVP
+            // https://imgur.com/8nLFCVP
+            // https://imgur.com/t/funny/zaBPpwg
             if (
-                preg_match('/^https?:\/\/imgur\.com\/(gallery|a)\/[a-zA-Z0-9]+$/', $url) ||
+                preg_match('/^https?:\/\/imgur\.com\/(gallery|a|t\/[a-zA-Z0-9]+)\/[a-zA-Z0-9]+$/', $url) ||
                 preg_match('/^https?:\/\/imgur\.com\/[a-zA-Z0-9]+$/', $url)
             ) {
                 return true;

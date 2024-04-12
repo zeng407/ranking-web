@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Post\PostController;
@@ -17,10 +18,13 @@ use App\Http\Controllers\Post\GameController;
 */
 
 
+
 Route::prefix('lang/{locale}')->middleware('locale.prefix')->group(function () {
-    Route::get('/', [HomeController::class, 'index']);
-    Route::get('/hot', [HomeController::class, 'hot']);
-    Route::get('/new', [HomeController::class, 'new']);
-    Route::get('post/{post:serial}/game', [GameController::class, 'show']);
-    Route::get('post/{post:serial}/rank', [GameController::class, 'rank']);
+    $back = fn() => redirect()->back();
+    Route::get('/', $back);
+    Route::get('/login', $back);
+    Route::get('/hot', $back);
+    Route::get('/new', $back);
+    Route::get('post/{post:serial}/game', $back);
+    Route::get('post/{post:serial}/rank', $back);
 });

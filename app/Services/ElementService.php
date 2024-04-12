@@ -186,9 +186,24 @@ class ElementService
         try {
             // if url contains imgur
             if (strpos($sourceUrl, 'imgur.com') !== false) {
-                $image = $this->getImageFromImgurGallery($sourceUrl) ??
-                    $this->getImageFromImgur($sourceUrl);
-
+                $imgurService = app(ImgurService::class);
+                $galleryId = $imgurService->parseGalleryAlbumId($sourceUrl);
+                logger("galleryId: {$galleryId}");
+                if($galleryId === null) {
+                    return null;
+                }
+                
+                // if url contains gallery
+                if (strpos($sourceUrl, '/gallery/') !== false) {
+                    $image = $this->getImageFromImgurGallery($galleryId);
+                } else if (strpos($sourceUrl, '/a/') !== false) {
+                    $image = $this->getAlbumImage($galleryId);
+                } else if (strpos($sourceUrl, '/t/') !== false) {
+                    $image = $this->getAlbumImage($galleryId);
+                } else {
+                    $image = $this->getImageFromImgur($galleryId);
+                }
+                
                 if($image === null) {
                     return null;
                 }
@@ -204,10 +219,12 @@ class ElementService
             $thumb = Storage::url($storageImage->getPath());
 
             $type = $this->guessMediaType($image['type']);
+            $videoSource = $type === ElementType::VIDEO ? VideoSource::IMGUR : null;
             $element = $post->elements()->updateOrCreate([
                 'source_url' => $params['old_source_url'] ?? $sourceUrl,
             ], [
                 'path' => $storageImage->getPath(),
+                'video_source' => $videoSource,
                 'source_url' => $sourceUrl,
                 'thumb_url' => $thumb,
                 'type' => $type,
@@ -245,17 +262,16 @@ class ElementService
         }
     }
 
-    protected function getImageFromImgurGallery(string $sourceUrl): ?array
+    protected function getImageFromImgurGallery(string $galleryId): ?array
     {
         try {
             $imgurService = app(ImgurService::class);
-            $galleryId = $imgurService->parseGalleryAlbumId($sourceUrl);
-            if($galleryId === null) {
-                return null;
-            }
-            logger("galleryId: {$galleryId}");
             $res = $imgurService->getGalleryAlbumImages($galleryId);
-            if(isset($res['success']) && $res['success'] && isset($res['status']) && $res['status'] === 200 && isset($res['data']) && isset($res['data']['images'])) {
+            logger("getImageFromImgurGallery");
+            logger($res);
+            if(isset($res['success']) && $res['success'] 
+                && isset($res['status']) && $res['status'] === 200 
+                && isset($res['data']) && isset($res['data']['images'])) {
                 $images = $res['data']['images'];
                 if(count($images) === 0) {
                     return null;
@@ -273,18 +289,38 @@ class ElementService
         }
     }
 
-    protected function getImageFromImgur(string $sourceUrl): ?array
+    protected function getImageFromImgur(string $galleryId): ?array
     {
         try {
             $imgurService = app(ImgurService::class);
-            $galleryId = $imgurService->parseGalleryAlbumId($sourceUrl);
             $res = $imgurService->getImage($galleryId);
-            if(isset($res['success']) && $res['success'] && isset($res['status']) && $res['status'] === 200 && isset($res['data'])) {
+            logger("getImageFromImgur");
+            logger($res);
+            if(isset($res['success']) && $res['success'] 
+                && isset($res['status']) && $res['status'] === 200 
+                && isset($res['data'])) {
                 
                 $image = $res['data'];
                 if(isset($image['link'])) {
                     return $image;
                 }
+            }
+            return null;
+        } catch (\Exception $exception) {
+            report($exception);
+            return null;
+        }
+    }
+
+    protected function getAlbumImage(string $albumId)
+    {
+        try {
+            $imgurService = app(ImgurService::class);
+            $res = $imgurService->getAlbumImages($albumId);
+            logger("getAlbumImage");
+            logger($res);
+            if(isset($res['success']) && $res['success'] && isset($res['status']) && $res['status'] === 200 && isset($res['data'])) {
+                return $res['data'][0];
             }
             return null;
         } catch (\Exception $exception) {

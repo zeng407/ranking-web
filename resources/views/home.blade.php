@@ -1,11 +1,9 @@
 @extends('layouts.app', [
-  'title' => __('Home'),
   'ogImage' => asset('/storage/og-image.jpeg'),
   'stickyNav' => 'sticky-top'
   ])
 
 @section('content')
-
     <home
       inline-template
       sort-by="{{$sort ?? 'hot'}}"
@@ -16,7 +14,7 @@
       @include('partial.lang')
       <div class="form-inline w-100" >
         <form @submit.prevent class="d-flex w-100 justify-content-center">
-          <div class="mr-2 w-50">
+          <div class="mr-2 w-75">
             <input class="form-control w-100" v-model="filters.keyword" type="search" placeholder="Search"
               aria-label="Search" >
             <div>
@@ -77,7 +75,7 @@
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
-              <h2>{{ $post['title'] }}</h2>
+              <h1>{{ $post['title'] }}</h1>
             </div>
             <div class="row no-gutters">
               <div class="col-6">

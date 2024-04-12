@@ -52,4 +52,19 @@ class ProfileController extends Controller
 
         return redirect()->back()->with('success', __('Password updated successfully'));
     }
+
+    public function initPassword(Request $request)
+    {
+        $validatedData = $request->validate([
+            'new_password' => ['required', 'confirmed', 'min:' . config('setting.password_min_size')],
+        ]);
+
+        if($request->user()->password !== '') {
+            return redirect()->back()->with('error', __('Please reset your password.'));
+        }
+
+        $request->user()->update(['password' => bcrypt($validatedData['new_password'])]);
+
+        return redirect()->back()->with('success', __('Password updated successfully'));
+    }
 }

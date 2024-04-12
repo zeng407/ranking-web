@@ -188,7 +188,9 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\MinioStorageServiceProvider::class
+        App\Providers\MinioStorageServiceProvider::class,
+        \SocialiteProviders\Manager\ServiceProvider::class,
+
 
     ],
 
