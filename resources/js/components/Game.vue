@@ -326,18 +326,6 @@ export default {
     processingGameSerial: function () {
       return this.$cookies.get(this.postSerial);
     },
-    // le: function () {
-    //   if (this.game) {
-    //     return this.game.elements[0]
-    //   }
-    //   return null;
-    // },
-    // re: function () {
-    //   if (this.game) {
-    //     return this.game.elements[1]
-    //   }
-    //   return null;
-    // }
   },
   methods: {
     loadGameSetting: function () {
@@ -640,6 +628,9 @@ export default {
       window.open(url, '_self');
     },
     getPlayer(element) {
+      if(!element){
+        return null;
+      }
       return _.get(this.$refs, element.id + '.player', null);
     },
     doPlay(element, loud = false, name) {
@@ -701,13 +692,12 @@ export default {
                 if(state === -1 || state === 3){
                   theirPlayer.mute();
                 }else{
-                  theirPlayer.pauseVideo();
-                  theirPlayer.mute();
-                  if(this.mousePosition == left){
-                    myPlayer.playVideo();
-                    myPlayer.unMute();
-                  }
                   clearInterval(interval);
+                  if(this.mousePosition){
+                    this.videoHoverIn(this.le, this.re, true);
+                  }else{
+                    this.videoHoverIn(this.re, this.le, false);
+                  }
                 }
                 // retry++;
             });
@@ -716,8 +706,7 @@ export default {
             theirPlayer.pauseVideo();
             theirPlayer.mute();
           }
-        });
-        
+        }); 
       }
 
       if(left){
@@ -727,7 +716,6 @@ export default {
         this.isLeftPlaying = false;
         this.isRightPlaying = true;
       }
-
     },
     clickImage(event) {
       const obj = $(event.target);
