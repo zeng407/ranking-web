@@ -69,6 +69,12 @@ class MakeElementImageThumb extends Command
 
                             try {
                                 $fileInfo = get_headers($element->source_url, true);
+                                if (isset($fileInfo[0]) 
+                                    && ($fileInfo[0] == 'HTTP/1.1 404 Not Found' || $fileInfo[0] == 'HTTP/1.1 302 Found') ) {
+                                    $this->warn('Cannot get file info: ' . $element->id);
+                                    continue;
+                                }
+
                                 if (!isset ($fileInfo['Content-Length'])) {
                                     $this->warn('Cannot get Content-Length: ' . $element->id);
                                     continue;
