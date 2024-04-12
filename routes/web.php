@@ -55,7 +55,7 @@ Route::middleware('auth')->group(function () {
 });
 
 /** TOS */
-Route::get('tos', fn() => view_or("tos.".app()->getLocale(), 'privacy'))->name('tos');
-Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy'))->name('privacy');
+Route::get('tos', fn() => view_or("tos.".app()->getLocale(), 'tos.en'))->name('tos');
+Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en'))->name('privacy');
 
 
