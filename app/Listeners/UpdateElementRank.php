@@ -7,8 +7,9 @@ use App\Services\RankService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdateElementRank
+class UpdateElementRank implements ShouldQueue
 {
+    use Queueable;
 
     protected $rankService;
 
@@ -30,6 +31,6 @@ class UpdateElementRank
      */
     public function handle(GameElementVoted $event)
     {
-        $this->rankService->createElementRank($event->game, $event->element);
+        \App\Jobs\UpdateElementRank::dispatch($event->game, $event->element);
     }
 }
