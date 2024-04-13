@@ -172,7 +172,8 @@
                             </div>
                         </div>
                     </div>
-                    {{-- <div class="card mr-4 mb-4">
+                    @if(app()->isLocal())
+                    <div class="card mr-4 mb-4">
                         <div class="card-header">{{ __('Social Media Accounts') }} ({{ __('Quick Login') }})</div>
                         <div class="card-body">
                             <div class="row">
@@ -193,7 +194,8 @@
                                 </div>
                             </div>
                         </div>
-                    </div> --}}
+                    </div>
+                    @endif
                 </div>
             </profile>
         </div>

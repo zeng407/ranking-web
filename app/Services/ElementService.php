@@ -358,13 +358,6 @@ class ElementService
 
     public function storeVideo(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
     {
-        // try {
-        //     $fileInfo = pathinfo($sourceUrl);
-        // } catch (\Exception $exception) {
-        //     report($exception);
-        //     return null;
-        // }
-
         //todo make thumb from video
 
         $title = $params['title'] ?? 'video';

@@ -84,7 +84,9 @@
                                 </div>
                             </form>
                             {{-- socialite --}}
-                            {{-- @include('auth.partial.socialities') --}}
+                            @if(app()->isLocal())
+                            @include('auth.partial.socialities')
+                            @endif
                         </div>
                         {{-- register --}}
                         <div class="tab-pane fade" id="pills-register" role="tabpanel" aria-labelledby="pills-register-tab">

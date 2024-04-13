@@ -18,13 +18,11 @@ use App\Http\Controllers\Post\GameController;
 */
 
 
-
 Route::prefix('lang/{locale}')->middleware('locale.prefix')->group(function () {
-    $back = fn() => redirect()->back();
-    Route::get('/', $back);
-    Route::get('/login', $back);
-    Route::get('/hot', $back);
-    Route::get('/new', $back);
-    Route::get('post/{post:serial}/game', $back);
-    Route::get('post/{post:serial}/rank', $back);
+    Route::get('/', [HomeController::class, 'index']);
+    Route::get('/login', [LoginController::class, 'showLoginForm']);
+    Route::get('/hot', [HomeController::class, 'hot']);
+    Route::get('/new', [HomeController::class, 'new']);
+    Route::get('post/{post:serial}/game', [GameController::class, 'show']);
+    Route::get('post/{post:serial}/rank', [GameController::class, 'rank']);
 });
