@@ -75,7 +75,7 @@
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
-              <h1>{{ $post['title'] }}</h1>
+              <h2>{{ $post['title'] }}</h2>
             </div>
             <div class="row no-gutters">
               <div class="col-6">
@@ -99,7 +99,7 @@
                 <h5 class="text-center mt-1 p-1">{{ $post['element2']['title'] }}</h5>
               </div>
               <div class="card-body pt-0 text-center">
-                <h5 class="text-break">{{ $post['description'] }}</h5>
+                <p class="text-break">{{ $post['description'] }}</p>
                 <div class="row">
                   <div class="col-6">
                     <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}">
