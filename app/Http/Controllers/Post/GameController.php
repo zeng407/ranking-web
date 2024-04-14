@@ -48,6 +48,7 @@ class GameController extends Controller
         $gameSerial = $request->query('g') ?? $request->query('s');
         $game = Game::where('serial', $gameSerial)->first();
         $post = $this->postService->getPost($serial);
+        abort_if(!$post, 404);
         $reports = $this->rankService->getRankReports($post, 10);
         
         $gameResult = null;
