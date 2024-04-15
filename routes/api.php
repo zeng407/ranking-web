@@ -35,7 +35,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('account/post/{post:serial}/rank', [MyPostController::class, 'rank'])->name('api.post.rank');
 
     /** Edit Element */
-    Route::post('account/elements/image', [ElementController::class, 'createImage'])->name('api.element.create-image');
+    Route::post('account/elements/media', [ElementController::class, 'createMedia'])->name('api.element.create-media');
     Route::post('account/elements/batch', [ElementController::class, 'batchCreate'])->name('api.element.batch-create');
     Route::put('account/element/{element}', [ElementController::class, 'update'])->name('api.element.update');
     Route::post('account/element/{element}/upload', [ElementController::class, 'upload'])->name('api.element.upload');

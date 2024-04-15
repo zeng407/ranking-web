@@ -16,9 +16,10 @@ abstract class DuskTestCase extends BaseTestCase
     protected function setUp(): void
     {
         if($_ENV['DB_HOST'] && $_ENV['DB_HOST'] == 'mysql'){
-            $_ENV['DB_HOST'] = 'mysql_test';
+            throw new \Exception('You are using mysql database. Please use other database for testing.');
         }
         parent::setUp();
+
     }
     
 

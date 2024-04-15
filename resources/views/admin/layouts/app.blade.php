@@ -70,7 +70,7 @@
             </div>
         </nav>
 
-        <main class="pt-2">
+        <main class="">
             @include('admin.layouts.flash')
             @yield('content')
         </main>

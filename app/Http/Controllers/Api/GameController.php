@@ -96,7 +96,11 @@ class GameController extends Controller
          */
         $this->authorize('play', $game);
 
-        $gameRound = $this->gameService->updateGameRounds($game, $request->winner_id, $request->loser_id);
+        try{
+            $gameRound = $this->gameService->updateGameRounds($game, $request->winner_id, $request->loser_id);
+        }catch (\Exception $e){
+            return response()->json([], 422);
+        }
 
         event(new GameElementVoted($game, $gameRound->winner));
         event(new GameElementVoted($game, $gameRound->loser));
