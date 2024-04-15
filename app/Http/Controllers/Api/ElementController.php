@@ -34,7 +34,11 @@ class ElementController extends Controller
 
         $request->validate([
             'post_serial' => 'required|string',
-            'file' => 'required|mimetypes:image/jpeg,image/png,image/bmp,image/webp,image/gif,video/avi,video/mpeg,video/mp4|max:8192',
+            'file' => [
+                'required',
+                'mimetypes:image/jpeg,image/png,image/bmp,image/webp,image/gif,video/avi,video/mpeg,video/mp4',
+                'max:'.(config('setting.upload_media_file_size_mb') * 1024),
+            ],
         ]);
 
         $post = $this->getPost($request->input('post_serial'));
@@ -45,6 +49,15 @@ class ElementController extends Controller
         }
 
         $path = $request->input('post_serial');
+        
+        //rate limit for uploading
+        //30MB per minute
+        try{
+            $this->attemptUploadRateLimit($request);
+        }catch(\Exception $e){
+            return api_response(ApiResponseCode::UPLOAD_SIZE_RATE_LIMIT, 422);
+        }
+        
         $element = $this->elementService->storeMedia($request->file('file'), $path, $post);
         return PostElementResource::make($element);
     }
@@ -98,6 +111,10 @@ class ElementController extends Controller
             return api_response(ApiResponseCode::INVALID_URL, 422, [
                 'error_url' => $urlStr,
             ]);
+        }
+
+        if($urlCount > config('setting.upload_url_at_a_time')){
+            return api_response(ApiResponseCode::OVER_UPLOAD_LIMIT, 422);
         }
 
         $post = $this->getPost($request->post_serial);
@@ -260,5 +277,18 @@ class ElementController extends Controller
         return Post::where('user_id', Auth::id())
             ->where('serial', $serial)
             ->firstOrFail();
+    }
+
+    protected function attemptUploadRateLimit(Request $request)
+    {
+        $rateLimit = config('setting.upload_media_size_mb_at_a_time') * 1024 * 1024; // 30MB
+        $timeMinuteLimit = 1;
+        $rateLimitKey = "upload_rate_limit_" . Auth::id();
+        $rateLimitValue = \Cache::get($rateLimitKey, 0);
+        if($rateLimitValue > $rateLimit){
+            throw new \Exception("Rate limit exceeded");
+        }
+        $rateLimitValue += $request->file('file')->getSize();
+        \Cache::put($rateLimitKey, $rateLimitValue, now()->addMinutes($timeMinuteLimit));
     }
 }
