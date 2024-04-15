@@ -20,7 +20,13 @@
     "login.social.header": "OR",
     "login.tos": "By logging in, you agree to the <a href=\":tos\" target=\"_blank\">Terms of Service</a> and <a href=\":privacy\" target=\"_blank\">Privacy Statement</a>.",
     "page.description": "2 Pick, Pick Your Top Choice: Songs, Celebrities, Anime, Pets, Food, Movies... From a Pool of :size, Round by Round Elimination!",
-
-
+    "over_upload_limit": "You can upload up to :limit URLs at a time.",
+    "api-response-message.OVER_ELEMENT_SIZE": "The number of elements exceeds the limit",
+    "api-response-message.INVALID_URL": "Invalid URL",
+    "api-response-message.OVER_UPLOAD_LIMIT": "The number of URLs exceeds the limit",
+    "api-response-message.INVALID_PATH": "Invalid path",
+    "api-response-message.NO_ELEMENT_CREATED": "Unable to create element (possibly duplicate element, invalid link, or maximum element limit reached)",
+    "api-response-message.UPLOAD_SIZE_RATE_LIMIT": "Upload rate limit exceeded, please try again later",
+    "upload_from_local": "Upload from Local, limit {limit} MB",
     "":""
 }

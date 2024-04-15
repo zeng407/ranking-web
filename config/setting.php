@@ -16,4 +16,7 @@ return [
     'avatar_max_size' => 1024 * 1024 * 4,
     'report_max_length' => 200,
     'name_change_duration' => 1,
+    'upload_url_at_a_time' => 100,
+    'upload_media_size_mb_at_a_time' => 30,
+    'upload_media_file_size_mb'=> 8
 ];

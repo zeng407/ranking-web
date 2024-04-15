@@ -26,7 +26,7 @@ return [
     'before_or_equal' => ':attribute必須是等於或早於:date的日期。',
     'between' => [
         'numeric' => ':attribute必須在:min和:max之間。',
-        'file' => ':attribute必須在:min和:max千字節之間。',
+        'file' => ':attribute必須在:min和:max KB之間。',
         'string' => ':attribute必須在:min和:max字符之間。',
         'array' => ':attribute必須有:min到:max項。',
     ],
@@ -51,13 +51,13 @@ return [
     'filled' => ':attribute欄位必須有一個值。',
     'gt' => [
         'numeric' => ':attribute必須大於:value。',
-        'file' => ':attribute必須大於:value千字節。',
+        'file' => ':attribute必須大於:value KB。',
         'string' => ':attribute必須大於:value個字符。',
         'array' => ':attribute必須有超過:value個項目。',
     ],
     'gte' => [
         'numeric' => ':attribute必須大於或等於:value。',
-        'file' => ':attribute必須大於或等於:value千字節。',
+        'file' => ':attribute必須大於或等於:value KB。',
         'string' => ':attribute必須大於或等於:value個字符。',
         'array' => ':attribute必須有:value個項目或更多。',
     ],
@@ -71,19 +71,19 @@ return [
     'json' => ':attribute必須是一個有效的JSON字符串。',
     'lt' => [
         'numeric' => ':attribute必須小於:value。',
-        'file' => ':attribute必須小於:value千字節。',
+        'file' => ':attribute必須小於:value KB。',
         'string' => ':attribute必須小於:value個字符。',
         'array' => ':attribute必須有少於:value個項目。',
     ],
     'lte' => [
         'numeric' => ':attribute必須小於或等於:value。',
-        'file' => ':attribute必須小於或等於:value千字節。',
+        'file' => ':attribute必須小於或等於:value KB。',
         'string' => ':attribute必須小於或等於:value個字符。',
         'array' => ':attribute不能有超過:value個項目。',
     ],
     'max' => [
         'numeric' => ':attribute不能大於:max。',
-        'file' => ':attribute不能大於:max千字節。',
+        'file' => ':attribute不能大於:max KB。',
         'string' => ':attribute不能大於:max個字符。',
         'array' => ':attribute不能有超過:max個項目。',
     ],
@@ -91,7 +91,7 @@ return [
     'mimetypes' => ':attribute必須是一種:values類型的文件。',
     'min' => [
         'numeric' => ':attribute必須至少為:min。',
-        'file' => ':attribute必須至少為:min千字節。',
+        'file' => ':attribute必須至少為:min KB。',
         'string' => ':attribute必須至少為:min個字符。',
         'array' => ':attribute必須至少有:min個項目。',
     ],
@@ -115,7 +115,7 @@ return [
     'same' => ':attribute和:other必須匹配。',
     'size' => [
         'numeric' => ':attribute必須是:size。',
-        'file' => ':attribute必須是:size千字節。',
+        'file' => ':attribute必須是:size KB。',
         'string' => ':attribute必須是:size個字符。',
         'array' => ':attribute必須包含:size個項目。',
     ],

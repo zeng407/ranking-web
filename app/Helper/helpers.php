@@ -3,9 +3,13 @@
 if (!function_exists('api_response')) {
     function api_response(string $code, $httpState = 200, $data = [])
     {
+        $message = __('api-response-message.' . $code);
+        if($message === 'api-response-message.' . $code){
+            $message = __('Unknown error');
+        }
         return response([
             'code' => $code,
-            'message' => config('api-response.' . $code),
+            'message' => $message,
             'data' => $data
         ], $httpState);
     }

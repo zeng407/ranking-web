@@ -228,7 +228,7 @@
 
             <div class="row">
               <div class="col-12">
-                <label for="image-upload">&nbsp;{{ $t('Upload from Local') }}</label>
+                <label for="image-upload">&nbsp;{{ $t('upload_from_local', {limit: config.upload_media_file_size_mb, rate_limit: config.upload_media_size_mb_at_a_time}) }}</label>
                 <div class="custom-file form-group">
                   <input type="file" accept="image/*,video/*,audio/*" class="custom-file-input" id="image-upload" multiple @change="uploadMedias">
                   <label class="custom-file-label" for="image-upload">{{$t('Choose File...')}}</label>

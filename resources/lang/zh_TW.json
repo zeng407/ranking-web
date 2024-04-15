@@ -72,6 +72,16 @@
     "Terms of Service": "服務條款",
     "page.description": "殘酷二選一，多種熱門投票主題：歌曲、明星、動漫、寵物、食物、電影...，從:size組候選人中一輪一輪淘汰，最後選出你心中的第一名。",
     "Ranking": "排行榜",
+    "over_upload_limit": "最多可同時上傳 :limit 個連結",
+    "Exceeded the upload material limit": "超過上傳素材數量限制",
+    "Invalid URL": "無效的連結",
+    "Unknown error": "未知錯誤",
+    "api-response-message.OVER_ELEMENT_SIZE": "超過上傳素材大小限制",
+    "api-response-message.INVALID_URL": "無效的連結",
+    "api-response-message.OVER_UPLOAD_LIMIT": "超過上傳素材數量限制",
+    "api-response-message.INVALID_PATH": "無效的路徑",
+    "api-response-message.NO_ELEMENT_CREATED": "無法建立素材(可能素材重複、連結失效、或是素材數量已達上限)",
+    "api-response-message.UPLOAD_SIZE_RATE_LIMIT": "超過上傳限速，請稍後再試",
 
     "":""
 }
