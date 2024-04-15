@@ -41,9 +41,11 @@
                 <ul>
                   <li>https://www.youtube.com/watch?v=xxxxx</li>
                   <li>https://www.youtube.com/watch/xxxxx</li>
+                  <li>https://www.youtube.com/shorts/xxxxxx</li>
+                  <li>https://www.youtube.com/xxxxxx</li>
                   <li>https://youtu.be/xxxxx</li>
                 </ul>
-                <h5>{{ $t('Import clips or shorts') }}</h5>
+                <h5>{{ $t('Import clips') }}</h5>
                 <div class="alert alert-dark">
                   {{ youtubeEmbedSample }}
                 </div>
