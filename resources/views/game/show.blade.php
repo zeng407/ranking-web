@@ -68,7 +68,7 @@
                 <youtube-embed v-if="le" :element="le" width="100%" :height="elementHeight" />
               </div>
               <div v-else-if="isVideoSource(le)">
-                <video width="100%" :height="elementHeight" loop autoplay controls playsinline :src="le.thumb_url"></video>
+                <video width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
               </div>
               <div class="card-body text-center">
                 <div class="my-1" style="max-height: 120px" v-if="isMobileScreen">
@@ -140,7 +140,7 @@
                 <youtube-embed v-if="re" :element="re" width="100%" :height="elementHeight"/>
               </div>
               <div v-else-if="isVideoSource(re)">
-                <video width="100%" :height="elementHeight" loop autoplay controls playsinline :src="re.thumb_url" ></video>
+                <video width="100%" :height="elementHeight" loop autoplay controls muted playsinline :src="re.thumb_url" ></video>
               </div>
     
               <!-- reverse when device size width less md(768px)-->

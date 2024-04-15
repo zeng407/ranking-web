@@ -27,14 +27,14 @@ class ElementController extends Controller
         $this->elementService = $elementService;
     }
 
-    public function createImage(Request $request)
+    public function createMedia(Request $request)
     {
         /** @see ElementPolicy::create() */
         $this->authorize('create', Element::class);
 
         $request->validate([
             'post_serial' => 'required|string',
-            'file' => 'required|image|max:8192',
+            'file' => 'required|mimetypes:image/jpeg,image/png,image/bmp,image/webp,image/gif,video/avi,video/mpeg,video/mp4|max:8192',
         ]);
 
         $post = $this->getPost($request->input('post_serial'));
@@ -45,7 +45,7 @@ class ElementController extends Controller
         }
 
         $path = $request->input('post_serial');
-        $element = $this->elementService->storePublicImage($request->file('file'), $path, $post);
+        $element = $this->elementService->storeMedia($request->file('file'), $path, $post);
         return PostElementResource::make($element);
     }
 

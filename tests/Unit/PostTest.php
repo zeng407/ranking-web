@@ -149,7 +149,7 @@ class PostTest extends TestCase
             'file' => $file,
         ];
 
-        $res = $this->post(route('api.element.create-image'), $data);
+        $res = $this->post(route('api.element.create-media'), $data);
 
         $path = $res->json('path');
         Storage::disk()->assertExists($path);

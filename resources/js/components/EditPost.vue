@@ -223,14 +223,14 @@
           <!-- tab elements -->
           <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
             <!-- upload image from device -->
-            <!-- 上傳圖片 -->
-            <h2 class="mt-3 mb-3"><i class="fa-regular fa-image"></i>&nbsp;{{ $t('edit_post.upload_image') }}</h2>
+            <!-- 上傳圖片/影片 -->
+            <h2 class="mt-3 mb-3"><i class="fa-solid fa-upload"></i>&nbsp;{{ $t('edit_post.upload_media') }}</h2>
 
             <div class="row">
               <div class="col-12">
-                <label for="image-upload"><i class="fa-solid fa-upload"></i>&nbsp;{{ $t('Upload from Local') }}</label>
+                <label for="image-upload">&nbsp;{{ $t('Upload from Local') }}</label>
                 <div class="custom-file form-group">
-                  <input type="file" class="custom-file-input" id="image-upload" multiple @change="uploadImages">
+                  <input type="file" accept="image/*,video/*,audio/*" class="custom-file-input" id="image-upload" multiple @change="uploadMedias">
                   <label class="custom-file-label" for="image-upload">{{$t('Choose File...')}}</label>
                 </div>
               </div>
@@ -245,10 +245,10 @@
 
             <!-- batch upload -->
             <!-- 從網址上傳 -->
-            <h2 class="mt-5 mb-3"><i class="fa-solid fa-photo-film"></i>&nbsp;{{ $t('edit_post.upload_batch') }}</h2>
+            <h2 class="mt-5 mb-3"><i class="fa-solid fa-link"></i>&nbsp;{{ $t('edit_post.upload_batch') }}</h2>
             <div class="row mt-3">
               <div class="col-12">
-                <label><i class="fa-solid fa-link"></i>&nbsp;{{ $t('Upload from URL') }}</label>
+                <label></i>&nbsp;{{ $t('Upload from URL') }}</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate" rows="5"
                     v-model="batchString" aria-describedby="batchCreateVideo"></textarea>
@@ -268,7 +268,7 @@
 
             <!-- search -->
 
-            <h2 class="mt-5 mb-3"><i class="fa-solid fa-gear"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
+            <h2 class="mt-5 mb-3"><i class="fa-solid fa-photo-film"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
             <p>{{ $t('Max :number elements',{ number: config.post_max_element_count }) }}</p>
 
             <nav class="navbar navbar-light bg-light pr-0 pl-0 justify-content-end">
@@ -405,7 +405,7 @@
                   <!-- video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
-                    <video width="100%" height="270" loop controls muted playsinline :src="element.thumb_url"></video>
+                    <video width="100%" height="270" loop controls playsinline :src="element.thumb_url"></video>
                     <!-- editor -->
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
@@ -910,8 +910,8 @@ export default {
       }, 500);
     },
 
-    /** Image **/
-    uploadImages: function (event) {
+    /** Image/Video **/
+    uploadMedias: function (event) {
       Array.from(event.target.files).forEach(file => {
         let form = new FormData();
         form.append('file', file);
@@ -922,21 +922,21 @@ export default {
           }
         })
           .then(res => {
-            this.elements.data.push(res.data.data);
-            this.elements.meta.total++;
+            this.loadElements(1);
             this.deleteProgressBarValue(file);
             Swal.fire({
               position: "top-end",
               showConfirmButton: false,
               title: this.$t("Uploaded!"),
               toast: true,
-              text: this.$t("The image has been uploaded."),
+              text: this.$t("The file has been uploaded."),
               icon: "success",
               timer: 3000
             });
           })
           .catch((err) => {
             this.showAlert(err.response.data.message, 'danger');
+            this.deleteProgressBarValue(file);
           });
       });
       event.target.value = '';

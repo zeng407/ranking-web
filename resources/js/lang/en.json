@@ -33,6 +33,7 @@
     "edit_post.info.create_time": "Created At",
     "edit_post.at_least_element_number_hint": "At least 8 materials must be uploaded to appear on the homepage.",
     "edit_post.upload_image": "Upload Image",
+    "edit_post.upload_media": "Upload Image&Video",
     "edit_post.upload_video": "Upload Video",
     "edit_post.upload_batch": "Upload Image&Video",
     "edit_post.add_video_button": "Add",

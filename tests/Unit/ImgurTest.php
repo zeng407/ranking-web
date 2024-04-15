@@ -97,7 +97,7 @@ class ImgurTest extends TestCase
 
         $url = Faker\Provider\Image::imageUrl();
         $path = 'any/path';
-        $result = $service->storeImage($url, $path, $post);
+        $result = $service->storeImageUrl($url, $path, $post);
     }
 
     public function testCreateImageFailUpload()
@@ -118,7 +118,7 @@ class ImgurTest extends TestCase
 
         $url = Faker\Provider\Image::imageUrl();
         $path = 'any/path';
-        $element = $service->storeImage($url, $path, $post);
+        $element = $service->storeImageUrl($url, $path, $post);
         $this->assertNotNull($element);
         $this->assertTrue(\Storage::exists($element->path));
     }

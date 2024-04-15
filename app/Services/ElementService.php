@@ -41,13 +41,13 @@ class ElementService
         $guess = $this->guessSourceType($sourceUrl);
         if ($guess->isImage) {
             logger("got Image");
-            return $this->storeImage($sourceUrl, $directory, $post, $params);
+            return $this->storeImageUrl($sourceUrl, $directory, $post, $params);
         } elseif ($guess->isImgur) {
             logger("got Imgur");
             return $this->storeImgurImage($sourceUrl, $directory, $post, $params);
         } elseif ($guess->isVideo) {
             logger("got Video");
-            return $this->storeVideo($sourceUrl, $directory, $post, $params);
+            return $this->storeVideoUrl($sourceUrl, $directory, $post, $params);
         } elseif ($guess->isYoutube) {
             logger("got Youtube");
             return $this->storeYoutubeVideo($sourceUrl, $post, $params);
@@ -104,6 +104,15 @@ class ElementService
         return $element;
     }
 
+    public function storeMedia(UploadedFile $file, string $directory, Post $post)
+    {
+        if (strpos($file->getMimeType(), 'image') !== false) {
+            return $this->storePublicImage($file, $directory, $post);
+        } else {
+            return $this->storeVideo($file, $directory, $post);
+        }
+    }
+
 
     public function storePublicImage(UploadedFile $file, string $directory, Post $post)
     {
@@ -111,8 +120,7 @@ class ElementService
 
         $url = Storage::url($path);
         $thumb = $url;
-        $title = mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'));
-        $title = preg_replace('/[\n\r\t]/', '', $title);
+        $title = $this->parseTitle($file);
         $element = $post->elements()->create([
             'path' => $path,
             'source_url' => $url,
@@ -150,7 +158,7 @@ class ElementService
         return new StoragedImage($url, $path, $fileInfo);
     }
 
-    public function storeImage(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
+    public function storeImageUrl(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
     {
         try {
             $storageImage = $this->downloadImage($sourceUrl, $directory);
@@ -356,10 +364,33 @@ class ElementService
         return $content;
     }
 
-    public function storeVideo(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
+    public function storeVideo(UploadedFile $file, string $directory, Post $post, $params = []): ?Element
+    {
+        $path = $this->moveUploadedFile($file, $directory);
+
+        $url = Storage::url($path);
+        $thumb = $url;
+        $title = $this->parseTitle($file);
+        
+        //todo make thumb from video
+        $title = $title ?? 'untitled video';
+
+        $element = $post->elements()->create([
+            'path' => null,
+            'source_url' => $url,
+            'thumb_url' => $thumb,
+            'type' => ElementType::VIDEO,
+            'title' => $title,
+            'video_source' => VideoSource::URL
+        ]);
+
+        event(new ImageElementCreated($element, $post));
+        return $element;
+    }
+
+    public function storeVideoUrl(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
     {
         //todo make thumb from video
-
         $title = $params['title'] ?? 'video';
 
         $element = $post->elements()->updateOrCreate([
@@ -531,6 +562,14 @@ class ElementService
         /** @var YoutubeService  */
         $youtubeService = app(YoutubeService::class);
         return $youtubeService;
+    }
+
+    protected function parseTitle(UploadedFile $file)
+    {
+        $title = mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'));
+        logger("title: {$title}");
+        $title = preg_replace('/[\n\r\t]/', '', $title);
+        return $title;
     }
 
 }
