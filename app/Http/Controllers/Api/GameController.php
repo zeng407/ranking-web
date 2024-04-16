@@ -108,6 +108,7 @@ class GameController extends Controller
         // update rank when game complete
         if ($this->gameService->isGameComplete($game)) {
             $anonymousId = session()->get('anonymous_id', 'unknown');
+            $game->update(['completed_at' => now()]);
             event(new GameComplete($request->user(), $anonymousId, $game, $gameRound->winner));
         }
 

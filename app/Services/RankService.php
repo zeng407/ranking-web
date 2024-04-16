@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\RankType;
 use App\Models\Element;
 use App\Models\Game;
+use App\Models\GameElement;
 use App\Models\Post;
 use App\Models\Rank;
 use App\Models\RankReport;
@@ -39,52 +40,45 @@ class RankService
     {
         logger("handle GameElementVoted $element->id");
         $post = $game->post;
-        $topRankCounts = Game::where('games.post_id', $post->id)
-            ->whereHas('game_1v1_rounds', function ($query) use ($element) {
-                $query->where('remain_elements', 1);
-            })
-            ->whereHas('game_1v1_rounds', function ($query) use ($element) {
-                $query->where('winner_id', $element->id)
-                    ->orWhere('loser_id', $element->id);
-            })
+        $completeGameRounds = GameElement::join('games', 'games.id', '=', 'game_elements.game_id')
+            ->where('games.post_id', $post->id)
+            ->where('game_elements.element_id', $element->id)
+            ->whereNotNull('games.completed_at')
             ->count();
 
-        if ($topRankCounts) {
-            $winCount = Game::where('games.post_id', $post->id)
+        if ($completeGameRounds) {
+            $championCount = Game::where('games.post_id', $post->id)
                 ->whereHas('game_1v1_rounds', function ($query) use ($element) {
                     $query->where('remain_elements', 1)
                         ->where('winner_id', $element->id);
                 })
                 ->count();
 
-            if ($winCount) {
+            if ($championCount) {
                 Rank::updateOrCreate([
                     'post_id' => $post->id,
                     'element_id' => $element->id,
                     'rank_type' => RankType::CHAMPION,
                     'record_date' => today(),
                 ], [
-                    'win_count' => $winCount,
-                    'round_count' => $topRankCounts,
-                    'win_rate' => $winCount / $topRankCounts * 100
+                    'win_count' => $championCount,
+                    'round_count' => $completeGameRounds,
+                    'win_rate' => $championCount / $completeGameRounds * 100
                 ]);
             }
         }
 
-        $pkCounts = Game::where('games.post_id', $post->id)
+        $winCount = Game::where('games.post_id', $post->id)
             ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
-            ->where(function ($query) use ($element) {
-                $query->where('winner_id', $element->id)
-                    ->orWhere('loser_id', $element->id);
-            })
+            ->where('game_1v1_rounds.winner_id', $element->id)
+            ->count();
+        $loseCount = Game::where('games.post_id', $post->id)
+            ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+            ->where('game_1v1_rounds.loser_id', $element->id)
             ->count();
 
-        if ($pkCounts) {
-            $winCount = Game::where('games.post_id', $post->id)
-                ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
-                ->where('winner_id', $element->id)
-                ->count();
-
+        $rounds = $winCount + $loseCount;
+        if ($rounds > 0) {
             if ($winCount) {
                 Rank::updateOrCreate([
                     'post_id' => $post->id,
@@ -93,8 +87,8 @@ class RankService
                     'record_date' => today(),
                 ], [
                     'win_count' => $winCount,
-                    'round_count' => $pkCounts,
-                    'win_rate' => $winCount / $pkCounts * 100
+                    'round_count' => $rounds,
+                    'win_rate' => $winCount / $rounds * 100
                 ]);
             } else {
                 Rank::updateOrCreate([
@@ -104,12 +98,11 @@ class RankService
                     'record_date' => today(),
                 ], [
                     'win_count' => 0,
-                    'round_count' => $pkCounts,
+                    'round_count' => $rounds,
                     'win_rate' => 0
                 ]);
             }
         }
-
     }
 
     public function createRankReport(Post $post)

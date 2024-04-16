@@ -130,7 +130,7 @@
         </nav>
         @endif
 
-        <main class="">
+        <main class="mt-2">
             @include('layouts.flash')
             @yield('content')
         </main>

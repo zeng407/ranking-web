@@ -84,7 +84,7 @@
                                 </div>
                             </form>
                             {{-- socialite --}}
-                            @if(app()->isLocal())
+                            @if(!app()->isProduction())
                             @include('auth.partial.socialities')
                             @endif
                         </div>

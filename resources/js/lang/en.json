@@ -21,6 +21,10 @@
 
     "create_game.description.hint": "Briefly describe the vote",
 
+    "post_policy.private": "Private",
+    "post_policy.public": "Public",
+    "post_policy.password": "Password",
+
     "edit_post.tab.info": "Information",
     "edit_post.tab.element": "Media",
     "edit_post.tab.rank": "Rank",
@@ -70,7 +74,7 @@
     "total elements": "total materials : {count}",
     "report_comment_other_reason_required": "You need to write something!",
     "Max :number elements": "Max {number} elements",
-
+    "upload_from_local": "Upload from computer (multiple files allowed, file limit {limit} MB, {rate_limit} MB per minute)",
 
     "":""
 }

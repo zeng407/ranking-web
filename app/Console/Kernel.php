@@ -3,7 +3,6 @@
 namespace App\Console;
 
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
-use App\ScheduleExecutor\RankScheduleExecutor;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 

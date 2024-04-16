@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @mixin IdeHelperUserSocialite
+ */
 class UserSocialite extends Model
 {
     protected $table = 'user_socialities';

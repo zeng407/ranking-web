@@ -20,6 +20,7 @@ class Game extends Model
         'serial',
         'element_count',
         'candidates',
+        'completed_at',
     ];
 
     public function post()

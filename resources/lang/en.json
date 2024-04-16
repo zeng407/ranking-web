@@ -27,6 +27,5 @@
     "api-response-message.INVALID_PATH": "Invalid path",
     "api-response-message.NO_ELEMENT_CREATED": "Unable to create element (possibly duplicate element, invalid link, or maximum element limit reached)",
     "api-response-message.UPLOAD_SIZE_RATE_LIMIT": "Upload rate limit exceeded, please try again later",
-    "upload_from_local": "Upload from Local, limit {limit} MB",
     "":""
 }
