@@ -4,12 +4,9 @@ namespace App\Listeners;
 
 use App\Events\GameElementVoted;
 use App\Services\RankService;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdateElementRank implements ShouldQueue
+class UpdateElementRank 
 {
-    use Queueable;
 
     protected $rankService;
 

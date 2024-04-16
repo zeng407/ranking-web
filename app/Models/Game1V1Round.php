@@ -25,7 +25,6 @@ class Game1V1Round extends Model
         'remain_elements',
         'winner_id',
         'loser_id',
-        'complete_at',
     ];
 
     protected $with = ['winner', 'loser', 'game'];

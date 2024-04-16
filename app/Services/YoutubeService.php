@@ -51,7 +51,7 @@ class YoutubeService
             preg_match("/^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(-nocookie)?\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/", $url, $matches);
             logger("return  matches ");
             logger($matches);
-            if($matches && isset($matches[6]) && $matches[6] == 'clip'){
+            if($matches && isset($matches[6]) && ($matches[6] == 'clip' || $matches[6] == 'shorts')){
                 return str_replace('/','',$matches[7] ?? '');
             }
             return $matches[6];
