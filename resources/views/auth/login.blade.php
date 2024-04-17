@@ -84,7 +84,7 @@
                                 </div>
                             </form>
                             {{-- socialite --}}
-                            @if(!app()->isProduction())
+                            @if(config('setting.socialite_login'))
                             @include('auth.partial.socialities')
                             @endif
                         </div>

@@ -172,7 +172,7 @@
                             </div>
                         </div>
                     </div>
-                    @if(!app()->isProduction())
+                    @if(config('setting.socialite_login'))
                     <div class="card mr-4 mb-4">
                         <div class="card-header">{{ __('Social Media Accounts') }} ({{ __('Quick Login') }})</div>
                         <div class="card-body">

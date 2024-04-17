@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'socialite_login' => env('SPCIALITE_LOGIN', false),
     'password_min_size' => 8,
     'email_max_size' => 50,
     'user_name_max_size' => 20,
