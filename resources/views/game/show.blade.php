@@ -249,7 +249,7 @@
                 </div>
                 <div class="row mt-2" v-if="post">
                   <div class="col-12">
-                    <div>
+                    <div id="select-element-count-hint-target">
                       <div class="input-group mb-3">
                         <div class="input-group-prepend">
                           <label class="input-group-text" for="elementsCount">@{{ $t('Number of participants') }}</label>
@@ -267,13 +267,21 @@
                       </div>
                     </div>
                   </div>
+                  <div class="col-12">
+                    <small class="text-muted">{{__('game.save_progress')}}</small>
+                  </div>
                 </div>
               </div>
         
               <div class="modal-footer mb-sm-0 mb-4">
-                <button v-if="post" type="submit" class="btn btn-primary" :disabled="elementsCount==0" @click="createGame">
+                <button v-if="post && elementsCount > 0" @click="createGame" type="submit" class="btn btn-primary" >
                   @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
                 </button>
+                
+                <span v-if="post && elementsCount == 0" @click="hintSelect" class="btn btn-primary disabled">
+                  @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
+                </span>
+                <b-popover :show.sync="showPopover"   ref="select-element-count-hint" target="select-element-count-hint-target" placement="top">{{ __('game.select_option_hint')}}</b-popover>
               </div>
             </div>
           </div>

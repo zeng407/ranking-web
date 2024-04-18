@@ -27,5 +27,7 @@
     "api-response-message.INVALID_PATH": "Invalid path",
     "api-response-message.NO_ELEMENT_CREATED": "Unable to create element (possibly duplicate element, invalid link, or maximum element limit reached)",
     "api-response-message.UPLOAD_SIZE_RATE_LIMIT": "Upload rate limit exceeded, please try again later",
+    "game.save_progress": "Your progress will be automatically saved for 3 days, so you can continue voting when you come back.",
+    "game.select_option_hint": "You need to select an option.",
     "":""
 }
