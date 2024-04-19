@@ -75,22 +75,22 @@
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
-              <h2>{{ $post['title'] }}</h2>
+              <h2 class="post-title">{{ $post['title'] }}</h2>
             </div>
             <div class="row no-gutters">
               <div class="col-6">
                 <div class="post-element-container">
-                  @if($post['element1']['type'] === \App\Enums\ElementType::IMAGE || $post['element1']['video_source'] === \App\Enums\VideoSource::YOUTUBE || $post['element1']['video_source'] === \App\Enums\VideoSource::YOUTUBE_EMBED)
+                  @if($post['element1']['previewable'])
                   <img src="{{$post['element1']['url']}}" @@error="onImageError('{{$post['element1']['url2']}}', $event)">
                   @else
                   <video src="{{$post['element1']['url']}}#t=0.01"></video>
                   @endif
                 </div>
-                <h5 class="text-center mt-1 p-1">{{ $post['element1']['title'] }}</h5>
+                <h3 class="text-center mt-1 p-1 element-title">{{ $post['element1']['title'] }}</h3>
               </div>
               <div class="col-6">
                 <div class="post-element-container">
-                  @if($post['element2']['type'] === \App\Enums\ElementType::IMAGE || $post['element2']['video_source'] === \App\Enums\VideoSource::YOUTUBE || $post['element2']['video_source'] === \App\Enums\VideoSource::YOUTUBE_EMBED)
+                  @if($post['element2']['previewable'])
                   <img src="{{$post['element2']['url']}}" @@error="onImageError('{{$post['element2']['url2']}}', $event)">
                   @else
                   <video src="{{$post['element2']['url']}}#t=0.01"></video>

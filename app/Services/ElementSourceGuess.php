@@ -16,6 +16,8 @@ class ElementSourceGuess
 
     public $isGFY;
 
+    public $isBilibili;
+
 
     public function __construct($source)
     {
@@ -29,12 +31,14 @@ class ElementSourceGuess
             $this->isImage = true;
         } elseif ($this->isImgurUrl($this->source)) {
             $this->isImgur = true;
-        }elseif ($this->isVideoUrl($this->source)) {
+        } elseif ($this->isVideoUrl($this->source)) {
             $this->isVideo = true;
         } elseif ($this->isYoutube($this->source)) {
             $this->isYoutube = true;
         } elseif ($this->isGfy($this->source)) {
             $this->isGFY = true;
+        } elseif ($this->isBilibili($this->source)) {
+            $this->isBilibili = true;
         }
     }
 
@@ -114,6 +118,20 @@ class ElementSourceGuess
             $schemas = parse_url($source);
             $domain = $schemas['host'];
             $regex = '/(^|[^\.]+\.)gfycat\.com$/';
+            return preg_match($regex, $domain) === 1;
+        } catch (\Exception $exception) {
+
+        }
+        return false;
+    }
+
+    protected function isBilibili($source)
+    {
+        try {
+            //bilibili.com
+            $schemas = parse_url($source);
+            $domain = $schemas['host'];
+            $regex = '/(^|[^\.]+\.)bilibili\.com$/';
             return preg_match($regex, $domain) === 1;
         } catch (\Exception $exception) {
 

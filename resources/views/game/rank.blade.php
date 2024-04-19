@@ -31,7 +31,7 @@
             </div>
             <hr>
             
-            <h1 class="break-all">{{ $post->title }} - {{__('Ranking')}}</h1>
+            <h1 class="break-all post-title">{{ $post->title }} - {{__('Ranking')}}</h1>
             <p>{{ $post->description }}</p>
             @endif
 
@@ -41,15 +41,15 @@
                 <b-tab :title="$t('My Rank')" {{request('tab') == 0 ? 'active':''}} @click="clickTab('0')">
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
-                            <h2 class="text-left w-25">1</h2>
-                            <h5 class="text-center d-none d-md-block w-50">{{ $gameResult->winner->title }}</h5>
+                            <span class="text-left w-25 rank-number">1</span>
+                            <h2 class="text-center d-none d-md-block w-50 element-title">{{ $gameResult->winner->title }}</h2>
                             <div class="text-right ml-auto">
                                 {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}
                             </div>
                         </div>
                         {{-- Rank #1 --}}
                         <div class="card-body text-center rank-card">
-                            <h5 class="text-center d-block d-md-none">{{ $gameResult->winner->title }}</h5>
+                            <h2 class="text-center d-block d-md-none element-title">{{ $gameResult->winner->title }}</h2>
                             @if($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube')
                                 <youtube-player 
                                     width="100%" height="270" ref-id="{{ $gameResult->winner->id }}"
@@ -60,6 +60,12 @@
                                 </youtube-player>
                             @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($gameResult->winner->source_url, ['autoplay' => false]) !!}
+                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'bilibili_video')
+                                <bilibili-video
+                                    width="100%" height="270"
+                                    :element="{{json_encode(['id' => $gameResult->winner->id, 'video_id' => $gameResult->winner->video_id, 'thumb_url' => $gameResult->winner->thumb_url])}}"
+                                    :autoplay="false" :muted="false" height="270" :preview="true">
+                                </bilibili-video>
                             @elseif($gameResult->winner->type === 'video')
                                 <video width="100%" height="270" loop controls playsinline
                                     src="{{ $gameResult->winner->thumb_url }}"></video>
@@ -73,14 +79,14 @@
                     @foreach ($gameResult->data as $index => $rank)
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
-                            <h2 class="text-left w-25">{{ (int)$index + 2 }}</h2>
-                            <h5 class="text-center d-none d-md-block w-50">{{ $rank->loser->title }}</h5>
+                            <span class="text-left w-25 rank-number">{{ (int)$index + 2 }}</span>
+                            <h2 class="text-center d-none d-md-block w-50 element-title">{{ $rank->loser->title }}</h2>
                             <div class="text-right ml-auto w-auto">
                                 {{ __('Global Rank') }}:&nbsp;{{ $rank->rank ?? __('none') }}
                             </div>
                         </div>
                         <div class="card-body text-center rank-card">
-                            <h5 class="text-center d-block d-md-none">{{ $rank->loser->title }}</h5>
+                            <h2 class="text-center d-block d-md-none element-title">{{ $rank->loser->title }}</h2>
                             @if($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube')
                                 <youtube-player 
                                     width="100%" height="270" ref-id="{{ $rank->loser->id }}"
@@ -91,6 +97,12 @@
                                     origin="{{ request()->getSchemeAndHttpHost() }}">
                             @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($rank->loser->source_url, ['autoplay' => false]) !!}
+                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'bilibili_video')
+                                <bilibili-video
+                                    width="100%" height="270"
+                                    :element="{{json_encode(['id' => $rank->loser->id, 'video_id' => $rank->loser->video_id, 'thumb_url' => $rank->loser->thumb_url])}}"
+                                    :autoplay="false" :muted="false" height="270" :preview="true">
+                                </bilibili-video>
                             @elseif($rank->loser->type === 'video')
                                 <video width="100%" height="270" loop controls playsinline src="{{$rank->loser->thumb_url}}"></video>    
                             @elseif($rank->loser->type === 'image')
@@ -106,8 +118,8 @@
                     @foreach ($reports as $index => $rank)
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
-                            <h2 class="text-left w-25">{{ $rank->rank }}</h2>
-                            <h5 class="text-center d-none d-md-block w-50">{{ $rank->element->title }}</h5>
+                            <span class="text-left w-25 rank-number">{{ $rank->rank }}</span>
+                            <h2 class="text-center d-none d-md-block w-50 element-title">{{ $rank->element->title }}</h2>
                             <div class="text-right ml-auto w-auto">
                                 @if($rank->win_rate)
                                     {{ __('rank.win_rate') }}:&nbsp;{{ round($rank->win_rate,1) }}%
@@ -118,7 +130,7 @@
                             </div>
                         </div>
                         <div class="card-body text-center rank-card">
-                            <h5 class="text-center d-block d-md-none">{{ $rank->element->title }}</h5>
+                            <h2 class="text-center d-block d-md-none element-title">{{ $rank->element->title }}</h2>
                             @if($rank->element->type === 'video' && $rank->element->video_source === 'youtube')
                                 <youtube-player 
                                     width="100%" height="270" ref-id="{{ $rank->element->id }}"
@@ -130,6 +142,12 @@
                                 </youtube-player>
                             @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($rank->element->source_url, ['autoplay' => false]) !!}
+                            @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'bilibili_video')
+                                <bilibili-video
+                                    width="100%" height="270"
+                                    :element="{{json_encode(['id' => $rank->element->id, 'video_id' => $rank->element->video_id, 'thumb_url' => $rank->element->thumb_url])}}"
+                                    :autoplay="false" :muted="false" height="270" :preview="true">
+                                </bilibili-video>
                             @elseif($rank->element->type === 'video')
                                 <video width="100%" height="270" loop controls playsinline src="{{$rank->element->thumb_url}}#t=0.01"></video>
                             @elseif($rank->element->type === 'image')

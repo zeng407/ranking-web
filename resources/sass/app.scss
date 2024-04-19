@@ -208,6 +208,7 @@
 
 .rank-header {
     display: flex;
+    align-items:center;
 }
 
 .card-hover {
@@ -396,4 +397,29 @@
 
 .text-align-webkit-center {
     text-align: -webkit-center;
+}
+
+.post-title {
+    font-size: 1.8rem;
+    font-weight: 500;
+}
+.element-title {
+    font-size: 1.125rem;
+    font-weight: 400;
+}
+.rank-number {
+    font-size: 1.6rem;
+    font-weight: 400;
+}
+
+.loading-animation {
+    animation: spin 2s linear infinite;
+    background-size: 50px 50px;
+    background-image: url('/storage/loading.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

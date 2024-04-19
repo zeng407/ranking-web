@@ -42,8 +42,7 @@ export default {
       while (this.$refs.embedDiv.firstChild) {
         this.$refs.embedDiv.firstChild.remove();
       }
-      
-      this.thumbnailUrl = element.thumb_url;
+    
       
       let parser = new DOMParser();
       let code = element.source_url;

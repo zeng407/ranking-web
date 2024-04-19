@@ -479,6 +479,9 @@ export default {
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
     },
+    isBilibiliSource: function (element) {
+      return element.type === 'video' && element.video_source === 'bilibili_video';
+    },
     isYoutubeEmbedSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube_embed';
     },

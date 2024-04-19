@@ -153,7 +153,7 @@ export default {
       event.target.value = '';
     },
     hintDeleteFirst: function () {
-      if (this.preview_image_url) {
+      if (this.preview_image_url && this.$refs['delete-hint']) {
         this.$refs['delete-hint'].$emit('open');
 
         //scroll to target 

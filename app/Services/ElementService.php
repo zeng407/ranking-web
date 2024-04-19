@@ -23,6 +23,8 @@ class ElementService
     
     protected $repo;
 
+    protected $bilibiliService;
+
     public function __construct(ElementRepository $elementRepository)
     {
         $this->repo = $elementRepository;
@@ -54,6 +56,9 @@ class ElementService
         } elseif ($guess->isGFY) {
             logger("got GFY");
             return $this->storeGfycat($sourceUrl, $post, $params);
+        } elseif ($guess->isBilibili){
+            logger("got Bilibli");
+            return $this->storeBilibiliVideo($sourceUrl, $post, $params);
         } else {
             logger("got Unknown");
         }
@@ -345,20 +350,23 @@ class ElementService
     protected function getContent(string $sourceUrl)
     {
         $content = null;
-
+        logger("getContent: {$sourceUrl}");
         try {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $sourceUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
             $content = curl_exec($ch);
+            logger("curl content: $content");
             curl_close($ch);
         } catch (\Exception $exception) {
         }
 
         try {
             $content = file_get_contents($sourceUrl);
+            logger("file_get_contents content: $content");
         } catch (\Exception $exception) {
+            logger($exception->getMessage());
         }
 
         return $content;
@@ -480,6 +488,35 @@ class ElementService
         }
     }
 
+    public function storeBilibiliVideo($sourceUrl, Post $post, $params = []): ?Element
+    {
+        $videoId = $this->getBilibiliService()->parseVideoId($sourceUrl);
+        if (!$videoId) {
+            return null;
+        }
+
+        $thumb = $this->getBilibiliService()->getThumbnail($sourceUrl);
+        if($thumb){
+            $path = $this->downloadImage($thumb, $post->serial)->getPath();
+            logger("thumb path: $path");
+            $thumb = Storage::url($path);
+        }
+
+        $element = $post->elements()->updateOrCreate([
+            'source_url' => $params['old_source_url'] ??  '',
+        ], [
+            'path' => $path ?? '',
+            'source_url' => $sourceUrl,
+            'thumb_url' => $thumb,
+            'type' => ElementType::VIDEO,
+            'title' => $params['title'] ?? $this->getBilibiliService()->getH1Title($sourceUrl),
+            'video_source' => VideoSource::BILIBILI_VIDEO,
+            'video_id' => $videoId,
+        ]);
+    
+        return $element;
+    }
+
     public function delete(Element $element)
     {
         $element->posts()->detach();
@@ -562,6 +599,16 @@ class ElementService
         /** @var YoutubeService  */
         $youtubeService = app(YoutubeService::class);
         return $youtubeService;
+    }
+
+    protected function getBilibiliService()
+    {
+        if($this->bilibiliService === null){
+            $this->bilibiliService = new BilibiliService;
+        }
+
+        return $this->bilibiliService;
+
     }
 
     protected function parseTitle(UploadedFile $file)

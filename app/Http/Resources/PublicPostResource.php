@@ -49,6 +49,7 @@ class PublicPostResource extends JsonResource
                 'url' => $element1?->thumb_url,
                 'url2' => $element1?->imgur_image?->link,
                 'title' => $element1?->title,
+                'previewable'=> $this->isPreviewable($element1)
             ],
             'element2' => [
                 'video_source' => $element2->video_source,
@@ -56,7 +57,8 @@ class PublicPostResource extends JsonResource
                 'id' => $element2?->id,
                 'url' => $element2?->thumb_url,
                 'url2' => $element2?->imgur_image?->link,
-                'title' => $element2?->title
+                'title' => $element2?->title,
+                'previewable'=> $this->isPreviewable($element2)
             ],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
@@ -64,5 +66,13 @@ class PublicPostResource extends JsonResource
             'elements_count' => $elementsCount,
             'tags' => $this->tags->pluck('name')->toArray(),
         ];
+    }
+
+    protected function isPreviewable(Element $element)
+    {
+        return $element->type === \App\Enums\ElementType::IMAGE || 
+            $element->video_source === \App\Enums\VideoSource::YOUTUBE || 
+            $element->video_source === \App\Enums\VideoSource::YOUTUBE_EMBED ||
+            $element->video_source === \App\Enums\VideoSource::BILIBILI_VIDEO;
     }
 }

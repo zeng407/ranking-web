@@ -8,13 +8,22 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+            <ul class="nav nav-pills" id="pills-tab" role="tablist">
+              <!-- youtube -->
               <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="pills-youtube-tab" data-toggle="pill" data-target="#pills-youtube"
                   type="button" role="tab" aria-controls="pills-youtube" aria-selected="true" style="width: 70px;">
                   <img style="height: 30px; width: 100%; object-fit: contain" alt="yotube logo" src="/storage/youtube-icon.png">
                 </button>
               </li>
+              <!-- bilibili -->
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-imgur-tab" data-toggle="pill" data-target="#pills-bilibili"
+                  type="button" role="tab" aria-controls="pills-bilibili" aria-selected="false" style="width: 70px;">
+                  <img style="height: 30px; width: 100%; object-fit: contain;" alt="bilibili logo" src="/storage/bilibili.ico">
+                </button>
+              </li>
+              <!-- imgur -->
               <li class="nav-item" role="presentation">
                 <button class="nav-link" id="pills-imgur-tab" data-toggle="pill" data-target="#pills-imgur"
                   type="button" role="tab" aria-controls="pills-imgur" aria-selected="false" style="width: 70px;">
@@ -26,10 +35,12 @@
                   type="button" role="tab" aria-controls="pills-giphy" aria-selected="false" style="width: 70px;">
                   <img style="height: 30px; width: 100%; object-fit: contain" alt="giphy logo" src="/storage/giphy-logo-vector.svg"></button>
               </li> -->
+              <!-- images -->
               <li class="nav-item" role="presentation">
                 <button class="nav-link" id="pills-images-tab" data-toggle="pill" data-target="#pills-images"
                   type="button" role="tab" aria-controls="pills-images" aria-selected="false" style="width: 70px;">
-                  <img style="height: 30px; width: 100%; object-fit: contain" alt="images" src="/storage/image-icon.png">
+                  <!-- <img style="height: 30px; width: 100%; object-fit: contain" alt="images" src="/storage/image-icon.png"> -->
+                  <i class="fa-solid fa-2x fa-photo-film"></i>
                 </button>
               </li>
             </ul>
@@ -37,6 +48,7 @@
           <div class="modal-body">
             <div class="tab-content" id="pills-tabContent">
               <div class="tab-pane fade show active" id="pills-youtube" role="tabpanel" aria-labelledby="pills-youtube-tab">
+                <h3>YouTube</h3>
                 <h5>{{$t('Support formats')}}:</h5>
                 <ul>
                   <li>https://www.youtube.com/watch?v=xxxxx</li>
@@ -46,11 +58,25 @@
                   <li>https://youtu.be/xxxxx</li>
                 </ul>
                 <h5>{{ $t('Import clips') }}</h5>
+                <img src="/storage/youtube-embed-tutorial.jpg" alt="youtube import" style="width: 100%; object-fit: contain;">
                 <div class="alert alert-dark">
                   {{ youtubeEmbedSample }}
                 </div>
               </div>
+              <div class="tab-pane fade" id="pills-bilibili" role="tabpanel" aria-labelledby="pills-bilibili-tab">
+                <h3>bilibili</h3>
+                <h5>{{$t('Support formats')}}:</h5>
+                <ul>
+                  <li>https://www.bilibili.com/video/BVxxxxxxxxxx/</li>
+                </ul>
+                <h5>{{ $t('Import bangumi') }}</h5>
+                <img src="/storage/bilibili-copy-link.jpg" alt="youtube import" style="width: 100%; object-fit: contain;">
+                <div class="alert alert-dark">
+                  https://www.bilibili.com/video/BVxxxxxxxxxx/
+                </div>
+              </div>
               <div class="tab-pane fade" id="pills-imgur" role="tabpanel" aria-labelledby="pills-imgur-tab">
+                <h3>Imgur</h3>
                 <h5>{{$t('Support formats')}}:</h5>
                 <ul>
                   <li>https://imgur.com/gallery/xxxxx</li>
@@ -61,10 +87,11 @@
                   <li>https://i.imgur.com/xxxxx.gif</li>
                   <li>https://i.imgur.com/xxxxx.mp4</li>
                 </ul>
-
               </div>
               <!-- <div class="tab-pane fade" id="pills-giphy" role="tabpanel" aria-labelledby="pills-giphy-tab">giphy</div> -->
               <div class="tab-pane fade" id="pills-images" role="tabpanel" aria-labelledby="pills-images-tab">
+                <h3>{{$t('Images and Videos')}}</h3>
+                <h5>{{$t('Support formats')}}:</h5>
                 <ul>
                   <li>https://exmaple.com/xxxx.gif</li>
                   <li>https://exmaple.com/xxxx.jpg</li>
