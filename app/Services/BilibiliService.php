@@ -79,7 +79,14 @@ class BilibiliService
         // check if a h1 tag was found
         if ($h1s->length > 0) {
             $h1 = $h1s->item(0);
-            return $h1->nodeValue;
+            if($h1->nodeValue){
+                return $h1->nodeValue;
+            }
+        }
+
+        $title = $xpath->query('//*[@id="__next"]/div/div/div[2]/div/div[2]/div/a[1]');
+        if($title->length > 0) {
+            return $title->item(0)->nodeValue;
         }
 
         return '';
