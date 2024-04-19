@@ -37,7 +37,8 @@ export default {
       error403WhenLoad: false,
       errorImages: [],
       currentRemainElement: false,
-      mousePosition: 1 // 1:left , right:0
+      mousePosition: 1, // 1:left , right:0
+      showPopover: false,
     }
   },
   computed: {
@@ -94,6 +95,16 @@ export default {
         this.nextRound(false);
       }
       $('#gameSettingPanel').modal('hide');
+    },
+    hintSelect: function () {
+      console.log('hintSelect');
+      this.showPopover = true;
+      if(this.timeout){
+        clearTimeout(this.timeout);
+      }
+      this.timeout = setTimeout(() => {
+        this.showPopover = false;
+      }, 3000);
     },
     nextRound:  function (reset = true) {
       const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
@@ -467,6 +478,9 @@ export default {
     },
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
+    },
+    isBilibiliSource: function (element) {
+      return element.type === 'video' && element.video_source === 'bilibili_video';
     },
     isYoutubeEmbedSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube_embed';

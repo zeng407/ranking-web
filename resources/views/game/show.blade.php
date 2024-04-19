@@ -67,6 +67,9 @@
               <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
                 <youtube-embed v-if="le" :element="le" width="100%" :height="elementHeight" />
               </div>
+              <div v-else-if="isBilibiliSource(le)">
+                <bilibili-video v-if="le" :element="le" width="100%" :autoplay="false" :muted="false" :height="elementHeight"/>
+              </div>
               <div v-else-if="isVideoSource(le)">
                 <video width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
               </div>
@@ -138,6 +141,9 @@
               </div>
               <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
                 <youtube-embed v-if="re" :element="re" width="100%" :height="elementHeight"/>
+              </div>
+              <div v-else-if="isBilibiliSource(re)">
+                <bilibili-video v-if="re" :element="re" width="100%" :autoplay="false" :muted="false" :height="elementHeight"/>
               </div>
               <div v-else-if="isVideoSource(re)">
                 <video width="100%" :height="elementHeight" loop autoplay controls muted playsinline :src="re.thumb_url" ></video>
@@ -212,26 +218,24 @@
                 </div>
                 <div class="card" v-if="post">
                   <div class="card-header text-center">
-                    <h3>{{ $post->title }}</h3>
+                    <h1 class="post-title">{{ $post->title }}</h1>
                   </div>
                   <div class="row no-gutters">
                     <div class="col-6">
                       <div class="post-element-container">
-                        <img
-                          v-if="post.element1.type == 'image' || post.element1.video_source == 'youtube' || post.element1.video_source == 'youtube_embed'"
+                        <img v-if="post.element1.previewable"
                           @@error="onImageError(post.element1.id, post.element1.url2, $event)" :src="post.element1.url"></img>
                         <video v-else :src="post.element1.url + '#t=1'"></video>
                       </div>
-                      <h5 class="text-center mt-1 p-1">@{{ post.element1.title }}</h5>
+                      <h2 class="text-center mt-1 p-1 element-title">@{{ post.element1.title }}</h2>
                     </div>
                     <div class="col-6">
                       <div class="post-element-container">
-                        <img
-                          v-if="post.element2.type == 'image' || post.element2.video_source == 'youtube' || post.element2.video_source == 'youtube_embed'"
+                        <img v-if="post.element2.previewable"
                           @@error="onImageError(post.element2.id, post.element2.url2, $event)" :src="post.element2.url"></img>
                         <video v-else :src="post.element2.url + '#t=1'"></video>
                       </div>
-                      <h5 class="text-center mt-1 p-1">@{{ post.element2.title }}</h5>
+                      <h2 class="text-center mt-1 p-1 element-title">@{{ post.element2.title }}</h2>
                     </div>
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ $post->description }}</h5>
@@ -249,7 +253,7 @@
                 </div>
                 <div class="row mt-2" v-if="post">
                   <div class="col-12">
-                    <div>
+                    <div id="select-element-count-hint-target">
                       <div class="input-group mb-3">
                         <div class="input-group-prepend">
                           <label class="input-group-text" for="elementsCount">@{{ $t('Number of participants') }}</label>
@@ -271,9 +275,14 @@
               </div>
         
               <div class="modal-footer mb-sm-0 mb-4">
-                <button v-if="post" type="submit" class="btn btn-primary" :disabled="elementsCount==0" @click="createGame">
+                <button v-if="post && elementsCount > 0" @click="createGame" type="submit" class="btn btn-primary" >
                   @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
                 </button>
+                
+                <span v-if="post && elementsCount == 0" @click="hintSelect" class="btn btn-primary disabled">
+                  @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
+                </span>
+                <b-popover :show.sync="showPopover"   ref="select-element-count-hint" target="select-element-count-hint-target" placement="top">{{ __('game.select_option_hint')}}</b-popover>
               </div>
             </div>
           </div>

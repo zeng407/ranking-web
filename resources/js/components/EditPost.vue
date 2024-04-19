@@ -130,7 +130,7 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg">
-                        {{ $t('Tag') }}
+                        {{ $t('Tags') }}
                       </label>
                       <ValidationProvider v-slot="{ errors }">
                         <div class="input-group mb-3" v-if="isEditing">
@@ -248,7 +248,7 @@
             <h2 class="mt-5 mb-3"><i class="fa-solid fa-link"></i>&nbsp;{{ $t('edit_post.upload_batch') }}</h2>
             <div class="row mt-3">
               <div class="col-12">
-                <label></i>&nbsp;{{ $t('Upload from URL') }}</label>
+                <label>&nbsp;{{ $t('Upload from URL') }}</label>
                 <div class="input-group">
                   <textarea class="form-control" type="text" id="batchCreate" name="batchCreate" rows="5"
                     v-model="batchString" aria-describedby="batchCreateVideo"></textarea>
@@ -402,6 +402,38 @@
                     </div>
                   </div>
 
+                  <!-- bilibili video -->
+                  <div class="card mb-3" v-else-if="isBilibiliVideoSource(element)">
+                    <BilibiliVideo :element="element" v-if="element" :autoplay="false" :muted="false" :preview="true"/>
+                    <!-- video editor -->
+                    <div class="card-body">
+                      <!--title edit-->
+                      <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
+                        :maxlength="config.element_title_size" rows="4" style="resize: none;"
+                        @change="updateElementTitle(element.id, $event)"></textarea>
+                      <!--rank -->
+                      <span class="card-text d-inline-block">
+                        <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>
+                        <!--create time-->
+                        <br>
+                        <small class="text-muted">{{ element.created_at | datetime}}</small>
+                      </span>
+                      
+                      <!--delete button-->
+                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                      </a>
+                      <!--edit button-->
+                      <EditElement v-if="post"
+                        :post-serial="post.serial"
+                        :element-id="String(element.id)"
+                        :source-url="element.source_url"
+                        :update-element-route="updateElementEndpoint" 
+                        :upload-element-route="uploadElementEndpoint"
+                        @elementUpdated="handleElementUpdated"/>
+                    </div>
+                  </div>
                   <!-- video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
@@ -502,6 +534,7 @@ import moment from 'moment';
 import Swal from 'sweetalert2';
 import EditElement from './partials/EditElement.vue';
 import UploadGuide from './partials/UploadGuide.vue';
+import BilbiliVideo from './partials/BilibiliVideo.vue';
 
 export default {
   mounted() {
@@ -961,6 +994,9 @@ export default {
     },
     isYoutubeEmbedSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube_embed';
+    },
+    isBilibiliVideoSource: function (element) {
+      return element.type === 'video' && element.video_source === 'bilibili_video';
     },
     batchUpload: function () {
       if (this.loading['BATCH_UPLOADING']) {

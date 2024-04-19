@@ -82,6 +82,8 @@
     "api-response-message.INVALID_PATH": "無效的路徑",
     "api-response-message.NO_ELEMENT_CREATED": "無法建立素材(可能素材重複、連結失效、或是素材數量已達上限)",
     "api-response-message.UPLOAD_SIZE_RATE_LIMIT": "超過上傳限速，請稍後再試",
+    "game.save_progress": "你的進度會自動儲存3天，下次回來時可以繼續投票",
+    "game.select_option_hint": "選擇參賽人數",
 
     "":""
 }
