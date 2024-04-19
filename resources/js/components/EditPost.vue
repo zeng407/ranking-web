@@ -130,7 +130,7 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg">
-                        {{ $t('Tag') }}
+                        {{ $t('Tags') }}
                       </label>
                       <ValidationProvider v-slot="{ errors }">
                         <div class="input-group mb-3" v-if="isEditing">
