@@ -43,7 +43,7 @@ return [
     ],
 
     'google_ad' => [
-        'enable' => env('GOOGLE_AD_ENABLE', false),
+        'enabled' => env('GOOGLE_AD_ENABLED', false),
     ],
     
     'google' => [

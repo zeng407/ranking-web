@@ -18,10 +18,11 @@
     @endif
 
     {{-- Google ad --}}
-    @if(config('services.google_ad.enable'))
+    @if(config('services.google_ad.enabled'))
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3442386930660042"
             crossorigin="anonymous">
         </script>
+        <script async custom-element="amp-ad" src="https://cdn.ampproject.org/v0/amp-ad-0.1.js"></script>
     @endif
 
     {{-- SEO --}}
