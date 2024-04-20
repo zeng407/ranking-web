@@ -17,6 +17,13 @@
         </script>
     @endif
 
+    {{-- Google ad --}}
+    @if(config('services.google_ad.enable'))
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3442386930660042"
+            crossorigin="anonymous">
+        </script>
+    @endif
+
     {{-- SEO --}}
     <title>{{ get_page_title($title ?? '') }}</title>
     <script type="application/ld+json">

@@ -37,8 +37,13 @@ return [
         'access_token' => env('IMGUR_ACCESS_TOKEN'),
         'refresh_token' => env('IMGUR_REFRESH_TOEKN'),
     ],
+
     'google_analytics' => [
         'id' => env('GOOGLE_ANALYTICS_ID', ''),
+    ],
+
+    'google_ad' => [
+        'enable' => env('GOOGLE_AD_ENABLE', false),
     ],
     
     'google' => [
