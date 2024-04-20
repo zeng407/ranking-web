@@ -39,9 +39,7 @@
               <span v-else-if="currentRemainElement <= 8">@{{ $t('game_round_quarterfinal') }}</span>
               <span v-else-if="currentRemainElement <= 1024">@{{ $t('game_round_of', {round:currentRemainElement}) }}</span>
                @{{ game.current_round }} / @{{ game.of_round }} </h5>
-            <h5 class="text-right align-self-center" style="width: 20%">(@{{ game.remain_elements }} /@{{ game.total_elements }})
-            
-            </h5>
+            <h5 class="text-right align-self-center" style="width: 20%">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h5>
           </div>
         </div>
         <div class="row game-body" v-if="game">
@@ -185,6 +183,18 @@
             </div>
           </div>
         </div>
+
+        @if(config('services.google_ad.enabled'))
+          <amp-ad width="100vw" height="320"
+            type="adsense"
+            data-ad-client="ca-pub-3442386930660042"
+            data-ad-slot="6981243022"
+            data-auto-format="rspv"
+            data-adtest="on"
+            data-full-width="">
+            <div overflow=""></div>
+          </amp-ad>
+        @endif
     
         <!-- Modal -->
         <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
