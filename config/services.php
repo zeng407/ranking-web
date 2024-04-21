@@ -53,6 +53,7 @@ return [
         'home_page_ad_3_slot' => env('GOOGLE_AD_HOME_PAGE_AD_3_SLOT', ''),
         'rank_page' => env('GOOGLE_AD_RANK_PAGE', false),
         'rank_page_ad_1_slot' => env('GOOGLE_AD_RANK_PAGE_AD_1_SLOT', ''),
+        'rank_page_ad_2_slot' => env('GOOGLE_AD_RANK_PAGE_AD_2_SLOT', ''),
     ],
     
     'google' => [
