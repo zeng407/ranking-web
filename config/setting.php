@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'home_post_per_page' => 15,
     'socialite_login' => env('SOCIALITE_LOGIN', false),
     'password_min_size' => 8,
     'email_max_size' => 50,

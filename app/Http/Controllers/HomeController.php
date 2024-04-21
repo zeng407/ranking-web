@@ -36,6 +36,8 @@ class HomeController extends Controller
         ],[
             'sort_by' => $sort,
             'sort_dir' => $request->query('sort_dir'),
+        ], [
+            'per_page' => config('setting.home_post_per_page')
         ]);
 
         foreach( $posts as $key => $post ) {

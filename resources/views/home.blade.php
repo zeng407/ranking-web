@@ -10,7 +10,7 @@
       range="{{$range ?? 'month'}}"
       keyword="{{Request::get('k') }}"
     >
-    <div class="container-fluid" v-cloak>
+    <div class="container" v-cloak>
       @include('partial.lang')
       <div class="form-inline w-100" >
         <form @submit.prevent class="d-flex w-100 justify-content-center">
