@@ -184,13 +184,12 @@
           </div>
         </div>
 
-        @if(config('services.google_ad.enabled'))
+        @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
           <amp-ad width="100vw" height="320"
             type="adsense"
             data-ad-client="ca-pub-3442386930660042"
             data-ad-slot="6981243022"
             data-auto-format="rspv"
-            data-adtest="on"
             data-full-width="">
             <div overflow=""></div>
           </amp-ad>

@@ -44,6 +44,7 @@ return [
 
     'google_ad' => [
         'enabled' => env('GOOGLE_AD_ENABLED', false),
+        'game_page' => env('GOOGLE_AD_GAME_PAGE', false),
     ],
     
     'google' => [
