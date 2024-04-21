@@ -46,7 +46,7 @@ class HomeController extends Controller
     
         return view('home', [
             'sort' => $request->query('sort_by', 'hot'),
-            'range'=> $request->query('range', 'month'),
+            'range'=> $request->query('range', 'week'),
             'tags' => $tags,
             'posts' => $posts
         ]);

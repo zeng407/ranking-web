@@ -7,6 +7,20 @@ export default {
   },
   mounted() {
     this.loadCommnets();
+
+    if (window.adsbygoogle) {
+      setTimeout(() => {
+        window.adsbygoogle.push({});
+      }, 500);
+
+      setTimeout(() => {
+        if (window.adsbygoogle) {
+          if($('#google-ad-1')) {
+          $('#google-ad-1').addClass('d-flex justify-content-center');
+          }
+        }
+      }, 1000);
+    }
   },
   data() {
     return {

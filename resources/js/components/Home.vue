@@ -17,6 +17,28 @@ export default {
       }
     }
 
+    if (window.adsbygoogle) {
+      setTimeout(() => {
+        window.adsbygoogle.push({});
+        window.adsbygoogle.push({});
+        window.adsbygoogle.push({});
+        //waiting for pages render done
+      }, 500);
+
+      setTimeout(() => {
+          if (window.adsbygoogle) {
+            if($('#google-ad-1')) {
+            $('#google-ad-1').addClass('d-flex justify-content-center');
+            }
+            if($('#google-ad-2')) {
+              $('#google-ad-2').addClass('d-flex justify-content-center');
+            }
+            if($('#google-ad-3')) {
+              $('#google-ad-3').addClass('d-flex justify-content-center');
+            }
+          }
+        }, 1000);
+    }
   },
   props: {
     playGameRoute: String,
@@ -28,7 +50,7 @@ export default {
     keyword: String,
     range: {
       type: String,
-      default: 'month'
+      default: 'week'
     },
     getTagsOptionsEndpoint: String
   },

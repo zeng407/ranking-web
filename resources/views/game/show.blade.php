@@ -50,13 +50,6 @@
                 <img @click="clickImage" @@error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
                   :style="{ height: this.elementHeight + 'px' }">
               </div>
-              <div v-show="isDataLoading">
-                <div class="d-flex justify-content-center align-items-center" :style="{height: elementHeight}">
-                  <div class="spinner-border text-primary" role="status">
-                    <span class="sr-only">Loading...</span>
-                  </div>
-                </div>
-              </div>
               <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
                 <youtube :video-id="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
                   :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0 , origin: host, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
@@ -125,13 +118,6 @@
                 <img @click="clickImage" @@error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
                   :style="{ height: this.elementHeight + 'px' }">
               </div>
-              <div v-show="isDataLoading">
-                <div class="d-flex justify-content-center align-items-center" :style="{height: elementHeight}">
-                  <div class="spinner-border text-danger" role="status">
-                    <span class="sr-only">Loading...</span>
-                  </div>
-                </div>
-              </div>
               <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
                 <youtube :video-id="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
                   :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0, origin: host,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
@@ -185,16 +171,19 @@
         </div>
 
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-          <amp-ad width="100vw" height="320"
-            type="adsense"
-            data-ad-client="ca-pub-3442386930660042"
-            data-ad-slot="6981243022"
-            data-auto-format="rspv"
-            data-full-width="">
-            <div overflow=""></div>
-          </amp-ad>
+          <div v-if="!refreshAD" id="google-ad" class="my-2">
+              <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{config('services.google_ad.publisher_id')}}"
+                  crossorigin="anonymous"></script>
+              <!-- ad_in_game -->
+              <ins class="adsbygoogle"
+                  style="display:block;"
+                  data-ad-client="{{config('services.google_ad.publisher_id')}}"
+                  data-ad-slot="{{config('services.google_ad.game_page_ad_1_slot')}}"
+                  data-ad-format="auto"
+                  data-full-width-responsive="true"></ins>
+          </div>
         @endif
-    
+
         <!-- Modal -->
         <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
           aria-labelledby="gameSettingPanelLabel" aria-hidden="true">
@@ -296,6 +285,8 @@
             </div>
           </div>
         </div>
-      </div>
-    </game>
+
+        
+    </div>
+  </game>
 @endsection
