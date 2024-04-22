@@ -2,6 +2,7 @@
 
 return [
     'home_post_per_page' => 15,
+    'home_page_default_range' => 'week',
     'socialite_login' => env('SOCIALITE_LOGIN', false),
     'password_min_size' => 8,
     'email_max_size' => 50,

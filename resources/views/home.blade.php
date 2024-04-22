@@ -7,7 +7,7 @@
     <home
       inline-template
       sort-by="{{$sort ?? 'hot'}}"
-      range="{{$range ?? 'month'}}"
+      range="{{$range ?? config('setting.home_page_default_range')}}"
       keyword="{{Request::get('k') }}"
     >
     <div class="container-fluid" v-cloak>

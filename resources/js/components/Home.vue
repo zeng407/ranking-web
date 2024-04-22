@@ -50,10 +50,7 @@ export default {
       default: 'hot'
     },
     keyword: String,
-    range: {
-      type: String,
-      default: 'week'
-    },
+    range: String,
     getTagsOptionsEndpoint: String
   },
   data: function () {
