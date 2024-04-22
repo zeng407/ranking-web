@@ -13,8 +13,7 @@ export default {
         try{
           window.adsbygoogle.push({});
           window.adsbygoogle.push({});
-        }catch(e){
-        }
+        }catch(e){}
       }, 500);
 
       setTimeout(() => {

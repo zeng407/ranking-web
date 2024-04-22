@@ -19,9 +19,11 @@ export default {
 
     if (window.adsbygoogle) {
       setTimeout(() => {
-        window.adsbygoogle.push({});
-        window.adsbygoogle.push({});
-        window.adsbygoogle.push({});
+        try{
+          window.adsbygoogle.push({});
+          window.adsbygoogle.push({});
+          window.adsbygoogle.push({});
+        }catch(e){}
         //waiting for pages render done
       }, 500);
 
@@ -48,10 +50,7 @@ export default {
       default: 'hot'
     },
     keyword: String,
-    range: {
-      type: String,
-      default: 'week'
-    },
+    range: String,
     getTagsOptionsEndpoint: String
   },
   data: function () {

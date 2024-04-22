@@ -22,7 +22,7 @@ class HomeController extends Controller
     public function index(Request $request)
     {
         $sort = $request->query('sort_by', 'hot');
-        $range = $request->query('range', 'month');
+        $range = $request->query('range', config('setting.home_page_default_range'));
         $tags = $this->tagService->get(null);
 
         if ($sort === 'hot') {
@@ -46,7 +46,7 @@ class HomeController extends Controller
     
         return view('home', [
             'sort' => $request->query('sort_by', 'hot'),
-            'range'=> $request->query('range', 'week'),
+            'range'=> $request->query('range', config('setting.home_page_default_range')),
             'tags' => $tags,
             'posts' => $posts
         ]);
