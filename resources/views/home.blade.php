@@ -136,12 +136,6 @@
           </div>
         @endif
 
-        @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index == 11)
-          {{-- <div id="google-ad-2" class="col-12 mt-2">
-            @include('ads.home_ad_2')
-          </div> --}}
-        @endif
-
         @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $loop->last)
           <div class="col-xl-4 col-md-6 d-lg-none pt-2">
             <div class="card shadow">
