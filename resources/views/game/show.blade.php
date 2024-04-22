@@ -71,27 +71,27 @@
                 <div class="my-1" style="height: 120px" v-else>
                   <h5 class="my-1">@{{ le.title }}</h5>
                 </div>
-                <button id="left-btn" class="btn btn-primary btn-lg btn-block d-none d-md-block" :disabled="isVoting"
-                  @click="leftWin()">Vote
+                <button id="left-btn" class="btn btn-primary vote-button btn-block d-none d-md-block" :disabled="isVoting"
+                  @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                 </button>
                 <div class="row" v-if="isYoutubeSource(le)">
+                  {{-- mobile --}}
                   <div class="col-3">
                     <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying}" :disabled="isVoting"
                       @click="leftPlay()">
                       <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
-                      <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
+                      <i class="fas fa-volume-up fa-beat" v-show="isLeftPlaying"></i>
                     </button>
                   </div>
                   <div class="col-9">
                     <button class="btn btn-primary btn-lg btn-block d-block d-md-none" :disabled="isVoting"
-                      @click="leftWin()">
-                      Vote
+                      @click="leftWin"><i class="fa-solid fa-thumbs-up"></i>
                     </button>
                   </div>
                 </div>
                 <div v-else>
                   <button class="btn btn-primary btn-block btn-lg d-block d-md-none" :disabled="isVoting"
-                    @click="leftWin()">Vote
+                    @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                   </button>
                 </div>
               </div>
@@ -142,27 +142,27 @@
                 <div class="my-1" style="height: 120px" v-else>
                   <h5 class="my-1">@{{ re.title }}</h5>
                 </div>
-                <button id="right-btn" class="btn btn-danger btn-lg btn-block d-none d-md-block" :disabled="isVoting"
-                  @click="rightWin()">Vote
+                <button id="right-btn" class="btn btn-danger vote-button btn-block d-none d-md-block" :disabled="isVoting"
+                  @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                 </button>
                 <div class="row" v-if="isYoutubeSource(re)">
+                  {{-- mobile --}}
                   <div class="col-3">
                     <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying}" :disabled="isVoting"
                       @click="rightPlay()">
                       <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
-                      <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
+                      <i class="fas fa-volume-up fa-beat" v-show="isRightPlaying"></i>
                     </button>
                   </div>
                   <div class="col-9">
                     <button class="btn btn-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"
-                      @click="rightWin()">
-                      Vote
+                      @click="rightWin"><i class="fa-solid fa-thumbs-up"></i>
                     </button>
                   </div>
                 </div>
                 <div v-else>
                   <button class="btn btn-danger btn-lg btn-block d-block d-md-none" :disabled="isVoting"
-                    @click="rightWin()">Vote
+                    @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                   </button>
                 </div>
               </div>

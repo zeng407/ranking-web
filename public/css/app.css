@@ -22505,3 +22505,9 @@ input[type=color].form-control:disabled {
     transform: rotate(360deg);
   }
 }
+.vote-button {
+  padding: 2rem 4rem;
+  font-size: 2rem;
+  line-height: 1.5;
+  border-radius: 4rem;
+}
