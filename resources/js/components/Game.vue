@@ -192,18 +192,19 @@ export default {
         this.isRightPlaying = false;
       }
     },
-    leftWin() {
+    leftWin(event) {
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
         this.vote(this.le, this.re);
       }
       
+      this.bounceThumbUp(event.target.children[0]);
       $('#left-player').css('z-index', '100');
       $('#right-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
-        let winAnimate = $('#left-player').toggleClass('zoom-in').promise();
+        let winAnimate = $('#left-player').animate({top: 200}).promise();
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
@@ -241,18 +242,19 @@ export default {
       }
 
     },
-    rightWin() {
+    rightWin(event) {
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
         this.vote(this.re, this.le);
       }
-      
+
+      this.bounceThumbUp(event.target.children[0]);
       $('#right-player').css('z-index', '100');
       $('#left-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
-        let winAnimate = $('#right-player').toggleClass('zoom-in').promise();
+        let winAnimate = $('#right-player').animate({top: -200}).promise();
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           this.pauseAllVideo();
@@ -274,6 +276,17 @@ export default {
           sendWinnerData();
         });
       }
+    },
+    bounceThumbUp(element) {
+      // add class fa-bounce
+      $(element).addClass('fa-bounce');
+      setTimeout(() => {
+        this.removeBoundThumbUp(element);
+      }, 1000);
+    },
+    removeBoundThumbUp(element) {
+      // remove class fa-bounce
+      $(element).removeClass('fa-bounce');
     },
     resetPlayerPosition() {
 
