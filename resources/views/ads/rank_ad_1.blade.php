@@ -9,3 +9,5 @@
     data-ad-slot="{{ config('services.google_ad.rank_page_ad_1_slot') }}" 
     data-ad-format="auto"
     data-full-width-responsive="true"></ins>
+
+@include('ads.script_load_ad')

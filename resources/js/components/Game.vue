@@ -522,7 +522,9 @@ export default {
     loadGoogleAds() {
       try{
         if (window.adsbygoogle) {
-          window.adsbygoogle.push({});
+          try{
+            window.adsbygoogle.push({});
+          }catch(e){}
         }
         //add class d-flex justify-content-center  if exists
         if($('#google-ad')){
@@ -545,8 +547,7 @@ export default {
         if (window.adsbygoogle) {
           try{
             window.adsbygoogle.push({});
-          }catch(e){
-          }
+          }catch(e){}
         }
         if($('#google-ad')){
           $('#google-ad').addClass('d-flex justify-content-center');
