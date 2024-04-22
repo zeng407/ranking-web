@@ -22506,7 +22506,7 @@ input[type=color].form-control:disabled {
   }
 }
 .vote-button {
-  padding: 2rem 4rem;
+  padding: 1rem 4rem;
   font-size: 2rem;
   line-height: 1.5;
   border-radius: 4rem;
