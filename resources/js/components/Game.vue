@@ -82,7 +82,6 @@ export default {
         .then(res => {
           this.gameSerial = res.data.game_serial;
           this.nextRound(false);
-          this.loadGoogleAds();
         }).catch(error => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
@@ -95,7 +94,6 @@ export default {
       if (gameSerial) {
         this.gameSerial = gameSerial;
         this.nextRound(false);
-        this.loadGoogleAds();
       }
       $('#gameSettingPanel').modal('hide');
     },
@@ -173,6 +171,7 @@ export default {
           if(this.needReloadAD()){
             this.reloadGoogleAds();
           }
+          this.loadGoogleAds();
         })
     },
     leftPlay() {
@@ -204,7 +203,9 @@ export default {
       $('#right-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
-        let winAnimate = $('#left-player').animate({top: 200}).promise();
+        let winAnimate = $('#left-player').animate({top: 200}, null, () => {
+          $('#left-player').delay(500).animate({'opacity': '0'}, 0);
+        }).promise();
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
@@ -254,7 +255,9 @@ export default {
       $('#left-player').css('opacity', 0.5);
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
-        let winAnimate = $('#right-player').animate({top: -200}).promise();
+        let winAnimate = $('#right-player').animate({top: -200}, null, () => {
+          $('#right-player').delay(500).animate({'opacity': '0'}, 0);
+        }).promise();
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
         $.when(winAnimate, loseAnimate).then(() => {
           this.pauseAllVideo();
@@ -517,13 +520,18 @@ export default {
       this.errorImages.push(id);
     },
     loadGoogleAds() {
-      if (window.adsbygoogle) {
-        window.adsbygoogle.push({});
+      try{
+        if (window.adsbygoogle) {
+          window.adsbygoogle.push({});
+        }
+        //add class d-flex justify-content-center  if exists
+        if($('#google-ad')){
+          $('#google-ad').addClass('d-flex justify-content-center');
+        }
+      }catch(e){
+
       }
-      //add class d-flex justify-content-center  if exists
-      if($('#google-ad')){
-        $('#google-ad').addClass('d-flex justify-content-center');
-      }
+      
     },
     reloadGoogleAds() {
       // console.log('reloadGoogleAds');
@@ -535,11 +543,13 @@ export default {
       let interval = setInterval(() => {
         // console.log(window.adsbygoogle);
         if (window.adsbygoogle) {
-          window.adsbygoogle.push({});
+          try{
+            window.adsbygoogle.push({});
+          }catch(e){
+          }
         }
         if($('#google-ad')){
           $('#google-ad').addClass('d-flex justify-content-center');
-          clearInterval(interval);
         }
       }, 500);
     },

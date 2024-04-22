@@ -69,8 +69,6 @@
       </div>
   
       <div class="row justify-content-center pt-4">
-        
-  
         @foreach($posts as $index => $post)
         <div class="col-xl-4 col-md-6 pt-2">
           <div class="card shadow">
@@ -134,49 +132,32 @@
 
         @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index == 5)
           <div id="google-ad-1" class="col-12 mt-2">
-            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{config('services.google_ad.publisher_id')}}"
-            crossorigin="anonymous"></script>
-            <!-- ad_in_home@responsive -->
-            <ins class="adsbygoogle"
-                  style="display:block;"
-                  data-ad-client="{{config('services.google_ad.publisher_id')}}"
-                  data-ad-slot="{{config('services.google_ad.home_page_ad_1_slot')}}"
-                  data-ad-format="auto"
-                  data-full-width-responsive="true"></ins>
+            @include('ads.home_ad_1')
           </div>
         @endif
 
         @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index == 11)
-          <div id="google-ad-2" class="col-12 mt-2">
-            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{config('services.google_ad.publisher_id')}}"
-                crossorigin="anonymous"></script>
-            <!-- ad_in_home2@responsive -->
-            <ins class="adsbygoogle"
-                style="display:block;"
-                data-ad-client="{{config('services.google_ad.publisher_id')}}"
-                data-ad-slot="{{config('services.google_ad.home_page_ad_2_slot')}}"
-                data-ad-format="auto"
-                data-full-width-responsive="true"></ins>
+          {{-- <div id="google-ad-2" class="col-12 mt-2">
+            @include('ads.home_ad_2')
+          </div> --}}
+        @endif
+
+        @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $loop->last)
+          <div class="col-xl-4 col-md-6 d-lg-none pt-2">
+            <div class="card shadow">
+              <div class="row no-gutters">
+                <div class="col-6">
+                    @include('ads.home_ad_2')
+                </div>
+                <div class="col-6">
+                    @include('ads.home_ad_3')
+                </div>
+              </div>
+            </div>
           </div>
         @endif
         @endforeach
       </div>
-
-      @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-        <div id="google-ad-3" class="row justify-content-center mt-2">
-          <div class="col-12">
-            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{config('services.google_ad.publisher_id')}}"
-                crossorigin="anonymous"></script>
-            <ins class="adsbygoogle"
-                style="display:block"
-                data-ad-format="fluid"
-                data-ad-layout-key="+1z+s8-1s-3p+dp"
-                data-ad-client="{{config('services.google_ad.publisher_id')}}"
-                data-ad-slot="{{config('services.google_ad.home_page_ad_3_slot')}}"></ins>
-          </div>
-        </div>
-      @endif
-  
       <div class="row justify-content-center pt-2">
         {{ $posts->appends(request()->except('page'))->links() }}
       </div>

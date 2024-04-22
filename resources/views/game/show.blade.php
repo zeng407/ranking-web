@@ -58,10 +58,10 @@
               <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
                 <youtube-embed v-if="le" :element="le" width="100%" :height="elementHeight" />
               </div>
-              <div v-else-if="isBilibiliSource(le)">
+              <div v-else-if="isBilibiliSource(le) && !isDataLoading" class="d-flex">
                 <bilibili-video v-if="le" :element="le" width="100%" :autoplay="false" :muted="false" :height="elementHeight"/>
               </div>
-              <div v-else-if="isVideoSource(le)">
+              <div v-else-if="isVideoSource(le) && !isDataLoading" class="d-flex">
                 <video width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
               </div>
               <div class="card-body text-center">
@@ -126,10 +126,10 @@
               <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
                 <youtube-embed v-if="re" :element="re" width="100%" :height="elementHeight"/>
               </div>
-              <div v-else-if="isBilibiliSource(re)">
+              <div v-else-if="isBilibiliSource(re) && !isDataLoading" class="d-flex">
                 <bilibili-video v-if="re" :element="re" width="100%" :autoplay="false" :muted="false" :height="elementHeight"/>
               </div>
-              <div v-else-if="isVideoSource(re)">
+              <div v-else-if="isVideoSource(re) && !isDataLoading" class="d-flex">
                 <video width="100%" :height="elementHeight" loop autoplay controls muted playsinline :src="re.thumb_url" ></video>
               </div>
     
@@ -171,16 +171,8 @@
         </div>
 
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-          <div v-if="!refreshAD" id="google-ad" class="my-2">
-              <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{config('services.google_ad.publisher_id')}}"
-                  crossorigin="anonymous"></script>
-              <!-- ad_in_game -->
-              <ins class="adsbygoogle"
-                  style="display:block;"
-                  data-ad-client="{{config('services.google_ad.publisher_id')}}"
-                  data-ad-slot="{{config('services.google_ad.game_page_ad_1_slot')}}"
-                  data-ad-format="auto"
-                  data-full-width-responsive="true"></ins>
+          <div v-if="!refreshAD && game" id="google-ad" class="my-2">
+              @include('ads.game_ad')
           </div>
         @endif
 

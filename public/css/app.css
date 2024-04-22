@@ -22111,7 +22111,7 @@ input[type=color].form-control:disabled {
 }
 
 .game-body {
-  min-height: 636.5px;
+  height: 700px;
 }
 
 .game-image-container img {
