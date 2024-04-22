@@ -62,7 +62,7 @@ export default {
     loadBilibilVideo: function (element) {
       this.previewImage = false;
       this.loading = true;
-      console.log('loading');
+      // console.log('loading');
 
       new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -80,7 +80,7 @@ export default {
       // repalce height and width
       code = code.replace(/width="\d+"/, `width="${this.width}"`);
       code = code.replace(/height="\d+"/, `height="${this.height}"`);
-      console.log(code);
+      // console.log(code);
       
       if(this.autoplay){
         code = code.replace(/autoplay=0/, `autoplay=1`);
@@ -99,9 +99,9 @@ export default {
       let iframe = doc.querySelector('iframe');
       // wait until embedDiv is loaded
       let interval = setInterval(() => {
-        console.log('waiting');
+        // console.log('waiting');
         if(this.$refs.embedDiv){
-          console.log('appending iframe');
+          // console.log('appending iframe');
           while (this.$refs.embedDiv && this.$refs.embedDiv.firstChild) {
             this.$refs.embedDiv.firstChild.remove();
           }

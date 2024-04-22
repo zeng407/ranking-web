@@ -39,6 +39,7 @@ export default {
       currentRemainElement: false,
       mousePosition: 1, // 1:left , right:0
       showPopover: false,
+      refreshAD: false,
     }
   },
   computed: {
@@ -81,6 +82,7 @@ export default {
         .then(res => {
           this.gameSerial = res.data.game_serial;
           this.nextRound(false);
+          this.loadGoogleAds();
         }).catch(error => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
@@ -93,11 +95,11 @@ export default {
       if (gameSerial) {
         this.gameSerial = gameSerial;
         this.nextRound(false);
+        this.loadGoogleAds();
       }
       $('#gameSettingPanel').modal('hide');
     },
     hintSelect: function () {
-      console.log('hintSelect');
       this.showPopover = true;
       if(this.timeout){
         clearTimeout(this.timeout);
@@ -168,6 +170,9 @@ export default {
           }
         }).finally(() => {
           this.isDataLoading = false;
+          if(this.needReloadAD()){
+            this.reloadGoogleAds();
+          }
         })
     },
     leftPlay() {
@@ -211,7 +216,7 @@ export default {
           });
         }).promise();
         let loseAnimate = $('#right-player').animate({ top: '2000' }, 500, () => {
-          $('#right-player').hide();
+          $('#right-player').css('opacity', '0');
         }).promise();
 
         $.when(winAnimate, loseAnimate).then(() => {
@@ -262,7 +267,7 @@ export default {
         }).promise();
 
         let loseAnimate = $('#left-player').animate({ top: '2000' }, 500, () => {
-          $('#left-player').hide();
+          $('#left-player').css('opacity', '0');
         }).promise();
 
         $.when(winAnimate, loseAnimate).then(() => {
@@ -498,6 +503,46 @@ export default {
       }
       this.errorImages.push(id);
     },
+    loadGoogleAds() {
+      if (window.adsbygoogle) {
+        window.adsbygoogle.push({});
+      }
+      //add class d-flex justify-content-center  if exists
+      if($('#google-ad')){
+        $('#google-ad').addClass('d-flex justify-content-center');
+      }
+    },
+    reloadGoogleAds() {
+      // console.log('reloadGoogleAds');
+      this.refreshAD = true;
+      setTimeout(() => {
+        this.refreshAD = false;
+      }, 1000);
+
+      let interval = setInterval(() => {
+        // console.log(window.adsbygoogle);
+        if (window.adsbygoogle) {
+          window.adsbygoogle.push({});
+        }
+        if($('#google-ad')){
+          $('#google-ad').addClass('d-flex justify-content-center');
+          clearInterval(interval);
+        }
+      }, 500);
+    },
+    needReloadAD() {
+      if(this.refreshAD){
+        return false;
+      }
+
+      if(!this.game){
+        return false;
+      }
+
+      if(this.game.current_round % 5 === 0){
+        return true;
+      }
+    }
   },
 
   beforeMount() {
