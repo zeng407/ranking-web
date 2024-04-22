@@ -10,7 +10,11 @@ export default {
 
     if (window.adsbygoogle) {
       setTimeout(() => {
-        window.adsbygoogle.push({});
+        try{
+          window.adsbygoogle.push({});
+          window.adsbygoogle.push({});
+        }catch(e){
+        }
       }, 500);
 
       setTimeout(() => {
