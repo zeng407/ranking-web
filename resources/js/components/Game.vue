@@ -40,6 +40,8 @@ export default {
       mousePosition: 1, // 1:left , right:0
       showPopover: false,
       refreshAD: false,
+      leftImageLoaded: false,
+      rightImageLoaded: false,
     }
   },
   computed: {
@@ -114,6 +116,8 @@ export default {
           if(this.game.current_round == 1 || this.currentRemainElement == false){
             this.currentRemainElement = this.game.remain_elements;
           }
+          this.leftImageLoaded = false;
+          this.rightImageLoaded = false;
           this.le = this.game.elements[0];
           this.re = this.game.elements[1];
         })
@@ -279,6 +283,12 @@ export default {
           sendWinnerData();
         });
       }
+    },
+    handleLeftLoaded() {
+      this.leftImageLoaded = true;
+    },
+    handleRightLoaded() {
+      this.rightImageLoaded = true;
     },
     bounceThumbUp(element) {
       // add class fa-bounce
