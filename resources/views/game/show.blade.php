@@ -47,7 +47,10 @@
           <div class="col-sm-12 col-md-6 pr-md-1 mb-2 mb-md-0">
             <div class="card game-player left-player" id="left-player">
               <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
-                <img @click="clickImage" @@error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
+                <div v-show="!leftImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
+                  <i class="fas fa-3x fa-spinner fa-spin" ></i>
+                </div>
+                <img @load="handleLeftLoaded" v-show="leftImageLoaded" @click="clickImage" @@error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
                   :style="{ height: this.elementHeight + 'px' }">
               </div>
               <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
@@ -115,7 +118,10 @@
           <div class="col-sm-12 col-md-6 pl-md-1 mb-4 mb-md-0">
             <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
               <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
-                <img @click="clickImage" @@error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
+                <div v-show="!rightImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
+                  <i class="fas fa-3x fa-spinner fa-spin" ></i>
+                </div>
+                <img @load="handleRightLoaded" v-show="rightImageLoaded" @click="clickImage" @@error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
                   :style="{ height: this.elementHeight + 'px' }">
               </div>
               <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
