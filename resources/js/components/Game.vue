@@ -116,8 +116,12 @@ export default {
           if(this.game.current_round == 1 || this.currentRemainElement == false){
             this.currentRemainElement = this.game.remain_elements;
           }
-          this.leftImageLoaded = false;
-          this.rightImageLoaded = false;
+          if(this.le && this.game.elements[0] && this.le.id !== this.game.elements[0].id){
+            this.leftImageLoaded = false;
+          }
+          if(this.re && this.game.elements[1] && this.re.id !== this.game.elements[1].id){
+            this.rightImageLoaded = false;
+          }
           this.le = this.game.elements[0];
           this.re = this.game.elements[1];
         })
