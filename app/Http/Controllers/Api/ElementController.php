@@ -281,14 +281,25 @@ class ElementController extends Controller
 
     protected function attemptUploadRateLimit(Request $request)
     {
-        $rateLimit = config('setting.upload_media_size_mb_at_a_time') * 1024 * 1024; // 30MB
+        // 30MB per minute
+        $rateLimit = config('setting.upload_media_size_mb_at_a_time') * 1024 * 1024;
         $timeMinuteLimit = 1;
-        $rateLimitKey = "upload_rate_limit_" . Auth::id();
+        $rateLimitKey = "upload_rate_limit_size_" . Auth::id();
         $rateLimitValue = \Cache::get($rateLimitKey, 0);
         if($rateLimitValue > $rateLimit){
             throw new \Exception("Rate limit exceeded");
         }
         $rateLimitValue += $request->file('file')->getSize();
         \Cache::put($rateLimitKey, $rateLimitValue, now()->addMinutes($timeMinuteLimit));
+
+        // 50 files per minute
+        $fileLimit = config('setting.upload_media_file_count_at_a_time');
+        $fileLimitKey = "upload_rate_limit_count" . Auth::id();
+        $fileLimitValue = \Cache::get($fileLimitKey, 0);
+        $fileLimitValue += 1;
+        if($fileLimitValue > $fileLimit){
+            throw new \Exception("Rate limit exceeded");
+        }
+        \Cache::put($fileLimitKey, $fileLimitValue, now()->addMinutes($timeMinuteLimit));
     }
 }

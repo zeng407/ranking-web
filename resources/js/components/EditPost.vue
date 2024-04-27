@@ -14,7 +14,7 @@
     <div class="row">
 
       <!-- tabs -->
-      <div class="col-md-2">
+      <div class="col-md-2" style="z-index: 0;">
         <div class="nav flex-column nav-pills sticky-top" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
           <a class="nav-link active" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
@@ -228,7 +228,7 @@
 
             <div class="row">
               <div class="col-12">
-                <label for="image-upload">&nbsp;{{ $t('upload_from_local', {limit: config.upload_media_file_size_mb, rate_limit: config.upload_media_size_mb_at_a_time}) }}</label>
+                <label for="image-upload">&nbsp;{{ $t('upload_from_local', {limit: config.upload_media_file_size_mb, rate_limit: config.upload_media_size_mb_at_a_time, rate_count: config.upload_media_file_count_at_a_time}) }}</label>
                 <div class="custom-file form-group">
                   <input type="file" accept="image/*,video/*,audio/*" class="custom-file-input" id="image-upload" multiple @change="uploadMedias">
                   <label class="custom-file-label" for="image-upload">{{$t('Choose File...')}}</label>
@@ -238,8 +238,13 @@
             <!-- upload progress bar -->
             <div class="progress mb-1" v-for="(progress, name) in uploadingFiles">
               <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0"
-                aria-valuemax="100" :aria-valuenow="progress" :style="{ 'width': progress + '%' }">
-                {{ name }}
+                aria-valuemax="100" :aria-valuenow="progress" :style="{ 'width': progress + '%' , 'background' : progress == -1 ? 'red': ''}">
+                <!-- if progress == -1 , add dismiss button -->
+                <span v-if="progress != -1">{{ name }}</span>
+                <span v-if="progress == -1" class="cursor-pointer" @click="cancelUpload(name)">
+                  {{ name }}
+                  <i class="fas fa-times"></i>
+                </span>
               </div>
             </div>
 
@@ -969,10 +974,13 @@ export default {
           })
           .catch((err) => {
             this.showAlert(err.response.data.message, 'danger');
-            this.deleteProgressBarValue(file);
+            this.setProgressBarValueFailed(file);
           });
       });
       event.target.value = '';
+    },
+    cancelUpload: function (file) {
+      this.deleteProgressBarValue({ name: file });
     },
     onImageError: function (element, event) {
       if(this.errorImages.includes(element.id)) {
@@ -1079,6 +1087,10 @@ export default {
     deleteProgressBarValue: function (file) {
       delete this.uploadingFiles[file.name];
       this.uploadingFiles = Object.assign({}, this.uploadingFiles);
+    },
+    setProgressBarValueFailed: function (file) {
+      let filename = file.name;
+      this.$set(this.uploadingFiles, filename, -1);
     },
     toTimeFormat: function (seconds) {
       if (seconds === null || seconds === '') {

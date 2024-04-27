@@ -21,5 +21,6 @@ return [
     'name_change_duration' => 1,
     'upload_url_at_a_time' => 100,
     'upload_media_size_mb_at_a_time' => 30,
-    'upload_media_file_size_mb'=> 8
+    'upload_media_file_size_mb'=> 8,
+    'upload_media_file_count_at_a_time' => 30,
 ];
