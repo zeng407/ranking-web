@@ -3,7 +3,7 @@
     crossorigin="anonymous"></script>
 <!-- ad_in_rank_page -->
 <ins class="adsbygoogle" 
-    style="display:block" 
+    style="display:block;{{ app()->isProduction() ? '' : 'background-color: red;' }}"
     data-ad-client="{{ config('services.google_ad.publisher_id') }}"
     data-ad-slot="{{ config('services.google_ad.rank_page_ad_1_slot') }}" 
     data-ad-format="auto"

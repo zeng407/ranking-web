@@ -47,6 +47,7 @@ return [
         'publisher_id' => env('GOOGLE_AD_PUBLISHER_ID', ''),
         'game_page' => env('GOOGLE_AD_GAME_PAGE', false),
         'game_page_ad_1_slot' => env('GOOGLE_AD_GAME_PAGE_AD_1_SLOT', ''),
+        'game_page_ad_2_slot' => env('GOOGLE_AD_GAME_PAGE_AD_2_SLOT', ''),
         'home_page' => env('GOOGLE_AD_HOME_PAGE', false),
         'home_page_ad_1_slot' => env('GOOGLE_AD_HOME_PAGE_AD_1_SLOT', ''),
         'home_page_ad_2_slot' => env('GOOGLE_AD_HOME_PAGE_AD_2_SLOT', ''),

@@ -540,7 +540,6 @@ export default {
             window.adsbygoogle.push({});
           }catch(e){}
         }
-        //add class d-flex justify-content-center  if exists
         if($('#google-ad')){
           $('#google-ad').addClass('d-flex justify-content-center');
         }

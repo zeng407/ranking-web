@@ -30,7 +30,7 @@ export default {
       setTimeout(() => {
           if (window.adsbygoogle) {
             if($('#google-ad-1')) {
-            $('#google-ad-1').addClass('d-flex justify-content-center');
+              $('#google-ad-1').addClass('d-flex justify-content-center');
             }
             if($('#google-ad-2')) {
               $('#google-ad-2').addClass('d-flex justify-content-center');
