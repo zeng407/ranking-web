@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Services\Traits;
+
+use App\Services\Models\StoragedImage;
+use Illuminate\Http\UploadedFile;
+use Ramsey\Uuid\Uuid;
+use Storage;
+
+trait FileHelper
+{
+    protected function downloadImage(string $url, string $directory): ?StoragedImage
+    {
+        $content = $this->getContent($url);
+        $fileInfo = pathinfo($url);
+        $basename = $this->generateFileName();
+        if (isset ($fileInfo['extension'])) {
+            $basename .= '.' . $fileInfo['extension'];
+        }
+
+        $path = rtrim($directory, '/') . '/' . $basename;
+        $isSuccess = Storage::put($path, $content, 'public');
+        if (!$isSuccess) {
+            return null;
+        }
+        return new StoragedImage($url, $path, $fileInfo);
+    }
+
+    
+    protected function moveUploadedFile(UploadedFile $file, string $directory): string|bool
+    {
+        $path = $file->storeAs($directory, $this->generateFileName() . '.' . $file->getClientOriginalExtension());
+        Storage::setVisibility($path, 'public');
+        return $path;
+    }
+
+    protected function generateFileName()
+    {
+        return Uuid::uuid4()->toString();
+    }
+
+    protected function parseTitle(UploadedFile $file)
+    {
+        $title = mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'));
+        logger("title: {$title}");
+        $title = preg_replace('/[\n\r\t]/', '', $title);
+        return $title;
+    }
+
+    protected function getContent(string $sourceUrl)
+    {
+        $content = null;
+        logger("getContent: {$sourceUrl}");
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $sourceUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
+            $content = curl_exec($ch);
+            logger("curl content: $content");
+            curl_close($ch);
+        } catch (\Exception $exception) {
+        }
+
+        try {
+            $content = file_get_contents($sourceUrl);
+            logger("file_get_contents content: $content");
+        } catch (\Exception $exception) {
+            logger($exception->getMessage());
+        }
+
+        return $content;
+    }
+}

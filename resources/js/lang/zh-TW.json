@@ -97,7 +97,7 @@
     "Unsaved": "尚未儲存",
 
     "Upload from URL": "輸入網址",
-    "upload_from_local": "電腦上傳（可多檔，檔案限制 {limit} MB，每分鐘 {rate_limit} MB）",
+    "upload_from_local": "電腦上傳（可多檔，檔案必須 {limit} MB 以下，每分鐘不可超過 {rate_count} 個或  {rate_limit} MB)",
     "Global Rank": "其他人的排名",
     "My Rank": "我的排名",
     "Max :number elements": "最多上傳{number}個素材",

@@ -17,7 +17,7 @@ trait TestHelper
         return Post::factory()->has(
             PostPolicy::factory()->public(),
             'post_policy'
-        )->for(User::factory()->make())->create();
+        )->for(User::factory()->create())->create();
     }
 
     public function createElements(Post $post, $number = 1)

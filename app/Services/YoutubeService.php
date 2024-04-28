@@ -52,7 +52,12 @@ class YoutubeService
             logger("return  matches ");
             logger($matches);
             if($matches && isset($matches[6]) && ($matches[6] == 'clip' || $matches[6] == 'shorts')){
-                return str_replace('/','',$matches[7] ?? '');
+                // extract video id before ?
+                $url = $matches[7] ?? '';
+                if(strpos($url, '?') !== false){
+                    $url = explode('?', $url)[0];
+                }
+                return str_replace('/', '', $url);
             }
             return $matches[6];
         } catch (\Throwable $throwable) {

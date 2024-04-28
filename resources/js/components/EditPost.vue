@@ -973,7 +973,7 @@ export default {
             });
           })
           .catch((err) => {
-            this.showAlert(err.response.data.message, 'danger');
+            this.showAlert(err.response.data.message || err.response.statusText, 'danger');
             this.setProgressBarValueFailed(file);
           });
       });

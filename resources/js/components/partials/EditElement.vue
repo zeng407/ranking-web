@@ -20,7 +20,10 @@
                 <button :id="'delete-button' + elementId" class="position-absolute btn btn-danger" style="right: 0%;"
                   @click="deleteFile"><i class="fas fa-times"></i></button>
                 <b-popover ref="delete-hint" :target="'delete-button' + elementId">{{ $t('Please delete first, then upload the URL')}}</b-popover>
-                <img class="w-100" :src="preview_image_url">
+                <img v-if="is_image" class="w-100" :src="preview_image_url">
+                <video v-else class="w-100" controls>
+                  <source :src="preview_image_url" type="video">
+                </video>
               </div>
             </div>
             <div class="row">
@@ -28,7 +31,7 @@
                 <label :for="'uplaodFile' + elementId"><i class="fa-solid fa-upload"></i>&nbsp;{{$t('edit.element.upload-image') }}</label>
                 <div class="form-group">
                   <div class="custom-file form-group">
-                    <input type="file" class="custom-file-input" :id="'uplaodFile' + elementId" @change="uplaodFile">
+                    <input :id="'uplaodFile' + elementId" @change="uplaodFile" type="file" accept="image/*,video/*,audio/*" class="custom-file-input">
                     <label class="custom-file-label" :for="'uplaodFile' + elementId">{{ $t('Choose File...') }}</label>
                   </div>
                 </div>
@@ -63,6 +66,8 @@
 </template>
 
 <script>
+import Swal from 'sweetalert2';
+
 export default {
   mounted() {
 
@@ -94,7 +99,8 @@ export default {
       path_id: null,
       preview_image_url: null,
       url: null,
-      saving: false
+      saving: false,
+      is_image: true
     }
   },
   computed: {
@@ -128,6 +134,12 @@ export default {
         })
         .catch(error => {
           console.error(error);
+          //show error message
+          Swal.fire({
+            icon: 'error',
+            title: this.$t('Oops...'),
+            text: error.response.data.message
+          });
         })
         .finally(() => {
           this.saving = false;
@@ -144,6 +156,7 @@ export default {
         .then(response => {
           this.path_id = response.data.path_id;
           this.preview_image_url = response.data.url;
+          this.is_image = response.data.is_image;
         })
         .catch(error => {
           console.error(error);
