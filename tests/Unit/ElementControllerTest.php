@@ -211,7 +211,7 @@ class ElementControllerTest extends TestCase
 
 
         // mock youtube
-        $youtubeServiceMock = $this->partialMock(YoutubeService::class, function ($mock) use ($video){
+        $youtubeServiceMock = $this->partialMock(YoutubeService::class, function ($mock){
             $mock->shouldReceive('query')
                 ->times(1)
                 ->andReturn(null);
@@ -233,7 +233,7 @@ class ElementControllerTest extends TestCase
         $post = $this->createPost();
         $element = $this->createElements($post, 1)[0];
         $this->be($post->user);
-        
+
         // update embed code
         $url = '<iframe width="100%" height="270" src="https://www.youtube.com/embed/0SyTa7D62zQ?si=2Zt5VVfMc-bcESVN&amp;clip=UgkxTY_5fbTzqRkYpyjcqQC4nBJ_3FuFkkun&amp;clipt=EJ_9TxiTwFM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
             $res = $this->put(route('api.element.update', $element->id), [
