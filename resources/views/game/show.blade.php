@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $post,
     'ogTitle' => $post->title,
-    'ogImage' => $element->thumb_url,
+    'ogImage' => $element?->thumb_url,
     'ogDescription' => $post->description,
     ])
 
@@ -213,19 +213,19 @@
                 <h5 class="modal-title align-self-center" id="gameSettingPanelLabel">@{{ $t('game.setting') }}</h5>
                 <div>
                   <a class="btn btn-outline-secondary" :href="gameRankUrl">
-                    @{{$t('game.rank')}}&nbsp;<i class="fas fa-trophy"></i>
+                    <i class="fas fa-trophy"></i>&nbsp;@{{$t('game.rank')}}
                   </a>
                   <a class="btn btn-outline-secondary" href="/">
-                    @{{ $t('game.cancel') }}&nbsp;<i class="fas fa-times"></i>
+                    <i class="fas fa-times"></i>&nbsp;@{{ $t('game.cancel') }}
                   </a>
                 </div>
               </div>
               <div class="modal-body">
                 <div class="alert alert-danger" v-if="processingGameSerial">
-                  <i class="fas fa-exclamation-triangle"></i>@{{ $t('game.continue_hint') }}
+                  <i class="fas fa-exclamation-triangle"></i>&nbsp;@{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
         
-                    @{{ $t('game.continue') }}&nbsp;<i class="fas fa-play"></i>
+                    <i class="fas fa-play"></i>&nbsp;@{{ $t('game.continue') }}
                   </span>
                 </div>
                 <div class="alert alert-danger" v-if="error403WhenLoad">
@@ -294,11 +294,11 @@
         
               <div class="modal-footer mb-sm-0 mb-4">
                 <button v-if="post && elementsCount > 0" @click="createGame" type="submit" class="btn btn-primary btn-block" >
-                  @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
+                  <i class="fas fa-play">&nbsp;</i>@{{ $t('game.start') }}
                 </button>
                 
                 <span v-if="post && elementsCount == 0" @click="hintSelect" class="btn btn-primary disabled btn-block">
-                  @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
+                  <i class="fas fa-play"></i>&nbsp;@{{ $t('game.start') }}
                 </span>
                 <b-popover :show.sync="showPopover"   ref="select-element-count-hint" target="select-element-count-hint-target" placement="top">{{ __('game.select_option_hint')}}</b-popover>
               </div>
