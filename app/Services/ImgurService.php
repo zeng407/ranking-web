@@ -14,6 +14,7 @@ class ImgurService
     {
         $this->client = Http::baseUrl('https://api.imgur.com/3/');
     }
+    
     public function getAccountInfo(string $username)
     {
         $this->client->withHeaders([

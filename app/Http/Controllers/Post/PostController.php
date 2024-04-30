@@ -30,6 +30,7 @@ class PostController extends Controller
             'upload_url_at_a_time' => config('setting.upload_url_at_a_time'),
             'upload_media_size_mb_at_a_time' => config('setting.upload_media_size_mb_at_a_time'),
             'upload_media_file_size_mb' => config('setting.upload_media_file_size_mb'),
+            'upload_media_file_count_at_a_time' => config('setting.upload_media_file_count_at_a_time'),
         ];
 
         return view('account.post.edit', [

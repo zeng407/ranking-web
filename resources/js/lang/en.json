@@ -75,7 +75,7 @@
     "total elements": "total materials : {count}",
     "report_comment_other_reason_required": "You need to write something!",
     "Max :number elements": "Max {number} elements",
-    "upload_from_local": "Upload from computer (multiple files allowed, file limit {limit} MB, {rate_limit} MB per minute)",
+    "upload_from_local": "Upload from computer (multiple files allowed, each file must be under {limit} MB, cannot exceed {rate_count} files or {rate_limit} MB per minute)",
 
     "":""
 }

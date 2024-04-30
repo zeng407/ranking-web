@@ -9,6 +9,17 @@ use App\Enums\VideoSource;
 use App\Models\Element;
 use App\Models\Post;
 use App\Repositories\ElementRepository;
+use App\Services\ElementHandlers\BilibiliElementHandler;
+use App\Services\ElementHandlers\GfyElementHandler;
+use App\Services\ElementHandlers\ImageElementHandler;
+use App\Services\ElementHandlers\ImageFileElementHandler;
+use App\Services\ElementHandlers\ImgurElementHandler;
+use App\Services\ElementHandlers\TwitchElementHandler;
+use App\Services\ElementHandlers\UploadedFileAdaptor;
+use App\Services\ElementHandlers\VideoFileElementHandler;
+use App\Services\ElementHandlers\VideoUrlElementHandler;
+use App\Services\ElementHandlers\YoutubeElementHandler;
+use App\Services\ElementHandlers\YoutubeEmbedElementHandler;
 use App\Services\Models\StoragedImage;
 use App\Services\Traits\HasRepository;
 use Illuminate\Http\UploadedFile;
@@ -20,14 +31,17 @@ use Ramsey\Uuid\Uuid;
 class ElementService
 {
     use HasRepository;
-    
+
     protected $repo;
+
+    protected ElementSourceGuess $elementSourceGuess;
 
     protected $bilibiliService;
 
-    public function __construct(ElementRepository $elementRepository)
+    public function __construct(ElementRepository $elementRepository, ElementSourceGuess $elementSourceGuess)
     {
         $this->repo = $elementRepository;
+        $this->elementSourceGuess = $elementSourceGuess;
     }
 
     public function getExistsElement(string $sourceUrl, Post $post): ?Element
@@ -41,480 +55,53 @@ class ElementService
     public function massStore(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
     {
         $guess = $this->guessSourceType($sourceUrl);
-        if ($guess->isImage) {
-            logger("got Image");
-            return $this->storeImageUrl($sourceUrl, $directory, $post, $params);
-        } elseif ($guess->isImgur) {
-            logger("got Imgur");
-            return $this->storeImgurImage($sourceUrl, $directory, $post, $params);
-        } elseif ($guess->isVideo) {
-            logger("got Video");
-            return $this->storeVideoUrl($sourceUrl, $directory, $post, $params);
-        } elseif ($guess->isYoutube) {
-            logger("got Youtube");
-            return $this->storeYoutubeVideo($sourceUrl, $post, $params);
-        } elseif ($guess->isGFY) {
-            logger("got GFY");
-            return $this->storeGfycat($sourceUrl, $post, $params);
-        } elseif ($guess->isBilibili){
-            logger("got Bilibli");
-            return $this->storeBilibiliVideo($sourceUrl, $post, $params);
-        } else {
-            logger("got Unknown");
+        switch (true) {
+            case $guess->isImage:
+                logger("got Image");
+                return (new ImageElementHandler)->storeElement($sourceUrl, $post, $params);
+            case $guess->isImgur:
+                logger("got Imgur");
+                return (new ImgurElementHandler)->storeElement($sourceUrl, $post, $params);
+            case $guess->isVideo:
+                logger("got Video");
+                return (new VideoUrlElementHandler)->storeElement($sourceUrl, $post, $params);
+            case $guess->isYoutube:
+                logger("got Youtube");
+                return (new YoutubeElementHandler)->storeElement($sourceUrl, $post, $params);
+            case $guess->isGFY:
+                logger("got GFY");
+                return (new GfyElementHandler)->storeElement($sourceUrl, $post, $params);
+            case $guess->isBilibili:
+                logger("got Bilibli");
+                return (new BilibiliElementHandler)->storeElement($sourceUrl, $post, $params);
+            case $guess->isTwitch:
+                logger("got Twitch");
+                return (new TwitchElementHandler)->storeElement($sourceUrl, $post, $params);
+            default:
+                logger("got Unknown");
+                return null;
         }
-
-        return null;
     }
 
     protected function guessSourceType(string $url)
     {
         logger("guess {$url} ...");
-        return new ElementSourceGuess($url);
+        $this->elementSourceGuess->guess($url);
+        return $this->elementSourceGuess;
     }
 
     public function storeYoutubeEmbed(string $embedCode, Post $post, $params = []): ?Element
     {
-        // extract video id from embed code
-        preg_match('/src="https:\/\/www.youtube.com\/embed\/([^"]+)"/', $embedCode, $matches);
-        $videoUrl = $matches[1] ?? null;
-        
-        // validate video id 
-        // example : 1H2cyhWYXrE?si=btfjgIQDNUoNuriT&amp;clip=UgkxeWL6j9ODyTnJpJe6Ris_NgNzLFls3SyG&amp;clipt=ELidBRjQkgY
-        $validate = preg_match('/^[a-zA-Z0-9?&;=_-]+$/', $videoUrl) && strlen($videoUrl) <= 120;
-        if (!$validate){
-            return null;
-        }
-        $videoParams = explode('?', $videoUrl);
-        $videoId = $videoParams[0];
-        if(isset($videoParams[1])){
-            $embedUrl = $videoId.'?' . $videoParams[1].'&autoplay=1&playlist='.$videoId.'&loop=1';
-        }else{
-            $embedUrl = $videoId.'?autoplay=1&playlist='.$videoId.'&loop=1';
-        }
-        $embedCode = "<iframe width=\"100%\" height=\"270\" src=\"https://www.youtube.com/embed/{$embedUrl}\" title=\"YouTube video player\" " . 
-            "frameborder=\"0\" allow=\"accelerometer; loop; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" ". 
-            "referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen ></iframe>";
-        $thumbUrl = "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
-        $element = $post->elements()->updateOrCreate([
-            'source_url' => $params['old_source_url'] ??  '',
-        ], [
-            'source_url' => $embedCode,
-            'thumb_url' => $thumbUrl,
-            'type' => ElementType::VIDEO,
-            'title' => $params['title'] ?? '',
-            'video_source' => VideoSource::YOUTUBE_EMBED,
-            'video_id' => $videoId,
-        ]);
-
-        return $element;
+        return (new YoutubeEmbedElementHandler)->storeElement($embedCode, $post, $params);
     }
 
-    public function storeMedia(UploadedFile $file, string $directory, Post $post)
+    public function storeUploadedFile(UploadedFile $file, string $directory, Post $post)
     {
         if (strpos($file->getMimeType(), 'image') !== false) {
-            return $this->storePublicImage($file, $directory, $post);
+            return (new UploadedFileAdaptor(new ImageFileElementHandler))->storeElement($file, $post);
         } else {
-            return $this->storeVideo($file, $directory, $post);
+            return (new UploadedFileAdaptor(new VideoFileElementHandler))->storeElement($file, $post);
         }
-    }
-
-
-    public function storePublicImage(UploadedFile $file, string $directory, Post $post)
-    {
-        $path = $this->moveUploadedFile($file, $directory);
-
-        $url = Storage::url($path);
-        $thumb = $url;
-        $title = $this->parseTitle($file);
-        $element = $post->elements()->create([
-            'path' => $path,
-            'source_url' => $url,
-            'thumb_url' => $thumb,
-            'type' => ElementType::IMAGE,
-            'title' => $title
-        ]);
-
-        event(new ImageElementCreated($element, $post));
-
-        return $element;
-    }
-
-    public function moveUploadedFile(UploadedFile $file, string $directory): string|bool
-    {
-        $path = $file->storeAs($directory, $this->generateFileName() . '.' . $file->getClientOriginalExtension());
-        Storage::setVisibility($path, 'public');
-        return $path;
-    }
-
-    public function downloadImage(string $url, string $directory): ?StoragedImage
-    {
-        $content = $this->getContent($url);
-        $fileInfo = pathinfo($url);
-        $basename = $this->generateFileName();
-        if (isset ($fileInfo['extension'])) {
-            $basename .= '.' . $fileInfo['extension'];
-        }
-
-        $path = rtrim($directory, '/') . '/' . $basename;
-        $isSuccess = Storage::put($path, $content, 'public');
-        if (!$isSuccess) {
-            return null;
-        }
-        return new StoragedImage($url, $path, $fileInfo);
-    }
-
-    public function storeImageUrl(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
-    {
-        try {
-            $storageImage = $this->downloadImage($sourceUrl, $directory);
-
-            if ($storageImage === null) {
-                return null;
-            }
-            $fileInfo = $storageImage->getFileInfo();
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-
-        $title = $params['title'] ?? $fileInfo['filename'];
-        $localUrl = Storage::url($storageImage->getPath());
-
-        $element = $post->elements()->updateOrCreate([
-            'source_url' => $params['old_source_url'] ?? $sourceUrl,
-        ], [
-            'path' => $storageImage->getPath(),
-            'source_url' => $sourceUrl,
-            'thumb_url' => $localUrl,
-            'type' => ElementType::IMAGE,
-            'title' => $title
-        ]);
-        event(new ImageElementCreated($element, $post));
-
-        return $element;
-    }
-
-    public function storeImgurImage(string $sourceUrl,string $directory, Post $post, $params = []): ?Element
-    {
-        try {
-            // if url contains imgur
-            if (strpos($sourceUrl, 'imgur.com') !== false) {
-                $imgurService = app(ImgurService::class);
-                $galleryId = $imgurService->parseGalleryAlbumId($sourceUrl);
-                logger("galleryId: {$galleryId}");
-                if($galleryId === null) {
-                    return null;
-                }
-                
-                // if url contains gallery
-                if (strpos($sourceUrl, '/gallery/') !== false) {
-                    $image = $this->getImageFromImgurGallery($galleryId);
-                } else if (strpos($sourceUrl, '/a/') !== false) {
-                    $image = $this->getAlbumImage($galleryId);
-                } else if (strpos($sourceUrl, '/t/') !== false) {
-                    $image = $this->getAlbumImage($galleryId);
-                } else {
-                    $image = $this->getImageFromImgur($galleryId);
-                }
-                
-                if($image === null) {
-                    return null;
-                }
-
-                $link = $image['link'];
-                $storageImage = $this->downloadImage($link, $directory);
-            } else {
-                logger("not gallery");
-                return null;
-            }
-            
-            $title = $params['title'] ?? $image['title'];
-            $thumb = Storage::url($storageImage->getPath());
-
-            $type = $this->guessMediaType($image['type']);
-            $videoSource = $type === ElementType::VIDEO ? VideoSource::IMGUR : null;
-            $element = $post->elements()->updateOrCreate([
-                'source_url' => $params['old_source_url'] ?? $sourceUrl,
-            ], [
-                'path' => $storageImage->getPath(),
-                'video_source' => $videoSource,
-                'source_url' => $sourceUrl,
-                'thumb_url' => $thumb,
-                'type' => $type,
-                'title' => $title
-            ]);
-
-            $element->imgur_image()->create([
-                'image_id' => $image['id'],
-                'imgur_album_id' => null,
-                'title' => $image['title'],
-                'description' => $image['description'],
-                'delete_hash' => null,
-                'link' => $image['link'],
-            ]);
-
-            event(new ImageElementCreated($element, $post));
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-
-        return $element;
-    }
-
-    protected function guessMediaType(string $type)
-    {
-        // 'viode/mp4
-        if(strpos($type, 'video') !== false) {
-            return ElementType::VIDEO;
-        }else if(strpos($type, 'image') !== false) {
-            return ElementType::IMAGE;
-        }else {
-            \Log::warning("unknown media type: {$type}");
-            return ElementType::IMAGE;
-        }
-    }
-
-    protected function getImageFromImgurGallery(string $galleryId): ?array
-    {
-        try {
-            $imgurService = app(ImgurService::class);
-            $res = $imgurService->getGalleryAlbumImages($galleryId);
-            logger("getImageFromImgurGallery");
-            logger($res);
-            if(isset($res['success']) && $res['success'] 
-                && isset($res['status']) && $res['status'] === 200 
-                && isset($res['data']) && isset($res['data']['images'])) {
-                $images = $res['data']['images'];
-                if(count($images) === 0) {
-                    return null;
-                }
-
-                $image = $res['data']['images'][0];
-                if(isset($image['link'])) {
-                    return $image;
-                }
-            }
-            return null;
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-    }
-
-    protected function getImageFromImgur(string $galleryId): ?array
-    {
-        try {
-            $imgurService = app(ImgurService::class);
-            $res = $imgurService->getImage($galleryId);
-            logger("getImageFromImgur");
-            logger($res);
-            if(isset($res['success']) && $res['success'] 
-                && isset($res['status']) && $res['status'] === 200 
-                && isset($res['data'])) {
-                
-                $image = $res['data'];
-                if(isset($image['link'])) {
-                    return $image;
-                }
-            }
-            return null;
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-    }
-
-    protected function getAlbumImage(string $albumId)
-    {
-        try {
-            $imgurService = app(ImgurService::class);
-            $res = $imgurService->getAlbumImages($albumId);
-            logger("getAlbumImage");
-            logger($res);
-            if(isset($res['success']) && $res['success'] && isset($res['status']) && $res['status'] === 200 && isset($res['data'])) {
-                return $res['data'][0];
-            }
-            return null;
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-    }
-
-    protected function generateFileName()
-    {
-        return Uuid::uuid4()->toString();
-    }
-
-    protected function getContent(string $sourceUrl)
-    {
-        $content = null;
-        logger("getContent: {$sourceUrl}");
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $sourceUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
-            $content = curl_exec($ch);
-            logger("curl content: $content");
-            curl_close($ch);
-        } catch (\Exception $exception) {
-        }
-
-        try {
-            $content = file_get_contents($sourceUrl);
-            logger("file_get_contents content: $content");
-        } catch (\Exception $exception) {
-            logger($exception->getMessage());
-        }
-
-        return $content;
-    }
-
-    public function storeVideo(UploadedFile $file, string $directory, Post $post, $params = []): ?Element
-    {
-        $path = $this->moveUploadedFile($file, $directory);
-
-        $url = Storage::url($path);
-        $thumb = $url;
-        $title = $this->parseTitle($file);
-        
-        //todo make thumb from video
-        $title = $title ?? 'untitled video';
-
-        $element = $post->elements()->create([
-            'path' => null,
-            'source_url' => $url,
-            'thumb_url' => $thumb,
-            'type' => ElementType::VIDEO,
-            'title' => $title,
-            'video_source' => VideoSource::URL
-        ]);
-
-        event(new ImageElementCreated($element, $post));
-        return $element;
-    }
-
-    public function storeVideoUrl(string $sourceUrl, string $directory, Post $post, $params = []): ?Element
-    {
-        //todo make thumb from video
-        $title = $params['title'] ?? 'video';
-
-        $element = $post->elements()->updateOrCreate([
-            'source_url' => $params['old_source_url'] ?? $sourceUrl,
-        ], [
-            'path' => null,
-            'source_url' => $sourceUrl,
-            'thumb_url' => $sourceUrl,
-            'type' => ElementType::VIDEO,
-            'title' => $title,
-            'video_source' => VideoSource::URL
-        ]);
-
-        return $element;
-    }
-
-    public function storeGfycat(string $sourceUrl, Post $post, $params = []): ?Element
-    {
-        try {
-            $gfycatService = app(GfycatService::class);
-            $id = $gfycatService->getId($sourceUrl);
-            $info = $gfycatService->getInfo($id);
-
-            $title = $params['title'] ?? $info->gfyItem->title;
-
-            $element = $post->elements()->updateOrCreate([
-                'source_url' => $params['old_source_url'] ?? $info->gfyItem->mp4Url,
-            ], [
-                'source_url' => $info->gfyItem->mp4Url,
-                'thumb_url' => $info->gfyItem->posterUrl,
-                'type' => ElementType::VIDEO,
-                'title' => $title,
-                'video_source' => VideoSource::GFYCAT
-            ]);
-
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-
-        return $element;
-    }
-
-    public function storeYoutubeVideo($sourceUrl, Post $post, $params = []): ?Element
-    {
-        $video = $this->getYoutubeService()->query($sourceUrl);
-        if (!$video) {
-            return null;
-        }
-        try {
-            $thumb = $video->getSnippet()->getThumbnails()->getHigh() ?:
-                $video->getSnippet()->getThumbnails()->getMedium() ?:
-                $video->getSnippet()->getThumbnails()->getStandard() ?:
-                $video->getSnippet()->getThumbnails()->getMaxres() ?:
-                $video->getSnippet()->getThumbnails()->getDefault();
-            $thumbUrl = $thumb->getUrl();
-            $title = $video->getSnippet()->getTitle();
-            $id = $video->getId();
-            $duration = $video->getContentDetails()->getDuration();
-            preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $parts);
-
-            $hourPart = isset ($parts[1]) ? (int) $parts[1] : 0;
-            $minutePart = isset ($parts[2]) ? (int) $parts[2] : 0;
-            $secondPart = isset ($parts[3]) ? (int) $parts[3] : 0;
-            $second = $hourPart * 3600 + $minutePart * 60 + $secondPart;
-
-            $title = $params['title'] ?? $title;
-            $element = $post->elements()->updateOrCreate(
-                [
-                    'source_url' => $params['old_source_url'] ?? '', // we don't replace old element if it's youtube video
-                ],
-                [
-                    'source_url' => $sourceUrl,
-                    'thumb_url' => $thumbUrl,
-                    'title' => mb_substr($title, 0, config('setting.element_title_size')),
-                    'type' => ElementType::VIDEO,
-                    'video_source' => VideoSource::YOUTUBE,
-                    'video_id' => $id,
-                    'video_duration_second' => $second,
-                ] + $params
-            );
-
-            return $element;
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-    }
-
-    public function storeBilibiliVideo($sourceUrl, Post $post, $params = []): ?Element
-    {
-        $videoId = $this->getBilibiliService()->parseVideoId($sourceUrl);
-        if (!$videoId) {
-            return null;
-        }
-
-        $thumb = $this->getBilibiliService()->getThumbnail($sourceUrl);
-        if($thumb){
-            $path = $this->downloadImage($thumb, $post->serial)->getPath();
-            logger("thumb path: $path");
-            $thumb = Storage::url($path);
-        }
-
-        $element = $post->elements()->updateOrCreate([
-            'source_url' => $params['old_source_url'] ??  '',
-        ], [
-            'path' => $path ?? '',
-            'source_url' => $sourceUrl,
-            'thumb_url' => $thumb,
-            'type' => ElementType::VIDEO,
-            'title' => $params['title'] ?? $this->getBilibiliService()->getH1Title($sourceUrl),
-            'video_source' => VideoSource::BILIBILI_VIDEO,
-            'video_id' => $videoId,
-        ]);
-    
-        return $element;
     }
 
     public function delete(Element $element)
@@ -523,100 +110,6 @@ class ElementService
         $element->delete();
 
         event(new ElementDeleted($element));
-    }
-
-    /**
-     * @param $sourceUrl
-     * @return bool
-     * @deprecated
-     */
-    protected function isImageUrl($sourceUrl)
-    {
-        try {
-            if (@getimagesize($sourceUrl)) {
-                return true;
-            }
-            ;
-        } catch (\Exception $exception) {
-        }
-        return false;
-    }
-
-    /**
-     * @param string $url
-     * @return bool
-     * @deprecated
-     */
-    protected function isVideoUrl(string $url)
-    {
-        try {
-            //accept header content-type
-            //video/mpeg
-            //video/mp4
-            //video/quicktime
-            //video/x-ms-wmv
-            //video/x-msvideo
-            //video/x-flv
-            //video/webm
-            //video/*
-
-            $headers = get_headers($url, true);
-            logger($headers);
-            return isset ($headers['Content-Type'])
-                && explode('/', $headers['Content-Type'])[0] === 'video';
-        } catch (\Exception $exception) {
-            report($exception);
-            return false;
-        }
-    }
-
-    /**
-     * @param string $url
-     * @return string|null
-     * @deprecated
-     */
-    protected function guestVideoSource(string $url)
-    {
-        try {
-            //youtube
-            try {
-                if ($this->getYoutubeService()->parseVideoId($url)) {
-                    return VideoSource::YOUTUBE;
-                }
-            } catch (\Exception $exception) {
-
-            }
-
-            return null;
-        } catch (\Exception $exception) {
-            report($exception);
-            return null;
-        }
-    }
-
-    protected function getYoutubeService()
-    {
-        /** @var YoutubeService  */
-        $youtubeService = app(YoutubeService::class);
-        return $youtubeService;
-    }
-
-    protected function getBilibiliService()
-    {
-        if($this->bilibiliService === null){
-            $this->bilibiliService = new BilibiliService;
-        }
-
-        return $this->bilibiliService;
-
-    }
-
-    protected function parseTitle(UploadedFile $file)
-    {
-        $title = mb_substr(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME), 0, config('setting.element_title_size'));
-        logger("title: {$title}");
-        $title = preg_replace('/[\n\r\t]/', '', $title);
-        return $title;
     }
 
 }

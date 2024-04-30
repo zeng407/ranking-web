@@ -5,11 +5,14 @@ namespace App\Console\Commands;
 use App\Enums\ElementType;
 use App\Enums\VideoSource;
 use App\Services\ElementService;
+use App\Services\Traits\FileHelper;
 use Illuminate\Console\Command;
 use App\Models\Element;
 
 class MakeElementImageThumb extends Command
 {
+    use FileHelper;
+
     /**
      * The name and signature of the console command.
      *
@@ -86,7 +89,7 @@ class MakeElementImageThumb extends Command
                                     continue;
                                 }
 
-                                $tempFile = $this->elementService->downloadImage($element->source_url, $post->serial);
+                                $tempFile = $this->downloadImage($element->source_url, $post->serial);
                                 $element->update([
                                     'path' => $tempFile->getPath(),
                                     'thumb_url' => \Storage::url($tempFile->getPath())
@@ -101,8 +104,8 @@ class MakeElementImageThumb extends Command
 
                         if (!\Storage::exists($element->path)) {
                             $path = dirname($element->path);
-                            $file = $this->elementService->downloadImage($element->source_url, $path)
-                                ?? $this->elementService->downloadImage($element->thumb_url, $path);
+                            $file = $this->downloadImage($element->source_url, $path)
+                                ?? $this->downloadImage($element->thumb_url, $path);
                             if (!$file) {
                                 $this->warn('Cannot download image: ' . $element->id);
                                 continue;

@@ -25,5 +25,9 @@
         <server name="QUEUE_CONNECTION" value="sync"/>
         <server name="SESSION_DRIVER" value="array"/>
         <server name="IMGUR_ENABLED" value="true"/>
+        <server name="TWITCH_CLIENT_ID" value=""/>
+        <server name="GOOGLE_CLIENT_ID" value=""/>
+        <server name="YOUTUBE_API_KEY" value=""/>
+        <server name="IMGUR_CLIENT_ID" value=""/>
     </php>
 </phpunit>

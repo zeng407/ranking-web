@@ -11,12 +11,15 @@ use App\Models\Post;
 use App\Policies\ElementPolicy;
 use App\Services\ElementService;
 use App\Services\ElementSourceGuess;
+use App\Services\Traits\FileHelper;
 use App\Services\YoutubeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ElementController extends Controller
 {
+    use FileHelper;
+
     protected $youtube;
 
     protected $elementService;
@@ -51,14 +54,14 @@ class ElementController extends Controller
         $path = $request->input('post_serial');
         
         //rate limit for uploading
-        //30MB per minute
+        //30MB per minute or 50 files per minute
         try{
             $this->attemptUploadRateLimit($request);
         }catch(\Exception $e){
             return api_response(ApiResponseCode::UPLOAD_SIZE_RATE_LIMIT, 422);
         }
         
-        $element = $this->elementService->storeMedia($request->file('file'), $path, $post);
+        $element = $this->elementService->storeUploadedFile($request->file('file'), $path, $post);
         return PostElementResource::make($element);
     }
 
@@ -74,12 +77,12 @@ class ElementController extends Controller
         $urls = $request->input('url');
 
         // if the url is a youtube video embed and iframe
-        if ($this->isEmbedString($urls)) {
-            $element = $this->storeYoutubeEmbed($request, $urls);
-            if($element === null){
-                return api_response(ApiResponseCode::INVALID_URL, 422);
+        try{
+            if ($element = $this->tryStroeYoutubeEmbed($request, $urls)) {
+                return PostElementResource::collection([$element]);
             }
-            return PostElementResource::collection([$element]);
+        }catch(\Exception $e){
+            return api_response(ApiResponseCode::INVALID_URL, 422);
         }
 
 
@@ -180,16 +183,13 @@ class ElementController extends Controller
         $post = $this->getPost($request->input('post_serial'));
 
         if(isset($data['url'])){
-
-            // if the url is a youtube video embed and iframe
-            if ($this->isEmbedString($data['url'])) {
-                $element = $this->storeYoutubeEmbed($request, $data['url'], [
-                    'old_source_url' => $element->source_url,
-                ]);
-                if($element === null){
-                    return api_response(ApiResponseCode::INVALID_URL, 422);
+            try{
+                $newElement = $this->tryStroeYoutubeEmbed($request, $data['url'], ['old_source_url' => $element->source_url]);
+                if ($newElement) {
+                    return PostElementResource::make($newElement);
                 }
-                return PostElementResource::make($element);
+            }catch(\Exception $e){
+                return api_response(ApiResponseCode::INVALID_URL, 422);
             }
 
             // This will update the element whose 'source_url' matches 'old_source_url'.
@@ -206,16 +206,17 @@ class ElementController extends Controller
                 return api_response(ApiResponseCode::INVALID_URL, 422);
             }
         } elseif (isset($data['path_id'])){
-            $path = \Cache::get($data['path_id']);
-            if($path == null){
+            $fileInfo = $this->getFileInfoCache($data['path_id']);
+            if($fileInfo == null){
                 return api_response(ApiResponseCode::INVALID_PATH, 422);
             }
 
-            if(\Storage::exists($path)){
-                $url = \Storage::url($path);
+            if(isset($fileInfo['path']) && \Storage::exists($fileInfo['path'])){
+                $url = \Storage::url($fileInfo['path']);
+                $isImage = $fileInfo['is_image'] ?? false;
                 $data['thumb_url'] = $url;
                 $data['source_url'] = $url;
-                $data['type'] = ElementType::IMAGE;
+                $data['type'] = !$isImage ? ElementType::VIDEO: ElementType::IMAGE;
                 $data['video_source'] = null;
                 $data['video_id'] = null;
                 $data['video_duration_second'] = null;
@@ -239,16 +240,38 @@ class ElementController extends Controller
 
         $request->validate([
             'post_serial' => 'required|string',
-            'file' => 'required|image|max:8192',
+            'file' => [
+                'required',
+                'mimetypes:image/jpeg,image/png,image/bmp,image/webp,image/gif,video/avi,video/mpeg,video/mp4',
+                'max:'.(config('setting.upload_media_file_size_mb') * 1024),
+            ],
         ]);
         $post = $this->getPost($request->input('post_serial'));
-        $path = $this->elementService->moveUploadedFile($request->file('file'), $post->serial);
-        $pathId = hash('sha256', $path);
-        \Cache::put($pathId, $path, now()->addMinutes(10));
+        $path = $this->moveUploadedFile($request->file('file'), $post->serial);
+        $isImage = strpos($request->file('file')->getMimeType(), 'image') !== false;
+
+        $pathId = $this->putFileInfoCache($path, $isImage);
+        
         return response()->json([
             'path_id' => $pathId,
             'url' => \Storage::url($path),
+            'is_image' => $isImage
         ]);
+    }
+
+    protected function putFileInfoCache($path, $isImage)
+    {
+        $pathId = hash('sha256', $path);
+        \Cache::put($pathId, [
+            'path' => $path,
+            'is_image' => $isImage,
+        ], now()->addMinutes(10));
+        return $pathId;
+    }
+
+    protected function getFileInfoCache($pathId)
+    {
+        return \Cache::get($pathId);
     }
 
     public function delete(Request $request, Element $element)
@@ -259,17 +282,32 @@ class ElementController extends Controller
         return response()->json();
     }
 
-    protected function storeYoutubeEmbed(Request $request, string $urls, array $params = [])
+
+    protected function tryStroeYoutubeEmbed(Request $request, string $embedCode, array $params = [])
+    {
+        $guess = new ElementSourceGuess();
+        $guess->guessYoutubeEmbed($embedCode);
+        if(!$guess->isYoutubeEmbed){
+            return null;
+        }
+        $post = $this->getPost($request->post_serial);
+        $element = $this->elementService->storeYoutubeEmbed($embedCode, $post, $params);
+        throw_if($element == null, \Exception::class, "Invalid Youtube Embed");
+        return $element;
+
+    }
+    protected function storeYoutubeEmbed(Request $request, string $embedCode, array $params = [])
     {
         $post = $this->getPost($request->post_serial);
-        $element = $this->elementService->storeYoutubeEmbed($urls, $post, $params);
+        $element = $this->elementService->storeYoutubeEmbed($embedCode, $post, $params);
         return $element;
     }
 
     protected function isEmbedString($string)
     {
-        return preg_match('/https:\/\/www\.youtube\.com\/embed\/([a-zA-Z0-9_-]+)/', $string) && 
-            preg_match('/^<iframe.*?src="(.*?)".*?<\/iframe>$/', $string);
+        $guess = new ElementSourceGuess();
+        $guess->guessYoutubeEmbed($string); 
+        return $guess->isYoutubeEmbed;
     }
 
     protected function getPost($serial): Post
@@ -281,14 +319,25 @@ class ElementController extends Controller
 
     protected function attemptUploadRateLimit(Request $request)
     {
-        $rateLimit = config('setting.upload_media_size_mb_at_a_time') * 1024 * 1024; // 30MB
+        // 30MB per minute
+        $rateLimit = config('setting.upload_media_size_mb_at_a_time') * 1024 * 1024;
         $timeMinuteLimit = 1;
-        $rateLimitKey = "upload_rate_limit_" . Auth::id();
+        $rateLimitKey = "upload_rate_limit_size_" . Auth::id();
         $rateLimitValue = \Cache::get($rateLimitKey, 0);
         if($rateLimitValue > $rateLimit){
             throw new \Exception("Rate limit exceeded");
         }
         $rateLimitValue += $request->file('file')->getSize();
         \Cache::put($rateLimitKey, $rateLimitValue, now()->addMinutes($timeMinuteLimit));
+
+        // 50 files per minute
+        $fileLimit = config('setting.upload_media_file_count_at_a_time');
+        $fileLimitKey = "upload_rate_limit_count" . Auth::id();
+        $fileLimitValue = \Cache::get($fileLimitKey, 0);
+        $fileLimitValue += 1;
+        if($fileLimitValue > $fileLimit){
+            throw new \Exception("Rate limit exceeded");
+        }
+        \Cache::put($fileLimitKey, $fileLimitValue, now()->addMinutes($timeMinuteLimit));
     }
 }

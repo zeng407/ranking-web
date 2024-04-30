@@ -47,6 +47,7 @@ return [
         'publisher_id' => env('GOOGLE_AD_PUBLISHER_ID', ''),
         'game_page' => env('GOOGLE_AD_GAME_PAGE', false),
         'game_page_ad_1_slot' => env('GOOGLE_AD_GAME_PAGE_AD_1_SLOT', ''),
+        'game_page_ad_2_slot' => env('GOOGLE_AD_GAME_PAGE_AD_2_SLOT', ''),
         'home_page' => env('GOOGLE_AD_HOME_PAGE', false),
         'home_page_ad_1_slot' => env('GOOGLE_AD_HOME_PAGE_AD_1_SLOT', ''),
         'home_page_ad_2_slot' => env('GOOGLE_AD_HOME_PAGE_AD_2_SLOT', ''),
@@ -59,7 +60,14 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'redirect' => '/auth/google/callback',
     ],
+
+    'twitch' => [
+        'auto_refresh_token' => env('TWITCH_AUTO_REFRESH_TOKEN', false),
+        'client_id' => env('TWITCH_CLIENT_ID'),
+        'client_secret' => env('TWITCH_CLIENT_SECRET'),
+        'redirect' => '/auth/twitch/callback',
+    ]
 
 ];

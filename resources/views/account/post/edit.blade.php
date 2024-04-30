@@ -4,6 +4,7 @@
 
 @section('header')
   <meta name="robots" content="noindex"/>
+  <script src="https://embed.twitch.tv/embed/v1.js"></script>
 @endsection
 
 @section('content')

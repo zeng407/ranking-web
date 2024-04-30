@@ -15,6 +15,7 @@
         "dateModified": "{{$post->updated_at->toIso8601String()}}"
     }
     </script>
+    <script src="https://embed.twitch.tv/embed/v1.js"></script>
 @endsection
 
 @section('content')
@@ -55,7 +56,7 @@
               </div>
               <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
                 <youtube :video-id="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-                  :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0 , origin: host, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
+                  :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0 , origin: origin, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
                 </youtube>
               </div>
               <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
@@ -63,6 +64,15 @@
               </div>
               <div v-else-if="isBilibiliSource(le) && !isDataLoading" class="d-flex">
                 <bilibili-video v-if="le" :element="le" width="100%" :autoplay="false" :muted="false" :height="elementHeight"/>
+              </div>
+              <div v-else-if="isTwitchVideoSource(le) && !isDataLoading" class="d-flex">
+                <div :id="'twitch-video-'+le.id" class="w-100 twitch-container"></div>
+              </div>
+              <div v-else-if="isTwitchClipSource(le) && !isDataLoading" class="d-flex twitch-container">
+                <iframe :src="'https://clips.twitch.tv/embed?clip='+le.video_id+'&parent='+host+'&autoplay=false'"
+                      :height="elementHeight"
+                      width="100%"
+                      allowfullscreen></iframe>
               </div>
               <div v-else-if="isVideoSource(le) && !isDataLoading" class="d-flex">
                 <video width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
@@ -126,11 +136,20 @@
               </div>
               <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
                 <youtube :video-id="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-                  :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0, origin: host,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
+                  :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0, origin: origin,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
                 </youtube>
               </div>
               <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
                 <youtube-embed v-if="re" :element="re" width="100%" :height="elementHeight"/>
+              </div>
+              <div v-else-if="isTwitchVideoSource(re) && !isDataLoading" class="d-flex">
+                <div :id="'twitch-video-'+re.id" class="w-100 twitch-container"></div>
+              </div>
+              <div v-else-if="isTwitchClipSource(re) && !isDataLoading" class="d-flex twitch-container">
+                <iframe :src="'https://clips.twitch.tv/embed?clip='+re.video_id+'&parent='+host+'&autoplay=false'"
+                      :height="elementHeight"
+                      width="100%"
+                      allowfullscreen></iframe>
               </div>
               <div v-else-if="isBilibiliSource(re) && !isDataLoading" class="d-flex">
                 <bilibili-video v-if="re" :element="re" width="100%" :autoplay="false" :muted="false" :height="elementHeight"/>
@@ -177,8 +196,11 @@
         </div>
 
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-          <div v-if="!refreshAD && game" id="google-ad" class="my-2">
+          <div v-if="!refreshAD && game && !isMobileScreen" id="google-ad" class="my-2">
               @include('ads.game_ad')
+          </div>
+          <div v-if="!refreshAD && game && isMobileScreen" id="google-ad2" class="my-2 text-center">
+            @include('ads.game_ad_mobile')
           </div>
         @endif
 
@@ -271,11 +293,11 @@
               </div>
         
               <div class="modal-footer mb-sm-0 mb-4">
-                <button v-if="post && elementsCount > 0" @click="createGame" type="submit" class="btn btn-primary" >
+                <button v-if="post && elementsCount > 0" @click="createGame" type="submit" class="btn btn-primary btn-block" >
                   @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
                 </button>
                 
-                <span v-if="post && elementsCount == 0" @click="hintSelect" class="btn btn-primary disabled">
+                <span v-if="post && elementsCount == 0" @click="hintSelect" class="btn btn-primary disabled btn-block">
                   @{{ $t('game.start') }}&nbsp;<i class="fas fa-play"></i>
                 </span>
                 <b-popover :show.sync="showPopover"   ref="select-element-count-hint" target="select-element-count-hint-target" placement="top">{{ __('game.select_option_hint')}}</b-popover>

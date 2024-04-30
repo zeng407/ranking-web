@@ -6,6 +6,10 @@
     'embed' => $embed,
 ])
 
+@section('header')
+    <script src="https://embed.twitch.tv/embed/v1.js"></script>
+@endsection
+
 @section('content')
     <Rank inline-template 
         comment-max-length="{{ config('setting.comment_max_length') }}"
@@ -60,6 +64,19 @@
                                 </youtube-player>
                             @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($gameResult->winner->source_url, ['autoplay' => false]) !!}
+                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'twitch_video')
+                                <iframe
+                                    src="https://player.twitch.tv/?video={{$gameResult->winner->video_id}}&parent={{request()->getHost()}}"
+                                    height="270"
+                                    width="100%"
+                                    allowfullscreen>
+                                </iframe>
+                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'twitch_clip')
+                                <iframe src="https://clips.twitch.tv/embed?clip={{$gameResult->winner->video_id}}&parent={{request()->getHost()}}&autoplay=false"
+                                    height="270"
+                                    width="100%"
+                                    allowfullscreen>
+                                </iframe>
                             @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'bilibili_video')
                                 <bilibili-video
                                     width="100%" height="270"
@@ -103,6 +120,19 @@
                                     :element="{{json_encode(['id' => $rank->loser->id, 'video_id' => $rank->loser->video_id, 'thumb_url' => $rank->loser->thumb_url])}}"
                                     :autoplay="false" :muted="false" height="270" :preview="true">
                                 </bilibili-video>
+                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'twitch_video')
+                                <iframe
+                                    src="https://player.twitch.tv/?video={{$rank->loser->video_id}}&parent={{request()->getHost()}}&autoplay=false"
+                                    height="270"
+                                    width="100%"
+                                    allowfullscreen>
+                                </iframe>
+                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'twitch_clip')
+                                <iframe src="https://clips.twitch.tv/embed?clip={{$rank->loser->video_id}}&parent={{request()->getHost()}}&autoplay=false"
+                                    height="270"
+                                    width="100%"
+                                    allowfullscreen>
+                                </iframe>
                             @elseif($rank->loser->type === 'video')
                                 <video width="100%" height="270" loop controls playsinline src="{{$rank->loser->thumb_url}}"></video>    
                             @elseif($rank->loser->type === 'image')
@@ -150,6 +180,19 @@
                                 </youtube-player>
                             @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'youtube_embed')
                                 {!! inject_youtube_embed($rank->element->source_url, ['autoplay' => false]) !!}
+                            @elseif($rank->element->type === 'video' && $rank->element->video_source === 'twitch_video')
+                                <iframe
+                                    src="https://player.twitch.tv/?video={{$rank->element->video_id}}&parent={{request()->getHost()}}&autoplay=false"
+                                    height="270"
+                                    width="100%"
+                                    allowfullscreen>
+                                </iframe>
+                            @elseif($rank->element->type === 'video' && $rank->element->video_source === 'twitch_clip')
+                                <iframe src="https://clips.twitch.tv/embed?clip={{$rank->element->video_id}}&parent={{request()->getHost()}}&autoplay=false"
+                                    height="270"
+                                    width="100%"
+                                    allowfullscreen>
+                                </iframe>
                             @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'bilibili_video')
                                 <bilibili-video
                                     width="100%" height="270"

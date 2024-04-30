@@ -44,6 +44,9 @@ Route::get('post/{post:serial}/rank-embed', [GameController::class, 'rankEmbed']
 Route::get('/auth/google/redirect', [SocialiteController::class, 'redirectGoogle'])->name('auth.redirect.google');
 Route::get('/auth/google/connect', [SocialiteController::class, 'connectGoogle'])->name('auth.connect.google');
 Route::get('/auth/google/callback', [SocialiteController::class, 'callbackGoogle'])->name('auth.callback.google');
+Route::get('/auth/twitch/callback', function(){
+    return "Twitch callback";
+})->name('auth.callback.twitch');
 
 Route::middleware('auth')->group(function () {
     Route::get('account/profile', [ProfileController::class, 'index'])->name('profile.index');

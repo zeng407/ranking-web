@@ -14,7 +14,7 @@
     <div class="row">
 
       <!-- tabs -->
-      <div class="col-md-2">
+      <div class="col-md-2" style="z-index: 0;">
         <div class="nav flex-column nav-pills sticky-top" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
           <a class="nav-link active" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
@@ -228,7 +228,7 @@
 
             <div class="row">
               <div class="col-12">
-                <label for="image-upload">&nbsp;{{ $t('upload_from_local', {limit: config.upload_media_file_size_mb, rate_limit: config.upload_media_size_mb_at_a_time}) }}</label>
+                <label for="image-upload">&nbsp;{{ $t('upload_from_local', {limit: config.upload_media_file_size_mb, rate_limit: config.upload_media_size_mb_at_a_time, rate_count: config.upload_media_file_count_at_a_time}) }}</label>
                 <div class="custom-file form-group">
                   <input type="file" accept="image/*,video/*,audio/*" class="custom-file-input" id="image-upload" multiple @change="uploadMedias">
                   <label class="custom-file-label" for="image-upload">{{$t('Choose File...')}}</label>
@@ -238,8 +238,13 @@
             <!-- upload progress bar -->
             <div class="progress mb-1" v-for="(progress, name) in uploadingFiles">
               <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0"
-                aria-valuemax="100" :aria-valuenow="progress" :style="{ 'width': progress + '%' }">
-                {{ name }}
+                aria-valuemax="100" :aria-valuenow="progress" :style="{ 'width': progress + '%' , 'background' : progress == -1 ? 'red': ''}">
+                <!-- if progress == -1 , add dismiss button -->
+                <span v-if="progress != -1">{{ name }}</span>
+                <span v-if="progress == -1" class="cursor-pointer" @click="cancelUpload(name)">
+                  {{ name }}
+                  <i class="fas fa-times"></i>
+                </span>
               </div>
             </div>
 
@@ -311,7 +316,7 @@
                       start: element.video_start_second,
                       end: element.video_end_second,
                       rel: 0,
-                      origin: host
+                      origin: origin
                     }"></youtube>
                     <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
                       v-show="isYoutubeSource(element) && !element.loadedVideo">
@@ -340,7 +345,7 @@
                         </div>
                         <!--play button-->
                         <div class="col-2">
-                          <a class="btn btn-danger fa-pull-right" @click="clickPlayButton(index, element)">
+                          <a class="btn btn-danger fa-pull-right" @click="clickYoutubePlayButton(index, element)">
                             <i class="fas fa-play-circle"></i>
                           </a>
                         </div>
@@ -369,6 +374,7 @@
                       </div>
                     </div>
                   </div>
+                  
                   <!-- youtube embed source -->
                   <div class="card mb-3" v-else-if="isYoutubeEmbedSource(element)">
                     <YoutubeEmbed :element="element" v-if="element" :autoplay="false"/>
@@ -399,6 +405,67 @@
                         :update-element-route="updateElementEndpoint" 
                         :upload-element-route="uploadElementEndpoint"
                         @elementUpdated="handleElementUpdated"/>
+                    </div>
+                  </div>
+
+                  <!-- twitch video -->
+                  <div v-else-if="isTwitchVideoSource(element) || isTwitchClipSource(element)">
+                    <div :id="'twitch-video-'+element.id" v-if="isTwitchVideoSource(element)" class="w-100 twitch-container"></div>
+                    <iframe v-else-if="isTwitchClipSource(element) && element.loadedVideo"
+                      :src="'https://clips.twitch.tv/embed?clip='+element.video_id+'&parent='+host+'&autoplay=true'"
+                      height="270"
+                      width="100%"
+                      allowfullscreen></iframe>
+                    <img v-if="!element.loadedVideo" :src="element.thumb_url" class="card-img-top" :alt="element.title">
+                      <!-- editor -->
+                      <div class="card-body">
+                      <!--title edit-->
+                      <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
+                        :maxlength="config.element_title_size" rows="4" style="resize: none;"
+                        @change="updateElementTitle(element.id, $event)"></textarea>
+                      <!--play time range-->
+                      <div class="row mb-3">
+                        <div class="col-10">
+                          <div class="input-group">
+                            <div class="input-group-prepend d-lg-none d-xl-block">
+                              <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
+                            </div>
+                            <input type="text" class="form-control" name="video_start_second" placeholder="0:00"
+                              aria-label="start" @change="updateVideoScope(index, element, $event)"
+                              :value="toTimeFormat(element.video_start_second)">
+                            <div class="input-group-prepend"><span class="input-group-text">~</span></div>
+                            <input type="text" class="form-control" disabled>
+                          </div>
+                        </div>
+                        <!--play button-->
+                        <div class="col-2">
+                          <a class="btn btn-danger fa-pull-right" @click="clickTwitchPlayButton(index, element)">
+                            <i class="fas fa-play-circle"></i>
+                          </a>
+                        </div>
+                      </div>
+                      <div>
+                        <!--rank-->
+                        <span class="card-text d-inline-block">
+                          <small class="text-muted">{{ $t('edit_post.rank')}} # {{ getElementRank(element) }}</small>
+                          <!--create time-->
+                          <br>
+                          <small class="text-muted">{{ element.created_at | datetime}}</small>
+                        </span>
+                        <!--delete button-->
+                        <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
+                          <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                          <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                        </a>
+                        <!--edit button-->
+                        <EditElement v-if="post"
+                          :post-serial="post.serial"
+                          :element-id="String(element.id)"
+                          :source-url="element.source_url"
+                          :update-element-route="updateElementEndpoint" 
+                          :upload-element-route="uploadElementEndpoint"
+                          @elementUpdated="handleElementUpdated"/>
+                      </div>
                     </div>
                   </div>
 
@@ -434,6 +501,7 @@
                         @elementUpdated="handleElementUpdated"/>
                     </div>
                   </div>
+                  
                   <!-- video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
@@ -542,7 +610,8 @@ export default {
     this.loadPost();
     this.resetSearch();
     this.loadTagsOptions();
-    this.host = window.location.origin;
+    this.origin = window.location.origin;
+    this.host = window.location.host;
   },
   props: {
     config: Object,
@@ -562,6 +631,7 @@ export default {
   data: function () {
     return {
       host: '',
+      origin: '',
       loading: {
         LOADING_POST: true,
         SAVING_POST: false,
@@ -663,7 +733,31 @@ export default {
         .finally(() => {
           this.uploadLoadingStatus('LOADING_POST', false);
         });
+    },
+    loadTwitchVideo: function (index, element) {
+      // for each element, if it is twitch source, load the video
+      if (element.twitchPlayer === undefined) {
+        element.twitchPlayer = new Twitch.Embed("twitch-video-" + element.id, {
+          width: "100%",
+          height: 270,
+          video: element.video_id,
+          layout: "video",
+          autoplay: true,
+          muted: false,
+          time: this.formatTime(element.video_start_second),
+        });
+        element.loadedVideo = true;
+        this.$set(this.elements.data, index, element);
+      }
 
+      return element.twitchPlayer;
+    },
+    formatTime: function (time) {
+      // format second to 0h0m0s
+      let hour = Math.floor(time / 3600);
+      let minute = Math.floor((time % 3600) / 60);
+      let second = time % 60;
+      return `${hour}h${minute}m${second}s`;
     },
     clickEdit: function () {
       this.isEditing = true;
@@ -761,6 +855,15 @@ export default {
         .then(res => {
           this.elements = res.data;
         })
+        .finally(() => {
+          // clear twitch player
+          this.clearTwicthPlayer();
+        });
+    },
+    clearTwicthPlayer: function () {
+      this.elements.data.forEach((element) => {
+        $(`#twitch-video-${element.id}`).empty();
+      });
     },
     resetSearch: function () {
       this.filters.title_like = null;
@@ -968,11 +1071,14 @@ export default {
             });
           })
           .catch((err) => {
-            this.showAlert(err.response.data.message, 'danger');
-            this.deleteProgressBarValue(file);
+            this.showAlert(err.response.data.message || err.response.statusText, 'danger');
+            this.setProgressBarValueFailed(file);
           });
       });
       event.target.value = '';
+    },
+    cancelUpload: function (file) {
+      this.deleteProgressBarValue({ name: file });
     },
     onImageError: function (element, event) {
       if(this.errorImages.includes(element.id)) {
@@ -994,6 +1100,12 @@ export default {
     },
     isYoutubeEmbedSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube_embed';
+    },
+    isTwitchVideoSource: function (element) {
+      return element.type === 'video' && element.video_source === 'twitch_video';
+    },
+    isTwitchClipSource: function (element) {
+      return element.type === 'video' && element.video_source === 'twitch_clip';
     },
     isBilibiliVideoSource: function (element) {
       return element.type === 'video' && element.video_source === 'bilibili_video';
@@ -1026,7 +1138,7 @@ export default {
           this.loadElements(this.currentPage);
         })
         .catch((err) => {
-          console.log(err.response.data);
+          // console.log(err.response.data);
           let errorUrl = '';
           if (err.response.data.data.error_url) {
             errorUrl = err.response.data.data.error_url + " ";
@@ -1080,6 +1192,10 @@ export default {
       delete this.uploadingFiles[file.name];
       this.uploadingFiles = Object.assign({}, this.uploadingFiles);
     },
+    setProgressBarValueFailed: function (file) {
+      let filename = file.name;
+      this.$set(this.uploadingFiles, filename, -1);
+    },
     toTimeFormat: function (seconds) {
       if (seconds === null || seconds === '') {
         return null;
@@ -1103,10 +1219,10 @@ export default {
     },
 
     /** Player **/
-    getPlayer(element) {
+    getYoutubePlayer(element) {
       return _.get(this.$refs, element.id + '.0.player', null);
     },
-    clickPlayButton(index, element) {
+    clickYoutubePlayButton(index, element) {
       this.playingVideo = element.id;
       element.loadedVideo = true;
       this.$set(this.elements.data, index, element);
@@ -1114,7 +1230,7 @@ export default {
       this.doPlay(element);
     },
     doPlay(element) {
-      const player = this.getPlayer(element);
+      player = this.getYoutubePlayer(element);
       if (player) {
         window.player = player;
         player.loadVideoById({
@@ -1122,6 +1238,24 @@ export default {
           startSeconds: element.video_start_second,
           endSeconds: element.video_end_second
         });
+      }
+    },
+    clickTwitchPlayButton(index, element) {
+      // console.log('clickTwitchPlayButton');
+      if(element.video_source === 'twitch_video'){
+        let player = this.loadTwitchVideo(index, element);
+        player.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+          embed.getPlayer().play();
+        });
+
+        let isPaused = player.isPaused();
+        if(isPaused){
+          player.play();
+        }
+        player.seek(element.video_start_second);
+      } else if(element.video_source === 'twitch_clip'){
+        element.loadedVideo = true;
+        this.$set(this.elements.data, index, element);
       }
     },
 

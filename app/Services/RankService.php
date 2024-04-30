@@ -107,7 +107,7 @@ class RankService
 
     public function createRankReport(Post $post)
     {
-        \Log::info("start update post [{$post->id}] rank report..."); 
+        \Log::info("start update post [{$post->id}] rank report [{$post->title}]"); 
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
             ->where('record_date', today())
@@ -157,7 +157,5 @@ class RankService
                     'rank' => $index + 1
                 ]);
             });
-
-        \Log::info("end update post [{$post->id}] rank report");
     }
 }

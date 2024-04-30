@@ -40,13 +40,13 @@ class EventServiceProvider extends ServiceProvider
             UpdateElementRank::class
         ],
         PostCreated::class => [
-            CreateImgurAlbum::class
+            //create a job to create imgur album
         ],
         PostDeleted::class => [
-            DeleteImgurAlbum::class
+            //create a job to delete imgur album
         ],
         ImageElementCreated::class => [
-            CreateImgurImage::class
+            //create a job to upload image to imgur
         ],
         ElementDeleted::class => [
             DeleteElementRank::class
