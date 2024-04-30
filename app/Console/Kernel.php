@@ -20,6 +20,8 @@ class Kernel extends ConsoleKernel
             app(PostTrendScheduleExecutor::class)->createPostTrends();
         })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping();
 
+        $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily();
+
         $schedule->command('sitemap:generate')->name('Generate Sitemap')->daily();
 
         if(app()->isLocal()){

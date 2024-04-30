@@ -59,7 +59,9 @@ class YoutubeService
                 }
                 return str_replace('/', '', $url);
             }
-            return $matches[6];
+            if(isset($matches[6])){
+                return $matches[6];
+            }
         } catch (\Throwable $throwable) {
             $errors[] = $throwable->getMessage();
         }

@@ -80,7 +80,12 @@ export default {
           this.profile = response.data.profile;
         })
         .catch(error => {
-          console.log(error);
+          // console.log(error);
+          Swal.fire({
+            title: 'Error!',
+            text: this.$t('Something went wrong. Please try again later.'),
+            icon: 'error',
+          });
         });
     },
     clickTab: function (tab) {
@@ -102,7 +107,7 @@ export default {
             $("html, body").animate({ scrollTop: $('#comments-total').offset().top - navbarHeight }, 1000);
           })
           .catch(error => {
-            console.log(error);
+            // console.log(error);
             Swal.fire({
               title: 'Error!',
               text: error.response.data.message,
@@ -179,7 +184,7 @@ export default {
           });
         })
         .catch(error => {
-          console.log(error);
+          // console.log(error);
           Swal.fire({
             title: 'Error!',
             text: this.$t('Something went wrong. Please try again later.'),

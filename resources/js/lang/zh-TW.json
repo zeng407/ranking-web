@@ -146,6 +146,10 @@
     "An error occurred. Please try again later.": "發生錯誤，請稍後再試",
     "Import clips": "匯入剪輯片段",
     "Created": "建立於 {time}",
+    "VODs": "影片",
+    "Clips": "剪輯",
+    "Video": "影片",
+    "Shorts": "Shorts短片",
 
     "":""
 }

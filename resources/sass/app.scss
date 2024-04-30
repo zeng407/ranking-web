@@ -430,3 +430,9 @@
     line-height: 1.5;
     border-radius: 4rem;
 }
+
+.twitch-container {
+    iframe {
+        border: 0;
+    }
+}

@@ -7,7 +7,8 @@ export default {
   mounted() {
     this.loadGameSetting();
     this.showGameSettingPanel();
-    this.host = window.location.origin;
+    this.origin = window.location.origin;
+    this.host = window.location.host;
   },
   props: {
     postSerial: String,
@@ -20,6 +21,7 @@ export default {
   data: function () {
     return {
       clientWidth: null,
+      origin: '',
       host: '',
       elementHeight: 450,
       gameSerial: null,
@@ -183,7 +185,7 @@ export default {
         })
     },
     leftPlay() {
-      const myPlayer = this.getPlayer(this.le);
+      const myPlayer = this.getYoutubePlayer(this.le);
       if (myPlayer) {
         // window.p1 = myPlayer;
         myPlayer.playVideo();
@@ -191,7 +193,7 @@ export default {
         this.isLeftPlaying = true;
       }
 
-      const theirPlayer = this.getPlayer(this.re);
+      const theirPlayer = this.getYoutubePlayer(this.re);
       if (theirPlayer) {
         // window.p2 = theirPlayer;
         theirPlayer.pauseVideo();
@@ -238,13 +240,13 @@ export default {
     rightPlay() {
       this.isLeftPlaying = false;
       this.isRightPlaying = true;
-      const myPlayer = this.getPlayer(this.re);
+      const myPlayer = this.getYoutubePlayer(this.re);
       if (myPlayer) {
         myPlayer.playVideo();
         myPlayer.unMute();
       }
 
-      const theirPlayer = this.getPlayer(this.le);
+      const theirPlayer = this.getYoutubePlayer(this.le);
       if (theirPlayer) {
         theirPlayer.pauseVideo();
         theirPlayer.mute();
@@ -330,13 +332,13 @@ export default {
       }
     },
     pauseAllVideo(){
-      const player = this.getPlayer(this.le);
+      const player = this.getYoutubePlayer(this.le);
       if (player) {
         player.pauseVideo();
         player.seekTo(this.le.start_second);
       }
 
-      const player2 = this.getPlayer(this.re);
+      const player2 = this.getYoutubePlayer(this.re);
       if (player2) {
         player2.pauseVideo();
         player2.seekTo(this.re.start_second);
@@ -404,15 +406,39 @@ export default {
       const url = this.getRankRoute.replace('_serial', this.postSerial) + '?g=' + this.gameSerial;
       window.open(url, '_self');
     },
-    getPlayer(element) {
+    getYoutubePlayer(element) {
       if(!element){
         return null;
       }
       return _.get(this.$refs, element.id + '.player', null);
     },
+    getTwitchPlayer(element) {
+      // console.log('getTwitchPlayer');
+
+      //check twitch-video-{{element.id}} is exist
+        if (document.getElementById("twitch-video-" + element.id) === null) {
+          return null;
+        }
+
+      if (element.twitchPlayer === undefined) {
+        // console.log('new Twitch.Embed');
+        element.twitchPlayer = new Twitch.Embed("twitch-video-" + element.id, {
+          width: "100%",
+          height: this.elementHeight,
+          video: element.video_id,
+          layout: "video",
+          autoplay: false,
+          muted: false,
+          time: this.formatTime(element.video_start_second),
+        });
+        // console.log(element.twitchPlayer);
+      }
+
+      return element.twitchPlayer;
+    },
     doPlay(element, loud = false, name) {
-      const player = this.getPlayer(element);
-      if (player) {
+      let player = null;
+      if (player = this.getYoutubePlayer(element)) {
         if (loud) {
           player.unMute();
         } else {
@@ -425,6 +451,16 @@ export default {
             player.playVideo();
           }
         });
+      }
+      else if (player = this.getTwitchPlayer(element)) {
+        if(element.video_source === 'twitch_video'){
+            player.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+              embed.getPlayer().play();
+            });
+            player.seek(element.video_start_second);  
+        }else if(element.video_source === 'twitch_clip'){
+          //
+        } 
       }
     },
     initPlayerEventLister(player, element) {
@@ -448,14 +484,14 @@ export default {
       }
       this.mousePosition = left;
 
-      const myPlayer = this.getPlayer(myElement);
+      const myPlayer = this.getYoutubePlayer(myElement);
       if (myPlayer) {
         // window.p1 = myPlayer;
         myPlayer.playVideo();
         myPlayer.unMute();
       }
 
-      const theirPlayer = this.getPlayer(theirElement);
+      const theirPlayer = this.getYoutubePlayer(theirElement);
       if (theirPlayer) {
         // window.p2 = theirPlayer;
         // let retry = 0;
@@ -513,6 +549,12 @@ export default {
     },
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
+    },
+    isTwitchVideoSource: function (element) {
+      return element.type === 'video' && element.video_source === 'twitch_video';
+    },
+    isTwitchClipSource: function (element) {
+      return element.type === 'video' && element.video_source === 'twitch_clip';
     },
     isBilibiliSource: function (element) {
       return element.type === 'video' && element.video_source === 'bilibili_video';
@@ -579,7 +621,14 @@ export default {
       if(this.game.current_round % 5 === 0){
         return true;
       }
-    }
+    },
+    formatTime: function (time) {
+      // format second to 0h0m0s
+      let hour = Math.floor(time / 3600);
+      let minute = Math.floor((time % 3600) / 60);
+      let second = time % 60;
+      return `${hour}h${minute}m${second}s`;
+    },
   },
 
   beforeMount() {

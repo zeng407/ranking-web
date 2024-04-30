@@ -3,7 +3,7 @@
     <a href="#" data-toggle="modal" data-target="#uploadGuide">{{ $t('Upload guide') }}&nbsp;<i class="fa-solid fa-circle-info"></i></a>
     <!-- Modal for upload guide -->
     <!-- Modal -->
-    <div class="modal fade" id="uploadGuide" data-keyboard="false" tabindex="-1" aria-labelledby="uploadGuidePanel"
+    <div class="modal fade" id="uploadGuide" data-keyboard="true" tabindex="-1" aria-labelledby="uploadGuidePanel"
       aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -16,9 +16,16 @@
                   <img style="height: 30px; width: 100%; object-fit: contain" alt="yotube logo" src="/storage/youtube-icon.png">
                 </button>
               </li>
+              <!-- twitch -->
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-twitch-tab" data-toggle="pill" data-target="#pills-twitch"
+                  type="button" role="tab" aria-controls="pills-twitch" aria-selected="false" style="width: 70px;">
+                  <img style="height: 30px; width: 100%; object-fit: contain;" alt="twitch logo" src="/storage/twitch-icon.svg">
+                </button>
+              </li>
               <!-- bilibili -->
               <li class="nav-item" role="presentation">
-                <button class="nav-link" id="pills-imgur-tab" data-toggle="pill" data-target="#pills-bilibili"
+                <button class="nav-link" id="pills-bilibili-tab" data-toggle="pill" data-target="#pills-bilibili"
                   type="button" role="tab" aria-controls="pills-bilibili" aria-selected="false" style="width: 70px;">
                   <img style="height: 30px; width: 100%; object-fit: contain;" alt="bilibili logo" src="/storage/bilibili.ico">
                 </button>
@@ -48,14 +55,18 @@
           <div class="modal-body">
             <div class="tab-content" id="pills-tabContent">
               <div class="tab-pane fade show active" id="pills-youtube" role="tabpanel" aria-labelledby="pills-youtube-tab">
-                <h3>YouTube</h3>
+                <h3>
+                  <a href="https://www.youtube.com/" target="_blank">
+                    Youtube <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  </a>
+                </h3>
                 <h5>{{$t('Support formats')}}:</h5>
                 <ul>
-                  <li>https://www.youtube.com/watch?v=xxxxx</li>
-                  <li>https://www.youtube.com/watch/xxxxx</li>
-                  <li>https://www.youtube.com/shorts/xxxxxx</li>
-                  <li>https://www.youtube.com/xxxxxx</li>
-                  <li>https://youtu.be/xxxxx</li>
+                  <li>{{$t('Video')}}：https://www.youtube.com/watch?v=xxxxx</li>
+                  <li>{{$t('Video')}}：https://www.youtube.com/watch/xxxxx</li>
+                  <li>{{$t('Shorts')}}：https://www.youtube.com/shorts/xxxxxx</li>
+                  <li>{{$t('Video')}}：https://www.youtube.com/xxxxxx</li>
+                  <li>{{$t('Video')}}：https://youtu.be/xxxxx</li>
                 </ul>
                 <h5>{{ $t('Import clips') }}</h5>
                 <img src="/storage/youtube-embed-tutorial.jpg" alt="youtube import" style="width: 100%; object-fit: contain;">
@@ -64,10 +75,14 @@
                 </div>
               </div>
               <div class="tab-pane fade" id="pills-bilibili" role="tabpanel" aria-labelledby="pills-bilibili-tab">
-                <h3>bilibili</h3>
+                <h3>
+                  <a href="https://www.bilibili.com/" target="_blank">
+                    bilibili <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  </a>
+                </h3>
                 <h5>{{$t('Support formats')}}:</h5>
                 <ul>
-                  <li>https://www.bilibili.com/video/BVxxxxxxxxxx/</li>
+                  <li>{{$t('Video')}}：https://www.bilibili.com/video/BVxxxxxxxxxx/</li>
                 </ul>
                 <h5>{{ $t('Import bangumi') }}</h5>
                 <img src="/storage/bilibili-copy-link.jpg" alt="youtube import" style="width: 100%; object-fit: contain;">
@@ -75,8 +90,24 @@
                   https://www.bilibili.com/video/BVxxxxxxxxxx/
                 </div>
               </div>
+              <div class="tab-pane fade" id="pills-twitch" role="tabpanel" aria-labelledby="pills-twitch-tab">
+                <h3>
+                  <a href="https://www.twitch.tv/" target="_blank">
+                    Twitch <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  </a>
+                </h3>
+                <h5>{{$t('Support formats')}}:</h5>
+                <ul>
+                  <li>{{$t('VODs')}}：https://www.twitch.tv/videos/xxxxxxx</li>
+                  <li>{{$t('Clips')}}：https://www.twitch.tv/xxxxxx/clip/xxxxxx</li>
+                </ul>
+              </div>
               <div class="tab-pane fade" id="pills-imgur" role="tabpanel" aria-labelledby="pills-imgur-tab">
-                <h3>Imgur</h3>
+                <h3>
+                  <a href="https://imgur.com/" target="_blank">
+                    Imgur <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  </a>
+                </h3>
                 <h5>{{$t('Support formats')}}:</h5>
                 <ul>
                   <li>https://imgur.com/gallery/xxxxx</li>

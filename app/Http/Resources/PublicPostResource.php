@@ -73,6 +73,8 @@ class PublicPostResource extends JsonResource
         return $element->type === \App\Enums\ElementType::IMAGE || 
             $element->video_source === \App\Enums\VideoSource::YOUTUBE || 
             $element->video_source === \App\Enums\VideoSource::YOUTUBE_EMBED ||
-            $element->video_source === \App\Enums\VideoSource::BILIBILI_VIDEO;
+            $element->video_source === \App\Enums\VideoSource::BILIBILI_VIDEO ||
+            $element->video_source === \App\Enums\VideoSource::TWITCH_VIDEO ||
+            $element->video_source === \App\Enums\VideoSource::TWITCH_CLIP;
     }
 }

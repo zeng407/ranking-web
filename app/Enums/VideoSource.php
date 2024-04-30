@@ -12,5 +12,6 @@ enum VideoSource: string
     const URL = 'url';
     const GFYCAT = 'gfycat';
     const IMGUR = 'imgur';
-    const TWITCH = 'twitch';
+    const TWITCH_VIDEO = 'twitch_video';
+    const TWITCH_CLIP = 'twitch_clip';
 }

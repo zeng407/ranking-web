@@ -14,6 +14,7 @@ use App\Services\ElementHandlers\GfyElementHandler;
 use App\Services\ElementHandlers\ImageElementHandler;
 use App\Services\ElementHandlers\ImageFileElementHandler;
 use App\Services\ElementHandlers\ImgurElementHandler;
+use App\Services\ElementHandlers\TwitchElementHandler;
 use App\Services\ElementHandlers\UploadedFileAdaptor;
 use App\Services\ElementHandlers\VideoFileElementHandler;
 use App\Services\ElementHandlers\VideoUrlElementHandler;
@@ -75,7 +76,7 @@ class ElementService
                 return (new BilibiliElementHandler)->storeElement($sourceUrl, $post, $params);
             case $guess->isTwitch:
                 logger("got Twitch");
-                return null;
+                return (new TwitchElementHandler)->storeElement($sourceUrl, $post, $params);
             default:
                 logger("got Unknown");
                 return null;
