@@ -88,6 +88,44 @@ class ElementControllerTest extends TestCase
                 'is_image' => true,
             ], $cache);
 
+        // mock http request for imgur
+        Http::fake([
+            'https://api.imgur.com/3/image' => Http::response([
+                'data' => [
+                    'id' => '8nLFCVP',
+                    'title' => 'title',
+                    'link' => 'https://i.imgur.com/8nLFCVP.png',
+                    'description' => 'description',
+                    'type' => 'image/png',
+                ],
+                'success' => true,
+                'status' => 200,
+            ]),
+            'https://api.imgur.com/3/image/8nLFCVP' => Http::response([
+                'data' => [
+                    'id' => '8nLFCVP',
+                    'title' => 'title',
+                    'link' => 'https://i.imgur.com/8nLFCVP.png',
+                    'description' => 'description',
+                    'type' => 'image/png',
+                ],
+                'success' => true,
+                'status' => 200,
+            ]),
+            'https://api.imgur.com/3/image/pPEHoApUaxS220Q' => Http::response([
+                'data' => [
+                    'id' => '8nLFCVP',
+                    'title' => 'title',
+                    'link' => 'https://i.imgur.com/8nLFCVP.png',
+                    'description' => 'description',
+                    'type' => 'image/png',
+                ],
+                'success' => true,
+                'status' => 200,
+            ]),
+        ]);
+
+
         // update imgur url
         $urls = [
             'https://imgur.com/gallery/8nLFCVP',

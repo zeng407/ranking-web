@@ -57,14 +57,12 @@ trait FileHelper
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
             $content = curl_exec($ch);
-            logger("curl content: $content");
             curl_close($ch);
         } catch (\Exception $exception) {
         }
 
         try {
             $content = file_get_contents($sourceUrl);
-            logger("file_get_contents content: $content");
         } catch (\Exception $exception) {
             logger($exception->getMessage());
         }

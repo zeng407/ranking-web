@@ -68,6 +68,7 @@ class ImgurTest extends TestCase
         // $this->expectExceptionMessage('Failed to create album');
 
         $result = $postService->create($user, ['title' => 'anytitle', 'description' => 'anydescription']);
+        $this->assertDatabaseHas('posts', ['id' => $result->id]);
     }
 
     public function testCreateImage()
@@ -109,6 +110,9 @@ class ImgurTest extends TestCase
         $url = Faker\Provider\Image::imageUrl();
         $path = 'any/path';
         $result = (new ImageElementHandler)->storeElement($url, $post);
+        
+        $this->assertDatabaseHas('elements', ['id' => $result->id]);
+        
     }
 
     public function testCreateImageFailUpload()
