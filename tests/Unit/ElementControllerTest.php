@@ -1,11 +1,17 @@
 <?php
 
+use App\Services\YoutubeService;
+use Google\Service\YouTube\Thumbnail;
+use Google\Service\YouTube\ThumbnailDetails;
+use Google\Service\YouTube\VideoContentDetails;
+use Google\Service\YouTube\VideoSnippet;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Comment;
 use Tests\TestHelper;
+use Google\Service\YouTube;
 
 class ElementControllerTest extends TestCase
 {
@@ -165,12 +171,22 @@ class ElementControllerTest extends TestCase
         $element = $this->createElements($post, 1)[0];
         $this->be($post->user);
 
-        Http::fake([
-            'https://www.youtube.com/watch?v=0SyTa7D62zQ' => Http::response(''),
-            'https://www.youtube.com/shorts/-YGfTA0qFf0' => Http::response(''),
-            'https://www.youtube.com/clip/Ugkx4Pim6GGBgjMDm2nUtfYyfR-uenidVxuF' => Http::response(''),
-            'https://www.youtube.com/embed/0SyTa7D62zQ?si=2Zt5VVfMc-bcESVN&clip=UgkxTY_5fbTzqRkYpyjcqQC4nBJ_3FuFkkun&clipt=EJ_9TxiTwFM' => Http::response(''),
-        ]);
+        // mock youtube
+        $video = new YouTube\Video();
+        $video->setId('0');
+        $video->setContentDetails(tap(new YouTube\VideoContentDetails(), fn(VideoContentDetails $videoContentDetails) => $videoContentDetails->setDuration('PT3M31S')));
+        $video->setSnippet(
+            tap(new YouTube\VideoSnippet(), fn(VideoSnippet $videoSnippet) => $videoSnippet->setThumbnails(
+                tap(new ThumbnailDetails(), fn (ThumbnailDetails $thumbnail) => $thumbnail->setHigh(
+                        tap(new Thumbnail(), fn (Thumbnail $thumbnail) => $thumbnail->setUrl('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg'))
+                    )
+                )
+            )));
+        $youtubeServiceMock = $this->partialMock(YoutubeService::class, function ($mock) use ($video){
+            $mock->shouldReceive('query')
+                ->times(2)
+                ->andReturn($video);
+        });
 
         //update youtube url
         $urls = [
@@ -185,6 +201,21 @@ class ElementControllerTest extends TestCase
             $res->assertStatus(200);
             $this->assertDatabaseHas('elements', ['source_url' => $url]);
         }
+    }
+
+    public function testUpdateElementYoutubeClip()
+    {
+        $post = $this->createPost();
+        $element = $this->createElements($post, 1)[0];
+        $this->be($post->user);
+
+
+        // mock youtube
+        $youtubeServiceMock = $this->partialMock(YoutubeService::class, function ($mock) use ($video){
+            $mock->shouldReceive('query')
+                ->times(1)
+                ->andReturn(null);
+        });
 
         // update youtube clip url failed
         $url = 'https://www.youtube.com/clip/Ugkx4Pim6GGBgjMDm2nUtfYyfR-uenidVxuF';
@@ -195,16 +226,24 @@ class ElementControllerTest extends TestCase
         $res->assertStatus(422);
         $this->assertDatabaseMissing('elements', ['source_url' => $url]);
 
+    }
+
+    public function testUpdateElementYoutubeEmbed()
+    {
+        $post = $this->createPost();
+        $element = $this->createElements($post, 1)[0];
+        $this->be($post->user);
+        
         // update embed code
         $url = '<iframe width="100%" height="270" src="https://www.youtube.com/embed/0SyTa7D62zQ?si=2Zt5VVfMc-bcESVN&amp;clip=UgkxTY_5fbTzqRkYpyjcqQC4nBJ_3FuFkkun&amp;clipt=EJ_9TxiTwFM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
-        $res = $this->put(route('api.element.update', $element->id), [
-            'post_serial' => $post->serial,
-            'url' => $url,
-        ], ['Accept' => 'application/json']);
-        $res->assertStatus(200);
-        $this->assertDatabaseMissing('elements', ['source_url' => 
-            '<iframe width="100%" height="270" src="https://www.youtube.com/embed/0SyTa7D62zQ?si=2Zt5VVfMc-bcESVN&amp;clip=UgkxTY_5fbTzqRkYpyjcqQC4nBJ_3FuFkkun&amp;clipt=EJ_9TxiTwFM&autoplay=1&playlist=0SyTa7D62zQ&loop=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>'
-        ]);
+            $res = $this->put(route('api.element.update', $element->id), [
+                'post_serial' => $post->serial,
+                'url' => $url,
+            ], ['Accept' => 'application/json']);
+            $res->assertStatus(200);
+            $this->assertDatabaseMissing('elements', ['source_url' => 
+                '<iframe width="100%" height="270" src="https://www.youtube.com/embed/0SyTa7D62zQ?si=2Zt5VVfMc-bcESVN&amp;clip=UgkxTY_5fbTzqRkYpyjcqQC4nBJ_3FuFkkun&amp;clipt=EJ_9TxiTwFM&autoplay=1&playlist=0SyTa7D62zQ&loop=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>'
+            ]);
     }
 
     public function testUpdateElementGfy()
