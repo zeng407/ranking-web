@@ -34,9 +34,15 @@ Auth::routes([
 
 Route::get('/lang/{locale}', [HomeController::class, 'lang'])->name('lang');
 
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('post/{post:serial}/game', [GameController::class, 'show'])->name('game.show');
-Route::get('post/{post:serial}/rank', [GameController::class, 'rank'])->name('game.rank');
+
+// short url
+Route::get('g/{post:serial}', [GameController::class, 'show'])->name('game.show.short');
+Route::get('r/{post:serial}', [GameController::class, 'rank'])->name('game.rank.short');
+
+Route::get('post/{post:serial}/game', fn() => redirect()->route('game.show.short', ['post' => request()->post]))->name('game.show');;
+Route::get('post/{post:serial}/rank', fn() => redirect()->route('game.rank.short', ['post' => request()->post]))->name('game.rank');
 Route::get('post/{post:serial}/rank-embed', [GameController::class, 'rankEmbed'])->name('game.rank-embed');
 
 /** Oauth */
