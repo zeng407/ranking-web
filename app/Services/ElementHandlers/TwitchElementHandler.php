@@ -38,6 +38,7 @@ class TwitchElementHandler implements InterfaceElementHandler
             $thumbnailUrl = $videoInfo['thumbnail_url'];
             $thumbnailUrl = str_replace(['%{width}', '%{height}'], [1024, 768], $thumbnailUrl);
         } catch (\Exception $e) {
+            logger($e->getMessage());
             return null;
         }
 

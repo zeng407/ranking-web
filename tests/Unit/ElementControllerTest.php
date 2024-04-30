@@ -165,6 +165,13 @@ class ElementControllerTest extends TestCase
         $element = $this->createElements($post, 1)[0];
         $this->be($post->user);
 
+        Http::fake([
+            'https://www.youtube.com/watch?v=0SyTa7D62zQ' => Http::response(''),
+            'https://www.youtube.com/shorts/-YGfTA0qFf0' => Http::response(''),
+            'https://www.youtube.com/clip/Ugkx4Pim6GGBgjMDm2nUtfYyfR-uenidVxuF' => Http::response(''),
+            'https://www.youtube.com/embed/0SyTa7D62zQ?si=2Zt5VVfMc-bcESVN&clip=UgkxTY_5fbTzqRkYpyjcqQC4nBJ_3FuFkkun&clipt=EJ_9TxiTwFM' => Http::response(''),
+        ]);
+
         //update youtube url
         $urls = [
             'https://www.youtube.com/watch?v=0SyTa7D62zQ',
@@ -238,16 +245,48 @@ class ElementControllerTest extends TestCase
         $element = $this->createElements($post, 1)[0];
         $this->be($post->user);
 
+        Http::fake([
+            'https://api.twitch.tv/helix/videos?id=2133361772' => Http::response([
+                'data' => [
+                    [
+                        'user_name' => 'user_name',
+                        'title' => 'title',
+                        'thumbnail_url' => 'https://www.twitch.tv/123456789.jpg'
+                    ]
+                ]
+            ]),
+            'https://api.twitch.tv/helix/clips?id=123456789' => Http::response([
+                'data' => [
+                    [
+                        'broadcaster_name' => 'broadcaster_name',
+                        'title' => 'title',
+                        'thumbnail_url' => 'https://www.twitch.tv/23345/clip/123456789.jpg'
+                    ]
+                ]
+            ]),
+        ]);
         
-        $url = 'https://www.twitch.tv/videos/123456789';
+        $url = 'https://www.twitch.tv/videos/2133361772';
         $res = $this->put(route('api.element.update', $element->id), [
             'post_serial' => $post->serial,
             'url' => $url,
         ], ['Accept' => 'application/json']);
+        $res->assertStatus(200);
+        $this->assertDatabaseHas('elements', [
+            'source_url' => $url,
+            'video_source' => 'twitch_video'
+        ]);
 
-        //todo
-        $res->assertStatus(422);
-        // $this->assertDatabaseHas('elements', ['source_url' => $url]);
+        $url = 'https://www.twitch.tv/23345/clip/123456789';
+        $res = $this->put(route('api.element.update', $element->id), [
+            'post_serial' => $post->serial,
+            'url' => $url,
+        ], ['Accept' => 'application/json']);
+        $res->assertStatus(200);
+        $this->assertDatabaseHas('elements', [
+            'source_url' => $url,
+            'video_source' => 'twitch_clip'
+        ]);
     }
 
 }
