@@ -130,7 +130,62 @@ class ElementControllerTest extends TestCase
                 'status' => 200,
             ]),
         ]);
+    }
 
+    public function testUpdateElementImgur()
+    {
+        $post = $this->createPost();
+        $element = $this->createElements($post, 1)[0];
+        $this->be($post->user);
+
+        Http::fake([
+            'https://api.imgur.com/3/gallery/album/8nLFCVP' => Http::response([
+                'data' => [
+                    'id' => '8nLFCVP',
+                    'title' => 'title',
+                    'link' => 'https://i.imgur.com/8nLFCVP.png',
+                    'description' => 'description',
+                    'type' => 'image/png',
+                ],
+                'success' => true,
+                'status' => 200,
+            ]),
+            'https://api.imgur.com/3/image/8nLFCVP' => Http::response([
+                'data' => [
+                    'id' => '8nLFCVP',
+                    'title' => 'title',
+                    'link' => 'https://i.imgur.com/8nLFCVP.png',
+                    'description' => 'description',
+                    'type' => 'image/png',
+                ],
+                'success' => true,
+                'status' => 200,
+            ]),
+            'https://api.imgur.com/3/image/yGhDZJ5' => Http::response([
+                'data' => [
+                    'id' => 'yGhDZJ5',
+                    'title' => 'title',
+                    'link' => 'https://i.imgur.com/yGhDZJ5.png',
+                    'description' => 'description',
+                    'type' => 'image/png',
+                ],
+                'success' => true,
+                'status' => 200,
+            ]),
+            'https://api.imgur.com/3/album/W7Mod3p/images' => Http::response([
+                'data' => [
+                    [
+                        'id' => 'W7Mod3p',
+                        'title' => 'title',
+                        'link' => 'https://i.imgur.com/W7Mod3p.png',
+                        'description' => 'description',
+                        'type' => 'image/png',
+                    ]
+                ],
+                'success' => true,
+                'status' => 200,
+            ]),
+        ]);
 
         // update imgur url
         $urls = [
@@ -147,7 +202,6 @@ class ElementControllerTest extends TestCase
             $url = $res->json('data')['source_url'];
             $this->assertDatabaseHas('elements', ['source_url' => $url]);
         }
-        
     }
 
     public function testUpdateElementVideo()
