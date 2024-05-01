@@ -582,9 +582,6 @@ export default {
             window.adsbygoogle.push({});
           }catch(e){}
         }
-        if($('#google-ad')){
-          $('#google-ad').addClass('d-flex justify-content-center');
-        }
       }catch(e){
 
       }
@@ -618,9 +615,7 @@ export default {
         return false;
       }
 
-      if(this.game.current_round % 5 === 0){
-        return true;
-      }
+      return true;
     },
     formatTime: function (time) {
       // format second to 0h0m0s
