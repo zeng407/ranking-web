@@ -29,6 +29,18 @@
         vote-game-endpoint="{{route('api.game.vote')}}"
     >
     <div class="container-fluid" v-cloak>
+        @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+          <div v-if="!isMobileScreen" style="height: 100px">
+            <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
+                @include('ads.game_ad')
+            </div>
+          </div>
+          <div v-if="isMobileScreen" style="height: 100px" class="overflow-hidden">
+            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
+              @include('ads.game_ad_mobile')
+            </div>
+          </div>
+        @endif
         <div v-if="game">
           <h2 class="text-center text-break">{{$post->title}}</h2>
           <div class="d-none d-sm-flex" style="flex-flow: row wrap">
@@ -195,14 +207,8 @@
           </div>
         </div>
 
-        @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-          <div v-if="!refreshAD && game && !isMobileScreen" id="google-ad" class="my-2">
-              @include('ads.game_ad')
-          </div>
-          <div v-if="!refreshAD && game && isMobileScreen" id="google-ad2" class="my-2 text-center">
-            @include('ads.game_ad_mobile')
-          </div>
-        @endif
+        {{-- more space for mobile bottom --}}
+        <div v-if="isMobileScreen" style="height: 50px"></div>
 
         <!-- Modal -->
         <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
