@@ -30,11 +30,13 @@
     >
     <div class="container-fluid" v-cloak>
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-          <div style="height: 100px">
-            <div v-if="!refreshAD && game && !isMobileScreen" id="google-ad" class="my-2 text-center">
+          <div v-if="!isMobileScreen" style="height: 100px">
+            <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
                 @include('ads.game_ad')
             </div>
-            <div v-if="!refreshAD && game && isMobileScreen" id="google-ad2" class="my-2 text-center">
+          </div>
+          <div v-if="isMobileScreen" style="height: 100px" class="overflow-hidden">
+            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
               @include('ads.game_ad_mobile')
             </div>
           </div>
@@ -204,6 +206,9 @@
             </div>
           </div>
         </div>
+
+        {{-- more space for mobile bottom --}}
+        <div v-if="isMobileScreen" style="height: 50px"></div>
 
         <!-- Modal -->
         <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
