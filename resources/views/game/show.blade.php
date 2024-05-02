@@ -32,7 +32,7 @@
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
           <div v-if="!isMobileScreen" style="height: 100px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
-                @include('ads.game_ad')
+                @include('ads.game_ad_pc')
             </div>
           </div>
           <div v-if="isMobileScreen" style="height: 100px" class="overflow-hidden">
@@ -207,8 +207,19 @@
           </div>
         </div>
 
-        {{-- more space for mobile bottom --}}
-        <div v-if="isMobileScreen" style="height: 50px"></div>
+        {{-- ads at bottom --}}
+        @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+          <div v-if="!isMobileScreen">
+            <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
+                @include('ads.game_ad_pc_responsive')
+            </div>
+          </div>
+          <div v-if="isMobileScreen">
+            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
+              @include('ads.game_ad_mobile_responsive')
+            </div>
+          </div>
+        @endif
 
         <!-- Modal -->
         <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
