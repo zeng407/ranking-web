@@ -53,8 +53,7 @@ class AdminController extends Controller
         ]);
 
         $post = Post::findOrFail($postId);
-        $post->update($data);
-        $post->post_policy()->update(data_get($data, 'policy', []));
+        $this->postService->update($post, $data);
         $this->postService->syncTags($post, data_get($data, 'tags', []));
         return redirect()->back()->with('success', 'Post updated successfully!');
     }

@@ -139,8 +139,7 @@ class MyPostController extends Controller
 
         $data = $this->validatePostPassword($request, $post, $data);
         
-        $post->update($data);
-        $post->post_policy()->update(data_get($data, 'policy', []));
+        $this->postService->update($post, $data);
         $this->postService->syncTags($post, data_get($data, 'tags', []));
         return PostResource::make($post->refresh());
     }
@@ -218,16 +217,19 @@ class MyPostController extends Controller
         return $sorter;
     }
 
-    protected function validatePostPassword($request, $post, $data)
+    protected function validatePostPassword(Request $request, $post, $data)
     {
-        if($post->isPasswordRequired() && $post->post_policy->password == null){
+        $policy = $request->input('policy.access_policy');
+        $password = $request->input('policy.password');
+        if($policy === PostAccessPolicy::PASSWORD
+            && $post->post_policy->password == null){
             $request->validate([
                 'policy.password' => ['required', 'string', 'max:255']
             ]);
         }
-        if(data_get($data, 'policy.access_policy') === PostAccessPolicy::PASSWORD) {
-            if(!empty(data_get($data, 'policy.password'))){
-                $data['policy']['password'] = hash('sha256', data_get($data, 'policy.password'));    
+        if($policy === PostAccessPolicy::PASSWORD) {
+            if(!empty($password)){
+                $data['policy']['password'] = hash('sha256', $password);
             }else{
                 unset($data['policy']['password']);
             }

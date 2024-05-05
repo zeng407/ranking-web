@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helper\CacheService;
 use App\Http\Resources\PublicPostResource;
 use App\Repositories\Filters\PostFilter;
 use Illuminate\Http\Request;
@@ -21,28 +22,9 @@ class HomeController extends Controller
 
     public function index(Request $request)
     {
-        $sort = $request->query('sort_by', 'hot');
-        $range = $request->query('range', config('setting.home_page_default_range'));
-        $tags = $this->tagService->get(null);
-
-        if ($sort === 'hot') {
-            $sort = 'hot_' . $range;
-        }
-
-        $posts = $this->postService->getList([
-            PostFilter::PUBLIC => true,
-            PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
-            PostFilter::KEYWORD_LIKE => $request->query('k')
-        ],[
-            'sort_by' => $sort,
-            'sort_dir' => $request->query('sort_dir'),
-        ], [
-            'per_page' => config('setting.home_post_per_page')
-        ]);
-
-        foreach( $posts as $key => $post ) {
-            $posts[$key] = PublicPostResource::make($post)->toArray($request);
-        }
+        $sort = $this->getSort($request);
+        $tags = $this->getHotTags();
+        $posts = $this->getPosts($request, $sort);
     
         return view('home', [
             'sort' => $request->query('sort_by', 'hot'),
@@ -50,6 +32,28 @@ class HomeController extends Controller
             'tags' => $tags,
             'posts' => $posts
         ]);
+    }
+
+    protected function getSort(Request $request)
+    {
+        $sort = $request->query('sort_by', 'hot');
+        $range = $request->query('range', config('setting.home_page_default_range'));
+
+        if ($sort === 'hot') {
+            $sort = 'hot_' . $range;
+        }
+
+        return $sort;
+    }
+
+    protected function getHotTags()
+    {
+        return CacheService::rememberHotTags();
+    }
+
+    protected function getPosts(Request $request, $sort)
+    {
+        return CacheService::rememberPosts($request, $sort);
     }
 
     public function lang(Request $request , $locale)

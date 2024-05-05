@@ -4,13 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Comment\CommentResource;
-use App\Http\Resources\PublicPostResource;
 use App\Models\Post;
 use App\Services\Builders\CommentBuilder;
 use App\Services\PostService;
 use Illuminate\Http\Request;
-use App\Repositories\Filters\PostFilter;
-use Illuminate\Pagination\LengthAwarePaginator;
 use RateLimiter;
 use App\Models\Comment;
 

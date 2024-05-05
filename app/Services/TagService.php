@@ -8,7 +8,7 @@ use App\Models\Tag;
 
 class TagService
 {
-    public function get(?string $name)
+    public function get(?string $name = null)
     {
 
         $query = Tag::join('post_tags', 'tags.id', '=', 'post_tags.tag_id')

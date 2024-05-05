@@ -64,6 +64,6 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        Event::subscribe(\App\Listeners\PostUpdateTimestampSubscriber::class);
     }
 }

@@ -11,7 +11,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Post;
 
-class PostCreated
+class PostUpdated
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -24,7 +24,7 @@ class PostCreated
      */
     public function __construct(Post $post)
     {
-        logger('[PostCreated] event fired', ['post' => $post->id]);
+        logger('[PostUpdated] event fired', ['post' => $post->id]);
         $this->post = $post;
     }
 
