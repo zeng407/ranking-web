@@ -3,34 +3,35 @@
     "Private": "Private",
     "Description": "Description",
     "Title": "Title",
-    "Visibility": "Visibility",
 
     "my_games.title": "My Votes",
     "my_games.new": "New vote",
     "my_games.table.title": "Title",
     "my_games.table.description": "Description",
-    "my_games.table.visibility": "Visibility",
+    "my_games.table.publishment": "Publishment",
     "my_games.table.edit": "Edit",
     "my_games.table.delete": "Delete",
     "my_games.table.no_data": "No Data",
 
-    "create_game.visibility" :"Visibility",
+    "create_game.publishment" :"Publishment",
     "create_game.title" :"New Vote",
     "create_game.cancel" :"Cancel",
     "create_game.submit" :"Submit",
-
     "create_game.description.hint": "Briefly describe the vote",
-
+    "create_game.password.hint": "Enter Password",
+    
     "post_policy.private": "Private",
     "post_policy.public": "Public",
-    "post_policy.password": "Password",
-
+    "post_policy.password": "Password Requird",
+    
+    "edit_post.new_password": "Set New Password",
     "edit_post.tab.info": "Information",
     "edit_post.tab.element": "Media",
     "edit_post.tab.rank": "Rank",
+    "edit_post.info.play_game_hint": "At least 2 materials must be uploaded.",
 
     "edit_post.info.head": "The Vote Information",
-    "edit_post.info.play": "Play",
+    "edit_post.info.start": "Start",
     "edit_post.info.edit": "Edit",
     "edit_post.info.delete": "Delete the vote",
     "edit_post.info.save": "Save",
@@ -71,6 +72,11 @@
     "game_round_semifinal": "Semifinal",
     "game_round_quarterfinal": "Quarterfinal",
     "game_round_of": "TOP{round}",
+    "game.creating": "Creating...",
+    "game.finishing": "Generating results...",
+    "game.checkout_result": "Check the result",
+    "game.password": "Password",
+    "game.invalid_password": "Invalid password",
 
     "total elements": "total materials : {count}",
     "report_comment_other_reason_required": "You need to write something!",

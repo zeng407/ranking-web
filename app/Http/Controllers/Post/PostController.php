@@ -23,6 +23,7 @@ class PostController extends Controller
         $this->authorize('update', $post);
 
         $config = [
+            'post_min_element_count' => config('setting.post_min_element_count'),
             'post_max_element_count' => config('setting.post_max_element_count'),
             'post_title_size' => config('setting.post_title_size'),
             'post_description_size' => config('setting.post_description_size'),

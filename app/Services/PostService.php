@@ -4,6 +4,7 @@
 namespace App\Services;
 
 
+use App\Events\PostUpdated;
 use App\Models\Post;
 use App\Models\Tag;
 use App\Models\UserGameResult;
@@ -48,6 +49,16 @@ class PostService
         ]);
 
         event(new PostCreated($post));
+
+        return $post;
+    }
+
+    public function update(Post $post, array $data)
+    {
+        $post->update($data);
+        $post->post_policy()->update(data_get($data, 'policy', []));
+
+        event(new PostUpdated($post));
 
         return $post;
     }

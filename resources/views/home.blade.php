@@ -116,7 +116,7 @@
                     {{__('Share')}} &nbsp;<i class="fas fa-share-square"></i>
                   </button>
                   <b-popover ref="popover{{$index}}" target="popover-button-event{{$index}}" :disabled="true">
-                    {{__('Copied')}}</strong>
+                    {{__('Copied link')}}
                   </b-popover>
                 </span>
                 <span class="mt-2 card-text float-right">

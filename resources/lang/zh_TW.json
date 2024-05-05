@@ -16,7 +16,7 @@
     "My Votes": "我的投票",
     "Home": "首頁",
     "Too many requests": "操作過於頻繁，請稍候再試",
-    "Copied": "已複製連結",
+    "Copied link": "已複製連結",
     "Global Rank": "其他人的排名",
     "none": "無",
     "My Rank": "我的排名",
@@ -29,6 +29,7 @@
     "comment.report": "檢舉",
     "comment.leave_comment": "寫下評論",
     "title.rank": "排名",
+    "title.access": "需要密碼存取",
     "comment.submit": "留言",
     "Nickname": "暱稱",
     "Vote result": "投票結果",
@@ -54,7 +55,7 @@
     "home.rank": "排行榜",
     "rank.return_home": "回首頁",
     "rank.play": "前往投票",
-    "rank.share": "分享此排行榜",
+    "rank.share": "分享排行榜",
     "rank.share-result": "分享我的排名",
     "Email already exists.": "此 Email 已被註冊",
     "login.social.header": "使用社群登入",
@@ -84,6 +85,9 @@
     "api-response-message.UPLOAD_SIZE_RATE_LIMIT": "超過上傳限速，請稍後再試",
     "game.save_progress": "你的進度會自動儲存3天，下次回來時可以繼續投票",
     "game.select_option_hint": "選擇參賽人數",
+    "No element found in the post.": "此投票尚未上傳素材",
+    "You are not authorized to access this page.": "您無權訪問此頁面",
+    "Password is required.": "請輸入密碼",
 
     "":""
 }

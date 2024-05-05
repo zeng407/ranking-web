@@ -1,11 +1,13 @@
 @extends('layouts.app', [
-    'title' => $post,
-    'ogTitle' => $post->title,
-    'ogImage' => $element?->thumb_url,
-    'ogDescription' => $post->description,
+    'title' => $post->isPublic() ? $post : __('title.access'),
+    'ogTitle' => $post->isPublic() ? $post->title : null,
+    'ogImage' => $post->isPublic() ? $element?->thumb_url : null,
+    'ogDescription' => $post->isPublic() ? $post->description : null,
     ])
 
+
 @section('header')
+  @if($post->isPublic())
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -14,22 +16,27 @@
         "datePublished": "{{$post->created_at->toIso8601String()}}",
         "dateModified": "{{$post->updated_at->toIso8601String()}}"
     }
-    </script>
-    <script src="https://embed.twitch.tv/embed/v1.js"></script>
+    </script>  
+  @endif
+
+  <script src="https://embed.twitch.tv/embed/v1.js"></script>
 @endsection
 
 @section('content')
     <game
         inline-template
         post-serial="{{$serial}}"
+        :require-password="{{json_encode($requiredPassword)}}"
         get-rank-route="{{route('game.rank', '_serial')}}"
         get-game-setting-endpoint="{{route('api.game.setting', $serial)}}"
         next-round-endpoint="{{route('api.game.next-round', '_serial')}}"
         create-game-endpoint="{{route('api.game.create')}}"
         vote-game-endpoint="{{route('api.game.vote')}}"
+        access-endpoint="{{route('api.game.access', $serial)}}"
     >
     <div class="container-fluid" v-cloak>
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+        {{-- ads --}}
           <div v-if="!isMobileScreen" style="height: 100px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
                 @include('ads.game_ad_pc')
@@ -41,7 +48,39 @@
             </div>
           </div>
         @endif
-        <div v-if="game">
+
+        {{-- creating game loading --}}
+        <div v-show="creatingGame">
+          <div class="d-flex justify-content-center align-items-center flex-column" style="height: 100vh">
+            <img src="{{ asset('storage/logo.png') }}" class="updown-animation" alt="logo" style="width: 50px; height: 50px;">
+            <div>
+              @{{ $t('game.creating') }}
+              <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {{-- finishing game loading --}}
+        <div v-show="finishingGame">
+          <div class="d-flex justify-content-center align-items-center flex-column" style="height: 100vh">
+            <img src="{{ asset('storage/logo.png') }}" class="updown-animation" alt="logo" style="width: 50px; height: 50px;">
+            <div v-if="gameResultUrl === ''">
+              @{{ $t('game.finishing') }}
+              {{-- spinner --}}
+              <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+              </div>
+            </div>
+            <div v-else>
+              <a :href="gameResultUrl">@{{ $t('game.checkout_result') }}</a>
+            </div>
+          </div>
+        </div>
+
+        {{-- game info --}}
+        <div v-if="game && !finishingGame">
           <h2 class="text-center text-break">{{$post->title}}</h2>
           <div class="d-none d-sm-flex" style="flex-flow: row wrap">
             <h5 style="width: 20%"></h5>
@@ -55,7 +94,9 @@
             <h5 class="text-right align-self-center" style="width: 20%">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h5>
           </div>
         </div>
-        <div class="row game-body" v-if="game">
+
+        {{-- playground --}}
+        <div class="row game-body" v-if="game && !finishingGame">
           <!--left part-->
           <div class="col-sm-12 col-md-6 pr-md-1 mb-2 mb-md-0">
             <div class="card game-player left-player" id="left-player">
@@ -91,10 +132,10 @@
               </div>
               <div class="card-body text-center">
                 <div class="my-1" style="max-height: 120px" v-if="isMobileScreen">
-                  <h5 class="my-1 font-size-small">@{{ le.title }}</h5>
+                  <h1 class="my-1 font-size-small">@{{ le.title }}</h1>
                 </div>
                 <div class="my-1" style="height: 120px" v-else>
-                  <h5 class="my-1">@{{ le.title }}</h5>
+                  <h1 class="my-1 game-element-title">@{{ le.title }}</h1>
                 </div>
                 <button id="left-btn" class="btn btn-primary vote-button btn-block d-none d-md-block" :disabled="isVoting"
                   @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
@@ -174,10 +215,10 @@
               <div class="card-body text-center"
                 :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
                 <div class="my-1 flex-column-reverse d-flex" style="max-height: 120px" v-if="isMobileScreen">
-                  <h5 class="my-1 font-size-small">@{{ re.title }}</h5>
+                  <h1 class="my-1 font-size-small">@{{ re.title }}</h1>
                 </div>
                 <div class="my-1" style="height: 120px" v-else>
-                  <h5 class="my-1">@{{ re.title }}</h5>
+                  <h1 class="my-1 game-element-title">@{{ re.title }}</h1>
                 </div>
                 <button id="right-btn" class="btn btn-danger vote-button btn-block d-none d-md-block" :disabled="isVoting"
                   @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
@@ -207,8 +248,8 @@
           </div>
         </div>
 
-        {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+        {{-- ads at bottom --}}
           <div v-if="!isMobileScreen">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
                 @include('ads.game_ad_pc_responsive')
@@ -221,7 +262,7 @@
           </div>
         @endif
 
-        <!-- Modal -->
+        <!-- Modal, Game panel -->
         <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
           aria-labelledby="gameSettingPanelLabel" aria-hidden="true">
           <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
@@ -238,19 +279,44 @@
                 </div>
               </div>
               <div class="modal-body">
-                <div class="alert alert-danger" v-if="processingGameSerial">
+                {{-- continue game --}}
+                <div class="alert alert-danger" v-if="processingGame">
                   <i class="fas fa-exclamation-triangle"></i>&nbsp;@{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
         
                     <i class="fas fa-play"></i>&nbsp;@{{ $t('game.continue') }}
                   </span>
                 </div>
-                <div class="alert alert-danger" v-if="error403WhenLoad">
+
+                {{-- invalid password text --}}
+                <div class="alert alert-danger" v-if="invalidPasswordWhenLoad">
+                  @{{ $t('game.invalid_password') }}
+                </div>
+
+                {{-- error 404 text --}}
+                <div class="alert alert-danger" v-else-if="error403WhenLoad">
                   @{{ $t('game.403') }}
                 </div>
+
+                {{-- private text --}}
                 <div class="alert alert-warning" v-if="post && post.is_private">
                   @{{ $t('game.pivate_text') }}
                 </div>
+
+                {{-- password required --}}
+                <div v-if="requirePassword && !post">
+                  <div class="input-group mb-3">
+                    <label class="input-group-text" for="inputPassword">@{{ $t('game.password') }}</label>
+                    <input type="text" class="form-control" v-model="inputPassword" autocomplete="off">
+                    <div class="input-group-append">
+                      <button class="btn btn-primary" @click="accessGame" :disabled="inputPassword.length == 0">
+                        <i class="fas fa-key"></i>&nbsp;@{{ $t('Enter') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {{-- game preview --}}
                 <div class="card" v-if="post">
                   <div class="card-header text-center">
                     <h1 class="post-title">{{ $post->title }}</h1>
@@ -286,6 +352,8 @@
                     </div>
                   </div>
                 </div>
+
+                {{-- game setting --}}
                 <div class="row mt-2" v-if="post">
                   <div class="col-12">
                     <div id="select-element-count-hint-target">
@@ -295,6 +363,9 @@
                         </div>
                         <select v-model="elementsCount" class="custom-select" id="elementsCount" required>
                           <option value="" disabled selected="selected">@{{ $t('game.select') }}</option>
+                          <option v-if="post.elements_count < 8" :value="post.elements_count">
+                            @{{ post.elements_count }}
+                          </option>
                           <option v-for="count in [8, 16, 32, 64, 128, 256, 512, 1024]" :value="count"
                             v-if="post.elements_count >= count">
                             @{{ count }}

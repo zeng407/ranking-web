@@ -94,6 +94,10 @@ class Post extends Model
     {
         return $this->post_policy->access_policy === PostAccessPolicy::PRIVATE;
     }
+    public function isPasswordRequired()
+    {
+        return $this->post_policy->access_policy === PostAccessPolicy::PASSWORD;
+    }
 
     /**
      * scope

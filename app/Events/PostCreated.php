@@ -28,7 +28,7 @@ class PostCreated
         $this->post = $post;
     }
 
-    public function getPost()
+    public function getPost(): Post
     {
         return $this->post;
     }

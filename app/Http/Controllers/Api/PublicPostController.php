@@ -4,13 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Comment\CommentResource;
-use App\Http\Resources\PublicPostResource;
 use App\Models\Post;
 use App\Services\Builders\CommentBuilder;
 use App\Services\PostService;
 use Illuminate\Http\Request;
-use App\Repositories\Filters\PostFilter;
-use Illuminate\Pagination\LengthAwarePaginator;
 use RateLimiter;
 use App\Models\Comment;
 
@@ -22,6 +19,8 @@ class PublicPostController extends Controller
     public function __construct(PostService $postService)
     {
         $this->postService = $postService;
+        $this->middleware('throttle:5,1')->only('createComment');
+
     }
 
     public function getComments(Request $request, Post $post)

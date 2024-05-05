@@ -5,7 +5,9 @@ import Swal from 'sweetalert2';
 const MD_WIDTH_SIZE = 768;
 export default {
   mounted() {
-    this.loadGameSetting();
+    if(!this.requirePassword){
+      this.loadGameSetting();
+    }
     this.showGameSettingPanel();
     this.origin = window.location.origin;
     this.host = window.location.host;
@@ -16,7 +18,9 @@ export default {
     getGameSettingEndpoint: String,
     nextRoundEndpoint: String,
     createGameEndpoint: String,
-    voteGameEndpoint: String
+    voteGameEndpoint: String,
+    requirePassword: Boolean,
+    accessEndpoint: String,
   },
   data: function () {
     return {
@@ -37,6 +41,7 @@ export default {
       isRightPlaying: false,
       rememberedScrollPosition: null,
       error403WhenLoad: false,
+      invalidPasswordWhenLoad: false,
       errorImages: [],
       currentRemainElement: false,
       mousePosition: 1, // 1:left , right:0
@@ -44,6 +49,10 @@ export default {
       refreshAD: false,
       leftImageLoaded: false,
       rightImageLoaded: false,
+      creatingGame: false,
+      finishingGame: false,
+      gameResultUrl: '',
+      inputPassword: '',
     }
   },
   computed: {
@@ -60,28 +69,66 @@ export default {
 
       return Number.isInteger(Math.log2(this.post.elements_count));
     },
-    processingGameSerial: function () {
+    processingGame: function () {
       return this.$cookies.get(this.postSerial);
     },
   },
   methods: {
     loadGameSetting: function () {
       axios.get(this.getGameSettingEndpoint)
-        .then(res => {
-          this.error403WhenLoad = false;
-          this.post = res.data.data;
-        })
-        .catch(error => {
-          if (error.response.status === 403) {
-            this.error403WhenLoad = true;
-          }
-        });
+      .then(res => {
+        this.error403WhenLoad = false;
+        this.post = res.data.data;
+      })
+      .catch(error => {
+        //console.log(error.response);
+        if (error.response.status === 403) {
+          this.error403WhenLoad = true;
+        }
+      });
+    },
+    accessGame: function () {
+      if(this.inputPassword){
+        axios.defaults.headers.common['Authorization'] = this.inputPassword;
+      }else{
+        this.isInvalidPassword = true;
+        return;
+      }
+
+      axios.get(this.accessEndpoint)
+      .then(response => {
+        if (response.status === 200) {
+          this.invalidPasswordWhenLoad = false;
+          this.loadGameSetting();
+        } else {
+          this.invalidPasswordWhenLoad = true;
+        }
+      })
+      .catch(error => {
+        if(error.response.status === 403){
+          this.invalidPasswordWhenLoad = true;
+        }else if(error.response.status === 429){
+          Swal.fire({
+            icon: 'error',
+            toast: true,
+            text: this.$t('You have tried too many times. Please try again later.'),
+          });
+        }else{
+          Swal.fire({
+            icon: 'error',
+            toast: true,
+            text: this.$t('An error occurred. Please try again later.'),
+          });
+        }
+      });
     },
     createGame: function () {
       const data = {
         'post_serial': this.postSerial,
-        'element_count': this.elementsCount
+        'element_count': this.elementsCount,
+        'password': this.inputPassword,
       };
+      this.creatingGame = true;
       axios.post(this.createGameEndpoint, data)
         .then(res => {
           this.gameSerial = res.data.game_serial;
@@ -90,7 +137,11 @@ export default {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
           }
+        })
+        .finally(() => {
+          this.creatingGame = false; 
         });
+        
       $('#gameSettingPanel').modal('hide');
     },
     continueGame: function () {
@@ -353,6 +404,10 @@ export default {
       };
 
       this.isDataLoading = true;
+      if(this.game.current_round == 1 && this.currentRemainElement == 2){
+        // final round
+        this.finishingGame = true;
+      }
       return axios.post(this.voteGameEndpoint, data)
         .then(res => {
           this.status = res.data.status;
@@ -404,7 +459,10 @@ export default {
     },
     showGameResult: function () {
       const url = this.getRankRoute.replace('_serial', this.postSerial) + '?g=' + this.gameSerial;
-      window.open(url, '_self');
+      setTimeout(() => {
+        this.gameResultUrl = url;
+        window.open(url, '_self');
+      }, 1000);
     },
     getYoutubePlayer(element) {
       if(!element){

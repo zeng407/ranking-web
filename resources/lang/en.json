@@ -5,6 +5,7 @@
     "comment.report": "Report",
     "comment.leave_comment": "Leave a comment",
     "title.rank": "Rank",
+    "title.access": "Require Password",
     "comment.submit": "Submit",
     "socialite.failed": "Failed to login",
     "socialite.connect.success": "Connect successfully",

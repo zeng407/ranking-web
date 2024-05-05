@@ -22484,6 +22484,10 @@ input[type=color].form-control:disabled {
   font-weight: 400;
 }
 
+.game-element-title {
+  font-size: calc(10px + 1.4vw);
+}
+
 .rank-number {
   font-size: 1.6rem;
   font-weight: 400;
@@ -22514,4 +22518,19 @@ input[type=color].form-control:disabled {
 
 .twitch-container iframe {
   border: 0;
+}
+
+@keyframes updown {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.updown-animation {
+  animation: updown 2s ease-in-out infinite;
 }

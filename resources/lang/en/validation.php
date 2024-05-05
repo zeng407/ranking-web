@@ -155,6 +155,8 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        "policy.password" => "new password",
+    ],
 
 ];

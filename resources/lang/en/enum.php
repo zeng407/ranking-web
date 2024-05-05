@@ -6,6 +6,7 @@ return [
     'post_access_policy' => [
         PostAccessPolicy::PRIVATE => 'Private',
         PostAccessPolicy::PUBLIC => 'Public',
+        PostAccessPolicy::PASSWORD => 'Password Required',
     ]
 
 ];
