@@ -34,7 +34,7 @@ class PostPasswordRequired implements Rule
             if($value == null || empty($value)){
                 return false;
             }
-            return is_string($value) && strlen($value) >= 0 && strlen($value) <= 255;
+            return is_string($value) && strlen($value) >= 1 && strlen($value) <= 255;
         }
 
         return true;
