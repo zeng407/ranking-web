@@ -61,26 +61,42 @@
                 </div>
                 <div class="col-6">
                   <h2 class="mt-3 mb-3">
+                    <!-- buttons -->
                     <span class="d-flex justify-content-end">
-                      <a class="btn btn-danger mr-3" v-if="!isEditing" :href="playGameRoute" target="_blank">
-                        <i class="fas fa-play"></i> {{ $t('edit_post.info.play') }}
-                      </a>
+                      <button v-if="isShareable && !isEditing" id="share-button" type="button" class="btn btn-outline-dark mr-3"
+                        @click="share">
+                        {{$t('Share')}} &nbsp;<i class="fas fa-share-square"></i>
+                      </button>
+                      <b-popover target="share-button" placement="bottom" :show.sync="showSharePopover">
+                        {{$t('Copied link')}}
+                      </b-popover>
 
-                      <button class="btn btn-primary" v-if="!isEditing" @click="clickEdit">
-                        <i class="fas fa-edit"></i> {{ $t('edit_post.info.edit') }}
+                      <span v-if="!isEditing" 
+                        id="play-button" class="btn btn-outline-dark mr-3"  
+                        :class="{disabled: elements.data.length < 2}"
+                        @click="playGame" @mouseover="playButtonOnHoverIn" @mouseleave="playButtonOnHoverOut">
+                        {{ $t('edit_post.info.start') }}&nbsp;<i class="fas fa-play"></i>
+                      </span>
+                      <b-popover :show.sync="showPlayPopover" target="play-button" placement="bottom">
+                        {{ $t('edit_post.info.play_game_hint') }}
+                      </b-popover>
+
+                      <button class="btn btn-outline-dark" v-if="!isEditing" @click="clickEdit">
+                        {{ $t('edit_post.info.edit') }}&nbsp;<i class="fas fa-edit"></i>
                       </button>
 
                       <!-- Editing -->
                       <button class="btn btn-secondary mr-3" v-if="isEditing" @click="cancelEdit"
                         :disabled="loading['SAVING_POST']">
+                        {{ $t('edit_post.info.cancel_save') }}&nbsp;
                         <i class="fa-solid fa-rectangle-xmark"></i>
-                        {{ $t('edit_post.info.cancel_save') }}
                       </button>
                       <button class="btn btn-primary" v-if="isEditing" @click="savePost"
                         :disabled="invalid || loading['SAVING_POST']">
+                        {{ $t('edit_post.info.save') }}&nbsp;
                         <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
                         <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
-                        {{ $t('edit_post.info.save') }}
+                        
                       </button>
                     </span>
                   </h2>
@@ -167,23 +183,36 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg">
-                        {{ $t('Visibility') }}
+                        {{ $t('Publishment') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }" v-if="isEditing">
-                        <label class="form-control btn btn-outline-dark" for="post-privacy-public">
-                          <input type="radio" id="post-privacy-public" v-model="post.policy" value="public"
-                            :disabled="loading['SAVING_POST']">
+                      <div v-if="isEditing"> 
+                        <ValidationProvider rules="required" v-slot="{ errors }">
+                          <label class="form-control btn btn-outline-dark" for="post-privacy-public">
+                            <input type="radio" id="post-privacy-public" v-model="post.policy" value="public"
+                              :disabled="loading['SAVING_POST']">
+                            {{ $t('post_policy.public') }}
+                          </label>
 
-                          {{ $t('Public') }}
-                        </label>
+                          <label class="form-control btn btn-outline-dark" for="post-privacy-private">
+                            <input type="radio" id="post-privacy-private" v-model="post.policy" value="private"
+                              :disabled="loading['SAVING_POST']">
+                            {{ $t('post_policy.private') }}
+                          </label>
 
-                        <label class="form-control btn btn-outline-dark" for="post-privacy-private">
-                          <input type="radio" id="post-privacy-private" v-model="post.policy" value="private"
-                            :disabled="loading['SAVING_POST']">
-                          {{ $t('Private') }}
-                        </label>
-                        <span class="text-danger">{{ errors[0] }}</span>
-                      </ValidationProvider>
+                          <label class="form-control btn btn-outline-dark" for="post-privacy-password">
+                            <input type="radio" id="post-privacy-password" v-model="post.policy" value="password"
+                              :disabled="loading['SAVING_POST']">
+                            {{ $t('post_policy.password') }}
+                          </label>
+                          <span class="text-danger">{{ errors[0] }}</span>
+                        </ValidationProvider>
+                        <div v-if="post.policy === 'password'">
+                          <label class="col-form-label-lg" for="post-password">
+                            {{ $t('edit_post.new_password') }}
+                            <input id="post-password" type="text" class="form-control" v-model="post.password" maxlength="255">
+                          </label>
+                        </div>
+                      </div>
                       <div v-else>
                         <input class="form-control" disabled="disabled" :value="$t('post_policy.' + post.policy)">
                         <small class="form-text text-muted" v-if="post.policy === 'public'">{{$t('edit_post.at_least_element_number_hint') }}</small>
@@ -643,7 +672,14 @@ export default {
         DELETING_POST: false,
       },
       uploadingFiles: {},
-      post: null,
+      post: {
+        title: '',
+        description: '',
+        policy: '',
+        password: '',
+        tags: [],
+        
+      },
       keep_post: null,
       isEditing: false,
       elements: {
@@ -665,6 +701,10 @@ export default {
       dismissCountDown: 0,
       alertLevel: 'success',
       alertText: '',
+
+      //hover
+      showPlayPopover: false,
+      showSharePopover: false,
 
       // search elements
       filters: {
@@ -699,6 +739,10 @@ export default {
         return this.elements.meta.total;
       }
       return 0;
+    },
+    isShareable: function () {
+      return this.elements.data.length > 1 
+      && (this.post.policy == 'public' || this.post.policy == 'password');
     },
 
   },
@@ -767,6 +811,8 @@ export default {
         title: this.$t("Are you sure?"),
         text: this.$t("You will lose all unsaved changes!"),
         icon: "warning",
+        confirmButtonText: this.$t("Yes"),
+        cancelButtonText: this.$t("No"),
         showCancelButton: true,
       })
         .then((willDelete) => {
@@ -783,10 +829,12 @@ export default {
         title: this.post.title,
         description: this.post.description,
         policy: {
-          access_policy: this.post.policy
+          access_policy: this.post.policy,
+          password: this.post.password
         },
         tags: this.tags
       };
+      console.log(data);
 
       axios.put(this.updatePostEndpoint, data)
         .then(res => {
@@ -795,6 +843,32 @@ export default {
           this.keep_post = _.cloneDeep(res.data.data);
           this.keep_tags = _.cloneDeep(res.data.data.tags);
           this.isEditing = false;
+
+          // show alert
+          Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: this.$t("Close"),
+            toast: true,
+            title: this.$t("Updated!"),
+            text: this.$t("Your post has been updated."),
+            icon: "success",
+            timer: 3000
+          });
+        })
+        .catch(error => {
+          // get first error
+          let message = error.response.data.errors[Object.keys(error.response.data.errors)[0]];
+          Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            toast: true,
+            title: this.$t("Error!"),
+            text: message[0],
+            icon: "error",
+            timer: 3000
+          });
         })
         .finally(() => {
           this.uploadLoadingStatus('SAVING_POST', false);
@@ -1266,6 +1340,35 @@ export default {
       }
       return '-';
     },
+
+    playGame() {
+      if(this.elements.data.length < 2){
+        return;
+      }
+      window.open(this.playGameRoute, '_blank');
+    },
+    playButtonOnHoverIn() {
+      // console.log('playButtonOnHover');
+      if(this.elements.data.length < 2){
+        this.showPlayPopover = true;
+      }
+    },
+    playButtonOnHoverOut() {
+      // console.log('playButtonOnHoverOut');
+      this.showPlayPopover = false;
+    },
+    share() {
+      let url = this.playGameRoute;
+      navigator.clipboard.writeText(url).then(() => {
+        this.showSharePopover = true;
+        if(this.sharePopoverTimeout) {
+          clearTimeout(this.sharePopoverTimeout);
+        }
+        this.sharePopoverTimeout = setTimeout(() => {
+          this.showSharePopover = false;
+        }, 2000);
+      });
+    }
   }
 }
 

@@ -64,13 +64,13 @@
         @if(!isset($embed) || !$embed)
         <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{isset($stickyNav) && $stickyNav  ? 'sticky-top' : '' }}">
             <div class="container-fluid">
-                <a class="navbar-brand" href="{{ route('home') }}">
+                <a class="navbar-brand" href="{{ route('home') }}" title="{{config('app.short_name')}}">
                     <img src="{{ asset('storage/logo.png') }}" class="d-inline-block align-top home-logo"
                         alt="{{config('app.short_name')}}">
                 </a>
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('home') }}">{{ __('home.posts') }}</a>
+                        <a class="nav-link" href="{{ route('home') }}" title="{{ __('home.posts') }}">{{ __('home.posts') }}</a>
                     </li>
                 </ul>
                 <button class="navbar-toggler" type="button" data-toggle="collapse"

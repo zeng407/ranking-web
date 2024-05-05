@@ -50,6 +50,13 @@ class Handler extends ExceptionHandler
             return redirect()->route('home');
         }
 
+        if ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException 
+            && $exception->getStatusCode() == 403
+            && !$request->is('api/*')){            
+                return redirect()->route('home')->with('error', __('You are not authorized to access this page.'));
+        }
+        
+
         return parent::render($request, $exception);
     }
 }

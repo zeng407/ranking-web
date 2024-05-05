@@ -13,6 +13,7 @@ Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
 
 /** Post */
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');
+Route::get('post/{post:serial}/access', [GameController::class, 'access'])->name('api.game.access');
 Route::get('game/{game:serial}/next-round', [GameController::class, 'nextRound'])->name('api.game.next-round');
 
 Route::post('game', [GameController::class, 'create'])->name('api.game.create');

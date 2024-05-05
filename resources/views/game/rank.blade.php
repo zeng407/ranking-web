@@ -26,10 +26,10 @@
                     <a class="btn btn-outline-dark btn-sm m-1" href="{{route('home')}}"><i class="fa-solid fa-home"></i>&nbsp;{{__('rank.return_home')}}</a>
                     <a class="btn btn-outline-dark btn-sm m-1" href={{route('game.show', $post->serial)}}><i class="fa-solid fa-play"></i>&nbsp;{{__('rank.play')}}</a>
                     <button @click="share" id="popover-button-event" type="button" class="btn btn-outline-dark btn-sm m-1"><i class="fa-solid fa-share-square"></i>&nbsp;{{__('rank.share')}}</button>
-                    <b-popover ref="popover" target="popover-button-event" :disabled="true">{{__('Copied')}}</b-popover>
+                    <b-popover ref="popover" target="popover-button-event" :disabled="true">{{__('Copied link')}}</b-popover>
                     @if($gameResult && !$shared)
                         <button @click="shareResult" id="share-result-button-event" type="button" class="btn btn-primary btn-sm m-1"><i class="fa-solid fa-share-square">&nbsp;{{__('rank.share-result')}}</i></button>
-                        <b-popover ref="share-popover" target="share-result-button-event" :disabled="true">{{__('Copied')}}</b-popover>
+                        <b-popover ref="share-popover" target="share-result-button-event" :disabled="true">{{__('Copied link')}}</b-popover>
                     @endif
                 </div>
             </div>
@@ -369,7 +369,7 @@
                         </div>
                         {{-- submit --}}
                         <div class="col-12">
-                            <button type="button" class="btn btn-primary" :disabled="!validComment" @click="submitComment">{{__('comment.submit')}}</button>
+                            <button type="button" class="btn btn-primary" :disabled="!validComment || isSubmiting" @click="submitComment">{{__('comment.submit')}}</button>
                         </div>
                     </div>
                 </div>

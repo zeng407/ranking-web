@@ -22,6 +22,8 @@ class PublicPostController extends Controller
     public function __construct(PostService $postService)
     {
         $this->postService = $postService;
+        $this->middleware('throttle:5,1')->only('createComment');
+
     }
 
     public function getComments(Request $request, Post $post)

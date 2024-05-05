@@ -31,6 +31,8 @@ class Comment extends Model
         'label' => 'array'
     ];
 
+    protected $with = ['user'];
+
     /**
      * Relationships
      */

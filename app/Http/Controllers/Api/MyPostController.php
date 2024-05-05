@@ -14,6 +14,7 @@ use App\Models\PostPolicy;
 use App\Models\Tag;
 use App\Models\User;
 use App\Repositories\Filters\ElementFilter;
+use App\Rules\PostPasswordRequired;
 use App\Services\ElementService;
 use App\Services\RankService;
 use Illuminate\Http\Request;
@@ -101,8 +102,13 @@ class MyPostController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:' . config('setting.post_title_size')],
             'description' => ['required', 'string', 'max:' . config('setting.post_description_size')],
-            'policy.access_policy' => ['required', Rule::in([PostAccessPolicy::PRIVATE , PostAccessPolicy::PUBLIC])],
+            'policy.access_policy' => ['required', Rule::in([PostAccessPolicy::PRIVATE , PostAccessPolicy::PUBLIC, PostAccessPolicy::PASSWORD])],
+            'policy.password' => 'required_if:policy.access_policy,' . PostAccessPolicy::PASSWORD,
         ]);
+
+        if($data['policy']['access_policy'] === PostAccessPolicy::PASSWORD) {
+            $data['policy']['password'] = hash('sha256', $data['policy']['password']);
+        }
 
         $post = $this->postService->create($user, $data);
 
@@ -124,13 +130,15 @@ class MyPostController extends Controller
             'policy.access_policy' => [
                 'sometimes',
                 'required',
-                Rule::in([PostAccessPolicy::PUBLIC , PostAccessPolicy::PRIVATE])
+                Rule::in([PostAccessPolicy::PUBLIC , PostAccessPolicy::PRIVATE, PostAccessPolicy::PASSWORD])
             ],
-            'policy.password' => 'sometimes|required',
+            'policy.password' => ['sometimes', 'string', 'max:255'],
             'tags' => ['sometimes', 'array', 'between:0,' . config('setting.post_max_tags')],
             'tags.*' => ['sometimes', 'string', 'max:' . config('setting.tag_name_size')],
         ]);
 
+        $data = $this->validatePostPassword($request, $post, $data);
+        
         $post->update($data);
         $post->post_policy()->update(data_get($data, 'policy', []));
         $this->postService->syncTags($post, data_get($data, 'tags', []));
@@ -208,5 +216,25 @@ class MyPostController extends Controller
         }
 
         return $sorter;
+    }
+
+    protected function validatePostPassword($request, $post, $data)
+    {
+        if($post->isPasswordRequired() && $post->post_policy->password == null){
+            $request->validate([
+                'policy.password' => ['required', 'string', 'max:255']
+            ]);
+        }
+        if(data_get($data, 'policy.access_policy') === PostAccessPolicy::PASSWORD) {
+            if(!empty(data_get($data, 'policy.password'))){
+                $data['policy']['password'] = hash('sha256', data_get($data, 'policy.password'));    
+            }else{
+                unset($data['policy']['password']);
+            }
+        }else{
+            $data['policy']['password'] = null;
+        }
+
+        return $data;
     }
 }

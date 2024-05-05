@@ -18,7 +18,7 @@
           <tr>
             <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
             <th scope="col" style="width: 30%">{{ $t('my_games.table.description') }}</th>
-            <th scope="col">{{ $t('my_games.table.visibility') }}</th>
+            <th scope="col">{{ $t('my_games.table.publishment') }}</th>
             <th scope="col">{{ $t('my_games.table.edit') }}</th>
           </tr>
         </thead>
@@ -50,7 +50,7 @@
           <tr>
             <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
             <th scope="col" style="width: 30%">{{ $t('my_games.table.description') }}</th>
-            <th scope="col">{{ $t('my_games.table.visibility') }}</th>
+            <th scope="col">{{ $t('my_games.table.publishment') }}</th>
             <th scope="col">{{ $t('my_games.table.edit') }}</th>
           </tr>
         </thead>
@@ -82,7 +82,7 @@
                       <label class="col-form-label-lg" for="title">
                         {{ $t('Title') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }">
+                      <ValidationProvider rules="required" :name="$t('Title')" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="createPostForm.title" required
                           :maxlength="maxPostTitleLength">
                         <span class="text-danger">{{ errors[0] }}</span>
@@ -98,12 +98,13 @@
                       <label class="col-form-label-lg" for="description">
                         {{ $t('Description') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }">
+                      <ValidationProvider rules="required" :name="$t('Description')" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="createPostForm.description" rows="3"
                           style="resize: none" :maxlength="maxPostDescriptionLength" aria-describedby="description-help" required></textarea>
                         <small id="description-help" class="form-text text-muted">
                           {{ $t('create_game.description.hint') }}
                         </small>
+                        <span class="text-danger">{{ errors[0] }}</span>
                         <CountWords :words="createPostForm.description" :maxLength="maxPostDescriptionLength"></CountWords>
                       </ValidationProvider>
                     </div>
@@ -114,21 +115,34 @@
                   <div class="col-12">
                     <div class="form-group">
                       <label class="col-form-label-lg">
-                        {{ $t('create_game.visibility') }}
+                        {{ $t('create_game.publishment') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }">
+                      <ValidationProvider rules="required" :name="$t('create_game.publishment')" v-slot="{ errors }">
                         <div class="form-group">
                           <label class="btn btn-outline-dark" for="post-privacy-public">
                             <input type="radio" id="post-privacy-public" v-model="createPostForm.policy.access_policy"
                               value="public" checked>
-                            {{ $t('Public') }}
+                            {{ $t('post_policy.public') }}
                           </label>
                           <label class="btn btn-outline-dark" for="post-privacy-private">
                             <input type="radio" id="post-privacy-private" v-model="createPostForm.policy.access_policy"
                               value="private">
-                            {{ $t('Private') }}
+                            {{ $t('post_policy.private') }}
                           </label>
+                          <label class="btn btn-outline-dark" for="post-privacy-password">
+                            <input type="radio" id="post-privacy-password" v-model="createPostForm.policy.access_policy"
+                              value="password">
+                            {{ $t('post_policy.password') }}
+                          </label>
+                          <span class="text-danger">{{ errors[0] }}</span>
                         </div>
+                      </ValidationProvider>
+                      <ValidationProvider v-if="createPostForm.policy.access_policy == 'password'" :name="$t('create_game.password')" rules="required" v-slot="{ errors }">
+                        <label class="col-form-label-lg" for="post-password">
+                          {{ $t('create_game.password') }}
+                          <input id="post-password" type="text" class="form-control" v-model="createPostForm.policy.password" maxlength="255">
+                        </label>
+                        <span class="text-danger">{{ errors[0] }}</span>
                       </ValidationProvider>
                     </div>
                   </div>
@@ -187,8 +201,9 @@ export default {
         title: null,
         description: null,
         policy: {
-          access_policy: null
-        }
+          access_policy: null,
+          password: null
+        },
       },
       loading: {
         [LOADING_POSTS]: true,

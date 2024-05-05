@@ -4,6 +4,7 @@
 namespace App\Http\Controllers\Post;
 
 
+use App\Helper\AccessTokenService;
 use App\Http\Controllers\Controller;
 use App\Models\Element;
 use App\Models\Game;
@@ -12,6 +13,7 @@ use App\Services\GameService;
 use App\Services\RankService;
 use App\Services\PostService;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class GameController extends Controller
 {
@@ -29,41 +31,59 @@ class GameController extends Controller
     public function show(Request $request)
     {
         $serial = $request->route('post');
-        $post = $this->postService->getPost($serial);
-        abort_if(!$post, 404);
+        $post = $this->getPostOrFail($request);
         $element = $this->getElementForOG($post);
+        $requiredPassword = $post->isPasswordRequired() && !AccessTokenService::verifyPostAccessToken($post);
+        if(!$element) {
+            return redirect()->back()->with('error', __('No element found in the post.'));
+        }
 
         return view('game.show', [
             'serial' => $serial,
             'post' => $post,
-            'element' => $element
+            'element' => $element,
+            'requiredPassword' => $requiredPassword,
         ]);
     }
 
     public function rank(Request $request)
     {
-        $serial = $request->route('post');
-        // g is for game, which user played complete game
-        // s is for share, which user shared the game result
-        $gameSerial = $request->query('g') ?? $request->query('s');
-        $game = Game::where('serial', $gameSerial)->first();
-        $post = $this->postService->getPost($serial);
-        abort_if(!$post, 404);
-        $reports = $this->rankService->getRankReports($post, 10);
-        
-        $gameResult = null;
-        if ($game && $this->gameService->isGameComplete($game)) {
-            $gameResult = $this->gameService->getGameResult($request, $game);
+        $post = $this->getPostOrFail($request);
+
+        // we first check if user has access to the post
+        $embed = $request->session()->pull('rank-embed', false);
+
+        if($post->isPasswordRequired()){
+
+            
+            if($embed && $post->user_id == optional($request->user())->id){
+                // if user is the owner of the post and trying to embed the post
+                // we allow the user to access the post
+            }else if(AccessTokenService::verifyPostAccessToken($post) === false){
+                return redirect()->route('game.rank-access', ['post' => $post->serial]);
+            }
         }
 
+        $gameResult = $this->getGameResult($request);
+        $reports = $this->rankService->getRankReports($post, 10);
+    
         return view('game.rank', [
-            'serial' => $serial,
+            'serial' => $post->serial,
             'post' => $post,
             'ogElement' => $this->getElementForOG($post),
             'reports' => $reports,
             'gameResult' => $gameResult,
             'shared' => $request->query('s') ? true : false,
-            'embed' => $request->session()->pull('rank-embed', false)
+            'embed' => $embed
+        ]);
+    }
+
+    public function accessRank(Request $request)
+    {
+        $post = $this->getPostOrFail($request);
+
+        return view('game.rank-access', [
+            'serial' => $post->serial,
         ]);
     }
 
@@ -81,6 +101,35 @@ class GameController extends Controller
             return $reports[0]->element;
         }
         return $post->elements()->first();
+    }
+
+    protected function getPostOrFail(Request $request): Post
+    {
+        $serial = $request->route('post');
+        $post = $this->postService->getPost($serial);
+        abort_if(!$post, 404);
+        $this->abortPrivatePost($post, $request);
+        return $post;
+    }
+
+    protected function getGameResult(Request $request)
+    {
+        // g is for game, which user played complete game
+        // s is for share, which user shared the game result
+        $gameSerial = $request->query('g') ?? $request->query('s');
+        $game = Game::where('serial', $gameSerial)->first();
+        $gameResult = null;
+        if ($game && $this->gameService->isGameComplete($game)) {
+            $gameResult = $this->gameService->getGameResult($request, $game);
+        }
+        return $gameResult;
+    }
+
+    protected function abortPrivatePost(Post $post, Request $request)
+    {
+        if($post->isPrivate() && $post->user_id !== optional($request->user())->id){
+            abort(403);
+        }
     }
 
 }

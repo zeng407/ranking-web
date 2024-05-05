@@ -28,24 +28,6 @@ files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
 
-/**
- * validation lang
- */
-import {ValidationProvider, ValidationObserver, extend, localize} from 'vee-validate';
-import en from 'vee-validate/dist/locale/en';
-import zh_TW from 'vee-validate/dist/locale/zh_TW';
-
-localize({en, zh_TW});
-
-/**
- * register validation rule
- */
-import {required, min_value} from 'vee-validate/dist/rules';
-
-Vue.component('ValidationProvider', ValidationProvider);
-Vue.component('ValidationObserver', ValidationObserver);
-extend('required', required);
-extend('min_value', min_value);
 
 /**
  * import datetime plugin
@@ -88,6 +70,8 @@ Vue.use(VueYoutube);
  * i18n
  */
 import {i18n} from './plugins/vue-i18n';
+
+ require('./plugins/vee-validate');
 
 
 /**

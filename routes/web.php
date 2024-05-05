@@ -40,8 +40,10 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // short url
 Route::get('g/{post:serial}', [GameController::class, 'show'])->name('game.show');;
 Route::get('r/{post:serial}', [GameController::class, 'rank'])->name('game.rank');
+Route::get('r/{post:serial}/access', [GameController::class, 'accessRank'])->name('game.rank-access');
 Route::get('r/{post:serial}/embed', [GameController::class, 'rankEmbed'])->name('game.rank-embed');
 
+// old url
 Route::get('post/{post:serial}/game', fn() => redirect()->route('game.show', ['post' => request()->post]));
 Route::get('post/{post:serial}/rank', fn() => redirect()->route('game.rank', ['post' => request()->post]));
 Route::get('post/{post:serial}/rank-embed', fn() => redirect()->route('game.rank-embed', ['post' => request()->post]));

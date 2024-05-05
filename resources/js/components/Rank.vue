@@ -37,7 +37,8 @@ export default {
         nickname: '',
         avatar_url: '',
         champions: []
-      }
+      },
+      isSubmiting: false
     }
   },
   props: {
@@ -95,6 +96,7 @@ export default {
       window.history.replaceState(null, null, newUrl);
     },
     submitComment() {
+      this.isSubmiting = true;
       if (this.commentInput.length > 0 && this.commentInput.length <= this.commentMaxLength) {
         axios.post(this.createCommentEndpoint, {
           content: this.commentInput
@@ -114,6 +116,8 @@ export default {
               icon: 'error',
               button: 'OK'
             });
+          }).finally(() => {
+            this.isSubmiting = false;
           });
       }
     },

@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Helper\AccessTokenService;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Post;
@@ -23,6 +24,16 @@ class GamePolicy
 
     public function play(?User $user, Game $game)
     {
+        logger('play', [$game->post->isPasswordRequired(), AccessTokenService::verifyPostAccessToken($game->post)]);
+        if($game->post->isPasswordRequired()){
+            if(AccessTokenService::verifyPostAccessToken($game->post)){
+                AccessTokenService::extendPostAccessToken($game->post);
+                return true;
+            }else{
+                return false;
+            }
+        }
+
         if($user && $user->id === $game->post->user_id){
             return true;
         }

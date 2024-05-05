@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
+use App\Helper\AccessTokenService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Game\GameResultResource;
 use App\Http\Resources\Game\GameRoundResource;
@@ -32,17 +33,21 @@ class GameController extends Controller
         $this->rankService = $rankService;
     }
 
-    public function getSetting(Post $post)
+    public function getSetting(Request $request, Post $post)
     {
-        /** @see PostPolicy::publicRead() */
-        $this->authorize('public-read', $post);
+        $request->validate([
+           'password' => 'string|nullable'
+        ]);
+
+        /** @see \App\Policies\PostPolicy::publicRead() */
+        $this->authorize('public-read', [$post, $request->header('Authorization')]);
 
         return PublicPostResource::make($post);
     }
 
     public function nextRound(Game $game)
     {
-        /** @see GamePolicy::play() */
+        /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
 
         $elements = $this->gameService->takeGameElements($game, 2);
@@ -58,22 +63,46 @@ class GameController extends Controller
             'element_count' => [
                 'required',
                 'integer',
-                'min:' . config('setting.post_min_element_count'),
+                'min:2',
                 'max:' . config('setting.post_max_element_count')
-            ]
+            ],
         ]);
 
         $post = $this->getPost($request->post_serial);
-        /**
-         * @see PostPolicy::newGame()
-         */
-        $this->authorize('new-game', $post);
+
+        /** @see \App\Policies\PostPolicy::newGame() */
+        $this->authorize('new-game', [$post, $request->input('password')]);
 
         $game = $this->gameService->createGame($post, $request->element_count);
 
         return response()->json([
             'game_serial' => $game->serial
         ]);
+    }
+
+    public function access(Request $request, Post $post)
+    {
+        // rate limit access for 10 times per minute
+        $accessKey = 'access:' . $post->id;
+        
+        if (!\RateLimiter::tooManyAttempts($accessKey, 10)) {
+            \RateLimiter::hit($accessKey, 60);
+        } else {
+            return response()->json([], 429);
+        }
+        logger('accessed', ['post' => $post->id]);
+        if(
+            $post->isPasswordRequired() 
+            && !empty($request->header('Authorization')
+            && is_string($request->header('Authorization')))
+        ){
+            $hash = hash('sha256', $request->header('Authorization'));
+            if($hash === $post->post_policy->password){
+                AccessTokenService::setPostAccessToken($post, $hash);
+                return response()->json();
+            }
+        }
+        return response()->json([], 403);
     }
 
     public function vote(Request $request)
@@ -91,9 +120,7 @@ class GameController extends Controller
             'loser_id' => ['required', 'different:winner_id', new GameCandicateRule($game)]
         ]);
 
-        /**
-         * @see GamePolicy::play()
-         */
+        /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
 
         try{
