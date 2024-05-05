@@ -39,7 +39,7 @@ class CacheService
 
     static public function rememberPosts(Request $request, $sort, $refresh = false)
     {
-        $cacheName = ($request->user()?->id ?? 'unknown').'/'.Cache::get('post_update_at').'/'.md5($request->fullUrl());
+        $cacheName = Cache::get('post_update_at').'/'.md5($request->fullUrl());
         if ($refresh) {
             Cache::forget('hot_tags');
         }
