@@ -3,18 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\PostAccessPolicy;
-use App\Helper\SerialGenerator;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MyPost\PostElementResource;
 use App\Http\Resources\MyPost\PostRankResource;
 use App\Http\Resources\MyPost\PostResource;
-use App\Models\Element;
 use App\Models\Post;
-use App\Models\PostPolicy;
-use App\Models\Tag;
 use App\Models\User;
 use App\Repositories\Filters\ElementFilter;
-use App\Rules\PostPasswordRequired;
 use App\Services\ElementService;
 use App\Services\RankService;
 use Illuminate\Http\Request;
