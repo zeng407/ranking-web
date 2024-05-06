@@ -229,6 +229,7 @@ export default {
           }
         }).finally(() => {
           this.isDataLoading = false;
+          $('#google-ad-container').css('top', '0');
           if(this.needReloadAD()){
             this.reloadGoogleAds();
           }
@@ -267,9 +268,11 @@ export default {
         let winAnimate = $('#left-player').animate({top: 200}, null, () => {
           $('#left-player').delay(500).animate({'opacity': '0'}, 0);
         }).promise();
+        $('#google-ad-container').animate({top: 200});
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
         }).promise();
         $.when(winAnimate, loseAnimate).then(() => {
+          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       } else {
@@ -283,7 +286,7 @@ export default {
         }).promise();
 
         $.when(winAnimate, loseAnimate).then(() => {
-          this.pauseAllVideo();
+          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       }
@@ -319,9 +322,10 @@ export default {
         let winAnimate = $('#right-player').animate({top: -200}, null, () => {
           $('#right-player').delay(500).animate({'opacity': '0'}, 0);
         }).promise();
+        $('#google-ad2').animate({top: -200});
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
         $.when(winAnimate, loseAnimate).then(() => {
-          this.pauseAllVideo();
+          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       } else {
@@ -337,6 +341,7 @@ export default {
         }).promise();
 
         $.when(winAnimate, loseAnimate).then(() => {
+          this.pauseAllVideo(); 
           sendWinnerData();
         });
       }
@@ -647,17 +652,23 @@ export default {
     },
     reloadGoogleAds() {
       // console.log('reloadGoogleAds');
+      $('#google-ad2-container').css('height', '300px').css('position', 'relative');
+      // $('#google-ad2').css('opacity', '0')
       this.refreshAD = true;
       setTimeout(() => {
         this.refreshAD = false;
-      }, 1000);
+      }, 0);
 
       let interval = setInterval(() => {
         // console.log(window.adsbygoogle);
         if (window.adsbygoogle) {
           try{
             window.adsbygoogle.push({});
-          }catch(e){}
+          }catch(e){
+            if (e.message.includes(`All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
+                clearInterval(interval);
+            }
+          }
         }
         if($('#google-ad')){
           $('#google-ad').addClass('d-flex justify-content-center');
