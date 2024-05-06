@@ -53,6 +53,8 @@ export default {
       finishingGame: false,
       gameResultUrl: '',
       inputPassword: '',
+      leftReady: true,
+      rightReady: true,
     }
   },
   computed: {
@@ -170,15 +172,15 @@ export default {
     },
     nextRound:  function (data, reset = true) {
       if(data == null){
-      const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
-      axios.get(url)
-        .then(res => {
-          this.nextRound(res.data);
-        })
-        .catch(error => {
-          this.handleNextRoundError(data, error);
-        });
-        return;
+        const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
+        axios.get(url)
+          .then(res => {
+            this.nextRound(res.data);
+          })
+          .catch(error => {
+            this.handleNextRoundError(data, error);
+          });
+          return;
       }
       new Promise((resolve, reject) => {        
           this.game = data.data;
@@ -290,15 +292,22 @@ export default {
       this.bounceThumbUp(event.target.children[0]);
       $('#left-player').css('z-index', '100');
       $('#right-player').css('opacity', 0.5);
+
+      this.leftReady = false;
+
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
+        
         let winAnimate = $('#left-player').animate({top: 200}, null, () => {
-          $('#left-player').delay(500).animate({'opacity': '0'}, 0);
+          setTimeout(() => {
+            this.leftReady = true;
+          }, 1200);
         }).promise();
+
         $('#google-ad-container').animate({top: 200});
-        let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
-        }).promise();
-        $.when(winAnimate, loseAnimate).then(() => {
+
+        let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500).promise();
+        $.when(loseAnimate).then(() => {
           this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
@@ -306,13 +315,14 @@ export default {
         let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
           $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
             $('#left-player').hide();
+            this.leftReady = true;
           });
         }).promise();
         let loseAnimate = $('#right-player').animate({ top: '2000' }, 500, () => {
           $('#right-player').css('opacity', '0');
         }).promise();
 
-        $.when(winAnimate, loseAnimate).then(() => {
+        $.when(loseAnimate).then(() => {
           this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
@@ -341,17 +351,27 @@ export default {
         this.vote(this.re, this.le);
       }
 
+      this.rightReady = false;
+
       this.bounceThumbUp(event.target.children[0]);
       $('#right-player').css('z-index', '100');
       $('#left-player').css('opacity', 0.5);
+
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
+
+        // animate right player buttom to top
         let winAnimate = $('#right-player').animate({top: -200}, null, () => {
-          $('#right-player').delay(500).animate({'opacity': '0'}, 0);
+          setTimeout(() => {
+          this.rightReady = true;
+          }, 1200);
         }).promise();
+
         $('#google-ad2').animate({top: -200});
+
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
-        $.when(winAnimate, loseAnimate).then(() => {
+
+        $.when(loseAnimate).then(() => {
           this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
@@ -360,6 +380,7 @@ export default {
         let winAnimate = $('#right-player').animate({ left: '-50%' }, 500, () => {
           $('#right-player').delay(500).animate({ top: '-2000' }, 500, () => {
             $('#right-player').hide();
+            this.rightReady = true;
           });
         }).promise();
 
@@ -367,7 +388,7 @@ export default {
           $('#left-player').css('opacity', '0');
         }).promise();
 
-        $.when(winAnimate, loseAnimate).then(() => {
+        $.when(loseAnimate).then(() => {
           this.pauseAllVideo(); 
           sendWinnerData();
         });
@@ -440,16 +461,25 @@ export default {
         // final round
         this.finishingGame = true;
       }
+
+      this.sendVote(data);
+    },
+    sendVote(data){
       return axios.post(this.voteGameEndpoint, data)
         .then(res => {
-          this.status = res.data.status;
-          if (this.status === 'end_game') {
-            this.$cookies.remove(this.postSerial);
-            this.showGameResult();
-          } else {
-            this.$cookies.set(this.postSerial, this.gameSerial, "3d");
-            this.nextRound(res.data);
-          }
+          let interval = setInterval(() => {
+            //console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
+            if(this.leftReady && this.rightReady){
+              clearInterval(interval);
+              $('#left-player').css('opacity', '0');
+              $('#right-player').css('opacity', '0');
+              if(this.isMobileScreen){
+                $('#google-ad').css('opacity', '0');
+                $('#google-ad2').css('opacity', '0');
+              }
+              this.handleSendVote(res);
+            }
+          }, 10);
         })
         .catch(error => {
           if (error.response.status === 429) {
@@ -480,7 +510,17 @@ export default {
           }, 300);
         }).finally(() => {
           this.isVoting = false;
-        })
+        });
+    },
+    handleSendVote(res){
+      this.status = res.data.status;
+      if (this.status === 'end_game') {
+        this.$cookies.remove(this.postSerial);
+        this.showGameResult();
+      } else {
+        this.$cookies.set(this.postSerial, this.gameSerial, "3d");
+        this.nextRound(res.data);
+      }
     },
     resetPlayingStatus() {
       this.isLeftPlaying = false;
