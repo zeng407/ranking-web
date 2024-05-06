@@ -136,20 +136,6 @@
           </div>
         @endif
 
-        @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $loop->last)
-          <div class="col-xl-4 col-md-6 d-lg-none pt-2">
-            <div class="card shadow">
-              <div class="row no-gutters">
-                <div class="col-6 overflow-hidden text-center">
-                    @include('ads.home_ad_2')
-                </div>
-                <div class="col-6 overflow-hidden text-center">
-                    @include('ads.home_ad_3')
-                </div>
-              </div>
-            </div>
-          </div>
-        @endif
         @endforeach
       </div>
       <div class="row justify-content-center pt-2">
