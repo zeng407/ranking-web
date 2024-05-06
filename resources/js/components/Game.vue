@@ -322,7 +322,6 @@ export default {
         }).promise();
 
         $.when(loseAnimate).then(() => {
-          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       }
@@ -371,7 +370,6 @@ export default {
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
 
         $.when(loseAnimate).then(() => {
-          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       } else {
@@ -454,11 +452,6 @@ export default {
         'loser_id': loser.id
       };
 
-      if(this.game.current_round == 1 && this.currentRemainElement == 2){
-        // final round
-        this.finishingGame = true;
-      }
-
       this.sendVote(data);
     },
     sendVote(data){
@@ -468,7 +461,16 @@ export default {
             // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
             if(this.leftReady && this.rightReady){
               this.isDataLoading = true;
-              this.pauseAllVideo();
+              
+              if(this.game.current_round == 1 && this.currentRemainElement == 2){
+                // final round
+                this.finishingGame = true;
+              }
+
+              if(!this.finishingGame){
+                this.pauseAllVideo();
+              }
+              
               clearInterval(interval);
               $('#left-player').css('opacity', '0');
               $('#right-player').css('opacity', '0');
