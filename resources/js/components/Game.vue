@@ -308,13 +308,12 @@ export default {
 
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500).promise();
         $.when(loseAnimate).then(() => {
-          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       } else {
         let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
           $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
-            $('#left-player').hide();
+            // $('#left-player').hide();
             this.leftReady = true;
           });
         }).promise();
@@ -389,7 +388,6 @@ export default {
         }).promise();
 
         $.when(loseAnimate).then(() => {
-          this.pauseAllVideo(); 
           sendWinnerData();
         });
       }
@@ -456,7 +454,6 @@ export default {
         'loser_id': loser.id
       };
 
-      this.isDataLoading = true;
       if(this.game.current_round == 1 && this.currentRemainElement == 2){
         // final round
         this.finishingGame = true;
@@ -465,11 +462,13 @@ export default {
       this.sendVote(data);
     },
     sendVote(data){
-      return axios.post(this.voteGameEndpoint, data)
+      axios.post(this.voteGameEndpoint, data)
         .then(res => {
           let interval = setInterval(() => {
-            //console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
+            // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
             if(this.leftReady && this.rightReady){
+              this.isDataLoading = true;
+              this.pauseAllVideo();
               clearInterval(interval);
               $('#left-player').css('opacity', '0');
               $('#right-player').css('opacity', '0');
