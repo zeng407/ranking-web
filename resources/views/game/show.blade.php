@@ -42,8 +42,8 @@
                 @include('ads.game_ad_pc')
             </div>
           </div>
-          <div v-if="isMobileScreen" style="height: 100px" class="overflow-hidden">
-            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
+          <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:-1" class="overflow-hidden position-relative">
+            <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
               @include('ads.game_ad_mobile')
             </div>
           </div>
@@ -250,13 +250,13 @@
 
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- ads at bottom --}}
-          <div v-if="!isMobileScreen">
-            <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
+          <div v-if="!isMobileScreen" id="google-ad2-container">
+            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
                 @include('ads.game_ad_pc_responsive')
             </div>
           </div>
-          <div v-if="isMobileScreen">
-            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
+          <div v-if="isMobileScreen" id="google-ad2-container">
+            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center position-relative">
               @include('ads.game_ad_mobile_responsive')
             </div>
           </div>

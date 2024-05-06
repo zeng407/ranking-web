@@ -50,10 +50,7 @@ class GameController extends Controller
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
 
-        $elements = $this->gameService->takeGameElements($game, 2);
-        $this->gameService->setCandidates($game, $elements->pluck('id')->implode(','));
-
-        return GameRoundResource::make($game, $elements);
+        return $this->getNextElements($game);
     }
 
     public function create(Request $request)
@@ -75,8 +72,11 @@ class GameController extends Controller
 
         $game = $this->gameService->createGame($post, $request->element_count);
 
+        $elements = $this->getNextElements($game);
+
         return response()->json([
-            'game_serial' => $game->serial
+            'game_serial' => $game->serial,
+            'data' => $elements
         ]);
     }
 
@@ -110,16 +110,13 @@ class GameController extends Controller
         $request->validate([
             'game_serial' => 'required',
         ]);
-
-        //todo lock transaction
-
         /** @var Game $game */
         $game = $this->getGame($request->input('game_serial'));
         $request->validate([
             'winner_id' => ['required', 'different:loser_id', new GameCandicateRule($game)],
             'loser_id' => ['required', 'different:winner_id', new GameCandicateRule($game)]
         ]);
-
+        
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
 
@@ -139,10 +136,23 @@ class GameController extends Controller
             event(new GameComplete($request->user(), $anonymousId, $game, $gameRound->winner));
         }
 
+        // retrieve next round
+        $elements = $this->getNextElements($game);
+
         return response()->json([
-            'status' => $this->getStatus($game)
+            'status' => $this->getStatus($game),
+            'data' => $elements
         ]);
 
+    }
+
+    protected function getNextElements(Game $game)
+    {
+        $elements = $this->gameService->takeGameElements($game, 2);
+        if($elements->count() > 0){
+            $this->gameService->setCandidates($game, $elements->pluck('id')->implode(','));
+        }
+        return GameRoundResource::make($game, $elements);
     }
 
     protected function getStatus(Game $game)

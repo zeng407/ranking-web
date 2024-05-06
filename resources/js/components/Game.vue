@@ -53,6 +53,8 @@ export default {
       finishingGame: false,
       gameResultUrl: '',
       inputPassword: '',
+      leftReady: true,
+      rightReady: true,
     }
   },
   computed: {
@@ -81,7 +83,6 @@ export default {
         this.post = res.data.data;
       })
       .catch(error => {
-        //console.log(error.response);
         if (error.response.status === 403) {
           this.error403WhenLoad = true;
         }
@@ -132,10 +133,18 @@ export default {
       axios.post(this.createGameEndpoint, data)
         .then(res => {
           this.gameSerial = res.data.game_serial;
-          this.nextRound(false);
+          this.nextRound(res.data, false);
         }).catch(error => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
+          }else{
+            Swal.fire({
+              icon: 'error',
+              toast: true,
+              text: this.$t('An error occurred. Please try again later.'),
+            }).then(() => {
+              location.reload();
+            });
           }
         })
         .finally(() => {
@@ -148,7 +157,7 @@ export default {
       const gameSerial = this.$cookies.get(this.postSerial);
       if (gameSerial) {
         this.gameSerial = gameSerial;
-        this.nextRound(false);
+        this.nextRound(null, false);
       }
       $('#gameSettingPanel').modal('hide');
     },
@@ -161,11 +170,20 @@ export default {
         this.showPopover = false;
       }, 3000);
     },
-    nextRound:  function (reset = true) {
-      const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
-      return axios.get(url)
-        .then(res => {
-          this.game = res.data.data;
+    nextRound:  function (data, reset = true) {
+      if(data == null){
+        const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
+        axios.get(url)
+          .then(res => {
+            this.nextRound(res.data);
+          })
+          .catch(error => {
+            this.handleNextRoundError(data, error);
+          });
+          return;
+      }
+      new Promise((resolve, reject) => {        
+          this.game = data.data;
           if(this.game.current_round == 1 || this.currentRemainElement == false){
             this.currentRemainElement = this.game.remain_elements;
           }
@@ -177,8 +195,8 @@ export default {
           }
           this.le = this.game.elements[0];
           this.re = this.game.elements[1];
-        })
-        .then(async () => {
+          resolve();
+        }).then(() => {
           if(reset){
             this.resetPlayerPosition();
             this.scrollToLastPosition();
@@ -202,38 +220,50 @@ export default {
           }
         })
         .catch(error => {
-          if (error.response.status === 429) {
-            let timerInterval;
-            Swal.fire({
-              html: this.$t('You have voted too quickly. Please try again later.') + "(<b></b>)",
-              timer: 5000,
-              timerProgressBar: true,
-              icon: "error",
-              didOpen: () => {
-                Swal.showLoading();
-                const timer = Swal.getPopup().querySelector("b");
-                timerInterval = setInterval(() => {
-                  let timeInMs = Swal.getTimerLeft();
-                  let timeInSec = timeInMs / 1000;
-                  timer.textContent = `${timeInSec.toFixed(1)}s`; // toFixed(1) will round to 1 decimal place
-                }, 100);
-              },
-              willClose: () => {
-                clearInterval(timerInterval);
-              }
-            }).then(result => {
-              if (result.dismiss === Swal.DismissReason.timer) {
-                this.nextRound();
-              }
-            });
-          }
+          this.handleNextRoundError(data, error);
         }).finally(() => {
           this.isDataLoading = false;
+          $('#google-ad-container').css('top', '0');
           if(this.needReloadAD()){
             this.reloadGoogleAds();
           }
           this.loadGoogleAds();
         })
+    },
+    handleNextRoundError(data, error) {
+      if (error.response.status === 429) {
+        let timerInterval;
+        Swal.fire({
+          html: this.$t('You have voted too quickly. Please try again later.') + "(<b></b>)",
+          timer: 5000,
+          timerProgressBar: true,
+          icon: "error",
+          didOpen: () => {
+            Swal.showLoading();
+            const timer = Swal.getPopup().querySelector("b");
+            timerInterval = setInterval(() => {
+              let timeInMs = Swal.getTimerLeft();
+              let timeInSec = timeInMs / 1000;
+              timer.textContent = `${timeInSec.toFixed(1)}s`; // toFixed(1) will round to 1 decimal place
+            }, 100);
+          },
+          willClose: () => {
+            clearInterval(timerInterval);
+          }
+        }).then(result => {
+          if (result.dismiss === Swal.DismissReason.timer) {
+            this.nextRound(data);
+          }
+        });
+      }else{
+        Swal.fire({
+          icon: 'error',
+          toast: true,
+          text: this.$t('An error occurred. Please try again later.'),
+        }).then(() => {
+          location.reload();
+        });
+      }
     },
     leftPlay() {
       const myPlayer = this.getYoutubePlayer(this.le);
@@ -262,28 +292,38 @@ export default {
       this.bounceThumbUp(event.target.children[0]);
       $('#left-player').css('z-index', '100');
       $('#right-player').css('opacity', 0.5);
+
+      this.leftReady = false;
+
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
+        
         let winAnimate = $('#left-player').animate({top: 200}, null, () => {
-          $('#left-player').delay(500).animate({'opacity': '0'}, 0);
+          setTimeout(() => {
+            this.leftReady = true;
+          }, 1200);
         }).promise();
-        let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500, () => {
-        }).promise();
-        $.when(winAnimate, loseAnimate).then(() => {
+
+        $('#google-ad-container').animate({top: 200});
+
+        let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500).promise();
+        $.when(loseAnimate).then(() => {
+          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       } else {
         let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
           $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
             $('#left-player').hide();
+            this.leftReady = true;
           });
         }).promise();
         let loseAnimate = $('#right-player').animate({ top: '2000' }, 500, () => {
           $('#right-player').css('opacity', '0');
         }).promise();
 
-        $.when(winAnimate, loseAnimate).then(() => {
-          this.pauseAllVideo();
+        $.when(loseAnimate).then(() => {
+          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       }
@@ -311,17 +351,28 @@ export default {
         this.vote(this.re, this.le);
       }
 
+      this.rightReady = false;
+
       this.bounceThumbUp(event.target.children[0]);
       $('#right-player').css('z-index', '100');
       $('#left-player').css('opacity', 0.5);
+
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
+
+        // animate right player buttom to top
         let winAnimate = $('#right-player').animate({top: -200}, null, () => {
-          $('#right-player').delay(500).animate({'opacity': '0'}, 0);
+          setTimeout(() => {
+          this.rightReady = true;
+          }, 1200);
         }).promise();
+
+        $('#google-ad2').animate({top: -200});
+
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
-        $.when(winAnimate, loseAnimate).then(() => {
-          this.pauseAllVideo();
+
+        $.when(loseAnimate).then(() => {
+          this.pauseAllVideo(); // to void still playing video if next round loaded the same element
           sendWinnerData();
         });
       } else {
@@ -329,6 +380,7 @@ export default {
         let winAnimate = $('#right-player').animate({ left: '-50%' }, 500, () => {
           $('#right-player').delay(500).animate({ top: '-2000' }, 500, () => {
             $('#right-player').hide();
+            this.rightReady = true;
           });
         }).promise();
 
@@ -336,7 +388,8 @@ export default {
           $('#left-player').css('opacity', '0');
         }).promise();
 
-        $.when(winAnimate, loseAnimate).then(() => {
+        $.when(loseAnimate).then(() => {
+          this.pauseAllVideo(); 
           sendWinnerData();
         });
       }
@@ -408,16 +461,25 @@ export default {
         // final round
         this.finishingGame = true;
       }
+
+      this.sendVote(data);
+    },
+    sendVote(data){
       return axios.post(this.voteGameEndpoint, data)
         .then(res => {
-          this.status = res.data.status;
-          if (this.status === 'end_game') {
-            this.$cookies.remove(this.postSerial);
-            this.showGameResult();
-          } else {
-            this.$cookies.set(this.postSerial, this.gameSerial, "3d");
-            this.nextRound();
-          }
+          let interval = setInterval(() => {
+            //console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
+            if(this.leftReady && this.rightReady){
+              clearInterval(interval);
+              $('#left-player').css('opacity', '0');
+              $('#right-player').css('opacity', '0');
+              if(this.isMobileScreen){
+                $('#google-ad').css('opacity', '0');
+                $('#google-ad2').css('opacity', '0');
+              }
+              this.handleSendVote(res);
+            }
+          }, 10);
         })
         .catch(error => {
           if (error.response.status === 429) {
@@ -448,7 +510,17 @@ export default {
           }, 300);
         }).finally(() => {
           this.isVoting = false;
-        })
+        });
+    },
+    handleSendVote(res){
+      this.status = res.data.status;
+      if (this.status === 'end_game') {
+        this.$cookies.remove(this.postSerial);
+        this.showGameResult();
+      } else {
+        this.$cookies.set(this.postSerial, this.gameSerial, "3d");
+        this.nextRound(res.data);
+      }
     },
     resetPlayingStatus() {
       this.isLeftPlaying = false;
@@ -471,7 +543,7 @@ export default {
       return _.get(this.$refs, element.id + '.player', null);
     },
     getTwitchPlayer(element) {
-      // console.log('getTwitchPlayer');
+      
 
       //check twitch-video-{{element.id}} is exist
         if (document.getElementById("twitch-video-" + element.id) === null) {
@@ -479,7 +551,6 @@ export default {
         }
 
       if (element.twitchPlayer === undefined) {
-        // console.log('new Twitch.Embed');
         element.twitchPlayer = new Twitch.Embed("twitch-video-" + element.id, {
           width: "100%",
           height: this.elementHeight,
@@ -646,18 +717,21 @@ export default {
       
     },
     reloadGoogleAds() {
-      // console.log('reloadGoogleAds');
+      $('#google-ad2-container').css('height', '300px').css('position', 'relative');
       this.refreshAD = true;
       setTimeout(() => {
         this.refreshAD = false;
-      }, 1000);
+      }, 0);
 
       let interval = setInterval(() => {
-        // console.log(window.adsbygoogle);
         if (window.adsbygoogle) {
           try{
             window.adsbygoogle.push({});
-          }catch(e){}
+          }catch(e){
+            if (e.message.includes(`All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
+                clearInterval(interval);
+            }
+          }
         }
         if($('#google-ad')){
           $('#google-ad').addClass('d-flex justify-content-center');
