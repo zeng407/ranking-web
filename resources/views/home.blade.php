@@ -10,7 +10,7 @@
       range="{{$range ?? config('setting.home_page_default_range')}}"
       keyword="{{Request::get('k') }}"
     >
-    <div class="container-fluid" v-cloak>
+    <div class="container" v-cloak>
       @include('partial.lang')
       <div class="form-inline w-100" >
         <form @submit.prevent class="d-flex w-100 justify-content-center">
@@ -140,10 +140,10 @@
           <div class="col-xl-4 col-md-6 d-lg-none pt-2">
             <div class="card shadow">
               <div class="row no-gutters">
-                <div class="col-6 overflow-hidden">
+                <div class="col-6 overflow-hidden text-center">
                     @include('ads.home_ad_2')
                 </div>
-                <div class="col-6 overflow-hidden">
+                <div class="col-6 overflow-hidden text-center">
                     @include('ads.home_ad_3')
                 </div>
               </div>
