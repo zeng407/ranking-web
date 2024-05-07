@@ -74,7 +74,7 @@
     "game_round_of": "TOP{round}",
     "game.creating": "Creating...",
     "game.finishing": "Generating results...",
-    "game.checkout_result": "Check the result",
+    "game.checkout_result": "Check the result...",
     "game.password": "Password",
     "game.invalid_password": "Invalid password",
 
