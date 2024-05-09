@@ -1304,7 +1304,7 @@ export default {
       this.doPlay(element);
     },
     doPlay(element) {
-      player = this.getYoutubePlayer(element);
+      let player = this.getYoutubePlayer(element);
       if (player) {
         window.player = player;
         player.loadVideoById({
