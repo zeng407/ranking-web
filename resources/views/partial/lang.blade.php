@@ -1,4 +1,15 @@
-<div class="d-flex justify-content-end">
+@php
+  $queryParams = request()->query();
+  $langPostfixURL = $langPostfixURL ?? '';
+  if($queryParams){
+    $postFix = $langPostfixURL . '?' . http_build_query(request()->query());
+  }else{
+    $postFix = $langPostfixURL;
+  }
+
+@endphp
+
+<div class="lang-options">
     <ul class="list-unstyled">
       <li class="dropdown">
         <a class="nav-link text-dark" href="#" id="dropdownLangButton" role="button" data-toggle="dropdown"
@@ -6,8 +17,8 @@
           <i class="fas fa-globe-asia"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownLangButton">
-          <a class="dropdown-item" href="{{'/lang/zh_TW/'. ($langPostfixURL ?? '')}}">中文 (Chinese)</a>
-          <a class="dropdown-item" href="{{'/lang/en/'. ($langPostfixURL ?? '')}}">English</a>
+          <a class="dropdown-item" href="{{'/lang/zh_TW/'. $postFix}}">中文 (Chinese)</a>
+          <a class="dropdown-item" href="{{'/lang/en/'. $postFix}}">English</a>
         </div>
       </li>
     </ul>

@@ -23,6 +23,8 @@ Route::prefix('lang/{locale}')->middleware('locale.prefix')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm']);
     Route::get('/hot', [HomeController::class, 'hot']);
     Route::get('/new', [HomeController::class, 'new']);
+    Route::get('g/{post:serial}', [GameController::class, 'show']);
+    Route::get('r/{post:serial}', [GameController::class, 'rank']);
     Route::get('post/{post:serial}/game', [GameController::class, 'show']);
     Route::get('post/{post:serial}/rank', [GameController::class, 'rank']);
 });
