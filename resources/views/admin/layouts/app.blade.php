@@ -29,8 +29,8 @@
         <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm">
             <div class="container-fluid">
                 <a class="navbar-brand" href="{{ route('admin.dashboard') }}">
-                    管理後台
                     <img class="home-logo" src="/storage/logo.png" alt="Logo">
+                    管理後台
                 </a>
                 @include('admin.layouts.header')
                 <button class="navbar-toggler" type="button" data-toggle="collapse"

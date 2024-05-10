@@ -2,9 +2,10 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    @if(config('services.google_analytics.id'))
+    @if (config('services.google_analytics.id'))
         {{-- Google tag (gtag.js) --}}
-        <script script async src="https://www.googletagmanager.com/gtag/js?id={{config('services.google_analytics.id')}}"></script>
+        <script script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}">
+        </script>
         <script>
             window.dataLayer = window.dataLayer || [];
 
@@ -18,10 +19,10 @@
     @endif
 
     {{-- Google ad --}}
-    @if(config('services.google_ad.enabled'))
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{config('services.google_ad.publisher_id')}}"
-            crossorigin="anonymous">
-        </script>
+    @if (config('services.google_ad.enabled'))
+        <script async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
+            crossorigin="anonymous"></script>
     @endif
 
     {{-- SEO --}}
@@ -49,7 +50,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- Scripts --}}
-    <script src="{{ mix('js/app.js')  }}" defer></script>
+    <script src="{{ mix('js/app.js') }}" defer></script>
 
     {{-- Fonts --}}
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
@@ -61,80 +62,93 @@
 
 <body class="d-flex flex-column min-vh-100">
     <div id="app">
-        @if(!isset($embed) || !$embed)
-        <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{isset($stickyNav) && $stickyNav  ? 'sticky-top' : '' }}">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="{{ route('home') }}" title="{{config('app.short_name')}}">
-                    <img src="{{ asset('storage/logo.png') }}" class="d-inline-block align-top home-logo"
-                        alt="{{config('app.short_name')}}">
-                </a>
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('home') }}" title="{{ __('home.posts') }}">{{ __('home.posts') }}</a>
-                    </li>
-                </ul>
-                <button class="navbar-toggler" type="button" data-toggle="collapse"
-                    data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
-                    aria-label="{{ __('Toggle navigation') }}">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                
-                <div class="collapse navbar-collapse text-right" id="navbarSupportedContent">
-                    {{-- Left Side Of Navbar --}}
-                    <ul class="navbar-nav mr-auto">
-                        
-                    </ul>
-
-                    {{-- Right Side Of Navbar --}}
-                    <ul class="navbar-nav ml-auto">
-                        {{-- Authentication Links --}}
-                        @guest
+        @if (!isset($embed) || !$embed)
+            <nav
+                class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{ isset($stickyNav) && $stickyNav ? 'sticky-top' : '' }}">
+                <div class="container-fluid">
+                    <div class="d-flex justify-content-start">
+                        {{-- logo --}}
+                        <a class="navbar-brand" href="{{ route('home') }}" title="{{ config('app.short_name') }}">
+                            <img src="{{ asset('storage/logo.png') }}" class="d-inline-block align-top home-logo"
+                                alt="{{ config('app.short_name') }}">
+                        </a>
+                        {{-- posts --}}
+                        <ul class="navbar-nav mr-auto">
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ route('login') }}">{{ __('Login & New Post') }}</a>
+                                <a class="nav-link" href="{{ route('home') }}"
+                                    title="{{ __('home.posts') }}">{{ __('home.posts') }}</a>
                             </li>
-                            {{-- @if (Route::has('login'))
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
-                                </li>
-                            @endif
+                        </ul>
+                    </div>
 
-                            @if (Route::has('register'))
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
-                                </li>
-                            @endif --}}
-                        @else
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('post.index') }}">{{ __('My Votes') }}</a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
-                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    
-                                    <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
-                                        class="rounded-circle" width="30" height="30" style="object-fit: cover" alt="{{ __('Avatar') }}">
-                                    <span class="caret"></span>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="{{route('profile.index')}}">
-                                      {{ __('Profile') }}
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('logout') }}"
-                                        onclick="event.preventDefault();
-                                                     document.getElementById('logout-form').submit();">
-                                        {{ __('Logout') }}
-                                    </a>
+                    <div class="d-flex justify-content-center">
+                        {{-- search --}}
+                        <form class="form-inline my-2 my-lg-0" target="{{ route('home') }}">
+                            <input class="mr-sm-2 search-bar" type="search" placeholder="{{ __('Search') }}"
+                                aria-label="Search">
+                            <button class="btn btn-outline-white my-2 my-sm-0" type="submit">
+                                <i class="fas fa-search text-white"></i>
+                            </button>
+                        </form>
+                    </div>
 
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                                        @csrf
-                                    </form>
-                                </div>
-                            </li>
-                        @endguest
-                    </ul>
+                    {{-- menu --}}
+                    <div class="d-flex d-md-none justify-content-end">
+                        <button class="navbar-toggler" type="button" data-toggle="collapse"
+                            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                    </div>
+                    
+                    {{-- profile --}}
+                    <div class="d-none d-md-flex justify-content-end">
+                      <div class="collapse navbar-collapse text-right" id="navbarSupportedContent">
+                          {{-- Left Side Of Navbar --}}
+                          <ul class="navbar-nav mr-auto">
+
+                          </ul>
+
+                          {{-- Right Side Of Navbar --}}
+                          <ul class="navbar-nav ml-auto">
+                              {{-- Authentication Links --}}
+                              @guest
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('login') }}">{{ __('Login & New Post') }}</a>
+                                  </li>
+                              @else
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('post.index') }}">{{ __('My Votes') }}</a>
+                                  </li>
+                                  <li class="nav-item dropdown">
+                                      <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
+                                          data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                                          <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
+                                              class="rounded-circle" width="30" height="30" style="object-fit: cover"
+                                              alt="{{ __('Avatar') }}">
+                                          <span class="caret"></span>
+                                      </a>
+                                      <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                                          <a class="dropdown-item" href="{{ route('profile.index') }}">
+                                              {{ __('Profile') }}
+                                          </a>
+                                          <a class="dropdown-item" href="{{ route('logout') }}"
+                                              onclick="event.preventDefault();document.getElementById('logout-form').submit();">
+                                              {{ __('Logout') }}
+                                          </a>
+
+                                          <form id="logout-form" action="{{ route('logout') }}" method="POST"
+                                              class="d-none">
+                                              @csrf
+                                          </form>
+                                      </div>
+                                  </li>
+                              @endguest
+                          </ul>
+                      </div>
+                    </div>
                 </div>
-            </div>
-        </nav>
+            </nav>
         @endif
 
         <main class="mt-2">

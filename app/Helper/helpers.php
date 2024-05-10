@@ -189,3 +189,23 @@ if(!function_exists('view_or')){
         return view($default, $data);
     }
 }
+
+if(!function_exists('get_random_emojiuser_ip')){
+    function random_emoji()
+    {
+        //random from array
+        $emjoi = [
+            "<(´⌯﹏⌯`)>",
+            "_(:3 」∠ )_",
+            "( ￣ 3￣)y▂ξ",
+            "╰(⊙д⊙)╮ ╭(⊙д⊙)╯",
+            "｡ﾟ(ﾟ´ω`ﾟ)ﾟ｡",
+            "( ´◔ ‸◔`) ",
+            "( ͡° ͜ʖ ͡°)",
+            "ξ( ✿＞◡❛)",
+            "◢▆▅▄▃ 崩╰(〒皿〒)╯潰 ▃▄▅▆◣"
+        ];
+
+        return $emjoi[array_rand($emjoi)];
+    }
+}

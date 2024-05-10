@@ -1,4 +1,6 @@
 <script>
+import masonry from 'masonry-layout';
+
 export default {
   name: 'home',
   mounted() {
@@ -19,28 +21,22 @@ export default {
 
     if (window.adsbygoogle) {
       setTimeout(() => {
-        try{
-          window.adsbygoogle.push({});
-          window.adsbygoogle.push({});
-          window.adsbygoogle.push({});
-        }catch(e){}
-        //waiting for pages render done
-      }, 500);
-
-      setTimeout(() => {
           if (window.adsbygoogle) {
             if($('#google-ad-1')) {
               $('#google-ad-1').addClass('d-flex justify-content-center');
             }
-            if($('#google-ad-2')) {
-              $('#google-ad-2').addClass('d-flex justify-content-center');
-            }
-            if($('#google-ad-3')) {
-              $('#google-ad-3').addClass('d-flex justify-content-center');
-            }
           }
         }, 1000);
     }
+
+    this.initMasonry();
+
+    //handle event when google-ads is loaded
+    window.addEventListener('ad-loaded', () => {
+      if (window.adsbygoogle) {
+        this.initMasonry();
+      }
+    });
   },
   props: {
     playGameRoute: String,
@@ -115,6 +111,14 @@ export default {
         event.target.src = replaceUrl;
       }
       this.errorImages.push(replaceUrl);
+    },
+    initMasonry: function () {
+      new masonry('.grid', {
+        itemSelector: '.grid-item',
+        columnWidth: '.grid-sizer',
+        gutter: '.gutter-sizer',
+        percentPosition: true,
+      });
     },
   }
 }

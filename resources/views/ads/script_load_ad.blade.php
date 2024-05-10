@@ -6,8 +6,13 @@
                 // console.log('try to push ad, try: ' + retry);
                 retry--;
                 (adsbygoogle = window.adsbygoogle || []).push({});
+
+                //if ad is loaded, then it will throw an error
+                (adsbygoogle = window.adsbygoogle || []).push({});
             } catch (e) {
                 if (e.message.includes(`All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
+                    // after loaded ad, send a event to Home.vue
+                    window.dispatchEvent(new Event('ad-loaded'));
                     clearInterval(interval);
                     return;
                 }

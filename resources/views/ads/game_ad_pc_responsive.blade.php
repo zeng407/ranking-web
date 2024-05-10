@@ -5,11 +5,12 @@
 
 <!-- ad_in_game -->
 <ins class="adsbygoogle" 
-    style="display:block;{{ app()->isProduction() ? '' : 'background-color: red;' }}" 
+    style="display:block;" 
     data-ad-client="{{ config('services.google_ad.publisher_id') }}"
     data-ad-slot="{{ config('services.google_ad.game_page_ad_4_slot') }}"
     data-ad-format="auto"
     data-full-width-responsive="true">
+    <p class="d-none">{{random_emoji()}}</p>
 </ins>
 
 @include('ads.script_load_ad')
