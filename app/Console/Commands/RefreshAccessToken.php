@@ -54,6 +54,7 @@ class RefreshAccessToken extends Command
         }
 
         $service->refreshAccessToken();
+        $this->info('Access token refreshed');
         return 0;
     }
 }
