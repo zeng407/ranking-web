@@ -55,6 +55,7 @@ export default {
       inputPassword: '',
       leftReady: true,
       rightReady: true,
+      knownIncorrectPassword: false,
     }
   },
   computed: {
@@ -99,15 +100,17 @@ export default {
       axios.get(this.accessEndpoint)
       .then(response => {
         if (response.status === 200) {
-          this.invalidPasswordWhenLoad = false;
+          this.hideInvalidPasswordHint();
           this.loadGameSetting();
         } else {
-          this.invalidPasswordWhenLoad = true;
+          this.showInvalidPasswordHint();
+          this.knownIncorrectPassword = true;
         }
       })
       .catch(error => {
         if(error.response.status === 403){
-          this.invalidPasswordWhenLoad = true;
+          this.showInvalidPasswordHint();
+          this.knownIncorrectPassword = true;
         }else if(error.response.status === 429){
           Swal.fire({
             icon: 'error',
@@ -122,6 +125,19 @@ export default {
           });
         }
       });
+    },
+    showInvalidPasswordHint: function () {
+      this.invalidPasswordWhenLoad = true;
+      Swal.fire({
+        icon: 'error',
+        position: 'top-end',
+        timer: 3000,
+        toast: true,
+        text: this.$t('game.invalid_password'),
+      });
+    },
+    hideInvalidPasswordHint: function () {
+      this.invalidPasswordWhenLoad = false;
     },
     createGame: function () {
       const data = {
@@ -223,6 +239,7 @@ export default {
           this.handleNextRoundError(data, error);
         }).finally(() => {
           this.isDataLoading = false;
+          this.isVoting = false;
           $('#google-ad-container').css('top', '0');
           if(this.needReloadAD()){
             this.reloadGoogleAds();
@@ -510,7 +527,7 @@ export default {
             this.isDataLoading = false;
           }, 300);
         }).finally(() => {
-          this.isVoting = false;
+          
         });
     },
     handleSendVote(res){
@@ -718,7 +735,7 @@ export default {
       
     },
     reloadGoogleAds() {
-      $('#google-ad2-container').css('height', '300px').css('position', 'relative');
+      $('#google-ad2-container').css('height', '360px').css('position', 'relative');
       this.refreshAD = true;
       setTimeout(() => {
         this.refreshAD = false;
@@ -746,6 +763,12 @@ export default {
 
       if(!this.game){
         return false;
+      }
+
+      //every 4 rounds reload ad
+      if(this.game.current_round % 4 === 0){
+        console.log('need reload ad');
+        return true;
       }
 
       return true;
