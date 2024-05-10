@@ -767,7 +767,6 @@ export default {
 
       //every 4 rounds reload ad
       if(this.game.current_round % 4 === 0){
-        console.log('need reload ad');
         return true;
       }
 

@@ -8,7 +8,6 @@
     data-ad-slot="{{ config('services.google_ad.home_page_ad_1_slot') }}" 
     data-ad-format="auto"
     data-full-width-responsive="true">
-    @include('ads.random_emjoi')
 </ins>
 
 @include('ads.script_load_ad')

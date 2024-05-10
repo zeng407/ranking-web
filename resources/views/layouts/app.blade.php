@@ -83,8 +83,9 @@
 
                     <div class="d-flex justify-content-center">
                         {{-- search --}}
-                        <form class="form-inline my-2 my-lg-0" target="{{ route('home') }}">
+                        <form class="form-inline my-2 my-lg-0" action="{{ route('home') }}" >
                             <input class="mr-sm-2 search-bar" type="search" placeholder="{{ __('Search') }}"
+                                value="{{ Request::get('k') }}" name="k"
                                 aria-label="Search">
                             <button class="btn btn-outline-white my-2 my-sm-0" type="submit">
                                 <i class="fas fa-search text-white"></i>
