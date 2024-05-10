@@ -9,7 +9,7 @@
     data-ad-slot="{{ config('services.google_ad.rank_page_ad_1_slot') }}" 
     data-ad-format="auto"
     data-full-width-responsive="true">
-    <p class="d-none">{{random_emoji()}}</p>
+    @include('ads.random_emjoi')
 </ins>
 
 @include('ads.script_load_ad')
