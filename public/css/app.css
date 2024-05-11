@@ -22610,6 +22610,12 @@ ins.adsbygoogle[data-ad-status=unfilled] {
   right: 0;
   display: none;
 }
+@media (max-width: 768px) {
+  .reset-link::after {
+    content: "";
+    display: none;
+  }
+}
 .reset-link:hover {
   color: inherit;
   text-decoration: none;

@@ -525,6 +525,13 @@ ins.adsbygoogle[data-ad-status="unfilled"] {
         right: 0; // Adjust as needed
         display: none; // Hide the icon by default
     }
+    // no shown content on mobile
+    @media (max-width: 768px) {
+        &::after {
+            content: "";
+            display: none;
+        }
+    }
 
     &:hover {
         color: inherit;
