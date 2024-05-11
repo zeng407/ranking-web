@@ -33,8 +33,12 @@
           </div>
           <img v-else-if="item.image_url" :src="item.image_url" class="d-block" :alt="item.title"
             style="height: 350px;">
-          <div v-if="!firstCarouselLoading && titleVisible" class="carousel-caption bg-gray cursor-pointer d-none d-md-block" @click="hideTitle">
+          <div v-if="!firstCarouselLoading && titleVisible" class="carousel-caption bg-gray cursor-pointer" @click="hideTitle">
             <h5 class="bg-dark d-block px-2">
+              <!-- show cancel icon only in mobile -->
+              <div class="d-block d-md-none">
+                <i class="fa-solid fa-times text-white position-absolute" style="right: 5px; margin-top: 5px; margin-right: 5px;"></i>
+              </div>
               <span class="reset-link">{{ item.title }}</span>
             </h5>
           </div>
