@@ -31,6 +31,7 @@ class HomeCarouselController extends Controller
             'video_url' => 'nullable|url|required_without:image_url',
             'video_start_second' => 'nullable|integer',
             'video_end_second' => 'nullable|integer',
+            'is_active' => 'nullable|boolean'
         ]);
 
         $item = $this->service->createHomeCarouselItem($data);
@@ -76,6 +77,7 @@ class HomeCarouselController extends Controller
             'description' => 'nullable|string',
             'video_start_second' => 'nullable|integer',
             'video_end_second' => 'nullable|integer',
+            'is_active' => 'nullable|boolean'
         ]);
 
         $item = HomeCarouselItem::find($itemId);

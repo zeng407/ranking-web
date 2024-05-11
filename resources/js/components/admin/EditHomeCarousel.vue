@@ -24,18 +24,23 @@
           <th scope="col">Type</th>
           <th scope="col">Title</th>
           <th scope="col">Description</th>
+          <th scope="col">Active</th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
       <draggable v-model="items" @start="drag = true" @end="drag = false" tag="tbody" @change="handleChange">
         <tr v-for="(item, index) in items" :key="item.id">
-          <td class=" cursor-pointer">{{ index + 1 }}</td>
+          <td class="cursor-pointer" >{{ index + 1 }}</td>
           <td>
             <img :src="item.image_url" alt="Image" class="img-thumbnail" style="width: 100px;">
           </td>
           <td>{{ item.type }}</td>
           <td>{{ item.title }}</td>
           <td>{{ item.description }}</td>
+          <td>
+            <span v-if="item.is_active" class="badge badge-success">Active</span>
+            <span v-else class="badge badge-secondary">Inactive</span>
+          </td>
           <td>
             <button class="btn btn-primary btn-sm" @click="editItem(item.id)">Edit</button>
             <button class="btn btn-danger btn-sm" @click="deleteItem(item.id)">Delete</button>
@@ -108,8 +113,14 @@ export default {
     },
     handleChange() {
       if (this.drag) {
+        let newOrderedItems = this.items.map((item, index) => {
+          return {
+            id: item.id,
+            position: index + 1
+          }
+        });
         axios.put(this.reorderEndpoint, {
-          items: this.items
+          items: newOrderedItems
         })
           .then(response => {
             console.log(response.data);

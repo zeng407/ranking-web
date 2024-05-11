@@ -24,6 +24,7 @@ class HomeCarouselItem extends Model
         'video_source',
         'video_id',
         'video_start_second',
-        'video_end_second'
+        'video_end_second',
+        'is_active'
     ];
 }

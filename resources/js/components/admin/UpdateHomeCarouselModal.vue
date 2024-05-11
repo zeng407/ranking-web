@@ -61,6 +61,16 @@
                       placeholder="End Seconds" autocomplete="off">
                   </div>
                 </div>
+                <div class="form-group col-12">
+                  <!-- use toggle -->
+                  <label for="is_active" class="col-sm-2 col-form-label">Active</label>
+                  <div class="col-sm-10">
+                    <div class="custom-control custom-switch">
+                      <input type="checkbox" class="custom-control-input" id="is_active" v-model="is_active">
+                      <label class="custom-control-label" for="is_active"></label>
+                    </div>
+                  </div>
+                </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                   <button type="submit" class="btn btn-primary">Update</button>
@@ -110,6 +120,7 @@ export default {
       type: 'video',
       video_start_second: '',
       video_end_second: '',
+      is_active: true,
     }
   },
   methods: {
@@ -128,6 +139,7 @@ export default {
         description: this.description,
         video_start_second: this.video_start_second,
         video_end_second: this.video_end_second,
+        is_active: this.is_active,
       };
       const url = this.updateEndpoint.replace('_id', this.item.id);
 
@@ -163,6 +175,7 @@ export default {
       this.type = this.item.type;
       this.video_start_second = this.formatTime(this.item.video_start_second);
       this.video_end_second = this.formatTime(this.item.video_end_second);
+      this.is_active = this.item.is_active;
     },
     resetForm() {
       this.image = '';
@@ -172,6 +185,7 @@ export default {
       this.type = 'video';
       this.video_start_second = '';
       this.video_end_second = '';
+      this.is_active = true;
     },
     formatTime: function (time) {
       if(time === null || time == undefined) return '';

@@ -2,7 +2,7 @@
   <div id="home-carousel" class="carousel slide mb-4" data-ride="carousel" data-interval="false">
     <!-- carousel -->
     <div id="preserve-for-carousel" style="height: 350px"></div>
-    <div v-show="items.length" class="carousel-inner">
+    <div v-show="items.length" class="carousel-inner position-absolute" style="top:0">
       <div v-for="(item, index) in items" :key="index" class="carousel-item" :class="{ active: index === 0 }">
         <div class="d-flex justify-content-center">
           <!-- loading -->
@@ -15,6 +15,7 @@
           <!-- iframe -->
           <div v-if="item.video_source === 'youtube'" class="home-carousel-container">
             <youtube :video-id="item.video_id" width="100%" height="350px"
+              @ready="handleIframeLoaded(index)"
               :player-vars="{ controls: 1, autoplay: 0, rel: 0, origin: origin, start:item.video_start_second }">
             </youtube>
           </div>
@@ -80,7 +81,11 @@ export default {
         .then(response => {
           console.log(response.data.data);
           this.items = response.data.data;
-          window.document.getElementById('preserve-for-carousel').remove();
+          //set css position absolute to the first carousel item
+          
+          if(this.items.length == 0){
+            $('#preserve-for-carousel').remove();
+          }
         })
         .catch(error => {
           console.log(error);

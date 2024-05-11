@@ -25,6 +25,7 @@ class CreateHomeCarouselItemsTable extends Migration
             $table->string('video_id')->nullable();
             $table->string('video_start_second')->nullable();
             $table->string('video_end_second')->nullable();
+            $table->boolean('is_active')->default(true);
 
             $table->timestamps();
 

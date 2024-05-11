@@ -11,7 +11,8 @@ class HomeCarouselService
 {
     public function getHomeCarouselItems()
     {
-        return HomeCarouselItem::orderBy('position')->get();
+        return HomeCarouselItem::where('is_active',true)
+            ->orderBy('position')->get();
     }
 
     public function createHomeCarouselItem($data)
@@ -31,8 +32,9 @@ class HomeCarouselService
         $params = [
             'title' => $data['title'] ?? null,
             'video_start_second' => $data['video_start_second'] ?? null,
+            'is_active' => $data['is_active'] ?? true,
         ];
-        logger($params);
+        
         switch (true){
             case $guess->isYoutube:
                 return $this->handleYoutubeVideo(
@@ -59,7 +61,8 @@ class HomeCarouselService
             'position' => 1,
             'type' => 'video',
             'video_source' => VideoSource::YOUTUBE,
-            'video_start_second' => $data['video_start_second'] ?? null
+            'video_start_second' => $data['video_start_second'] ?? null,
+            'is_active' => $data['is_active'] ?? true,
         ]);
     }
 
@@ -79,7 +82,8 @@ class HomeCarouselService
             'video_source' => $data['video_source'],
             'video_start_second' => $data['video_start_second'],
             'position' => 1,
-            'type' => 'video'
+            'type' => 'video',
+            'is_active' => $data['is_active'] ?? true,
         ]);
     }
 

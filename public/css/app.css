@@ -22102,7 +22102,7 @@ input[type=color].form-control:disabled {
 }
 
 ins.adsbygoogle[data-ad-status=unfilled] {
-  display: block !important;
+  display: none !important;
 }
 
 .lang-options {
