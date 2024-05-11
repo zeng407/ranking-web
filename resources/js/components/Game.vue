@@ -765,11 +765,6 @@ export default {
         return false;
       }
 
-      //every 4 rounds reload ad
-      if(this.game.current_round % 4 === 0){
-        return true;
-      }
-
       return true;
     },
     formatTime: function (time) {
