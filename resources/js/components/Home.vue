@@ -37,6 +37,7 @@ export default {
         this.initMasonry();
       }
     });
+
   },
   props: {
     playGameRoute: String,

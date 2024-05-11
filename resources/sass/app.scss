@@ -22,20 +22,6 @@
 
 ins.adsbygoogle[data-ad-status="unfilled"] {
     display: none !important;
-    position: relative;
-    background-color: #f0f0f0; // Set a background color
-
-    p {
-        content: "Ads";
-        display: block !important;
-        position: absolute;
-        font-size: 20px;
-        color: #000;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-wrap: nowrap;
-    }
 }
 
 
