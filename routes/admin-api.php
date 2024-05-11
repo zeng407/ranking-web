@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Api\UserController;
 use App\Http\Controllers\Admin\Api\ElementController;
+use App\Http\Controllers\Admin\Api\HomeCarouselController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,3 +22,9 @@ Route::put('post/{post_id}/element/{element_id}', [ElementController::class, 'up
 Route::delete('post/{post_id}/element/{element_id}', [ElementController::class, 'deleteElement'])->name('admin.api.element.delete');
 Route::put('user/{user_id}/ban', [UserController::class, 'ban'])->name('admin.user.ban');
 Route::put('user/{user_id}/unban', [UserController::class, 'unban'])->name('admin.user.unban');
+
+Route::get('home-carousel-items', [HomeCarouselController::class, 'index'])->name('admin.api.home-carousel.index');
+Route::post('home-carousel-items', [HomeCarouselController::class, 'create'])->name('admin.api.home-carousel.create');
+Route::delete('home-carousel-item/{item_id}', [HomeCarouselController::class, 'delete'])->name('admin.api.home-carousel.delete');
+Route::put('home-carousel-items/{item_id}', [HomeCarouselController::class, 'update'])->name('admin.api.home-carousel.update');
+Route::put('home-carousel-item/reorder', [HomeCarouselController::class, 'reorder'])->name('admin.api.home-carousel.reorder');

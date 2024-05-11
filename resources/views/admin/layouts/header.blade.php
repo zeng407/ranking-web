@@ -1,5 +1,5 @@
-<div class="row">
-    <a class="btn btn-lg btn-outline-light m-1" href="{{ route('admin.post.index') }}">
+<div class="row p-2">
+    <a class="btn btn-lg btn-outline-light m-1 ml-1" href="{{ route('admin.post.index') }}">
         {{ __('貼文管理') }}
     </a>
     <div class="dropdown">
@@ -12,4 +12,7 @@
             <a class="dropdown-item" href="{{ route('admin.user.index') }}">會員列表</a>
         </div>
     </div>
+    <a class="btn btn-lg btn-outline-light m-1" href="{{ route('admin.home-carousel') }}">
+        {{ __('首頁輪播') }}
+    </a>
 </div>

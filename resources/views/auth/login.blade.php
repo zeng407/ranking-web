@@ -6,7 +6,7 @@
 @endsection
 
 @section('content')
-<div class="container-fluid">
+<div class="container">
     @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
 </div>
 <div class="container">

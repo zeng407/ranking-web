@@ -12,10 +12,10 @@ class ImageElementHandler implements InterfaceElementHandler
 {
     use FileHelper;
 
-    public function storeElement(string $sourceUrl, Post $post, $params = []): ?Element
+    public function storeArray(string $sourceUrl, string $serial, $params = []): ?array
     {
         try {
-            $directory = $post->serial;
+            $directory = $serial;
             $storageImage = $this->downloadImage($sourceUrl, $directory);
 
             if ($storageImage === null) {
@@ -30,14 +30,28 @@ class ImageElementHandler implements InterfaceElementHandler
         $title = $params['title'] ?? $fileInfo['filename'];
         $localUrl = Storage::url($storageImage->getPath());
 
+        return [
+            'title' => $title,
+            'thumb_url' => $localUrl,
+            'path' => $storageImage->getPath(),
+        ];
+    }
+
+    public function storeElement(string $sourceUrl, Post $post, $params = []): ?Element
+    {
+        $array = $this->storeArray($sourceUrl, $post->serial, $params);
+        if(!$array){
+            return null;
+        }
+
         $element = $post->elements()->updateOrCreate([
             'source_url' => $params['old_source_url'] ?? $sourceUrl,
         ], [
-            'path' => $storageImage->getPath(),
+            'path' => $array['path'],
             'source_url' => $sourceUrl,
-            'thumb_url' => $localUrl,
+            'thumb_url' => $array['thumb_url'],
             'type' => ElementType::IMAGE,
-            'title' => $title
+            'title' => $array['title'],
         ]);
         event(new ImageElementCreated($element, $post));
 

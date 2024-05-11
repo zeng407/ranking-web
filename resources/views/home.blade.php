@@ -10,31 +10,9 @@
       range="{{$range ?? config('setting.home_page_default_range')}}"
       keyword="{{Request::get('k') }}"
     >
-    <div class="container-fluid" v-cloak>
+    <div class="container" v-cloak>
       @include('partial.lang')
-      <div class="form-inline w-100" >
-        <form @submit.prevent class="d-flex w-100 justify-content-center">
-          <div class="mr-2 w-75">
-            <input class="form-control w-100" v-model="filters.keyword" type="search" placeholder="Search"
-              aria-label="Search" >
-            <div>
-              <div class="row ml-1">
-                @foreach($tags as $tag)
-                <button type="button" class="btn btn-sm btn-outline-secondary mr-1 mt-1"
-                  @click="addTag('{{$tag['name']}}')">
-                  #{{ $tag['name'] }}
-                </button>
-                @endforeach
-              </div>
-            </div>
-          </div>
-          <div class="">
-            <button class="btn btn-outline-dark w-100" type="submit" @click="search">
-              <i class="fas fa-search"></i>
-            </button>
-          </div>
-        </form>
-      </div>
+      @include('partial.home-carousel')
   
       <div class="d-flex justify-content-between flex-nowrap mt-4">
         <div class="form-inline">
@@ -68,9 +46,11 @@
         </div>
       </div>
   
-      <div class="row justify-content-center pt-4">
+      <div class="grid pt-4">
         @foreach($posts as $index => $post)
-        <div class="col-xl-4 col-md-6 pt-2">
+        <div class="grid-sizer"></div>
+        <div class="gutter-sizer"></div>
+        <div class="grid-item pt-2">
           <div class="card shadow">
             <div class="card-header text-center">
               <h2 class="post-title">{{ $post['title'] }}</h2>
@@ -130,28 +110,15 @@
           </div>
         </div>
 
-        @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index == 5)
-          <div id="google-ad-1" class="col-12 mt-2">
+        
+        @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index == count($posts) - 1)
+          <div id="google-ad-1" class="grid-item mt-2">
             @include('ads.home_ad_1')
-          </div>
-        @endif
-
-        @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $loop->last)
-          <div class="col-xl-4 col-md-6 d-lg-none pt-2">
-            <div class="card shadow">
-              <div class="row no-gutters">
-                <div class="col-6 overflow-hidden">
-                    @include('ads.home_ad_2')
-                </div>
-                <div class="col-6 overflow-hidden">
-                    @include('ads.home_ad_3')
-                </div>
-              </div>
-            </div>
           </div>
         @endif
         @endforeach
       </div>
+
       <div class="row justify-content-center pt-2">
         {{ $posts->appends(request()->except('page'))->links() }}
       </div>

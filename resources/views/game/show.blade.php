@@ -305,15 +305,17 @@
 
                 {{-- password required --}}
                 <div v-if="requirePassword && !post">
-                  <div class="input-group mb-3">
-                    <label class="input-group-text" for="inputPassword">@{{ $t('game.password') }}</label>
-                    <input type="text" class="form-control" v-model="inputPassword" autocomplete="off">
-                    <div class="input-group-append">
-                      <button class="btn btn-primary" @click="accessGame" :disabled="inputPassword.length == 0">
-                        <i class="fas fa-key"></i>&nbsp;@{{ $t('Enter') }}
-                      </button>
+                  <form @submit.prevent="accessGame">
+                    <div class="input-group mb-3">
+                      <label class="input-group-text" for="inputPassword">@{{ $t('game.password') }}</label>
+                      <input type="text" class="form-control" v-model="inputPassword" autocomplete="off" @input="knownIncorrectPassword = false">
+                      <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit" :disabled="inputPassword.length == 0 || knownIncorrectPassword">
+                          <i class="fas fa-key"></i>&nbsp;@{{ $t('Enter') }}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  </form>
                 </div>
 
                 {{-- game preview --}}

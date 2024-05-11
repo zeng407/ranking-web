@@ -1,15 +1,18 @@
 <?php
 
+use App\Http\Controllers\Api\HomeCarouselController;
 use App\Http\Controllers\Api\TagController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MyPostController;
 use App\Http\Controllers\Api\ElementController;
 use App\Http\Controllers\Api\GameController;
 use App\Http\Controllers\Api\PublicPostController;
-use App\Http\Controllers\Api\RankController;
 
 /** Tag */
 Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
+
+/** Carousel */
+Route::get('carousel-items', [HomeCarouselController::class, 'index'])->name('api.carousel.index');
 
 /** Post */
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');

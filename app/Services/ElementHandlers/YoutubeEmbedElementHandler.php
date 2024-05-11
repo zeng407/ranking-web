@@ -11,7 +11,7 @@ class YoutubeEmbedElementHandler implements InterfaceElementHandler
 {
     use FileHelper;
 
-    public function storeElement(string $embedCode, Post $post, $params = []): ?Element
+    public function storeArray(string $embedCode, string $serial, $params = []): ?array
     {
         // extract video id from embed code
         preg_match('/src="https:\/\/www.youtube.com\/embed\/([^"]+)"/', $embedCode, $matches);
@@ -34,15 +34,31 @@ class YoutubeEmbedElementHandler implements InterfaceElementHandler
             "frameborder=\"0\" allow=\"accelerometer; loop; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" ". 
             "referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen ></iframe>";
         $thumbUrl = "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
+        
+        return [
+            'title' => $params['title'] ?? '',
+            'thumb_url' => $thumbUrl,
+            'embed_code' => $embedCode,
+            'video_id' => $videoId,
+        ];
+    }
+
+    public function storeElement(string $embedCode, Post $post, $params = []): ?Element
+    {
+        $array = $this->storeArray($embedCode, $post->serial, $params);
+        if(!$array){
+            return null;
+        }
+
         $element = $post->elements()->updateOrCreate([
             'source_url' => $params['old_source_url'] ??  '',
         ], [
             'source_url' => $embedCode,
-            'thumb_url' => $thumbUrl,
+            'thumb_url' => $array['thumb_url'],
             'type' => ElementType::VIDEO,
-            'title' => $params['title'] ?? '',
+            'title' => $array['title'],
             'video_source' => VideoSource::YOUTUBE_EMBED,
-            'video_id' => $videoId,
+            'video_id' => $array['video_id'],
         ]);
 
         return $element;

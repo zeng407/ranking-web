@@ -189,3 +189,22 @@ if(!function_exists('view_or')){
         return view($default, $data);
     }
 }
+
+if(!function_exists('emojis')){
+    function emojis()
+    {
+        $emjois = [
+            "<(´⌯﹏⌯`)>",
+            "_(:3 」∠ )_",
+            "( ￣ 3￣)y▂ξ",
+            "╰(⊙д⊙)╮╭(⊙д⊙)╯",
+            "｡ﾟ(ﾟ´ω`ﾟ)ﾟ｡",
+            "( ´◔ ‸◔`) ",
+            "( ͡° ͜ʖ ͡°)",
+            "ξ( ✿＞◡❛)",
+            "▆▅▃╰(〒皿〒)╯▃▄▆"
+        ];
+
+        return $emjois;
+    }
+}

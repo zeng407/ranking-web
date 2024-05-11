@@ -14,10 +14,11 @@ class ImgurElementHandler implements InterfaceElementHandler
 {
     use FileHelper;
 
-    public function storeElement(string $sourceUrl, Post $post, $params = []): ?Element
+
+    public function storeArray(string $sourceUrl, string $serial, $params = []): ?array
     {
         try {
-            $directory = $post->serial;
+            $directory = $serial;
             // if url contains imgur
             if (strpos($sourceUrl, 'imgur.com') !== false) {
                 $imgurService = app(ImgurService::class);
@@ -54,17 +55,43 @@ class ImgurElementHandler implements InterfaceElementHandler
 
             $type = $this->guessMediaType($image['type']);
             $videoSource = $type === ElementType::VIDEO ? VideoSource::IMGUR : null;
-            $element = $post->elements()->updateOrCreate([
-                'source_url' => $params['old_source_url'] ?? $sourceUrl,
-            ], [
+
+            return [
+                'title' => $title,
+                'thumb_url' => $thumb,
                 'path' => $storageImage->getPath(),
                 'video_source' => $videoSource,
                 'source_url' => $sourceUrl,
-                'thumb_url' => $thumb,
                 'type' => $type,
-                'title' => $title
+                'image' => $image,
+            ];
+        } catch (\Exception $exception) {
+            report($exception);
+            return null;
+        }
+    }
+
+    public function storeElement(string $sourceUrl, Post $post, $params = []): ?Element
+    {
+        try {
+            $array = $this->storeArray($sourceUrl, $post->serial, $params);
+            if(!$array){
+                return null;
+            }
+
+
+            $element = $post->elements()->updateOrCreate([
+                'source_url' => $params['old_source_url'] ?? $sourceUrl,
+            ], [
+                'path' => $array['path'],
+                'video_source' => $array['video_source'],
+                'source_url' => $sourceUrl,
+                'thumb_url' => $array['thumb_url'],
+                'type' => $array['type'],
+                'title' => $array['title'],
             ]);
 
+            $image = $array['image'];
             $element->imgur_image()->create([
                 'image_id' => $image['id'],
                 'imgur_album_id' => null,
