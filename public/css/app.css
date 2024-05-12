@@ -22281,6 +22281,7 @@ ins.adsbygoogle[data-ad-status=unfilled] {
 }
 
 .rank-card img {
+  width: 100%;
   -o-object-fit: contain;
      object-fit: contain;
 }
