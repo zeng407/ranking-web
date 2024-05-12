@@ -53,14 +53,6 @@ ins.adsbygoogle[data-ad-status="unfilled"] {
     cursor: pointer;
 }
 
-.game-image-container:hover img{
-    transition: 0.5s; /* 0.2s delay */
-    -ms-transform: scale(1.1); /* IE 9 */
-    -webkit-transform: scale(1.1); /* Safari 3-8 */
-    transform: scale(0.95);
-    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.3);
-}
-
 .home-logo {
     height: 30px;
     width: 30px;

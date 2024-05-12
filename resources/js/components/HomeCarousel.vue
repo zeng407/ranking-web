@@ -48,12 +48,12 @@
 
     <div v-show="items.length > 1">
       <!-- left button -->
-      <button class="carousel-control-prev position-absolute" style="top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
+      <button class="carousel-control-prev position-absolute" style="width: 10%; height: 30px; top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
         data-slide="prev" @click="showTitle(500)">
         <i class="fa-solid fa-angle-left fa-3x text-dark"></i>
       </button>
       <!-- right button -->
-      <button class="carousel-control-next position-absolute" style="top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
+      <button class="carousel-control-next position-absolute" style="width: 10%; height: 30px; top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
         data-slide="next" @click="showTitle(500)">
         <i class="fa-solid fa-angle-right fa-3x text-dark"></i>
       </button>

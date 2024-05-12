@@ -1,7 +1,6 @@
 <script>
 import Swal from 'sweetalert2';
 
-
 const MD_WIDTH_SIZE = 768;
 export default {
   mounted() {
@@ -56,6 +55,20 @@ export default {
       leftReady: true,
       rightReady: true,
       knownIncorrectPassword: false,
+      viewerOptions: { 
+        inline: false,
+        button: true,
+        movable: true,
+        navbar: 0,
+        title: false,
+        toolbar: {
+          zoomIn: 1,
+          zoomOut :1, 
+          reset: 1,
+          rotateRight: 1,
+        },
+        rotatable: true,
+      },
     }
   },
   computed: {
@@ -217,6 +230,13 @@ export default {
             this.resetPlayerPosition();
             this.scrollToLastPosition();
             this.resetPlayingStatus();
+            // destroy viwer
+            if(this.$refs.rightViewer){
+              this.$refs.rightViewer.updateViewer();
+            }
+            if(this.$refs.leftViewer){
+              this.$refs.leftViewer.updateViewer();
+            }
             this.errorImages = [];
             this.isDataLoading = false;
             setTimeout(() => {
@@ -675,17 +695,6 @@ export default {
       }else{
         this.isLeftPlaying = false;
         this.isRightPlaying = true;
-      }
-    },
-    clickImage(event) {
-      const obj = $(event.target);
-      const size = obj.css('object-fit');
-      if (size === 'contain') {
-        obj.css('object-fit', 'cover');
-      } else if (size === 'cover') {
-        obj.css('object-fit', 'contain');
-      } else {
-        obj.css('object-fit', 'contain');
       }
     },
     isImageSource: function (element) {

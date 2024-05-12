@@ -12,7 +12,7 @@ class HomeCarouselService
     public function getHomeCarouselItems()
     {
         return HomeCarouselItem::where('is_active',true)
-            ->orderBy('position')->get();
+            ->get()->shuffle();
     }
 
     public function createHomeCarouselItem($data)
