@@ -38,7 +38,21 @@ export default {
         avatar_url: '',
         champions: []
       },
-      isSubmiting: false
+      isSubmiting: false,
+      viewerOptions: { 
+        inline: false,
+        button: true,
+        movable: true,
+        navbar: 0,
+        title: false,
+        toolbar: {
+          zoomIn: 1,
+          zoomOut :1, 
+          reset: 1,
+          rotateRight: 1,
+        },
+        rotatable: true,
+      },
     }
   },
   props: {

@@ -97,9 +97,10 @@ Vue.filter('formNow', function (value, locale = 'zh-tw') {
     return moment(value).fromNow();
 });
 
-
-
-
+/* Viewer */
+import 'viewerjs/dist/viewer.css'
+import VueViewer from 'v-viewer'
+Vue.use(VueViewer)
 
 const app = new Vue({
     el: '#app',

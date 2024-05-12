@@ -104,8 +104,10 @@
                 <div v-show="!leftImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
                   <i class="fas fa-3x fa-spinner fa-spin" ></i>
                 </div>
-                <img @load="handleLeftLoaded" v-show="leftImageLoaded" @click="clickImage" @@error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
-                  :style="{ height: this.elementHeight + 'px' }">
+                <viewer ref="leftViewer" :options="viewerOptions">
+                  <img @load="handleLeftLoaded" v-show="leftImageLoaded" @@error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
+                    :style="{ height: this.elementHeight + 'px' }" :key="le.thumb_url">
+                </viewer>
               </div>
               <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
                 <youtube :video-id="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
@@ -184,8 +186,10 @@
                 <div v-show="!rightImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
                   <i class="fas fa-3x fa-spinner fa-spin" ></i>
                 </div>
-                <img @load="handleRightLoaded" v-show="rightImageLoaded" @click="clickImage" @@error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
-                  :style="{ height: this.elementHeight + 'px' }">
+                <viewer :image="re.thumb_url" ref="rightViewer" :options="viewerOptions">
+                  <img @load="handleRightLoaded" v-show="rightImageLoaded" @click="clickImage('rightViewer')" @@error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
+                    :style="{ height: this.elementHeight + 'px' }" :key="re.thumb_url">
+                </viewer>
               </div>
               <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
                 <youtube :video-id="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
