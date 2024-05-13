@@ -22,6 +22,11 @@ class HomeController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'sort_by' => ['nullable', 'string', 'in:hot,new'],
+            'range' => ['nullable', 'string', 'in:all,year,month,week,day'],
+            'k' => ['nullable', 'string', 'max:255'],
+        ]);
         $sort = $this->getSort($request);
         $tags = $this->getHotTags();
         $posts = $this->getPosts($request, $sort);

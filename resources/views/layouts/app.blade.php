@@ -103,51 +103,50 @@
                     </div>
                     
                     {{-- profile --}}
-                    <div class="d-none d-md-flex justify-content-end">
-                      <div class="collapse navbar-collapse text-right" id="navbarSupportedContent">
-                          {{-- Left Side Of Navbar --}}
-                          <ul class="navbar-nav mr-auto">
+                    <div class="collapse navbar-collapse text-right" id="navbarSupportedContent" style="flex-grow:inherit">
+                        {{-- Left Side Of Navbar --}}
+                        <ul class="navbar-nav mr-auto">
 
-                          </ul>
+                        </ul>
 
-                          {{-- Right Side Of Navbar --}}
-                          <ul class="navbar-nav ml-auto">
-                              {{-- Authentication Links --}}
-                              @guest
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('login') }}">{{ __('Login & New Post') }}</a>
-                                  </li>
-                              @else
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('post.index') }}">{{ __('My Votes') }}</a>
-                                  </li>
-                                  <li class="nav-item dropdown">
-                                      <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
-                                          data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                          <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
-                                              class="rounded-circle" width="30" height="30" style="object-fit: cover"
-                                              alt="{{ __('Avatar') }}">
-                                          <span class="caret"></span>
-                                      </a>
-                                      <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                                          <a class="dropdown-item" href="{{ route('profile.index') }}">
-                                              {{ __('Profile') }}
-                                          </a>
-                                          <a class="dropdown-item" href="{{ route('logout') }}"
-                                              onclick="event.preventDefault();document.getElementById('logout-form').submit();">
-                                              {{ __('Logout') }}
-                                          </a>
+                        {{-- Right Side Of Navbar --}}
+                        <ul class="navbar-nav ml-auto">
+                            {{-- Authentication Links --}}
+                            @guest
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('login') }}">{{ __('Login & New Post') }}</a>
+                                </li>
+                            @else
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('post.index') }}">{{ __('My Votes') }}</a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
+                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                                        <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
+                                            class="rounded-circle" width="30" height="30" style="object-fit: cover"
+                                            alt="{{ __('Avatar') }}">
+                                        <span class="caret"></span>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                                        <a class="dropdown-item" href="{{ route('profile.index') }}">
+                                            {{ __('Profile') }}
+                                        </a>
+                                        <a class="dropdown-item" href="{{ route('logout') }}"
+                                            onclick="event.preventDefault();document.getElementById('logout-form').submit();">
+                                            {{ __('Logout') }}
+                                        </a>
 
-                                          <form id="logout-form" action="{{ route('logout') }}" method="POST"
-                                              class="d-none">
-                                              @csrf
-                                          </form>
-                                      </div>
-                                  </li>
-                              @endguest
-                          </ul>
-                      </div>
+                                        <form id="logout-form" action="{{ route('logout') }}" method="POST"
+                                            class="d-none">
+                                            @csrf
+                                        </form>
+                                    </div>
+                                </li>
+                            @endguest
+                        </ul>
                     </div>
+                    
                 </div>
             </nav>
         @endif
