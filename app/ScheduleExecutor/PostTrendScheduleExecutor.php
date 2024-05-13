@@ -7,6 +7,7 @@ namespace App\ScheduleExecutor;
 use App\Enums\RankType;
 use App\Enums\TrendTimeRange;
 use App\Enums\TrendType;
+use App\Helper\CacheService;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Game1V1Round;
@@ -25,6 +26,7 @@ class PostTrendScheduleExecutor
         $this->createHotTrendPost(TrendTimeRange::MONTH);
         $this->createHotTrendPost(TrendTimeRange::WEEK);
         $this->createHotTrendPost(TrendTimeRange::TODAY);
+        CacheService::rememberPostUpdatedTimestamp(true);
     }
 
     protected function createHotTrendPost($range)
@@ -57,6 +59,7 @@ class PostTrendScheduleExecutor
             });
 
         Post::orderByRaw("( {$query->toSql()} ) desc", $query->getBindings())
+            ->orderBy('posts.created_at', 'desc')
             ->each(function (Post $post, $count) use ($range, $startDate) {
                 $post->post_trends()->updateOrCreate([
                     'trend_type' => TrendType::HOT,

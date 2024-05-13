@@ -14,21 +14,21 @@
 
           <!-- iframe -->
           <div v-if="item.video_source === 'youtube'" class="home-carousel-container">
-            <youtube :video-id="item.video_id" width="100%" height="350px"
+            <youtube :ref="'player'+index" :video-id="item.video_id" width="100%" height="350px"
               @ready="handleIframeLoaded(index)"
               :player-vars="{ controls: 1, autoplay: 0, rel: 0, origin: origin, start:item.video_start_second }">
             </youtube>
           </div>
           <div v-else-if="item.video_source === 'twitch_video'" class="home-carousel-container twitch-container">
-            <iframe @load="handleIframeLoaded(index)" :src="getTwitchVideoUrl(item)" height="350" width="100%"
+            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchVideoUrl(item)" height="350" width="100%"
               preload="metadata" allowfullscreen></iframe>
           </div>
           <div v-else-if="item.video_source === 'twitch_channel'" class="home-carousel-container twitch-container">
-            <iframe @load="handleIframeLoaded(index)" :src="getTwitchChannelUrl(item)" height="350" width="100%"
+            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchChannelUrl(item)" height="350" width="100%"
               preload="metadata" allowfullscreen></iframe>
           </div>
           <div v-else-if="item.video_source === 'twitch_clip'" class="home-carousel-container twitch-container">
-            <iframe @load="handleIframeLoaded(index)" :src="getTwitchClipUrl(item)" height="350" width="100%"
+            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchClipUrl(item)" height="350" width="100%"
               preload="metadata" allowfullscreen></iframe>
           </div>
           <img v-else-if="item.image_url" :src="item.image_url" class="d-block" :alt="item.title"
@@ -49,12 +49,12 @@
     <div v-show="items.length > 1">
       <!-- left button -->
       <button class="carousel-control-prev position-absolute" style="width: 10%; height: 30px; top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
-        data-slide="prev" @click="showTitle(500)">
+        data-slide="prev" @click="onclickSlide">
         <i class="fa-solid fa-angle-left fa-3x text-dark"></i>
       </button>
       <!-- right button -->
       <button class="carousel-control-next position-absolute" style="width: 10%; height: 30px; top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
-        data-slide="next" @click="showTitle(500)">
+        data-slide="next" @click="onclickSlide">
         <i class="fa-solid fa-angle-right fa-3x text-dark"></i>
       </button>
     </div>
@@ -65,6 +65,7 @@
 export default {
   mounted() {
     this.loadCarouselItems();
+    this.handleSlide();
   },
   props: {
     indexEndpoint: String,
@@ -123,11 +124,41 @@ export default {
     hideTitle() {
       this.titleVisible = false;
     },
+    onclickSlide() {
+      this.showTitle(500);
+    },
     showTitle(delay = 0) {
       if(this.titleVisible == false){
         setTimeout(() => {
           this.titleVisible = true;
         }, delay);
+      }
+    },
+    stopVideo(id) {
+      let iframes = this.$refs['player' + id];
+
+      // check iframe object
+      if (!iframes || iframes[0] === undefined) {
+        return;
+      }
+
+      let iframe = iframes[0];
+
+      // Check if iframe is an iframe object
+      if (iframe instanceof HTMLIFrameElement) {
+        //keep the src
+        let src = iframe.src;
+
+        //make iframe src empty to stop
+        iframe.src = '';
+
+        //then restore the src
+        setTimeout(() => {
+          iframe.src = src;
+        }, 100); 
+      } else if(iframe.player){
+        iframe.player.pauseVideo();
+        return;
       }
     },
     formatTwitchTime(time) {
@@ -136,6 +167,12 @@ export default {
       let minutes = Math.floor(time % 3600 / 60);
       let seconds = Math.floor(time % 3600 % 60);
       return `${hours}h${minutes}m${seconds}s`;
+    },
+    handleSlide() {
+      $('#home-carousel').on('slide.bs.carousel', (event) => {
+        let currentSlide = event.from;
+        this.stopVideo(currentSlide);
+      })
     }
   }
 }

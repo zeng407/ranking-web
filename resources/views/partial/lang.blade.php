@@ -9,7 +9,7 @@
 
 @endphp
 
-<div class="lang-options">
+<div class="lang-options d-flex flex-column-reverse flex-md-row justify-content-end mt-3 mt-md-0">
     <ul class="list-unstyled">
       <li class="dropdown">
         <a class="nav-link text-dark" href="#" id="dropdownLangButton" role="button" data-toggle="dropdown"

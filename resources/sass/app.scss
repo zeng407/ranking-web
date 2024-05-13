@@ -29,6 +29,12 @@ ins.adsbygoogle[data-ad-status="unfilled"] {
     position: absolute;
     right: 15px;
     z-index: 1;
+    text-align: right;
+}
+@media (max-width: 576px) {
+    .lang-options {
+        position: static;
+    }
 }
 
 .post-element-container img,

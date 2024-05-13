@@ -44,8 +44,6 @@ class CacheService
             Cache::forget('hot_tags');
         }
         $seconds = 60 * 5; // 5 minutes
-        logger($cacheName);
-        $seconds = 60 * 5; // 5 minutes
         $cache = Cache::remember($cacheName, $seconds , function() use ($request, $sort) {
             $posts = app(PostService::class)->getList([
                 PostFilter::PUBLIC => true,
