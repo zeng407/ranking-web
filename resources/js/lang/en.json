@@ -4,6 +4,9 @@
     "Description": "Description",
     "Title": "Title",
 
+    "home.start": "Start",
+    "home.rank": "Rank",
+
     "my_games.title": "My Votes",
     "my_games.new": "New vote",
     "my_games.table.title": "Title",

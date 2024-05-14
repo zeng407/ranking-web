@@ -9,6 +9,9 @@
     "Close": "關閉",
     "Save changes": "儲存",
 
+    "home.start": "開始投票",
+    "home.rank": "排行榜",
+    
     "post_policy.private": "私人",
     "post_policy.public": "公開",
     "post_policy.password": "密碼存取",

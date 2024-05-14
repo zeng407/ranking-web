@@ -1,5 +1,5 @@
 <template>
-  <div id="home-carousel" class="carousel slide mb-4" data-ride="carousel" data-interval="false">
+  <div id="home-carousel" class="carousel slide mb-5" data-ride="carousel" data-interval="false">
     <!-- carousel -->
     <div id="preserve-for-carousel" style="height: 350px"></div>
     <div v-show="items.length" class="carousel-inner position-absolute" style="top:0">
@@ -33,29 +33,41 @@
           </div>
           <img v-else-if="item.image_url" :src="item.image_url" class="d-block" :alt="item.title"
             style="height: 350px;">
-          <div v-if="!firstCarouselLoading && titleVisible" class="carousel-caption bg-gray cursor-pointer" @click="hideTitle">
-            <h5 class="bg-dark d-block px-2">
-              <!-- show cancel icon only in mobile -->
-              <div class="d-block d-md-none">
-                <i class="fa-solid fa-times text-white position-absolute" style="right: 5px; margin-top: 5px; margin-right: 5px;"></i>
-              </div>
-              <span class="reset-link">{{ item.title }}</span>
-            </h5>
-          </div>
+        </div>
+
+        <!-- title -->
+        <div v-if="!firstCarouselLoading && titleVisible && item.title" class="text-center">
+          <h5 class="d-inline-block px-2 pt-1">
+            <!-- show cancel icon only in mobile -->
+            <div class="d-block d-md-none">
+              <i @click="hideTitle" class="fa-solid fa-times text-dark position-absolute" style="right: 0px; margin-top: 3px; margin-right: 0px;"></i>
+            </div>
+            <!-- mobile -->
+            <span class="d-block d-sm-none font-size-small">{{ item.title }}</span>
+            <!-- desktop -->
+            <span class="d-none d-sm-block">{{ item.title }}</span>
+          </h5>
         </div>
       </div>
+      
     </div>
 
     <div v-show="items.length > 1">
       <!-- left button -->
       <button class="carousel-control-prev position-absolute" style="width: 10%; height: 30px; top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
         data-slide="prev" @click="onclickSlide">
-        <i class="fa-solid fa-angle-left fa-3x text-dark"></i>
+        <!-- mobile -->
+        <i class="d-block d-sm-none fa-solid fa-angle-left fa-3x text-wihte"></i>
+        <!-- desktop -->
+        <i class="d-none d-sm-block fa-solid fa-angle-left fa-3x text-dark"></i>
       </button>
       <!-- right button -->
       <button class="carousel-control-next position-absolute" style="width: 10%; height: 30px; top: 50%; transform: translateY(-50%);" type="button" data-target="#home-carousel"
         data-slide="next" @click="onclickSlide">
-        <i class="fa-solid fa-angle-right fa-3x text-dark"></i>
+        <!-- mobile -->
+        <i class="d-block d-sm-none fa-solid fa-angle-right fa-3x text-white"></i>
+        <!-- desktop -->
+        <i class="d-none d-sm-block fa-solid fa-angle-right fa-3x text-dark"></i>
       </button>
     </div>
   </div>

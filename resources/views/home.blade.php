@@ -9,10 +9,17 @@
       sort-by="{{$sort ?? 'hot'}}"
       range="{{$range ?? config('setting.home_page_default_range')}}"
       keyword="{{Request::get('k') }}"
+      :current-page={{$posts->currentPage()}}
+      index-posts-endpoint="{{route('api.public-post.index')}}"
+      show-game-endpoint="{{route('game.show', '_serial')}}"
+      show-rank-endpoint="{{route('game.rank', '_serial')}}"
     >
     <div class="container" v-cloak>
       @include('partial.lang')
-      @include('partial.home-carousel')
+
+      @if(empty(Request::all()))
+        @include('partial.home-carousel')
+      @endif
   
       <div class="d-flex justify-content-between flex-nowrap mt-4">
         <div class="form-inline">
@@ -91,11 +98,11 @@
                   </div>
                 </div>
                 <span class="mt-2 card-text float-left">
-                  <button id="popover-button-event{{$index}}" type="button" class="btn btn-outline-dark btn-sm"
-                    @click="share('{{route('game.show',$post['serial'])}}',{{$index}})">
+                  <button id="popover-button-event{{$post['serial']}}" type="button" class="btn btn-outline-dark btn-sm"
+                    @click="share('{{route('game.show',$post['serial'])}}', '{{$post['serial']}}')">
                     {{__('Share')}} &nbsp;<i class="fas fa-share-square"></i>
                   </button>
-                  <b-popover ref="popover{{$index}}" target="popover-button-event{{$index}}" :disabled="true">
+                  <b-popover ref="popover{{$post['serial']}}" target="popover-button-event{{$post['serial']}}" :disabled="true">
                     {{__('Copied link')}}
                   </b-popover>
                 </span>
@@ -117,10 +124,43 @@
           </div>
         @endif
         @endforeach
+
+        <template v-for="post in posts">
+          <home-post
+            :show-game-endpoint="showGameEndpoint"
+            :show-rank-endpoint="showRankEndpoint"
+            :post="post"
+            :init-masonry="initMasonry"
+            :on-image-error="onImageError"
+            @share="handleChildShare"
+          >
+          </home-post>
+        </template>
+
       </div>
 
-      <div class="row justify-content-center pt-2">
-        {{ $posts->appends(request()->except('page'))->links() }}
+      {{-- post not found  --}}
+      @if($posts->count() == 0)
+      <div class="text-center">
+        <img src="{{ asset('storage/post-not-found-' . app()->getLocale() . '.png') }}" class="img-fluid" alt="{{ __('Not Found') }}">
+      </div>
+      @endif
+
+      {{-- more posts loading --}}
+      <div class="d-flex justify-content-center" style="height: 50px;">
+        <div v-if="!isFetchAllPosts && (isLoadingMorePosts || delayLoading)" class="align-content-center">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+        </div>
+        <div v-if="isFetchAllPosts" class="align-content-center">
+          <span class="text-muted">{{ random_emoji() }}</span>
+        </div>
+      </div>
+
+      {{-- return to top --}}
+      <div v-if="showReturnUpButton" class="align-content-center" style="position: fixed; right: 20px; bottom: 20px;">
+        <span class="cursor-pointer" @click="scrollToTop">
+          <i class="fas fa-arrow-up"></i>
+        </span>
       </div>
   
     </div>

@@ -84,10 +84,10 @@ Vue.filter('percent', function (value) {
     return null;
 });
 Vue.filter('date', function (value) {
-    return moment(value).format('Y/M/D');
+    return moment(value).format('Y-M-D');
 });
 Vue.filter('datetime', function (value) {
-    return moment(value).format('Y/M/D HH:mm:ss');
+    return moment(value).format('Y-M-D HH:mm:ss');
 });
 Vue.filter('moment', function (value, format) {
     return moment(value).format(format);

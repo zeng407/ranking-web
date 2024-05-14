@@ -208,3 +208,11 @@ if(!function_exists('emojis')){
         return $emjois;
     }
 }
+
+if(!function_exists('random_emoji')){
+    function random_emoji()
+    {
+        $emojis = emojis();
+        return $emojis[array_rand($emojis)];
+    }
+}
