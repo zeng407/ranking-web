@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Comment\CommentResource;
+use App\Http\Resources\PublicPostResource;
 use App\Models\Post;
 use App\Services\Builders\CommentBuilder;
 use App\Services\PostService;
@@ -21,6 +23,22 @@ class PublicPostController extends Controller
         $this->postService = $postService;
         $this->middleware('throttle:5,1')->only('createComment');
 
+    }
+
+    public function getPosts(Request $request)
+    {
+        $request->validate([
+            'sort_by' => ['nullable', 'string', 'in:hot,new'],
+            'range' => ['nullable', 'string', 'in:all,year,month,week,day'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'k' => ['nullable', 'string', 'max:255'],
+        ]);
+        $sort = $this->getSort($request);
+        $posts = CacheService::rememberPosts($request, $sort);
+        
+        return response()->json($posts);
+        
     }
 
     public function getComments(Request $request, Post $post)
@@ -88,4 +106,17 @@ class PublicPostController extends Controller
 
         return response()->json([], 201);
     }
+
+    protected function getSort(Request $request)
+    {
+        $sort = $request->query('sort_by', 'hot');
+        $range = $request->query('range', config('setting.home_page_default_range'));
+
+        if ($sort === 'hot') {
+            $sort = 'hot_' . $range;
+        }
+
+        return $sort;
+    }
+    
 }

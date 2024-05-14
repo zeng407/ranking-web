@@ -15,6 +15,9 @@ Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
 Route::get('carousel-items', [HomeCarouselController::class, 'index'])->name('api.carousel.index');
 
 /** Post */
+Route::get('posts', [PublicPostController::class, 'getPosts'])->name('api.public-post.index');
+
+/** Game */
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');
 Route::get('post/{post:serial}/access', [GameController::class, 'access'])->name('api.game.access');
 Route::get('game/{game:serial}/next-round', [GameController::class, 'nextRound'])->name('api.game.next-round');

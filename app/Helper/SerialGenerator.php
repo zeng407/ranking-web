@@ -11,7 +11,7 @@ class SerialGenerator
 {
     public static function genPostSerial()
     {
-        $serial = Str::random(8);
+        $serial = strtolower(Str::random(8));
 
         if(Post::where('serial', $serial)->exists()){
             return self::genPostSerial();

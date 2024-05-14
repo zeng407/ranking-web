@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helper\CacheService;
 use App\Http\Resources\PublicPostResource;
+use App\Models\Post;
 use App\Repositories\Filters\PostFilter;
 use Illuminate\Http\Request;
 use App\Services\TagService;
@@ -30,7 +31,7 @@ class HomeController extends Controller
         $sort = $this->getSort($request);
         $tags = $this->getHotTags();
         $posts = $this->getPosts($request, $sort);
-    
+
         return view('home', [
             'sort' => $request->query('sort_by', 'hot'),
             'range'=> $request->query('range', config('setting.home_page_default_range')),

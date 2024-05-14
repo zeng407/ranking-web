@@ -18,7 +18,7 @@ class HomeCarouselController extends Controller
 
     public function index(Request $request)
     {
-        return $this->service->getHomeCarouselItems();
+        return HomeCarouselItem::orderBy('is_active')->orderBy('position')->get();
     }
 
     public function create(Request $request)
