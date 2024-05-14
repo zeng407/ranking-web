@@ -41,7 +41,7 @@ class CacheService
     {
         $cacheName = Cache::get('post_update_at').'/'.md5($request->fullUrl());
         if ($refresh) {
-            Cache::forget('hot_tags');
+            Cache::forget($cacheName);
         }
         $seconds = 60 * 5; // 5 minutes
         $cache = Cache::remember($cacheName, $seconds , function() use ($request, $sort) {

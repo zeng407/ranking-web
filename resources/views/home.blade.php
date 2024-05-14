@@ -12,7 +12,10 @@
     >
     <div class="container" v-cloak>
       @include('partial.lang')
-      @include('partial.home-carousel')
+
+      @if(empty(Request::all()))
+        @include('partial.home-carousel')
+      @endif
   
       <div class="d-flex justify-content-between flex-nowrap mt-4">
         <div class="form-inline">

@@ -148,7 +148,7 @@
                     <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying}" :disabled="isVoting"
                       @click="leftPlay()">
                       <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
-                      <i class="fas fa-volume-up fa-beat" v-show="isLeftPlaying"></i>
+                      <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
                     </button>
                   </div>
                   <div class="col-9">
@@ -233,7 +233,7 @@
                     <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying}" :disabled="isVoting"
                       @click="rightPlay()">
                       <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
-                      <i class="fas fa-volume-up fa-beat" v-show="isRightPlaying"></i>
+                      <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
                     </button>
                   </div>
                   <div class="col-9">

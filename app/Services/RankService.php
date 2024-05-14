@@ -117,7 +117,8 @@ class RankService
             })
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
-            ->eachById(function (Rank $rank) use (&$counter) {
+            ->get()
+            ->each(function (Rank $rank) use (&$counter) {
                 $counter++;
                 RankReport::updateOrCreate([
                     'post_id' => $rank->post_id,
@@ -137,7 +138,8 @@ class RankService
             })
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
-            ->eachById(function (Rank $rank) use (&$counter) {
+            ->get()
+            ->each(function (Rank $rank) use (&$counter) {
                 $counter++;
                 RankReport::updateOrCreate([
                     'post_id' => $rank->post_id,
@@ -155,7 +157,8 @@ class RankService
             })
             ->orderByDesc('win_rate')
             ->orderByDesc('final_win_rate')
-            ->eachById(function (RankReport $rankReport, $index) use (&$counter) {
+            ->get()
+            ->each(function (RankReport $rankReport) use (&$counter) {
                 $counter++;
                 $rankReport->update([
                     'rank' => $counter
