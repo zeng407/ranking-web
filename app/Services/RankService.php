@@ -107,7 +107,8 @@ class RankService
 
     public function createRankReport(Post $post)
     {
-        \Log::info("start update post [{$post->id}] rank report [{$post->title}]"); 
+        \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
+        $counter = 0;
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::CHAMPION)
             ->where('record_date', today())
@@ -116,17 +117,18 @@ class RankService
             })
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
-            ->eachById(function (Rank $rank, $count) {
+            ->eachById(function (Rank $rank) use (&$counter) {
+                $counter++;
                 RankReport::updateOrCreate([
                     'post_id' => $rank->post_id,
                     'element_id' => $rank->element_id
                 ], [
-                    'final_win_position' => $count + 1,
+                    'final_win_position' => $counter,
                     'final_win_rate' => $rank->win_rate,
                 ]);
             });
 
-        
+        $counter = 0;
         Rank::where('post_id', $post->id)
             ->where('rank_type', RankType::PK_KING)
             ->where('record_date', today())
@@ -135,26 +137,28 @@ class RankService
             })
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
-            ->eachById(function (Rank $rank, $count) {
+            ->eachById(function (Rank $rank) use (&$counter) {
+                $counter++;
                 RankReport::updateOrCreate([
                     'post_id' => $rank->post_id,
                     'element_id' => $rank->element_id
                 ], [
-                    'win_position' => $count + 1,
+                    'win_position' => $counter,
                     'win_rate' => $rank->win_rate,
                 ]);
             });
 
-        
+        $counter = 0;
         RankReport::where('post_id', $post->id)
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
             ->orderByDesc('win_rate')
             ->orderByDesc('final_win_rate')
-            ->eachById(function (RankReport $rankReport, $index) use ($post) {
+            ->eachById(function (RankReport $rankReport, $index) use (&$counter) {
+                $counter++;
                 $rankReport->update([
-                    'rank' => $index + 1
+                    'rank' => $counter
                 ]);
             });
     }
