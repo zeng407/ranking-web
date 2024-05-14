@@ -26,12 +26,12 @@
             <p class="text-break">{{ post.description }}</p>
             <div class="row">
               <div class="col-6">
-                <a class="btn btn-primary btn-block" :href="getShowGameUrl(post.serial)">
+                <a class="btn btn-primary btn-block" :href="getShowGameUrl(post.serial)" target="blank">
                   <i class="fas fa-play"></i> {{$t('home.start')}}
                 </a>
               </div>
               <div class="col-6">
-                <a class="btn btn-secondary btn-block" :href="getShowRankUrl(post.serial)">
+                <a class="btn btn-secondary btn-block" :href="getShowRankUrl(post.serial)" target="blank">
                   <i class="fas fa-trophy"></i> {{$t('home.rank')}}
                 </a>
               </div>
