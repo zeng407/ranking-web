@@ -96,7 +96,7 @@
         </div>
 
         {{-- playground --}}
-        <div class="row game-body" v-if="game && !finishingGame">
+        <div class="row" v-if="game && !finishingGame" :style="{height: (this.elementHeight+260) + 'px'}">
           <!--left part-->
           <div class="col-sm-12 col-md-6 pr-md-1 mb-2 mb-md-0">
             <div class="card game-player left-player" id="left-player">
