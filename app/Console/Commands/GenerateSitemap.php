@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Spatie\Sitemap\SitemapGenerator;
 use Spatie\Sitemap\Tags\Url;
+use App\Models\Post;
 
 
 class GenerateSitemap extends Command
@@ -29,7 +30,7 @@ class GenerateSitemap extends Command
      */
     public function handle()
     {
-        SitemapGenerator::create(config('app.url'))
+        $sitemap = SitemapGenerator::create(config('app.url'))
             ->hasCrawled(function (Url $url) {
                 if ($url->path() === '' || $url->path() === '/') {
                     $url->setChangeFrequency(Url::CHANGE_FREQUENCY_HOURLY)
@@ -42,7 +43,13 @@ class GenerateSitemap extends Command
 
                 return $url;
             })
-            ->getSitemap()
-            ->writeToFile(public_path('sitemap.xml'));
+            ->getSitemap();
+
+        Post::eachById(function (Post $post) use ($sitemap) {
+            $sitemap->add(route('game.show', $post))
+                ->add(route('game.rank', $post));
+        });
+
+        $sitemap->writeToFile(public_path('sitemap.xml'));
     }
 }

@@ -31,7 +31,7 @@ class PublicPostController extends Controller
             'sort_by' => ['nullable', 'string', 'in:hot,new'],
             'range' => ['nullable', 'string', 'in:all,year,month,week,day'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:15'],
             'k' => ['nullable', 'string', 'max:255'],
         ]);
         $sort = $this->getSort($request);

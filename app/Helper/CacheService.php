@@ -39,12 +39,15 @@ class CacheService
 
     static public function rememberPosts(Request $request, $sort, $refresh = false)
     {
-        $cacheName = Cache::get('post_update_at').'/'.md5($request->fullUrl());
+        $url = $request->getQueryString();
+        $cacheName = Cache::get('post_update_at').'/'.md5($url);
         if ($refresh) {
             Cache::forget($cacheName);
         }
         $seconds = 60 * 5; // 5 minutes
+        logger('cacheName: '.$cacheName . ' url: '.$url);
         $cache = Cache::remember($cacheName, $seconds , function() use ($request, $sort) {
+            logger('cache miss');
             $posts = app(PostService::class)->getList([
                 PostFilter::PUBLIC => true,
                 PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
