@@ -87,12 +87,12 @@
                 <p class="text-break">{{ $post['description'] }}</p>
                 <div class="row">
                   <div class="col-6">
-                    <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}" target="blank">
+                    <a class="btn btn-primary btn-block" href="{{route('game.show', $post['serial'])}}" target="_blank">
                       <i class="fas fa-play"></i> {{__('home.start')}}
                     </a>
                   </div>
                   <div class="col-6">
-                    <a class="btn btn-secondary btn-block" href="{{route('game.rank', $post['serial']) }}" target="blank">
+                    <a class="btn btn-secondary btn-block" href="{{route('game.rank', $post['serial']) }}" target="_blank">
                       <i class="fas fa-trophy"></i> {{__('home.rank')}}
                     </a>
                   </div>
