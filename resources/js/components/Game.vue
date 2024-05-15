@@ -561,7 +561,7 @@ export default {
         this.$cookies.remove(this.postSerial);
         this.showGameResult();
       } else {
-        this.$cookies.set(this.postSerial, this.gameSerial, "3d");
+        this.$cookies.set(this.postSerial, this.gameSerial, "7d");
         this.nextRound(res.data);
       }
     },
