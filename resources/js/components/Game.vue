@@ -14,6 +14,7 @@ export default {
     if(!this.isMobileScreen){
       this.elementHeight = Math.max(window.innerHeight * 0.5, 360);
     }
+    this.gameBodyHeight = Math.max(this.elementHeight+260, 700);
   },
   props: {
     postSerial: String,
@@ -30,6 +31,7 @@ export default {
       origin: '',
       host: '',
       elementHeight: 360,
+      gameBodyHeight: 700,
       gameSerial: null,
       game: null,
       le: null,
