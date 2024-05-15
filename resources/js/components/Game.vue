@@ -357,7 +357,7 @@ export default {
             this.leftReady = true;
           });
         }).promise();
-        let loseAnimate = $('#right-player').animate({ top: '2000' }, 500, () => {
+        let loseAnimate = $('#right-player').animate({ left: '2000' }, 500, () => {
           $('#right-player').css('opacity', '0');
         }).promise();
 
@@ -421,7 +421,7 @@ export default {
           });
         }).promise();
 
-        let loseAnimate = $('#left-player').animate({ top: '2000' }, 500, () => {
+        let loseAnimate = $('#left-player').animate({ left: '-2000' }, 500, () => {
           $('#left-player').css('opacity', '0');
         }).promise();
 
