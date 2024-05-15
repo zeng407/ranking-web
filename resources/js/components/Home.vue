@@ -76,13 +76,20 @@ export default {
       }
       this.isLoadingMorePosts = true;
       this.delayLoading = true;
+      let params = {
+        page: page,
+        sort_by: this.filters.sort_by,
+        range: this.filters.range,
+        k: this.filters.keyword
+      };
+      //normalize query
+      params = Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== null && v !== ''));
+      // if sort_by is new, we don't need to pass the range
+      if (this.filters.sort_by === 'new') {
+        delete params.range;
+      }
       axios.get(this.indexPostsEndpoint, {
-        params: {
-          page: page,
-          sort_by: this.filters.sort_by,
-          range: this.filters.range,
-          k: this.filters.keyword
-        }
+        params: params
       }).then(response => {
         this.resetLoading();
         this.filters.page = response.data.current_page;
@@ -118,6 +125,10 @@ export default {
       };
       // Remove null values from the query
       query = Object.fromEntries(Object.entries(query).filter(([_, v]) => v !== null && v !== ''));
+      // if sort_by is new, we don't need to pass the range
+      if (this.filters.sort_by === 'new') {
+        delete query.range;
+      }
       window.location.href = '?' + new URLSearchParams(query).toString();
     },
     addTag(tag) {
