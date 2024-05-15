@@ -10,6 +10,10 @@ export default {
     this.showGameSettingPanel();
     this.origin = window.location.origin;
     this.host = window.location.host;
+    // update elementHeight to 70% of current window height
+    if(!this.isMobileScreen){
+      this.elementHeight = Math.max(window.innerHeight * 0.5, 360);
+    }
   },
   props: {
     postSerial: String,
@@ -23,10 +27,9 @@ export default {
   },
   data: function () {
     return {
-      clientWidth: null,
       origin: '',
       host: '',
-      elementHeight: 450,
+      elementHeight: 360,
       gameSerial: null,
       game: null,
       le: null,
@@ -776,7 +779,7 @@ export default {
 
       return true;
     },
-    formatTime: function (time) {
+    formatTime(time) {
       // format second to 0h0m0s
       let hour = Math.floor(time / 3600);
       let minute = Math.floor((time % 3600) / 60);

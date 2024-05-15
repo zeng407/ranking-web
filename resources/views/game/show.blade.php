@@ -181,7 +181,7 @@
     
           <!--right part-->
           <div class="col-sm-12 col-md-6 pl-md-1 mb-4 mb-md-0">
-            <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen }" id="right-player">
+            <div class="card game-player right-player" :class="{ 'flex-column-reverse': isMobileScreen, 'mb-4': isMobileScreen}" id="right-player">
               <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
                 <div v-show="!rightImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
                   <i class="fas fa-3x fa-spinner fa-spin" ></i>
@@ -403,4 +403,5 @@
         
     </div>
   </game>
+  
 @endsection
