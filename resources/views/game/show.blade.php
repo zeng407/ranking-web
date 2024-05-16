@@ -130,7 +130,8 @@
                       allowfullscreen></iframe>
               </div>
               <div v-else-if="isVideoSource(le) && !isDataLoading" class="d-flex">
-                <video width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
+                <video id="left-video-player" v-if="isMobileScreen" width="100%" :height="elementHeight" loop controls playsinline :src="le.thumb_url"></video>
+                <video @mouseover="videoHoverIn(le, re, true)" id="left-video-player" v-else width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
               </div>
               <div class="card-body text-center">
                 <div class="my-1" style="max-height: 120px" v-if="isMobileScreen">
@@ -142,7 +143,7 @@
                 <button id="left-btn" class="btn btn-primary vote-button btn-block d-none d-md-block" :disabled="isVoting"
                   @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                 </button>
-                <div class="row" v-if="isYoutubeSource(le)">
+                <div class="row" v-if="isYoutubeSource(le) || isVideoUrlSource(le)">
                   {{-- mobile --}}
                   <div class="col-3">
                     <button class="btn btn-outline-primary btn-lg btn-block d-block d-md-none" :class="{active: isLeftPlaying}" :disabled="isVoting"
@@ -157,6 +158,7 @@
                     </button>
                   </div>
                 </div>
+                
                 <div v-else>
                   <button class="btn btn-primary btn-block btn-lg d-block d-md-none" :disabled="isVoting"
                     @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
@@ -212,7 +214,8 @@
                 <bilibili-video v-if="re" :element="re" width="100%" :autoplay="false" :muted="false" :height="elementHeight"/>
               </div>
               <div v-else-if="isVideoSource(re) && !isDataLoading" class="d-flex">
-                <video width="100%" :height="elementHeight" loop autoplay controls muted playsinline :src="re.thumb_url" ></video>
+                <video id="right-video-player" v-if="isMobileScreen" width="100%" :height="elementHeight" loop controls playsinline :src="re.thumb_url"></video>
+                <video @mouseover="videoHoverIn(re, le, false)" id="right-video-player" v-else width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="re.thumb_url"></video>
               </div>
     
               <!-- reverse when device size width less md(768px)-->
@@ -227,7 +230,7 @@
                 <button id="right-btn" class="btn btn-danger vote-button btn-block d-none d-md-block" :disabled="isVoting"
                   @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                 </button>
-                <div class="row" v-if="isYoutubeSource(re)">
+                <div class="row" v-if="isYoutubeSource(re) || isVideoUrlSource(re)">
                   {{-- mobile --}}
                   <div class="col-3">
                     <button class="btn btn-outline-danger btn-lg btn-block d-block d-md-none" :class="{active: isRightPlaying}" :disabled="isVoting"

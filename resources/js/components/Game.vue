@@ -315,7 +315,6 @@ export default {
         myPlayer.unMute();
         this.isLeftPlaying = true;
       }
-
       const theirPlayer = this.getYoutubePlayer(this.re);
       if (theirPlayer) {
         // window.p2 = theirPlayer;
@@ -323,6 +322,19 @@ export default {
         theirPlayer.mute();
         this.isRightPlaying = false;
       }
+
+      const myVideoPlyaer = this.getVideoPlayer('left-video-player');
+      if(myVideoPlyaer){
+        myVideoPlyaer.play();
+        this.isLeftPlaying = true;
+      }
+
+      const theirVideoPlyaer = this.getVideoPlayer('right-video-player');
+      if(theirVideoPlyaer){
+        theirVideoPlyaer.pause();
+        this.isRightPlaying = false;
+      }
+
     },
     leftWin(event) {
       this.rememberedScrollPosition = document.documentElement.scrollTop;
@@ -369,18 +381,29 @@ export default {
       }
     },
     rightPlay() {
-      this.isLeftPlaying = false;
-      this.isRightPlaying = true;
-      const myPlayer = this.getYoutubePlayer(this.re);
-      if (myPlayer) {
-        myPlayer.playVideo();
-        myPlayer.unMute();
+      const myYTPlayer = this.getYoutubePlayer(this.re);
+      if (myYTPlayer) {
+        myYTPlayer.playVideo();
+        myYTPlayer.unMute();
+        this.isRightPlaying = true;
+      }
+      const theirYTPlayer = this.getYoutubePlayer(this.le);
+      if (theirYTPlayer) {
+        theirYTPlayer.pauseVideo();
+        theirYTPlayer.mute();
+        this.isLeftPlaying = false;
       }
 
-      const theirPlayer = this.getYoutubePlayer(this.le);
-      if (theirPlayer) {
-        theirPlayer.pauseVideo();
-        theirPlayer.mute();
+      const myVideoPlyaer = this.getVideoPlayer('right-video-player');
+      if(myVideoPlyaer){
+        myVideoPlyaer.play();
+        this.isRightPlaying = true;
+      }
+
+      const theirVideoPlyaer = this.getVideoPlayer('left-video-player');
+      if(theirVideoPlyaer){
+        theirVideoPlyaer.pause();
+        this.isLeftPlaying = false;
       }
 
     },
@@ -585,6 +608,9 @@ export default {
       }
       return _.get(this.$refs, element.id + '.player', null);
     },
+    getVideoPlayer(id) {
+      return document.getElementById(id);
+    },
     getTwitchPlayer(element) {
       
 
@@ -694,6 +720,23 @@ export default {
         }); 
       }
 
+      let myVideoPlyaer = null;
+      let theirVideoPlyaer = null;
+      if(left){
+        myVideoPlyaer = this.getVideoPlayer('left-video-player');
+        theirVideoPlyaer = this.getVideoPlayer('right-video-player');
+      }else{
+        myVideoPlyaer = this.getVideoPlayer('right-video-player');
+        theirVideoPlyaer = this.getVideoPlayer('left-video-player');
+      }
+    
+      if(myVideoPlyaer){
+        myVideoPlyaer.play();
+      }
+      if(theirVideoPlyaer){
+        theirVideoPlyaer.pause();
+      }
+
       if(left){
         this.isLeftPlaying = true;
         this.isRightPlaying = false;
@@ -707,6 +750,9 @@ export default {
     },
     isVideoSource: function (element) {
       return element.type === 'video';
+    },
+    isVideoUrlSource: function (element) {
+      return element.type === 'video' && element.video_source === 'url';
     },
     isYoutubeSource: function (element) {
       return element.type === 'video' && element.video_source === 'youtube';
