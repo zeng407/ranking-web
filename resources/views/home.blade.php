@@ -22,7 +22,7 @@
         <div class="d-none d-md-block col-md-2 p0">
           <div id="champions-region" class="container position-sticky hide-scrollbar champions-container">
             {{-- google ads --}}
-            <div id="champion-ad-top" style="height: 200px">
+            <div id="champion-ad-top text-center" style="height: 200px">
               @include('ads.home_ad_champion_top')
             </div>
 
