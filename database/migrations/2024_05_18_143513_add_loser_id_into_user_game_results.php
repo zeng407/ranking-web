@@ -27,6 +27,9 @@ class AddLoserIdIntoUserGameResults extends Migration
      */
     public function down()
     {
+        if(app()->environment('testing')){
+            return;
+        }
         Schema::table('user_game_results', function (Blueprint $table) {
             $table->dropForeign(['loser_id']);
             $table->dropColumn(['loser_id', 'loser_name', 'candidates']);

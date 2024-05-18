@@ -45,7 +45,7 @@ class MakeVideoThumbnail
         $ffmpeg = \FFMpeg\FFMpeg::create();
         foreach ($elements as $element) {
             $openfile = $ffmpeg->open($element->thumb_url);
-            $tempFile = $this->generateFileName() . '.jpg';
+            $tempFile = storage_path('tmp/'.$this->generateFileName() . '.jpg');
             $openfile->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(0.1))
                 ->save($tempFile);
             $file = new \Illuminate\Http\UploadedFile($tempFile, 'video_thumbnail.jpg', 'image/jpeg', null, true);
