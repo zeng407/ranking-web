@@ -31,7 +31,7 @@ class ChampionResource extends JsonResource
         $right = $this->getElement(isset($candidates[1]) && $candidates[1] ? $candidates[1] : $this->loser_id);
         return [
             'post_title' => $this->game->post->title,
-            'game_serial' => $this->game->serial,
+            'post_serial' => $this->game->post->serial,
             'left' => $left,
             'right' => $right,
             'datetime' => $this->created_at,

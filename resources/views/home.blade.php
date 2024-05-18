@@ -30,7 +30,7 @@
               <h4 class="text-center">@{{$t('home.new_champions')}}</h4>
               <hr>
               <div class="position-relative" v-for="championResult in champions">
-                <div class="text-center"><a :href="getShowGameUrl(championResult.game_serial)">@{{championResult.post_title}}</a></div>
+                <div class="text-center"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
                 <div class="row">
                   <div class="col-6 pr-0">
                     <div class="position-relative">
