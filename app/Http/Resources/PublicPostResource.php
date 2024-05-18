@@ -75,6 +75,13 @@ class PublicPostResource extends JsonResource
             $element->video_source === \App\Enums\VideoSource::YOUTUBE_EMBED ||
             $element->video_source === \App\Enums\VideoSource::BILIBILI_VIDEO ||
             $element->video_source === \App\Enums\VideoSource::TWITCH_VIDEO ||
-            $element->video_source === \App\Enums\VideoSource::TWITCH_CLIP;
+            $element->video_source === \App\Enums\VideoSource::TWITCH_CLIP ||
+            ($element->video_source === \App\Enums\VideoSource::URL && $this->isImageType($element->thumb_url));
+    }
+
+    protected function isImageType($url)
+    {
+        // string is end with images type
+        return preg_match('/\.(jpeg|jpg|png|gif|webp)$/', $url);
     }
 }

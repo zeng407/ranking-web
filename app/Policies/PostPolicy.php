@@ -88,7 +88,6 @@ class PostPolicy
                 return false;
             }
 
-            logger('newGame', [$password, $post->post_policy->password]);
             return hash('sha256', $password) === $post->post_policy->password;
         }
 

@@ -84,8 +84,7 @@
                                     :autoplay="false" :muted="false" height="270" :preview="true">
                                 </bilibili-video>
                             @elseif($gameResult->winner->type === 'video')
-                                <video width="100%" height="270" loop controls playsinline
-                                    src="{{ $gameResult->winner->thumb_url }}"></video>
+                                <video width="100%" height="270" loop controls playsinline src="{{ $gameResult->winner->source_url }}"></video>
                             @elseif($gameResult->winner->type === 'image')
                                 <viewer image="{{ $gameResult->winner->thumb_url }}" :options="viewerOptions">
                                     <img class="cursor-pointer" src="{{ $gameResult->winner->thumb_url }}" height="270" class="w-100" alt="{{ $gameResult->winner->title }}">
@@ -135,7 +134,7 @@
                                     allowfullscreen>
                                 </iframe>
                             @elseif($rank->loser->type === 'video')
-                                <video width="100%" height="270" loop controls playsinline src="{{$rank->loser->thumb_url}}"></video>    
+                                <video width="100%" height="270" loop controls playsinline src="{{$rank->loser->source_url}}"></video>    
                             @elseif($rank->loser->type === 'image')
                                 <viewer image="{{$rank->loser->thumb_url}}" :options="viewerOptions">
                                     <img class="cursor-pointer" src="{{$rank->loser->thumb_url}}" height="270" class="w-100" alt="{{$rank->loser->title}}">
@@ -202,7 +201,7 @@
                                     :autoplay="false" :muted="false" height="270" :preview="true">
                                 </bilibili-video>
                             @elseif($rank->element->type === 'video')
-                                <video width="100%" height="270" loop controls playsinline src="{{$rank->element->thumb_url}}#t=0.01"></video>
+                                <video width="100%" height="270" loop controls playsinline src="{{$rank->element->source_url}}"></video>
                             @elseif($rank->element->type === 'image')
                                 <viewer image="{{$rank->element->thumb_url}}" :options="viewerOptions">
                                     <img class="cursor-pointer" src="{{$rank->element->thumb_url}}" height="270" class="w-100" alt="{{$rank->element->title}}">

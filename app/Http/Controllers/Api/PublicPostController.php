@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Comment\CommentResource;
+use App\Http\Resources\Game\ChampionResource;
 use App\Http\Resources\PublicPostResource;
+use App\Models\Game;
 use App\Models\Post;
+use App\Models\UserGameResult;
 use App\Services\Builders\CommentBuilder;
 use App\Services\PostService;
 use Illuminate\Http\Request;
@@ -37,8 +40,16 @@ class PublicPostController extends Controller
         $sort = $this->getSort($request);
         $posts = CacheService::rememberPosts($request, $sort);
         
-        return response()->json($posts);
+        return response()->json($posts);    
+    }
+
+    public function getChampions(Request $request)
+    {
+        $games = UserGameResult::with('game', 'champion', 'loser', 'game.post')
+            ->orderByDesc('created_at')
+            ->cursorPaginate(3);
         
+        return ChampionResource::collection($games);
     }
 
     public function getComments(Request $request, Post $post)

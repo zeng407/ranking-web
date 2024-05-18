@@ -98,7 +98,6 @@ export default {
     loadCarouselItems() {
       axios.get(this.indexEndpoint)
         .then(response => {
-          console.log(response.data.data);
           this.items = response.data.data;
           //set css position absolute to the first carousel item
           

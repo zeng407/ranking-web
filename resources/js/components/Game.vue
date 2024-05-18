@@ -559,21 +559,29 @@ export default {
               icon: 'error',
               toast: true,
               text: this.$t('An error occurred. Please try again later.'),
+            }).then(() => {
+              location.reload();
             });
           }
-          this.resetPlayerPosition();
-          this.scrollToLastPosition();
-          this.resetPlayingStatus();
-          
-          setTimeout(() => {
-            $('#left-player').show();
-            $('#right-player').show();
-            $('#rounds-session').show();
-            $('#left-player').css('opacity', '1');
-            $('#right-player').css('opacity', '1');
-            $('#rounds-session').css('opacity', '1');
-            this.isDataLoading = false;
-          }, 300);
+          let interval = setInterval(() => {
+            if(this.leftReady && this.rightReady){
+              this.resetPlayerPosition();
+              this.scrollToLastPosition();
+              this.resetPlayingStatus();
+              clearInterval(interval);
+              setTimeout(() => {
+                $('#left-player').show();
+                $('#right-player').show();
+                $('#rounds-session').show();
+                $('#left-player').css('opacity', '1');
+                $('#right-player').css('opacity', '1');
+                $('#rounds-session').css('opacity', '1');
+                this.isDataLoading = false;
+                this.isVoting = false;
+              }, 300);
+            }
+          }, 10);
+    
         }).finally(() => {
           
         });
@@ -825,7 +833,12 @@ export default {
         return false;
       }
 
-      return true;
+      //every 4 rounds reload ad
+      if(this.game.current_round % 4 === 0){
+        return true;
+      }
+
+      return false;
     },
     formatTime(time) {
       // format second to 0h0m0s

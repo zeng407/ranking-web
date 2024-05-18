@@ -16,6 +16,7 @@ Route::get('carousel-items', [HomeCarouselController::class, 'index'])->name('ap
 
 /** Post */
 Route::get('posts', [PublicPostController::class, 'getPosts'])->name('api.public-post.index');
+Route::get('champions', [PublicPostController::class, 'getChampions'])->name('api.champion.index');
 
 /** Game */
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');

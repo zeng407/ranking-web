@@ -31,10 +31,9 @@ class UpdatePostRank
      */
     public function handle(GameComplete $event)
     {
-        //todo dispatch unique job
-        logger('[UpdatePostRank] listener handle', ['post_id' => $event->game->post->id]);
+        logger('[UpdatePostRank] listener handle', ['post_id' => $event->post->id]);
 
         //delay 10 seconds for the GameVoted event to be fully processed
-        UpdateRankReport::dispatch($event->game->post)->delay(10);
+        UpdateRankReport::dispatch($event->post)->delay(10);
     }
 }

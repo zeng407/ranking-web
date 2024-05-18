@@ -49,7 +49,7 @@ class GameController extends Controller
     {
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
-
+    
         return $this->getNextElements($game);
     }
 
@@ -107,6 +107,7 @@ class GameController extends Controller
 
     public function vote(Request $request)
     {
+        
         $request->validate([
             'game_serial' => 'required',
         ]);
@@ -133,7 +134,8 @@ class GameController extends Controller
         if ($this->gameService->isGameComplete($game)) {
             $anonymousId = session()->get('anonymous_id', 'unknown');
             $game->update(['completed_at' => now()]);
-            event(new GameComplete($request->user(), $anonymousId, $game, $gameRound->winner));
+            $candidates = $game->candidates;
+            event(new GameComplete($request->user(), $anonymousId, $gameRound, $candidates));
         }
 
         // retrieve next round

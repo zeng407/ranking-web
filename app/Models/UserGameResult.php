@@ -17,7 +17,10 @@ class UserGameResult extends Model
         'game_id',
         'champion_id',
         'champion_name',
-        'anonymous_id'
+        'loser_id',
+        'loser_name',
+        'anonymous_id',
+        'candidates'
     ];
 
     public function user()
@@ -33,5 +36,10 @@ class UserGameResult extends Model
     public function champion()
     {
         return $this->belongsTo(Element::class, 'champion_id');
+    }
+
+    public function loser()
+    {
+        return $this->belongsTo(Element::class, 'loser_id');
     }
 }

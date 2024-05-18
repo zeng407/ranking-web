@@ -1,5 +1,6 @@
 <script>
 import masonry from 'masonry-layout';
+import moment from 'moment';
 
 export default {
   name: 'home',
@@ -8,9 +9,18 @@ export default {
     this.initSorter();
     this.initGoogleAds();
     this.initMasonry();
+    this.getChampions();
+    this.handleNewChampion();
+    // this.handleMouseInLeft(); this may cause the page shaking
+    this.autoRefreshChampions();
+
   },
   props: {
     indexPostsEndpoint: {
+      type: String,
+      required: true
+    },
+    getChampionsEndpoint: {
       type: String,
       required: true
     },
@@ -56,6 +66,9 @@ export default {
       last_page: null,
       lastScrollPosition: 0,
       showReturnUpButton: false,
+      champions: [],
+      disableMainScroll: false,
+      refreshKey: 0,
     }
   },
   watch: {
@@ -257,18 +270,15 @@ export default {
     },
     triggerLoadPosts() {
       if(this.isLoadingMorePosts || this.readyQueueForLoadPosts || this.isFetchAllPosts) {
-        console.log('suspend loading more posts 1');
         return;
       }
 
       // prevent sending multiple requests in a short time
       if(this.delayLoading && this.readyQueueForLoadPosts === false) {
-        console.log('suspend loading more posts 2');
         this.readyQueueForLoadPosts = true;
         return;
       }
 
-      console.log('load more posts');
       this.loadPosts(this.filters.page+1);
     },
     getVideoPreviewUrl(videoUrl) {
@@ -280,6 +290,61 @@ export default {
     getShowRankUrl(serial) {
       return this.showRankEndpoint.replace('_serial', serial);
     },
+    getChampions() {
+      axios.get(this.getChampionsEndpoint)
+        .then(response => {
+          let champions = response.data.data;
+          //order by created_at
+          champions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          this.champions = champions;
+        })
+        .catch(error => {
+          console.error(error);
+        });
+    },
+    handleNewChampion() {
+      Echo.channel('home.champion')
+        .listen('.new-champion', (data) => {
+            // filter out the champion that already exists by id
+            if(this.champions.find(champion => champion.key === data.key)){
+              return;
+            }
+            // push data to the front of the array
+            this.champions.unshift(data);
+
+            // max size of champions is 15
+            if(this.champions.length > 15){
+              this.champions.pop();
+            }
+        });
+    },
+    humanizeDate(date) {
+      moment.locale(this.$i18n.locale);
+      return moment(date).fromNow();
+    },
+    handleMouseInLeft() {
+
+      // handle mouse enter champions region, disable main scroll
+      document.getElementById('champions-region').addEventListener('mouseenter',() => {
+        document.body.style.overflow = 'hidden';
+        // add a hover effect to the champions region
+        document.getElementById('champions-region').style.boxShadow = '0 0 10px 0 rgba(0,0,0,0.1)';
+      })
+
+      // handle mouse leave champions region, enable main scroll
+      document.getElementById('champions-region').addEventListener('mouseleave',() => {
+        document.body.style.overflow = 'auto';
+      })
+    },
+    isEndWith(str, suffix) {
+      return str.endsWith(suffix);
+    },
+    autoRefreshChampions() {
+      setInterval(() => {
+        //reredner the champions
+        this.refreshKey++
+      }, 60 * 1000);
+    }
   }
 }
 </script>

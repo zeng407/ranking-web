@@ -534,7 +534,7 @@
                   <!-- video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
-                    <video width="100%" height="270" loop controls playsinline :src="element.thumb_url"></video>
+                    <video width="100%" height="270" loop controls playsinline :src="element.source_url"></video>
                     <!-- editor -->
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"

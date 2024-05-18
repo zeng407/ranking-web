@@ -2,6 +2,7 @@
 
 namespace App\Services\ElementHandlers;
 use App\Enums\VideoSource;
+use App\Events\VideoElementCreated;
 use App\Models\Element;
 use App\Models\Post;
 use App\Services\Traits\FileHelper;
@@ -13,7 +14,6 @@ class VideoUrlElementHandler implements InterfaceElementHandler
 
     public function storeArray(string $sourceUrl, string $serial, $params = []): ?array
     {
-        //todo make thumb from video
         $title = $params['title'] ?? 'video';
 
         return [
@@ -39,6 +39,8 @@ class VideoUrlElementHandler implements InterfaceElementHandler
             'title' => $array['title'],
             'video_source' => VideoSource::URL
         ]);
+
+        event(new VideoElementCreated($element, $post));
 
         return $element;
     }

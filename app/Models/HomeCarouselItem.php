@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * @mixin IdeHelperHomeCarousel
+ * @mixin IdeHelperHomeCarouselItem
  */
 class HomeCarouselItem extends Model
 {
