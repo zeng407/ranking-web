@@ -240,6 +240,9 @@ export default {
             if ($('#google-ad-1')) {
               $('#google-ad-1').addClass('d-flex justify-content-center');
             }
+            if ($('#champion-ad-top')) {
+              $('#champion-ad-top').addClass('d-flex justify-content-center');
+            }
           }
         }, 1000);
       }

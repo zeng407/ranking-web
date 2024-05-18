@@ -22,12 +22,12 @@
         <div class="d-none d-md-block col-md-2 p0">
           <div id="champions-region" class="container position-sticky hide-scrollbar champions-container">
             {{-- google ads --}}
-            <div style="height: 200px">
+            <div id="champion-ad-top" style="height: 200px">
               @include('ads.home_ad_champion_top')
             </div>
 
             <div v-if="champions.length" v-cloak>
-              <h4 class="text-center">@{{$t('home.new_champions')}}</h4>
+              <h4 class="text-center my-1">@{{$t('home.new_champions')}}</h4>
               <hr>
               <div class="position-relative" v-for="championResult in champions">
                 <div class="text-center"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
