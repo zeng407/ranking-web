@@ -22,11 +22,11 @@
         <div class="d-none d-md-block col-md-2 p0">
           <div id="champions-region" class="container position-sticky hide-scrollbar champions-container">
             {{-- google ads --}}
-            <div>
+            <div style="height: 200px">
               @include('ads.home_ad_champion_top')
             </div>
 
-            <div v-if="champions.length">
+            <div v-if="champions.length" v-cloak>
               <h4 class="text-center">@{{$t('home.new_champions')}}</h4>
               <hr>
               <div class="position-relative" v-for="championResult in champions">
@@ -63,10 +63,9 @@
         </div>
         {{-- right part: posts --}}
         <div id="main-region" class="col-12 col-md-10" :style="{overflow: (disableMainScroll ? 'hidden' : 'auto') }">
-          <div class="">
-            @if(empty(Request::all()))
-              @include('partial.home-carousel')
-            @endif
+          @if(empty(Request::all()))
+            @include('partial.home-carousel')
+          @endif
           {{-- sorter --}}
           <div class="d-flex justify-content-between flex-nowrap mt-4">
             <div class="form-inline">
@@ -212,9 +211,8 @@
               </div>
             </span>
           </div>
-          </div>
         </div>
-        </div>
+      </div>
     </div>
   </home>
 
