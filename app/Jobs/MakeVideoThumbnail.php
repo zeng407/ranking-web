@@ -44,7 +44,11 @@ class MakeVideoThumbnail
 
         $ffmpeg = \FFMpeg\FFMpeg::create();
         foreach ($elements as $element) {
-            $openfile = $ffmpeg->open($element->thumb_url);
+            if($this->isVideoType($element->thumb_url)){
+                $openfile = $ffmpeg->open($element->thumb_url);
+            }else{
+                $openfile = $ffmpeg->open($element->source_url);
+            }
             $tempFile = storage_path('app/tmp/'.$this->generateFileName() . '.jpg');
             $openfile->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(0.1))
                 ->save($tempFile);
@@ -57,5 +61,12 @@ class MakeVideoThumbnail
             // delete temp file
             unlink($tempFile);   
         }
+    }
+
+    protected function isVideoType($url)
+    {
+        $videoTypes = ['mp4', 'webm', 'ogg'];
+        $ext = pathinfo($url, PATHINFO_EXTENSION);
+        return in_array($ext, $videoTypes);
     }
 }
