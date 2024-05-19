@@ -34,7 +34,7 @@
         vote-game-endpoint="{{route('api.game.vote')}}"
         access-endpoint="{{route('api.game.access', $serial)}}"
     >
-    <div class="container-fluid hide-scrollbar" style="overflow-x: hidden" v-cloak>
+    <div class="container-fluid hide-scrollbar" v-cloak>
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- ads --}}
           <div v-if="!isMobileScreen" style="height: 100px">
