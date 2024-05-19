@@ -40,9 +40,8 @@ window.Echo = new Echo({
     wsPort: process.env.MIX_PUSHER_PORT,
     wssPort: process.env.MIX_PUSHER_PORT,
     cluster: process.env.MIX_PUSHER_APP_CLUSTER,
-    forceTLS: process.env.FORCE_HTTPS,
+    forceTLS: process.env.PUSHER_SCHEME === 'https',
     encrypted: true,
     disableStats: true,
     enabledTransports: ['ws', 'wss'],
 });
-
