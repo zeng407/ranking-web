@@ -495,17 +495,40 @@ ins.adsbygoogle[data-ad-status="unfilled"] {
 }
 @media (max-width: 576px) {
     .preview-carsousel-image {
+        height: 250px;
         width: 100%;
+    }
+}
+
+.preserve-for-carousel {
+    height: 350px;
+}
+@media (max-width: 576px) {
+    .preserve-for-carousel {
+        height: 250px;
     }
 }
 
 .home-carousel-container {
     width: 75%;
     display: flex;
+    // iframe under this class will be responsive
+    iframe {
+        height: 350px;
+    }
+    img {
+        height: 350px;
+    }
 }
 @media (max-width: 576px) {
     .home-carousel-container {
         width: 100%;
+    }
+    iframe {
+        height: 250px !important;
+    }
+    img {
+        height: 250px;
     }
 }
 

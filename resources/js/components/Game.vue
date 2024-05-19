@@ -251,6 +251,11 @@ export default {
               $('#left-player').css('opacity', '1');
               $('#right-player').css('opacity', '1');
               $('#rounds-session').css('opacity', '1');
+
+              if(this.isMobileScreen){
+                $('#google-ad').css('opacity', '1');
+                $('#google-ad2').css('opacity', '1');
+              }
               
               this.doPlay(this.le, this.isLeftPlaying, 'left');
               this.doPlay(this.re, this.isRightPlaying, 'right');
@@ -266,6 +271,10 @@ export default {
           this.isDataLoading = false;
           this.isVoting = false;
           $('#google-ad-container').css('top', '0');
+          if(this.isMobileScreen){
+            $('#google-ad2').css('top', '0');
+          }
+          
           if(this.needReloadAD()){
             this.reloadGoogleAds();
           }

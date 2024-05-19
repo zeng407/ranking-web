@@ -22,8 +22,8 @@
         <div class="d-none d-md-block col-md-2 p0">
           <div id="champions-region" class="container position-sticky hide-scrollbar champions-container">
             {{-- google ads --}}
-            <div id="champion-ad-top" class="text-center" style="height: 200px">
-              @include('ads.home_ad_champion_top')
+            <div id="champion-ad-top">
+              @include('ads.home_ad_champion_top', ['id' => 'champion-ad-top'])
             </div>
 
             <div v-if="champions.length" v-cloak>
@@ -35,17 +35,27 @@
                   <div class="col-6 pr-0">
                     <div class="position-relative">
                       {{-- if championResult.left.thumb_url is end with mp4 --}}
-                      <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
-                      <img v-else class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url">
-                      <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.left.is_winner"></i>
+                      <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
+                      <img v-else @load="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url">
+                      <div v-show="isChampionLoading(championResult.left)" class="champion-card">
+                        <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
+                          <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
+                        </div>
+                      </div>
+                      <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
                     </div>
                     <h5 class="text-center font-size-small">@{{championResult.left.name}}</h5> 
                   </div>
                   <div class="col-6 pl-0" v-if="championResult.right.name">
                     <div class="position-relative">
-                      <video v-if="isEndWith(championResult.right.thumb_url, 'mp4')" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
-                      <img v-else class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
-                      <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.right.is_winner"></i>
+                      <video  v-if="isEndWith(championResult.right.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
+                      <img v-else @load="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
+                      <div  v-show="isChampionLoading(championResult.right)" class="champion-card">
+                        <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
+                          <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
+                        </div>
+                      </div>
+                      <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
                     </div>
                     <h5 class="text-center font-size-small">@{{championResult.right.name}}</h5> 
                   </div>
@@ -65,6 +75,11 @@
         <div id="main-region" class="col-12 col-md-10" :style="{overflow: (disableMainScroll ? 'hidden' : 'auto') }">
           @if(empty(Request::all()))
             @include('partial.home-carousel')
+          @else
+            {{-- ads --}}
+            <div id="home-ad-top">
+              @include('ads.home_ad_top', ['id' => 'home-ad-top'])
+            </div>
           @endif
           {{-- sorter --}}
           <div class="d-flex justify-content-between flex-nowrap mt-4">
@@ -167,7 +182,7 @@
             
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index == count($posts) - 1)
               <div id="google-ad-1" class="grid-item mt-2">
-                @include('ads.home_ad_1')
+                @include('ads.home_ad_1', ['id' => 'google-ad-1'])
               </div>
             @endif
             @endforeach

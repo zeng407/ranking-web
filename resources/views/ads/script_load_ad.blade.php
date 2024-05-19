@@ -10,7 +10,8 @@
                 //if ad is loaded, then it will throw an error
                 (adsbygoogle = window.adsbygoogle || []).push({});
             } catch (e) {
-                if (e.message.includes(`All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
+                if (e.message.includes(
+                        `All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
                     // after loaded ad, send a event to Home.vue
                     window.dispatchEvent(new Event('ad-loaded'));
                     clearInterval(interval);
@@ -21,6 +22,26 @@
                 clearInterval(interval);
             }
         }, intervalDelay);
+
+        retry = 20;
+        let relocation = setInterval(() => {
+            try {
+                retry--;
+                let ad = $('#{{ $id ?? 'empty' }}');
+                if (ad) {
+                    ad.addClass('d-flex justify-content-center');
+                    clearInterval(relocation);
+                }
+                if (retry <= 0) {
+                    clearInterval(relocation);
+                }
+            } catch (e) {
+                if (retry <= 0) {
+                    clearInterval(relocation);
+                }
+            }
+        }, 100);
+
     }
 
     loadAd(10, 500);

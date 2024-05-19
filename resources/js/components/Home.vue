@@ -69,6 +69,7 @@ export default {
       champions: [],
       disableMainScroll: false,
       refreshKey: 0,
+      championLoading:[]
     }
   },
   watch: {
@@ -237,12 +238,12 @@ export default {
       if (window.adsbygoogle) {
         setTimeout(() => {
           if (window.adsbygoogle) {
-            if ($('#google-ad-1')) {
-              $('#google-ad-1').addClass('d-flex justify-content-center');
-            }
-            if ($('#champion-ad-top')) {
-              $('#champion-ad-top').addClass('d-flex justify-content-center');
-            }
+            // if ($('#google-ad-1')) {
+            //   $('#google-ad-1').addClass('d-flex justify-content-center');
+            // }
+            // if ($('#home-ad-top')) {
+            //   $('#home-ad-top').addClass('d-flex justify-content-center');
+            // }
           }
         }, 1000);
       }
@@ -314,6 +315,8 @@ export default {
             }
             // push data to the front of the array
             this.champions.unshift(data);
+            this.championLoading.push(data.left);
+            this.championLoading.push(data.right);
 
             // max size of champions is 15
             if(this.champions.length > 15){
@@ -323,6 +326,10 @@ export default {
     },
     humanizeDate(date) {
       moment.locale(this.$i18n.locale);
+      // date never greater than now
+      if(moment(date).isAfter(moment())){
+        return moment().fromNow();
+      }
       return moment(date).fromNow();
     },
     handleMouseInLeft() {
@@ -347,6 +354,12 @@ export default {
         //reredner the champions
         this.refreshKey++
       }, 60 * 1000);
+    },
+    handleCandicateLoaded(candicate) {
+      this.championLoading = this.championLoading.filter(champion => champion !== candicate);
+    },
+    isChampionLoading(candicate) {
+      return this.championLoading.includes(candicate);
     }
   }
 }
