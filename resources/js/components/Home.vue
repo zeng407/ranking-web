@@ -315,9 +315,19 @@ export default {
             }
             // push data to the front of the array
             this.champions.unshift(data);
+
+            // if data.left is in the champions's left or right , skip push to championLoading
+            if(this.champions.find(champion => champion.left === data.left || champion.right === data.left)){
+              return;
+            }
+
+            // if data.right is in the champions's left or right , skip push to championLoading
+            if(this.champions.find(champion => champion.left === data.right || champion.right === data.right)){
+              return;
+            }
+
             this.championLoading.push(data.left);
             this.championLoading.push(data.right);
-
             // max size of champions is 15
             if(this.champions.length > 15){
               this.champions.pop();
