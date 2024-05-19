@@ -131,7 +131,7 @@
               </div>
               <div v-else-if="isVideoSource(le) && !isDataLoading" class="d-flex">
                 <video id="left-video-player" v-if="isMobileScreen" width="100%" :height="elementHeight" loop controls playsinline :src="le.source_url"></video>
-                <video @mouseover="videoHoverIn(le, re, true)" id="left-video-player" v-else width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.thumb_url"></video>
+                <video @mouseover="videoHoverIn(le, re, true)" id="left-video-player" v-else width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="le.source_url"></video>
               </div>
               <div class="card-body text-center">
                 <div class="my-1" style="max-height: 120px" v-if="isMobileScreen">
@@ -215,7 +215,7 @@
               </div>
               <div v-else-if="isVideoSource(re) && !isDataLoading" class="d-flex">
                 <video id="right-video-player" v-if="isMobileScreen" width="100%" :height="elementHeight" loop controls playsinline :src="re.source_url"></video>
-                <video @mouseover="videoHoverIn(re, le, false)" id="right-video-player" v-else width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="re.thumb_url"></video>
+                <video @mouseover="videoHoverIn(re, le, false)" id="right-video-player" v-else width="100%" :height="elementHeight" loop autoplay muted controls playsinline :src="re.source_url"></video>
               </div>
     
               <!-- reverse when device size width less md(768px)-->
