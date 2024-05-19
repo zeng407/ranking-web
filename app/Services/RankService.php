@@ -15,14 +15,14 @@ use DB;
 
 class RankService
 {
-    public function getRankReports(Post $post, $limit = 10)
+    public function getRankReports(Post $post, $limit = 10, $page = null)
     {
         $reports = RankReport::where('post_id', $post->id)
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
             ->orderBy('rank')
-            ->paginate($limit);
+            ->paginate($limit, ['*'], 'page', $page);
 
         return $reports;
     }

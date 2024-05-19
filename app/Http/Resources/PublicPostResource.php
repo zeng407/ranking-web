@@ -25,7 +25,7 @@ class PublicPostResource extends JsonResource
     {
         /** @var RankService */
         $rankService = app(RankService::class);
-        $ranks = collect($rankService->getRankReports($this->resource, 5)->items());
+        $ranks = collect($rankService->getRankReports($this->resource, 5, 1)->items());
         if($ranks->count() >= 2) {
             $ranks = $ranks->shuffle();
             $element1 = $ranks->pop()->element;
