@@ -66,8 +66,8 @@
             </div>
 
             {{-- ads --}}
-            <div>
-              @include('ads.home_ad_champion_bottom')
+            <div id="home_ad_champion_bottom">
+              @include('ads.home_ad_champion_bottom', ['id'=>'home_ad_champion_bottom'])
             </div>
           </div>
         </div>
