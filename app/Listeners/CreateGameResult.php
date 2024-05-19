@@ -3,8 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\GameComplete;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use App\Jobs\BroadcastNewChampion;
 use App\Services\GameService;
 
 class CreateGameResult
@@ -28,6 +27,13 @@ class CreateGameResult
      */
     public function handle(GameComplete $event)
     {
-        $this->gameService->createVotedChampion($event->user, $event->anonymousId, $event->game, $event->champion);
+        $userGameResult = $this->gameService->createUserGameResult(
+            $event->user,
+            $event->anonymousId, 
+            $event->gameRound,
+            $event->candidates
+        );
+        
+        broadcast(new BroadcastNewChampion($userGameResult));
     }
 }

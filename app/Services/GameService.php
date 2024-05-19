@@ -182,23 +182,18 @@ class GameService
         return $ofRound;
     }
 
-    public function createVotedChampion(?User $user, string $anonymousId, Game $game, Element $element)
+    public function createUserGameResult(?User $user, string $anonymousId, Game1V1Round $game1V1Round, string $candidates): UserGameResult
     {
-        $title = $element->title ?? '';
-        if($user){
-            UserGameResult::create([
-                'user_id' => $user->id,
-                'game_id' => $game->id,
-                'champion_id' => $element->id,
-                'champion_name' => $title
-            ]);
-        }else{
-            UserGameResult::create([
-                'anonymous_id' => $anonymousId,
-                'game_id' => $game->id,
-                'champion_id' => $element->id,
-                'champion_name' => $title
-            ]);
-        }
+        $data = [
+            'user_id' => $user?->id,
+            'anonymous_id' => $anonymousId,
+            'game_id' => $game1V1Round->game_id,
+            'champion_id' => $game1V1Round->winner_id,
+            'champion_name' => $game1V1Round->winner->title ?? '',
+            'loser_id' => $game1V1Round->loser_id,
+            'loser_name' => $game1V1Round->loser->title ?? '',
+            'candidates' => $candidates
+        ];
+        return UserGameResult::create($data);
     }
 }

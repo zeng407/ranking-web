@@ -561,3 +561,44 @@ ins.adsbygoogle[data-ad-status="unfilled"] {
     }
     .gutter-sizer { width: 0%; }
 }
+
+.champion-card {
+    height: 100px;
+    object-fit: contain;
+    @media (min-width: 1800px) {
+        height: 140px;
+    }
+    @media (min-width: 2160px) {
+        height: 200px;
+    }
+}
+
+
+.eliminated-image {
+    filter: grayscale(100%);
+}
+.eliminated-x {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: auto;
+    display: flex;
+    position: absolute;
+    justify-content: center;
+    align-items: center;
+    font-weight: 100;
+    color: white;
+}
+
+.champions-container {
+    top:70px; 
+    overflow:auto; 
+    max-height:90vh;
+}
+
+.return-top-button {
+    width: 30px;
+    height:30px; 
+    border-radius:5px
+}

@@ -2,7 +2,6 @@
 
 namespace App\Console;
 
-use App\Helper\CacheService;
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -16,7 +15,7 @@ class Kernel extends ConsoleKernel
      * @return void
      */
     protected function schedule(Schedule $schedule)
-    {
+    {   
         $schedule->call(function(){
             app(PostTrendScheduleExecutor::class)->createPostTrends();
         })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping();

@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
+use App\Events\VideoElementCreated;
 use App\Listeners\CreateGameResult;
 use App\Listeners\DeleteElementRank;
+use App\Listeners\MakeVideoThumbnail;
 use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
 use App\Events\ElementDeleted;
@@ -47,6 +49,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         ImageElementCreated::class => [
             //create a job to upload image to imgur
+        ],
+        VideoElementCreated::class => [
+            MakeVideoThumbnail::class
         ],
         ElementDeleted::class => [
             DeleteElementRank::class
