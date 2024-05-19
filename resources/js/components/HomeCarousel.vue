@@ -1,7 +1,7 @@
 <template>
   <div id="home-carousel" class="carousel slide mb-5" data-ride="carousel" data-interval="false">
     <!-- carousel -->
-    <div id="preserve-for-carousel" style="height: 350px"></div>
+    <div id="preserve-for-carousel" class="preserve-for-carousel"></div>
     <div v-show="items.length" class="carousel-inner position-absolute" style="top:0">
       <div v-for="(item, index) in items" :key="index" class="carousel-item" :class="{ active: index === 0 }">
         <div class="d-flex justify-content-center">
@@ -14,25 +14,24 @@
 
           <!-- iframe -->
           <div v-if="item.video_source === 'youtube'" class="home-carousel-container">
-            <youtube :ref="'player'+index" :video-id="item.video_id" width="100%" height="350px"
+            <youtube :ref="'player'+index" :video-id="item.video_id" width="100%"
               @ready="handleIframeLoaded(index)"
               :player-vars="{ controls: 1, autoplay: 0, rel: 0, origin: origin, start:item.video_start_second }">
             </youtube>
           </div>
           <div v-else-if="item.video_source === 'twitch_video'" class="home-carousel-container twitch-container">
-            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchVideoUrl(item)" height="350" width="100%"
+            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchVideoUrl(item)"  width="100%"
               preload="metadata" allowfullscreen></iframe>
           </div>
           <div v-else-if="item.video_source === 'twitch_channel'" class="home-carousel-container twitch-container">
-            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchChannelUrl(item)" height="350" width="100%"
+            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchChannelUrl(item)" width="100%"
               preload="metadata" allowfullscreen></iframe>
           </div>
           <div v-else-if="item.video_source === 'twitch_clip'" class="home-carousel-container twitch-container">
-            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchClipUrl(item)" height="350" width="100%"
+            <iframe :ref="'player'+index" @load="handleIframeLoaded(index)" :src="getTwitchClipUrl(item)"  width="100%"
               preload="metadata" allowfullscreen></iframe>
           </div>
-          <img v-else-if="item.image_url" :src="item.image_url" class="d-block" :alt="item.title"
-            style="height: 350px;">
+          <img v-else-if="item.image_url" :src="item.image_url" class="d-block" :alt="item.title">
         </div>
 
         <!-- title -->
