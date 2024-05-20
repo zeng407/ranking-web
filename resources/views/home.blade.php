@@ -72,7 +72,7 @@
           </div>
         </div>
         {{-- right part: posts --}}
-        <div id="main-region" class="col-12 col-md-10" :style="{overflow: (disableMainScroll ? 'hidden' : 'auto') }">
+        <div id="main-region" class="col-12 col-md-10">
           @if(empty(Request::all()))
             @include('partial.home-carousel')
           @else
