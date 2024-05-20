@@ -2,6 +2,7 @@
 /public/hot
 /public/storage
 /public/css/local.css
+/public/css/local.css.map
 /storage/*.key
 /vendor
 .env
