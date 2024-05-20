@@ -14,7 +14,12 @@ const mix = require('laravel-mix');
 mix.js('resources/js/app.js', 'public/js')
     .sourceMaps()
     .vue()
-    .sass('resources/sass/app.scss', 'public/css')
-    .sass('resources/sass/prod.scss', 'public/css')
-    .sass('resources/sass/local.scss', 'public/css')
-    .version();
+    .sass('resources/sass/app.scss', 'public/css');
+
+if(mix.inProduction()) {
+    mix.sass('resources/sass/prod.scss', 'public/css');
+}else{
+    mix.sass('resources/sass/local.scss', 'public/css');
+}
+
+mix.version();
