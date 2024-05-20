@@ -523,12 +523,12 @@ ins.adsbygoogle[data-ad-status="unfilled"] {
 @media (max-width: 576px) {
     .home-carousel-container {
         width: 100%;
-    }
-    iframe {
-        height: 250px !important;
-    }
-    img {
-        height: 250px;
+        iframe {
+            height: 250px !important;
+        }
+        img {
+            height: 250px;
+        }
     }
 }
 

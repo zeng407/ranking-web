@@ -67,7 +67,6 @@ export default {
       lastScrollPosition: 0,
       showReturnUpButton: false,
       champions: [],
-      disableMainScroll: false,
       refreshKey: 0,
       championLoading:[]
     }
