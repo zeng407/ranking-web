@@ -34,6 +34,8 @@ class CreateGameResult
             $event->candidates
         );
         
-        broadcast(new BroadcastNewChampion($userGameResult));
+        if($event->post->isPublic()) {
+            broadcast(new BroadcastNewChampion($userGameResult));
+        }
     }
 }
