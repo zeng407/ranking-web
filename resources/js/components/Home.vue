@@ -2,6 +2,7 @@
 import masonry from 'masonry-layout';
 import moment from 'moment';
 
+const mobileScreenWidth = 991;
 export default {
   name: 'home',
   mounted() {
@@ -12,6 +13,7 @@ export default {
     this.getChampions();
     this.handleNewChampion();
     this.autoRefreshChampions();
+    window.addEventListener('resize', this.updateMobileScreen);
 
   },
   props: {
@@ -67,7 +69,8 @@ export default {
       showReturnUpButton: false,
       champions: [],
       refreshKey: 0,
-      championLoading:[]
+      championLoading:[],
+      mobileScreen: window.innerWidth <= mobileScreenWidth,
     }
   },
   watch: {
@@ -311,8 +314,6 @@ export default {
             if(this.champions.find(champion => champion.key === data.key)){
               return;
             }
-            // push data to the front of the array
-            this.champions.unshift(data);
 
             // if data.left is in the champions's left or right , skip push to championLoading
             if(this.champions.find(champion => champion.left === data.left || champion.right === data.left)){
@@ -326,6 +327,10 @@ export default {
 
             this.championLoading.push(data.left);
             this.championLoading.push(data.right);
+
+            // push data to the front of the array
+            this.champions.unshift(data);
+            
             // max size of champions is 15
             if(this.champions.length > 15){
               // remove elements after 15
@@ -355,7 +360,10 @@ export default {
     },
     isChampionLoading(candicate) {
       return this.championLoading.includes(candicate);
-    }
+    },
+    updateMobileScreen() {
+        this.mobileScreen = window.innerWidth <= mobileScreenWidth;
+    },
   }
 }
 </script>
