@@ -2,6 +2,7 @@
 import masonry from 'masonry-layout';
 import moment from 'moment';
 
+const mobileScreenWidth = 991;
 export default {
   name: 'home',
   mounted() {
@@ -12,6 +13,7 @@ export default {
     this.getChampions();
     this.handleNewChampion();
     this.autoRefreshChampions();
+    window.addEventListener('resize', this.updateMobileScreen);
 
   },
   props: {
@@ -67,7 +69,8 @@ export default {
       showReturnUpButton: false,
       champions: [],
       refreshKey: 0,
-      championLoading:[]
+      championLoading:[],
+      mobileScreen: window.innerWidth <= mobileScreenWidth,
     }
   },
   watch: {
@@ -355,7 +358,10 @@ export default {
     },
     isChampionLoading(candicate) {
       return this.championLoading.includes(candicate);
-    }
+    },
+    updateMobileScreen() {
+        this.mobileScreen = window.innerWidth <= mobileScreenWidth;
+    },
   }
 }
 </script>

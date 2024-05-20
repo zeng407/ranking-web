@@ -26,7 +26,7 @@
               @include('ads.home_ad_champion_top', ['id' => 'champion-ad-top'])
             </div>
 
-            <div v-if="champions.length" v-cloak>
+            <div v-if="champions.length && !mobileScreen" v-cloak>
               <h4 class="text-center my-1">@{{$t('home.new_champions')}}</h4>
               <div class="position-relative" v-for="championResult in champions">
                 <div class="text-center"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
@@ -83,7 +83,7 @@
 
           {{-- champions --}}
           <h4 class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
-          <div v-if="champions.length" class="d-flex d-lg-none overflow-scroll" v-cloak>
+          <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll" v-cloak>
             <div class="row flex-nowrap">
               <div class="col-md-6 col-12 position-relative" v-for="championResult in champions">
                 <div class="row">
