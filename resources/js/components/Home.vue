@@ -328,7 +328,8 @@ export default {
             this.championLoading.push(data.right);
             // max size of champions is 15
             if(this.champions.length > 15){
-              this.champions.pop();
+              // remove elements after 15
+              this.champions = this.champions.slice(0, 15);
             }
         });
     },

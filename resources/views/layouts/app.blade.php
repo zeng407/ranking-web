@@ -79,7 +79,7 @@
                         </a>
                         {{-- posts --}}
                         <ul class="navbar-nav mr-auto">
-                            <li class="nav-item">
+                            <li class="nav-item d-none d-md-block">
                                 <a class="nav-link" href="{{ route('home') }}"
                                     title="{{ __('home.posts') }}">{{ __('home.posts') }}</a>
                             </li>
