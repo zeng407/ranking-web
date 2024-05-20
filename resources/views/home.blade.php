@@ -82,7 +82,7 @@
           @endif
 
           {{-- champions --}}
-          <h4 class="d-flex d-lg-none">@{{$t('home.new_champions')}}</h4>
+          <h4 class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
           <div v-if="champions.length" class="d-flex d-lg-none overflow-scroll" v-cloak>
             <div class="row flex-nowrap">
               <div class="col-md-6 col-12 position-relative" v-for="championResult in champions">
