@@ -1,12 +1,8 @@
 /node_modules
 /public/hot
 /public/storage
-/public/css/local.css
-/public/css/local.css.map
-/public/css/app.css
-/public/css/app.css.map
-/public/js/app.js
-/public/js/app.js.map
+/public/css/
+/public/js/
 /public/mix-manifest.json
 /storage/*.key
 /vendor

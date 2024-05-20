@@ -39,7 +39,7 @@ php -r "unlink('composer-setup.php');"
 
 # Build for Development
 1. Run `composer install`. If you encounter missing dependencies, use the `--ignore-platform-reqs` flag.
-2. Run `php artisan sail:install` and select (1)mysql, (2)minio, (3)redis, (4)selenium.
+2. Run `php artisan sail:install` and select (1)mysql, (2)minio, (3)redis, (4)selenium (5)soketi.
 3. Visit `localhost:9000` to log in to your Minio account (see [docker-compose.yml](docker-compose.yml)). You need to create a bucket and generate an access key. Then, put the access key and other Minio configurations in your .env file. (See the following example .env)
 4. Run `./vendor/bin/sail up -d` to set up services.
 5. Run `./vendor/bin/sail migrate` to set up the database.
