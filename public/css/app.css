@@ -22101,10 +22101,6 @@ input[type=color].form-control:disabled {
   display: none;
 }
 
-ins.adsbygoogle[data-ad-status=unfilled] {
-  display: none !important;
-}
-
 .lang-options {
   position: absolute;
   right: 15px;
@@ -22410,6 +22406,10 @@ ins.adsbygoogle[data-ad-status=unfilled] {
 
 .white-space-pre-line {
   white-space: pre-line;
+}
+
+.white-space-no-wrap {
+  white-space: nowrap;
 }
 
 .overflow-scroll {

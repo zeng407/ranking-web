@@ -58,6 +58,11 @@
 
     {{-- Styles --}}
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
+    @production
+        <link href="{{ mix('css/prod.css') }}" rel="stylesheet">
+    @else
+        <link href="{{ mix('css/local.css') }}" rel="stylesheet">
+    @endproduction
 </head>
 
 <body class="d-flex flex-column min-vh-100">
