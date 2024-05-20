@@ -317,20 +317,21 @@ export default {
 
             // if data.left is in the champions's left or right , skip push to championLoading
             if(this.champions.find(champion => champion.left === data.left || champion.right === data.left)){
-              return;
+              // skip push to championLoading
+            }else{
+              this.championLoading.push(data.left);
             }
 
             // if data.right is in the champions's left or right , skip push to championLoading
             if(this.champions.find(champion => champion.left === data.right || champion.right === data.right)){
-              return;
+              // skip push to championLoading
+            }else{
+              this.championLoading.push(data.right);
             }
-
-            this.championLoading.push(data.left);
-            this.championLoading.push(data.right);
 
             // push data to the front of the array
             this.champions.unshift(data);
-            
+
             // max size of champions is 15
             if(this.champions.length > 15){
               // remove elements after 15
