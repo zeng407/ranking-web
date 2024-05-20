@@ -366,7 +366,7 @@
                         {{-- words --}}
                         <div class="col-12">
                             <div class="form-group">
-                                <textarea class="form-control" rows="3" maxlength="{{config('setting.comment_max_length')}}" placeholder="{{__('comment.leave_comment')}}" style="resize: none" v-model="commentInput"></textarea>
+                                <textarea class="form-control comment-input-field" rows="3" maxlength="{{config('setting.comment_max_length')}}" placeholder="{{__('comment.leave_comment')}}" style="resize: none" v-model="commentInput"></textarea>
                                 <span> (@{{commentWords}}/@{{commentMaxLength}})</span>
                             </div>
                         </div>

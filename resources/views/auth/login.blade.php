@@ -38,7 +38,7 @@
                                     <label for="email" class="col-12 col-form-label">{{ __('E-Mail Address') }}</label>
         
                                     <div class="col-12">
-                                        <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+                                        <input id="email" type="email" class="form-control font-size-16 @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
         
                                         @error('email')
                                             <span class="invalid-feedback" role="alert">
@@ -52,7 +52,7 @@
                                     <label for="password" class="col-12 col-form-label">{{ __('Password') }}</label>
         
                                     <div class="col-12">
-                                        <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
+                                        <input id="password" type="password" class="form-control font-size-16 @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
         
                                         @error('password')
                                             <span class="invalid-feedback" role="alert">
@@ -98,7 +98,7 @@
                                         class="col-12 col-form-label">{{ __('Nickname') }}</label>
                                     <div class="col-12">
                                         <input id="name" type="text"
-                                            class="form-control @error('name') is-invalid @enderror" name="name"
+                                            class="form-control font-size-16 @error('name') is-invalid @enderror" name="name"
                                             value="{{ old('name') }}" required autocomplete="name" autofocus maxlength="{{config('setting.user_name_max_size')}}">
                                             <small id="nameHelp" class="form-text text-muted">
                                                 {{ __('Can be modified later') }}
@@ -117,7 +117,7 @@
     
                                     <div class="col-12">
                                         <input id="email" type="email"
-                                            class="form-control @error('email') is-invalid @enderror" name="email"
+                                            class="form-control font-size-16 @error('email') is-invalid @enderror" name="email"
                                             value="{{ old('email') }}" required autocomplete="email" maxlength="{{config('setting.email_max_size')}}">
     
                                         @error('email')
@@ -134,7 +134,7 @@
     
                                     <div class="col-12">
                                         <input id="password" type="password"
-                                            class="form-control @error('password') is-invalid @enderror" name="password"
+                                            class="form-control font-size-16 @error('password') is-invalid @enderror" name="password"
                                             required autocomplete="new-password" minlength="{{config('setting.password_min_size')}}">
     
                                         @error('password')
@@ -150,7 +150,7 @@
                                         class="col-12 col-form-label">{{ __('Confirm Password') }}</label>
     
                                     <div class="col-12">
-                                        <input id="password-confirm" type="password" class="form-control"
+                                        <input id="password-confirm" type="password" class="form-control font-size-16"
                                             name="password_confirmation" required autocomplete="new-password"
                                             minlength="{{config('setting.password_min_size')}}">
                                     </div>

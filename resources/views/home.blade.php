@@ -221,13 +221,6 @@
                 </div>
               </div>
             </div>
-
-            
-            @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index == count($posts) - 1)
-              <div id="google-ad-1" class="grid-item mt-2">
-                @include('ads.home_ad_1', ['id' => 'google-ad-1'])
-              </div>
-            @endif
             @endforeach
 
             <template v-for="post in posts">
@@ -241,7 +234,6 @@
               >
               </home-post>
             </template>
-
           </div>
 
           {{-- post not found  --}}
@@ -260,6 +252,13 @@
               <span class="text-muted">{{ random_emoji() }}</span>
             </div>
           </div>
+
+          {{-- ads at bottom --}}
+          @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
+            <div id="google-ad-1" style="width: 100%">
+              @include('ads.home_ad_1')
+            </div>
+          @endif
 
           {{-- return to top --}}
           <div v-if="showReturnUpButton" class="align-content-center" style="position: fixed; right: 20px; bottom: 20px;">
