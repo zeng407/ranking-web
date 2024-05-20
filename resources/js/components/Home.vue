@@ -11,7 +11,6 @@ export default {
     this.initMasonry();
     this.getChampions();
     this.handleNewChampion();
-    // this.handleMouseInLeft(); this may cause the page shaking
     this.autoRefreshChampions();
 
   },
@@ -340,20 +339,6 @@ export default {
         return moment().fromNow();
       }
       return moment(date).fromNow();
-    },
-    handleMouseInLeft() {
-
-      // handle mouse enter champions region, disable main scroll
-      document.getElementById('champions-region').addEventListener('mouseenter',() => {
-        document.body.style.overflow = 'hidden';
-        // add a hover effect to the champions region
-        document.getElementById('champions-region').style.boxShadow = '0 0 10px 0 rgba(0,0,0,0.1)';
-      })
-
-      // handle mouse leave champions region, enable main scroll
-      document.getElementById('champions-region').addEventListener('mouseleave',() => {
-        document.body.style.overflow = 'auto';
-      })
     },
     isEndWith(str, suffix) {
       return str.endsWith(suffix);

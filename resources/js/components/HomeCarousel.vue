@@ -36,15 +36,11 @@
 
         <!-- title -->
         <div v-if="!firstCarouselLoading && titleVisible && item.title" class="text-center">
-          <h5 class="d-inline-block px-2 pt-1">
-            <!-- show cancel icon only in mobile -->
-            <div class="d-block d-md-none">
-              <i @click="hideTitle" class="fa-solid fa-times text-dark position-absolute" style="right: 0px; margin-top: 3px; margin-right: 0px;"></i>
-            </div>
+          <h5 class="d-inline-block px-2 pt-1 bg-dark">
             <!-- mobile -->
-            <span class="d-block d-sm-none font-size-small">{{ item.title }}</span>
+            <span class="d-block d-sm-none font-size-small text-white">{{ item.title }}</span>
             <!-- desktop -->
-            <span class="d-none d-sm-block">{{ item.title }}</span>
+            <span class="d-none d-sm-block text-white">{{ item.title }}</span>
           </h5>
         </div>
       </div>
