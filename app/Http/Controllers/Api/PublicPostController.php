@@ -47,7 +47,7 @@ class PublicPostController extends Controller
     {
         $games = UserGameResult::with('game', 'champion', 'loser', 'game.post')
             ->orderByDesc('created_at')
-            ->cursorPaginate(3);
+            ->cursorPaginate(5);
         
         return ChampionResource::collection($games);
     }

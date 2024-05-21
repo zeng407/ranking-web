@@ -15,8 +15,7 @@
       show-rank-endpoint="{{route('game.rank', '_serial')}}"
       get-champions-endpoint="{{route('api.champion.index')}}"
     >
-    <div class="container" v-cloak>
-      @include('partial.lang')
+    <div class="container-xl" v-cloak>
       {{-- main container --}}
         <div class="row m-0">
           {{-- left part: champions --}}
@@ -135,6 +134,7 @@
                   </label>
                 </div>
               </div>
+              @include('partial.lang')
             </div>
             <div class="d-flex justify-content-start" v-if="timeRangeText">
               <div class="form-inline mt-3">
@@ -268,7 +268,7 @@
 
           <div class="d-none d-lg-block col-lg-2 overflow-auto">
             {{-- right part:ads --}}
-            <div class="position-sticky px-2 mx-auto" style="top:140px; width:300px">
+            <div class="position-sticky px-2 mx-auto" style="top:0; width:300px">
               {{-- google ads --}}
               @include('ads.home_ad_champion_top')
 
