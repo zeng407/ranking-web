@@ -14,10 +14,9 @@
     <div class="row">
 
       <!-- tabs -->
-      <div class="col-md-2" style="z-index: 0;">
-        <div class="nav flex-column nav-pills sticky-top" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-
-          <a class="nav-link active" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
+      <div class="col-12" style="z-index: 0;">
+        <div class="nav flex-row nav-pills bg-secondary" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+          <a class="nav-link active text-white" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
             aria-controls="v-pills-post-info" aria-selected="true">
             <i v-if="isEditing" class="fa-xl fa-solid fa-triangle-exclamation" style="color:red" v-b-tooltip.hover
               :title="$t('Unsaved')"></i>
@@ -26,14 +25,14 @@
             </span>
             {{ $t('edit_post.tab.info') }}
           </a>
-          <a class="nav-link" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
+          <a class="nav-link text-white" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
             aria-controls="v-pills-elements" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-photo-video"></i>
             </span>
             {{ $t('edit_post.tab.element') }}
           </a>
-          <a class="nav-link" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
+          <a class="nav-link text-white" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
             aria-controls="v-pills-rank" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-trophy"></i>
@@ -43,7 +42,7 @@
         </div>
       </div>
 
-      <div class="col-sm-12 col-md-10">
+      <div class="col-12">
         <div class="tab-content" id="v-pills-tabContent">
 
           <!-- tab info -->
@@ -96,7 +95,6 @@
                         {{ $t('edit_post.info.save') }}&nbsp;
                         <i class="fas fa-save" v-if="!loading['SAVING_POST']"></i>
                         <i class="fas fa-spinner fa-spin" v-if="loading['SAVING_POST']"></i>
-                        
                       </button>
                     </span>
                   </h2>
@@ -301,7 +299,6 @@
             </div>
 
             <!-- search -->
-
             <h2 class="mt-5 mb-3"><i class="fa-solid fa-photo-film"></i>&nbsp;{{ $t('edit_post.edit_media') }}</h2>
             <p>{{ $t('Max :number elements',{ number: config.post_max_element_count }) }}</p>
 
@@ -325,14 +322,29 @@
               <div class="form-inline p-0 col-md-auto col-sm-12">
                 <input class="form-control mr-sm-2 " v-model="filters.title_like" type="search"
                   :placeholder="$t('Search')" aria-label="Search" @change="loadElements(1)">
+                  <span class="ml-1 btn-sm btn btn-light" @click="resetSearch"><i class="fas fa-xmark-circle"></i></span>
                   <span class="btn-sm btn btn-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                <span class="ml-1 btn-sm btn btn-light" @click="resetSearch">{{ $t('edit_post.reset_search') }}</span>
               </div>
             </nav>
             <p>{{ $t('total elements', { count: totalRow }) }}</p>
 
+            <!-- display type -->
+            <div class="d-flex justify-content-end my-4">
+              <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-outline-dark">
+                  <input type="radio" v-model="displayType" value="card">
+                  <i class="fas fa-th"></i>
+                </label>
+                <label class="btn btn-outline-dark">
+                  <input type="radio" v-model="displayType" value="list">
+                  <i class="fas fa-list"></i>
+                </label>
+              </div>
+            </div>
+
             <!-- elements -->
-            <div class="row">
+            <div class="row" v-if="displayType === 'card'">
+              <!-- display by card -->
               <template v-for="(element, index) in elements.data">
                 <!-- show video card -->
                 <div class="col-lg-4 col-md-6" v-if="isVideoSource(element)">
@@ -567,6 +579,7 @@
                 <div class="col-lg-4 col-md-6" v-if="element.type === 'image'">
                   <div class="card mb-3">
                     <img @error="onImageError(element, $event)" :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                      style="max-height: 300px; object-fit: contain;"
                       v-if="element.type === 'image'">
 
                     <div class="card-body">
@@ -599,6 +612,134 @@
               </template>
             </div>
 
+            <!-- display by table list -->
+            <div v-else class="table-responsive">
+              <table class="table table-bordered white-space-no-wrap">
+                <thead>
+                  <tr>
+                    <th style="width: 200px;"></th>
+                    <th style="width: 400px;">{{ $t('edit_post.element.title') }}</th>
+                    <th>{{ $t('edit_post.element.type') }}</th>
+                    <th>{{ $t('edit_post.element.rank') }}</th>
+                    <th style="width: 100px;">{{ $t('edit_post.element.video_start') }}</th>
+                    <th style="width: 100px;">{{ $t('edit_post.element.video_end') }}</th>
+                    <th style="width: 100px;">{{ $t('edit_post.element.created_at') }}</th>
+                    <th style="width: 100px;">{{ $t('edit_post.element.action') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(element, index) in elements.data">
+                    <!-- image or video -->
+                    <td>
+                      <template v-if="isVideoSource(element)">
+                        <!-- youtube source -->
+                        <template v-if="isYoutubeSource(element)">
+                          <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="200px" height="100px"
+                            :ref="element.id" @ready="doPlay(element)" :player-vars="{
+                            controls: 1,
+                            autoplay: 0,
+                            start: element.video_start_second,
+                            end: element.video_end_second,
+                            rel: 0,
+                            origin: origin
+                          }"></youtube>
+                          <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                            v-show="isYoutubeSource(element) && !element.loadedVideo">
+                        </template>
+
+
+                        <!-- youtube embed source -->
+                        <template v-else-if="isYoutubeEmbedSource(element)">
+                          <YoutubeEmbed :element="element" v-if="element" :autoplay="false" width="200px" height="100px"/>
+                        </template>
+
+                        <!-- twitch video -->
+                        <template v-else-if="isTwitchVideoSource(element) || isTwitchClipSource(element)">
+                          <div :id="'twitch-video-'+element.id" v-if="isTwitchVideoSource(element)" class="w-100 twitch-container"></div>
+                          <iframe v-else-if="isTwitchClipSource(element) && element.loadedVideo"
+                            :src="'https://clips.twitch.tv/embed?clip='+element.video_id+'&parent='+host+'&autoplay=true'"
+                            width="200px" height="100px"
+                            allowfullscreen></iframe>
+                          <img v-if="!element.loadedVideo" :src="element.thumb_url" class="card-img-top" :alt="element.title">
+                        </template>
+
+                        <!-- bilibili video -->
+                        <template v-else-if="isBilibiliVideoSource(element)">
+                          <BilibiliVideo :element="element" v-if="element" :autoplay="false" :muted="false" :preview="true" width="200px" height="100px"/>
+                        </template>
+
+                        <!-- video source -->
+                        <template v-else>
+                          <video width="200px" height="100px" loop controls playsinline :src="element.source_url"></video>
+                        </template>
+                      </template>
+                      <template v-else>
+                        <img @error="onImageError(element, $event)" :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                          v-if="element.type === 'image'" style="width: 200px; height: 100px; object-fit: contain;">
+                      </template>
+                    </td>
+                    <!-- title -->
+                    <td>
+                      <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
+                        :maxlength="config.element_title_size" rows="4" style="resize: none;"
+                        @change="updateElementTitle(element.id, $event)"></textarea>
+                    </td>
+                    <!-- type -->
+                    <td>{{ $t('element.type.'+element.type) }}</td>
+                    <!-- rank -->
+                    <td>{{ getElementRank(element) }}</td>
+                    <!-- video start -->
+                    <td>
+                      <!-- only support for youtube, twitch -->
+                      <template v-if="isYoutubeSource(element) || isTwitchVideoSource(element) || isTwitchClipSource(element)">
+                        <input type="text" class="form-control" name="video_start_second" placeholder="0:00"
+                          aria-label="start" @change="updateVideoScope(index, element, $event)"
+                          :value="toTimeFormat(element.video_start_second)">
+                      </template>
+                    </td>
+                    <!-- video end -->
+                    <td>
+                      <!-- only support for youtube-->
+                      <template v-if="isYoutubeSource(element)">
+                        <input type="text" class="form-control" name="video_end_second"
+                          :placeholder="toTimeFormat(element.video_duration_second)" aria-label="end"
+                          :value="toTimeFormat(element.video_end_second)"
+                          @change="updateVideoScope(index, element, $event)">
+                        </template>
+                    </td>
+                    <!-- create time -->
+                    <td>{{ element.created_at | datetime}}</td>
+                    <!-- action -->
+                    <td>
+                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
+                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                      </a>
+                      <EditElement v-if="post"
+                        :post-serial="post.serial"
+                        :element-id="String(element.id)"
+                        :source-url="element.source_url"
+                        :update-element-route="updateElementEndpoint" 
+                        :upload-element-route="uploadElementEndpoint"
+                        @elementUpdated="handleElementUpdated"/>
+                    </td>
+                  </tr>
+                </tbody>  
+              </table>
+            </div>
+            
+            
+            <!-- per page setting -->
+            <div class="d-flex justify-content-end">
+              <div class="form-group" v-if="elements.data.length > 0">
+                <label class="col-form-label">{{ $t('edit_post.element.per_page') }}</label>
+                <select class="form-control" v-model="elements.meta.per_page" @change="loadElements(1)">
+                  <option v-for="option in [10,25,50,100]" :value="option">{{ option }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- pagination -->
             <b-pagination v-model="currentPage" v-if="elements.meta.last_page > 1" :total-rows="totalRow"
               :per-page="elements.meta.per_page" first-number last-number @change="handleElementPageChange"
               align="center">
@@ -686,6 +827,7 @@ export default {
         data: [],
         meta: {
           last_page: 1,
+          per_page: 10
         }
       },
       playingVideo: null,
@@ -714,6 +856,7 @@ export default {
         sort_by: 'id',
         sort_dir: 'desc',
       },
+      displayType: 'list',
 
       //rank
       rank: {},
@@ -923,7 +1066,8 @@ export default {
       const params = {
         ...pagination,
         ...{ filter: this.filters },
-        ...this.sorter
+        ...this.sorter,
+        per_page: this.elements.meta.per_page
       }
       axios.get(this.getElementsEndpoint, { params: params })
         .then(res => {

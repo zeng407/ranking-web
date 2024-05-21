@@ -26,7 +26,7 @@ class Game extends Model
 
     public function post()
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(Post::class)->withTrashed();
     }
 
     public function game_1v1_rounds()

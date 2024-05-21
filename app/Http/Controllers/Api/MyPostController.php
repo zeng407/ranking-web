@@ -20,7 +20,7 @@ use App\Services\PostService;
 
 class MyPostController extends Controller
 {
-    const ELEMENTS_PER_PAGE = 10;
+    const ELEMENTS_PER_PAGE = 100;
 
     protected ElementService $elementService;
     protected RankService $rankService;

@@ -40,7 +40,7 @@
                 <label :for="'elementSourceUrl' + elementId">
                   <i class="fa-solid fa-photo-film"></i>&nbsp;{{ $t('edit_post.upload_batch') }}
                 </label>
-                <div class="form-group">
+                <div class="form-group white-space-normal">
                   <input type="text" class="form-control" :id="'elementSourceUrl' + elementId" v-model="url"
                     :readonly="preview_image_url" @click="hintDeleteFirst"> </input>
                   <small class="break-all">{{ $t('Current URL') }}:&nbsp;{{sourceUrl}}</small>

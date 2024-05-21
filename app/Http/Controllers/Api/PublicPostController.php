@@ -61,7 +61,8 @@ class PublicPostController extends Controller
                 'profile' => [
                     'nickname' => $user? $user->name : config('setting.anonymous_nickname'),
                     'avatar_url' => $user?->avatar_url,
-                    'champions' => $this->postService->getUserLastVotes($post, $user, session()->get('anonymous_id', 'unknown'))
+                    'champions' => $this->postService->getUserLastVotes($post, $user, session()->get('anonymous_id', 'unknown')),
+                    'is_auth' => $user != null
                 ]
             ]);
         return $data;
@@ -71,7 +72,7 @@ class PublicPostController extends Controller
     {
         $request->validate([
             'content' => ['required', 'string', 'max:' . config('setting.comment_max_length')],
-            'anonymount_mode' => 'boolean'
+            'anonymous' => 'boolean'
         ]);
         $createComment = function () use ($request, $post) {
             $commentBuilder = (new CommentBuilder)
@@ -81,7 +82,7 @@ class PublicPostController extends Controller
                 ->setAnonymousId(session()->get('anonymous_id'))
                 ->setIp($request->ip())
                 ->setLabel(['champions' => $this->postService->getUserLastVotes($post, $request->user(), session()->get('anonymous_id', 'unknown'))])
-                ->setAnonymousMode($request->input('anonymous_mode', false));
+                ->setAnonymousMode($request->input('anonymous', false));
             return $this->postService->createComment($commentBuilder);
         };
 
