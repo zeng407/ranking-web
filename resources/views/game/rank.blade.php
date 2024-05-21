@@ -20,7 +20,6 @@
         {{-- Main --}}
         <div class="container" v-cloak>
             @if(!$embed)
-            @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
             <div class="row mb-3">
                 <div class="col-auto">
                     <a class="btn btn-outline-dark btn-sm m-1" href="{{route('home')}}"><i class="fa-solid fa-home"></i>&nbsp;{{__('rank.return_home')}}</a>
@@ -35,7 +34,10 @@
             </div>
             <hr>
             
-            <h1 class="break-all post-title">{{ $post->title }} - {{__('Ranking')}}</h1>
+            <div class="d-flex position-relative">
+                <h1 class="break-all post-title">{{ $post->title }} - {{__('Ranking')}}</h1>
+                @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
+            </div>
             <p>{{ $post->description }}</p>
             @endif
 

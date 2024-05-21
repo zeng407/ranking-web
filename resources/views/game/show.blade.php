@@ -96,7 +96,7 @@
         </div>
 
         {{-- playground --}}
-        <div class="row" v-if="game && !finishingGame" :style="{height: this.gameBodyHeight + 'px'}">
+        <div class="row overflow-hidden" v-if="game && !finishingGame" :style="{height: this.gameBodyHeight + 'px'}">
           <!--left part-->
           <div class="col-sm-12 col-md-6 pr-md-1 mb-2 mb-md-0">
             <div class="card game-player left-player" id="left-player">

@@ -10,6 +10,9 @@
                 //if ad is loaded, then it will throw an error
                 (adsbygoogle = window.adsbygoogle || []).push({});
             } catch (e) {
+                @if(config('app.debug'))
+                    console.error(e.message);
+                @endif
                 if (e.message.includes(
                         `All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
                     // after loaded ad, send a event to Home.vue
