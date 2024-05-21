@@ -316,14 +316,14 @@ export default {
             }
 
             // if data.left is in the champions's left or right , skip push to championLoading
-            if(this.champions.find(champion => champion.left === data.left || champion.right === data.left)){
+            if(this.champions.find(champion => champion.left.thumb_url === data.left.thumb_url || champion.right.thumb_url === data.left.thumb_url)){
               // skip push to championLoading
             }else{
               this.championLoading.push(data.left);
             }
 
             // if data.right is in the champions's left or right , skip push to championLoading
-            if(this.champions.find(champion => champion.left === data.right || champion.right === data.right)){
+            if(this.champions.find(champion => champion.left.thumb_url === data.right.thumb_url || champion.right.thumb_url === data.right.thumb_url)){
               // skip push to championLoading
             }else{
               this.championLoading.push(data.right);
