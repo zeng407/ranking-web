@@ -41,6 +41,15 @@
     "edit_post.info.save": "Save",
     "edit_post.info.create_time": "Created time",
     "edit_post.info.no_tag": "No tag",
+    "edit_post.element.title": "Title",
+    "edit_post.element.type": "Type",
+    "edit_post.element.rank": "Rank",
+    "edit_post.element.video_start": "Video Start",
+    "edit_post.element.video_end": "Video End",
+    "edit_post.element.created_at": "Created time",
+    "edit_post.element.action": "Action",
+    "edit_post.element.per_page": "Elements per page",
+
     "edit_post.at_least_element_number_hint": "At least 8 materials must be uploaded to appear on the homepage.",
     "edit_post.upload_image": "Upload Image",
     "edit_post.upload_media": "Upload Image&Video",
@@ -86,6 +95,9 @@
     "report_comment_other_reason_required": "You need to write something!",
     "Max :number elements": "Max {number} elements",
     "upload_from_local": "Upload from computer (multiple files allowed, each file must be under {limit} MB, cannot exceed {rate_count} files or {rate_limit} MB per minute)",
+
+    "element.type.image": "image",
+    "element.type.video": "video",
 
     "":""
 }

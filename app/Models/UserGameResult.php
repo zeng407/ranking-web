@@ -35,11 +35,11 @@ class UserGameResult extends Model
 
     public function champion()
     {
-        return $this->belongsTo(Element::class, 'champion_id');
+        return $this->belongsTo(Element::class, 'champion_id')->withTrashed();
     }
 
     public function loser()
     {
-        return $this->belongsTo(Element::class, 'loser_id');
+        return $this->belongsTo(Element::class, 'loser_id')->withTrashed();
     }
 }
