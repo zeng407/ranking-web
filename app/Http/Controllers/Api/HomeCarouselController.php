@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
 use App\Services\HomeCarouselService;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class HomeCarouselController extends Controller
 
     public function index(Request $request)
     {
-        $carouselItems = $this->homeCarouselService->getHomeCarouselItems();
+        $carouselItems = CacheService::rememberCarousels();
         return CarouselItemResource::collection($carouselItems);
     }
 }

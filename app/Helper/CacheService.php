@@ -5,6 +5,7 @@ namespace App\Helper;
 use App\Http\Resources\PublicPostResource;
 use App\Models\User;
 use App\Repositories\Filters\PostFilter;
+use App\Services\HomeCarouselService;
 use App\Services\PostService;
 use App\Services\TagService;
 use Cache;
@@ -67,7 +68,7 @@ class CacheService
         return $cache;
     }
 
-    static function rememberPostUpdatedTimestamp($fresh = false)
+    static public function rememberPostUpdatedTimestamp($fresh = false)
     {
         if ($fresh) {
             Cache::forget('post_update_at');
@@ -76,5 +77,21 @@ class CacheService
         return Cache::remember('post_update_at', $seconds, function() {
             return now()->unix().rand(0, 10000);
         });
+    }
+
+    static public function rememberCarousels($refresh = false)
+    {
+        if ($refresh) {
+            self::clearCarousels();
+        }
+        $seconds = 60 * 60; // 1 hour
+        return Cache::remember('carousels', $seconds, function() {
+            return app(HomeCarouselService::class)->getHomeCarouselItems();
+        });
+    }
+
+    static public function clearCarousels()
+    {
+        Cache::forget('carousels');
     }
 }

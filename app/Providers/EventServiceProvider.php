@@ -18,6 +18,7 @@ use App\Listeners\CreateImgurImage;
 use App\Listeners\DeleteImgurImage;
 use App\Events\ImageElementCreated;
 use App\Listeners\DeleteImgurAlbum;
+use App\Models\HomeCarouselItem;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -70,5 +71,6 @@ class EventServiceProvider extends ServiceProvider
     public function boot()
     {
         Event::subscribe(\App\Listeners\PostUpdateTimestampSubscriber::class);
+        HomeCarouselItem::observe(\App\Observers\HomeCarouselItemObserver::class);
     }
 }
