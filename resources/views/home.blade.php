@@ -15,7 +15,7 @@
       show-rank-endpoint="{{route('game.rank', '_serial')}}"
       get-champions-endpoint="{{route('api.champion.index')}}"
     >
-    <div class="container-xl" v-cloak>
+    <div class="container-fuild" v-cloak>
       {{-- main container --}}
         <div class="row m-0">
           {{-- left part: champions --}}
@@ -67,14 +67,7 @@
           </div>
           {{-- main part: posts --}}
           <div id="main-region" class="col-12 col-lg-8">
-            @if(empty(Request::all()))
-              @include('partial.home-carousel')
-            @else
-              {{-- ads --}}
-              <div id="home-ad-top">
-                @include('ads.home_ad_top', ['id' => 'home-ad-top'])
-              </div>
-            @endif
+            @include('partial.home-carousel')
 
             {{-- champions --}}
             <h4 class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
@@ -266,9 +259,9 @@
             </div>
           </div>
 
-          <div class="d-none d-lg-block col-lg-2 overflow-auto">
+          <div class="d-none d-lg-block col-lg-2">
             {{-- right part:ads --}}
-            <div class="position-sticky px-2 mx-auto" style="top:0; width:300px">
+            <div class="px-2 mx-auto">
               {{-- google ads --}}
               @include('ads.home_ad_champion_top')
 
