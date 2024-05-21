@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\PostAccessPolicy;
 use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Comment\CommentResource;
@@ -46,7 +47,10 @@ class PublicPostController extends Controller
     public function getChampions(Request $request)
     {
         $games = UserGameResult::with('game', 'champion', 'loser', 'game.post')
-            ->orderByDesc('created_at')
+            ->whereHas('game.post.post_policy', function ($query) {
+                $query->where('access_policy', PostAccessPolicy::PUBLIC);
+            })
+            ->orderByDesc('id')
             ->cursorPaginate(5);
         
         return ChampionResource::collection($games);
