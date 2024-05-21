@@ -53,6 +53,7 @@ export default {
         },
         rotatable: true,
       },
+      anonymous: false,
     }
   },
   props: {
@@ -113,14 +114,14 @@ export default {
       this.isSubmiting = true;
       if (this.commentInput.length > 0 && this.commentInput.length <= this.commentMaxLength) {
         axios.post(this.createCommentEndpoint, {
-          content: this.commentInput
+          content: this.commentInput,
+          anonymous: this.anonymous
         })
           .then(response => {
             this.commentInput = '';
             this.loadCommnets();
             // Scroll to the comment position
-            const navbarHeight = 60;
-            $("html, body").animate({ scrollTop: $('#comments-total').offset().top - navbarHeight }, 1000);
+            this.scrollToComment();
           })
           .catch(error => {
             // console.log(error);
@@ -137,6 +138,11 @@ export default {
     },
     changePage: function (page) {
       this.loadCommnets(page);
+      this.scrollToComment();
+    },
+    scrollToComment: function () {
+      const navbarHeight = 60;
+      $("html, body").animate({ scrollTop: $('#comments-total').offset().top - navbarHeight }, 500);
     },
     reportComment: function (comment) {
       const commentId = comment.id;

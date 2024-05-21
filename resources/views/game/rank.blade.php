@@ -263,13 +263,20 @@
                                     <span class="text-black-50 font-size-large" style="overflow-wrap:anywhere"><h5>@{{ comment.nickname }}</h5></span>
                                     <div class="ml-auto">
                                         <div class="text-align-end">
-                                            <div class="dropdown">
-                                                <span href="#" role="button" id="reportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                    <i class="fa-xl fa-solid fa-ellipsis-vertical cursor-pointer text-center" style="width: 20px"></i>
-                                                </span>
-    
-                                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="reportDropdown">
-                                                    <a class="dropdown-item" @click.prevent="reportComment(comment)" href="#"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;{{__('comment.report')}}</a>
+                                            <div class="d-flex">
+                                                {{-- timestamp --}}
+                                                <div class="text-right text-muted mr-4">
+                                                    @{{comment.created_at | formNow}}
+                                                </div>  
+                                                {{-- options --}}
+                                                <div class="dropdown">
+                                                    <span href="#" role="button" id="reportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <i class="fa-xl fa-solid fa-ellipsis-vertical cursor-pointer text-center" style="width: 20px"></i>
+                                                    </span>
+                                                        
+                                                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="reportDropdown">
+                                                        <a class="dropdown-item" @click.prevent="reportComment(comment)" href="#"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;{{__('comment.report')}}</a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -283,10 +290,6 @@
                                 </h5>
                                 {{-- comment --}}
                                 <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">@{{comment.content}}</p>
-                                {{-- timestamp --}}
-                                <div class="text-right text-muted">
-                                    @{{comment.created_at | formNow}}
-                                </div>  
                             </div>
                         </div>
 
@@ -334,7 +337,7 @@
                             {{-- comment --}}
                             <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">@{{comment.content}}</p>
                         </div>
-                        <hr class="my-4">
+                        <hr class="my-1">
                     </div>
                     {{-- Pagination --}}
                     <b-pagination
@@ -352,7 +355,17 @@
                     <div class="row">
                         {{-- comment input --}}
                         <div class="col-12">
-                            {{__('Nickname')}}: <span class="text-black-50 font-size-large text-break"><h5 class="d-inline">@{{profile.nickname}}</h5></span>
+                            <div class="">
+                            {{__('Nickname')}}: <span class="text-black-50 font-size-large text-break">
+                                <h5 class="d-inline" v-if="!anonymous">@{{profile.nickname}}</h5>
+                                <h5 class="d-inline" v-if="anonymous">****</h5>
+                            </span>
+                                {{-- anonymous mode --}}
+                                <div class="mr-auto from-check" v-if="profile.is_auth">
+                                    <input class="from-check" type="checkbox" id="anonymous" v-model="anonymous">
+                                    <label class="from-control" for="anonymous">{{__('comment.anonymous')}}</label>
+                                </div>
+                            </div>
                             <div class="overflow-hidden" v-if="profile.champions.length > 0">
                                 {{__('Vote result')}}:
                                 {{-- champions --}}
