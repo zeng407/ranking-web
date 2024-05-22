@@ -842,12 +842,7 @@ export default {
         return false;
       }
 
-      //every 4 rounds reload ad
-      if(this.game.current_round % 4 === 0){
-        return true;
-      }
-
-      return false;
+      return true;
     },
     formatTime(time) {
       // format second to 0h0m0s

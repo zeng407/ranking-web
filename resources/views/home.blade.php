@@ -75,7 +75,7 @@
               <div class="row flex-nowrap">
                 <div class="col-auto mx-2 position-relative" v-for="championResult in champions">
                   <div class="row">
-                    <div style="max-width: 200px">
+                    <div style="max-width: 150px">
                       <div class="position-relative">
                         {{-- if championResult.left.thumb_url is end with mp4 --}}
                         <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
@@ -89,7 +89,7 @@
                       </div>
                       <h5 class="text-center font-size-small">@{{championResult.left.name}}</h5>
                     </div>
-                    <div style="max-width: 200px" v-if="championResult.right.name">
+                    <div style="max-width: 150px" v-if="championResult.right.name">
                       <div class="position-relative">
                         <video  v-if="isEndWith(championResult.right.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
                         <img v-else @load="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
