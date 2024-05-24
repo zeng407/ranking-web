@@ -255,10 +255,7 @@ export default {
     },
     drawChart(target, container, data) {
       const ctx = target;
-      const championHistories = data.filter((item, index) => {
-        return index % 3 === 0;
-      })
-      const chartRankData = championHistories.map((item, index) => {
+      const chartRankData = data.map((item, index) => {
         return {
           x: item.date,
           y: item.rank,
@@ -302,7 +299,14 @@ export default {
                   moment.locale(this.$i18n.locale);
                   return moment(value).format('yyyy-MM-DD');
                 },
-                stepSize: 10,
+                // if number is less 10, it will show all, if more than 10, it will show 10 
+                stepSize: () => {
+                  if(chartRankData.length < 10){
+                    return 1;
+                  }else{
+                    return Math.ceil(chartRankData.length / 10);
+                  }
+                },
               }
             },
             'y-axis-1': {
@@ -437,7 +441,12 @@ export default {
               beginAtZero: true,
               position: 'right',
               min: 0,
-              max: 3600,
+              max: Math.max(...chartData.map((item, index) => {
+                if (item.y > 7200) {
+                  return 7200;
+                }
+                return item.y;
+              })),
               ticks:{
                 stepSize: 1,
                 precision: 0,
