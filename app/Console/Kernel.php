@@ -35,7 +35,7 @@ class Kernel extends ConsoleKernel
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 4]));
         })->name('cachePosts')->everyFiveMinutes()->withoutOverlapping();
 
-        $schedule->command('make:rank-report-history all')->name('Make Rank Report History')->dailyAt('06:10');
+        // $schedule->command('make:rank-report-history all')->name('Make Rank Report History')->dailyAt('06:10');
 
         if(config('services.twitch.auto_refresh_token')){
             $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily();

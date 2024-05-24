@@ -39,10 +39,10 @@ class UpdateRankReport implements ShouldQueue, ShouldBeUnique
     {
         logger('UpdateRankReport job fired');
         $rankService->createRankReports($this->post);
-        RankReport::with('post')->where('post_id', $this->post->id)->eachById(function ($report) use ($rankService) {
-            $rankService->createRankReportHistory($report, RankReportTimeRange::ALL);
-            $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
-        });
+        // RankReport::with('post')->where('post_id', $this->post->id)->eachById(function ($report) use ($rankService) {
+        //     $rankService->createRankReportHistory($report, RankReportTimeRange::ALL);
+        //     $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
+        // });
         
     }
 

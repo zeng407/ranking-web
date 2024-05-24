@@ -54,7 +54,6 @@ class RankService
         $reports = RankReportHistory::where('post_id', $post->id)
             ->where('element_id', $element->id)
             ->where('time_range', $timeRange)
-            ->where('start_date', '<=', today()->subDays(2))
             ->orderByDesc('start_date')
             ->paginate($limit, ['*'], 'page', $page);
 

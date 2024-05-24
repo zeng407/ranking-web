@@ -3,9 +3,11 @@
 namespace App\Services\Builders;
 
 use App\Enums\RankReportTimeRange;
+use App\Enums\RankType;
 use App\Models\Element;
 use App\Models\Game1V1Round;
 use App\Models\Post;
+use App\Models\Rank;
 use App\Models\RankReport;
 use App\Models\RankReportHistory;
 
@@ -63,14 +65,14 @@ class RankReprortHistoryBuilder
         $gameRoundRecords = $this->getGameRoundRecords();
         $lastRecord = $gameRoundRecords->last();
         $sumWinCount = $lastRecord ? $lastRecord->win_count : 0;
-        $sumLoseCount = $lastRecord ? $lastRecord->lose_count : 0;
-        $sumRounds = $sumWinCount + $sumLoseCount;
+        $sumLoseCount = $lastRecord ? ($lastRecord->round_count - $lastRecord->win_count) : 0;
+        $sumRounds = $lastRecord ? $lastRecord->round_count : 0;
         $timeline = carbon($start);
         while($timeline->lte(today())) {
             $query = $gameRoundRecords->where('date', carbon($timeline)->toDateString())->first();
             if($query){
                 $sumWinCount = $query->win_count;
-                $sumLoseCount = $query->lose_count;
+                $sumLoseCount = $query->round_count - $query->win_count;
                 $sumRounds = $query->win_count + $query->lose_count;
             }
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
@@ -130,31 +132,26 @@ class RankReprortHistoryBuilder
 
     protected function getGameRoundRecords()
     {
-        $gameRecords = Game1V1Round::join('games', 'games.id', '=', 'game_1v1_rounds.game_id')
-            ->where('games.post_id', $this->report->post_id)
-            ->where(function($query){
-                $query->where('game_1v1_rounds.winner_id', $this->report->element_id)
-                    ->orWhere('game_1v1_rounds.loser_id', $this->report->element_id);
-            })
-            ->orderByRaw('date(game_1v1_rounds.created_at)')
-            ->selectRaw(
-                'date(game_1v1_rounds.created_at) as date,
-                sum(game_1v1_rounds.winner_id = ?) as win_count,
-                sum(game_1v1_rounds.loser_id = ?) as lose_count',
-                [$this->report->element_id, $this->report->element_id])
-            ->groupByRaw('date(game_1v1_rounds.created_at)')
+        // $gameRecords = Game1V1Round::join('games', 'games.id', '=', 'game_1v1_rounds.game_id')
+        //     ->where('games.post_id', $this->report->post_id)
+        //     ->where(function($query){
+        //         $query->where('game_1v1_rounds.winner_id', $this->report->element_id)
+        //             ->orWhere('game_1v1_rounds.loser_id', $this->report->element_id);
+        //     })
+        //     ->orderByRaw('date(game_1v1_rounds.created_at)')
+        //     ->selectRaw(
+        //         'date(game_1v1_rounds.created_at) as date,
+        //         sum(game_1v1_rounds.winner_id = ?) as win_count,
+        //         sum(game_1v1_rounds.loser_id = ?) as lose_count',
+        //         [$this->report->element_id, $this->report->element_id])
+        //     ->groupByRaw('date(game_1v1_rounds.created_at)')
+        //     ->get();
+
+        $gameRecords = Rank::where('post_id', $this->report->post_id)
+            ->where('element_id', $this->report->element_id)
+            ->where('rank_type', RankType::PK_KING)
+            ->orderBy('record_date')
             ->get();
-        
-        // reduce every count to next day
-        $gameRecords->reduce(function($carry, $item){
-            // skip the first item
-            if(!$carry) {
-                return $item;
-            }
-            $item->win_count += $carry->win_count;
-            $item->lose_count += $carry->lose_count;
-            return $item;
-        });
 
         return $gameRecords;
     }
