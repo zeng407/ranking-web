@@ -254,6 +254,10 @@ export default {
       }
     },
     drawChart(target, container, data) {
+      // skip if target is not found
+      if(!document.getElementById(target)){
+        return;
+      }
       const ctx = target;
       const chartRankData = data.map((item, index) => {
         return {
@@ -269,9 +273,9 @@ export default {
             label: this.$t('rank.chart.rank'),
             data: chartRankData,
             yAxisID: 'y-axis-1',
-            pointStyle: 'circle',
+            // pointStyle: 'circle',
             borderColor: 'rgba(0, 0, 0, 0.5)', //black
-            backgroundColor: '#FFFFFF', //white
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', //white
           },
         ]
         },
@@ -281,9 +285,6 @@ export default {
             onComplete: () => {
               this.autoScrollChartToEnd(container);
             }
-          },
-          layout: {
-            padding: 10
           },
           scales: {
             x :{
@@ -323,6 +324,7 @@ export default {
                 callback: (value, index, values) => {
                   return '#'+value;
                 },
+                
                 // autoSkip: false,
                 // maxTicksLimit: 100,
               },
@@ -378,11 +380,15 @@ export default {
                 }
               }
             },
-          }
+          },
         }
       });
     },
     drawMyTimeline(target, container, data) {
+      // skip if target is not found
+      if(!document.getElementById(target)){
+        return;
+      }
       const ctx = target;
       const championHistories = data;
       const chartData = championHistories.map((item, index) => {
@@ -442,8 +448,8 @@ export default {
               position: 'right',
               min: 0,
               max: Math.max(...chartData.map((item, index) => {
-                if (item.y > 7200) {
-                  return 7200;
+                if (item.y > 3600) {
+                  return 3600;
                 }
                 return item.y;
               })),

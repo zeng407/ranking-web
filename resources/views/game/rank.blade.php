@@ -62,24 +62,29 @@
                             @include('game.partial.my-champion-container', ['gameResult' => $gameResult])
 
                             
-                            <!-- Button trigger modal -->
+                            @if(config('setting.show_rank_history'))
                             <div class="custom-control custom-switch text-right">
                                 <input type="checkbox" class="custom-control-input" id="switchRankHistory" v-model="showRankHistory">
                                 <label class="custom-control-label btn-link" for="switchRankHistory"><i class="fa-solid fa-chart-line"></i>&nbsp;@{{$t('rank.chart.title.rank_history')}}</label>
                             </div>
+                            @endif
                             <div class="custom-control custom-switch text-right">
                                 <input type="checkbox" class="custom-control-input" id="switchTimeline" v-model="showMyTimeline">
                                 <label class="custom-control-label btn-link" for="switchTimeline"><i class="fa-solid fa-chart-line"></i>&nbsp;@{{$t('rank.chart.title.timeline')}}</label>
                             </div>
 
                             <div class="row">
-                                <div v-show="showRankHistory" class="overflow-scroll col-12" :class="{'col-xl-6': showMyTimeline}">
+                                @if(config('setting.show_rank_history'))
+                                <div v-show="showRankHistory" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showMyTimeline}">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
                                         <canvas id="my-champion"></canvas>
                                     </div>
                                 </div>
+                                @else
+                                <div class="offset-3"></div>
+                                @endif
 
-                                <div v-show="showMyTimeline" class="overflow-scroll col-12" :class="{'col-xl-6': showRankHistory}">
+                                <div v-show="showMyTimeline" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showRankHistory}">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
                                         <canvas id="my-timeline"></canvas>
                                     </div>
@@ -136,11 +141,13 @@
                                     <div class="col-12 align-content-center justify-content-center">
                                         @include('game.partial.global-element-container', ['rank' => $rank])
                                     </div>
-                                    <div id="global-champion-container" class="col-12 overflow-scroll">
+                                    @if(config('setting.show_rank_history'))
+                                    <div id="global-champion-container" class="col-12 overflow-scroll hide-scrollbar">
                                         <div class="rank-chart-container d-flex align-content-center justify-content-center">
                                             <canvas id="global-champion"></canvas>
                                         </div>
                                     </div>
+                                    @endif
                                 @else
                                     @include('game.partial.global-element-container', ['rank' => $rank])
                                 @endif
