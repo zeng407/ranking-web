@@ -7,6 +7,7 @@ use App\Events\GameComplete;
 use App\Events\VideoElementCreated;
 use App\Listeners\CreateGameResult;
 use App\Listeners\DeleteElementRank;
+use App\Listeners\DeletePostRank;
 use App\Listeners\MakeVideoThumbnail;
 use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
@@ -46,6 +47,7 @@ class EventServiceProvider extends ServiceProvider
             //create a job to create imgur album
         ],
         PostDeleted::class => [
+            DeletePostRank::class,
             //create a job to delete imgur album
         ],
         ImageElementCreated::class => [

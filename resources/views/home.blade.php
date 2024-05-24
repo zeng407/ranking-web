@@ -21,10 +21,6 @@
           {{-- left part: champions --}}
           <div class="d-none d-lg-block col-lg-2 p0">
             <div class="container position-sticky hide-scrollbar champions-container">
-              {{-- google ads --}}
-              {{-- <div id="champion-ad-top">
-                @include('ads.home_ad_champion_top', ['id' => 'champion-ad-top'])
-              </div> --}}
 
               <div v-if="champions.length && !mobileScreen" v-cloak>
                 <h4 class="text-center my-1">@{{$t('home.new_champions')}}</h4>
@@ -70,10 +66,14 @@
             @include('partial.home-carousel')
 
             {{-- champions --}}
-            <h4 class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
-            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll" v-cloak>
+            <h4 v-if="champions.length" class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
+            <div v-if="!champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll">
+              {{-- placeholder div --}}
+              <div style="height: 250px"></div>
+            </div>
+            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll">
               <div class="row flex-nowrap">
-                <div class="col-auto mx-2 position-relative" v-for="championResult in champions">
+                <div class="col-auto mx-2 position-relative" v-for="championResult in champions" v-cloak>
                   <div class="row">
                     <div style="max-width: 150px">
                       <div class="position-relative">

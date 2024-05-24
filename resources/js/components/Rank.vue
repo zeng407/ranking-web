@@ -1,29 +1,16 @@
 <script>
 import Swal from 'sweetalert2';
 import CountWords from './partials/CountWords.vue';
+import Chart from 'chart.js/auto';
+import 'chartjs-adapter-moment';
+
 export default {
   components: {
     CountWords
   },
   mounted() {
     this.loadCommnets();
-
-    if (window.adsbygoogle) {
-      setTimeout(() => {
-        try{
-          window.adsbygoogle.push({});
-          window.adsbygoogle.push({});
-        }catch(e){}
-      }, 500);
-
-      setTimeout(() => {
-        if (window.adsbygoogle) {
-          if($('#google-ad-1')) {
-          $('#google-ad-1').addClass('d-flex justify-content-center');
-          }
-        }
-      }, 1000);
-    }
+    this.initChart();
   },
   data() {
     return {
@@ -39,7 +26,7 @@ export default {
         champions: []
       },
       isSubmiting: false,
-      viewerOptions: { 
+      viewerOptions: {
         inline: false,
         button: true,
         movable: true,
@@ -47,13 +34,16 @@ export default {
         title: false,
         toolbar: {
           zoomIn: 1,
-          zoomOut :1, 
+          zoomOut: 1,
           reset: 1,
           rotateRight: 1,
         },
         rotatable: true,
       },
       anonymous: false,
+      chartLoaded: [],
+      showMyTimeline: true,
+      showRankHistory: true,
     }
   },
   props: {
@@ -72,6 +62,18 @@ export default {
     reportCommentEndpoint: {
       type: String,
       required: true
+    },
+    championHistories: {
+      type: Object,
+      required: true
+    },
+    maxRank: {
+      type: Number,
+      required: true
+    },
+    gameStatistic: {
+      type: Object,
+      required: true
     }
   },
   computed: {
@@ -83,7 +85,7 @@ export default {
     }
   },
   methods: {
-    loadCommnets: function (page = 1) {
+    loadCommnets(page = 1) {
       const urlParams = {
         page: page
       }
@@ -104,7 +106,7 @@ export default {
           });
         });
     },
-    clickTab: function (tab) {
+    clickTab(tab) {
       const urlParams = new URLSearchParams(window.location.search);
       urlParams.set('tab', tab);
       const newUrl = window.location.pathname + '?' + urlParams.toString();
@@ -136,15 +138,15 @@ export default {
           });
       }
     },
-    changePage: function (page) {
+    changePage(page) {
       this.loadCommnets(page);
       this.scrollToComment();
     },
-    scrollToComment: function () {
+    scrollToComment() {
       const navbarHeight = 60;
       $("html, body").animate({ scrollTop: $('#comments-total').offset().top - navbarHeight }, 500);
     },
-    reportComment: function (comment) {
+    reportComment(comment) {
       const commentId = comment.id;
 
       Swal.fire({
@@ -199,7 +201,7 @@ export default {
         }
       });
     },
-    performReportingComment: function (commentId, payload) {
+    performReportingComment(commentId, payload) {
       axios.post(this.reportCommentEndpoint.replace('_comment_id', commentId), payload)
         .then(response => {
           Swal.fire({
@@ -216,13 +218,13 @@ export default {
           });
         });
     },
-    share: function() {
+    share() {
       const url = window.location.origin + window.location.pathname + '?utm_medium=share_rank';
       if (navigator.share) {
         navigator.share({
           url: url
         }).catch(console.error);
-      }else{  
+      } else {
         this.$refs['popover'].$emit('open');
         navigator.clipboard.writeText(url);
         setTimeout(() => {
@@ -230,7 +232,7 @@ export default {
         }, 2000);
       }
     },
-    shareResult: function() {
+    shareResult() {
 
       //get parameter g
       const urlParams = new URLSearchParams(window.location.search);
@@ -243,14 +245,281 @@ export default {
           title: this.$t('My Voting Game Result'),
           text: this.$t('Check out my result on this voting game!'),
         }).catch(console.error);
-      }else{  
+      } else {
         this.$refs['share-popover'].$emit('open');
         navigator.clipboard.writeText(url);
         setTimeout(() => {
           this.$root.$emit('bv::hide::popover');
         }, 2000);
       }
-    }
+    },
+    drawChart(target, container, data) {
+      const ctx = target;
+      const championHistories = data.filter((item, index) => {
+        return index % 3 === 0;
+      })
+      const chartRankData = championHistories.map((item, index) => {
+        return {
+          x: item.date,
+          y: item.rank,
+          win_rate: item.win_rate
+        }
+      });
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: this.$t('rank.chart.rank'),
+            data: chartRankData,
+            yAxisID: 'y-axis-1',
+            pointStyle: 'circle',
+            borderColor: 'rgba(0, 0, 0, 0.5)', //black
+            backgroundColor: '#FFFFFF', //white
+          },
+        ]
+        },
+        options: {
+          responsive: true,
+          animation: {
+            onComplete: () => {
+              this.autoScrollChartToEnd(container);
+            }
+          },
+          layout: {
+            padding: 10
+          },
+          scales: {
+            x :{
+              type: 'time',
+              time: {
+                tooltipFormat: 'll',
+                minUnit: 'day',
+                parser: 'YYYY-MM-DD',
+                unit: 'day',
+              },
+              ticks: {
+                callback: (value, index, values) => {
+                  moment.locale(this.$i18n.locale);
+                  return moment(value).format('yyyy-MM-DD');
+                },
+                stepSize: 10,
+              }
+            },
+            'y-axis-1': {
+              type: 'linear',
+              display: true,
+              beginAtZero: true,
+              position: 'right',
+              reverse: true,
+              min: 1,
+              // max: this.maxRank,
+              ticks:{
+                stepSize: 1,
+                precision: 0,
+                callback: (value, index, values) => {
+                  return '#'+value;
+                },
+                // autoSkip: false,
+                // maxTicksLimit: 100,
+              },
+
+            },
+            // 'y-axis-2': {
+            //   max: 100,
+            //   min: 1,
+            //   type: 'linear',
+            //   display: false,
+            //   position: 'right',
+            //   beginAtZero: true,
+            //   reverse: false,
+            //   grid: {
+            //     drawOnChartArea: false, // only want the grid lines for one axis to show up
+            //   },
+            //   backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            //   ticks: {
+            //     callback: function (value, index, values) {
+            //       return Math.round(value) + '%';
+            //     },
+            //     stepSize: 1,
+            //     precision: 0.1
+            //   },
+            // },
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: this.getGlobalRankAxisDescription(),
+            },
+            legend: {
+              display: false,
+              position: 'chartArea',
+              labels: {
+                usePointStyle: true,
+                pointStyle: 'circle',
+                boxWidth: 10,
+                boxHeight: 10,
+                padding: 20,
+              },
+              onClick: ()=>{}
+            },
+            tooltip: {
+              callbacks: {
+                footer: (tooltipItems) => {
+                  const winRate = tooltipItems[0].dataset.data[tooltipItems[0].dataIndex].win_rate;
+                  return this.$t('rank.chart.win_rate') + ': ' + winRate + '%';
+                }
+              }
+            },
+          }
+        }
+      });
+    },
+    drawMyTimeline(target, container, data) {
+      const ctx = target;
+      const championHistories = data;
+      const chartData = championHistories.map((item, index) => {
+        return {
+          x: item.rounds,
+          y: item.diff,
+          start_at: item.start_at,
+          winner: item.winner_name,
+          loser: item.loser_name,
+          winner_id: item.winner,
+        }
+      });
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.map((item, index) => {
+            return this.$t('rank.chart.round', {round: item.x});
+          }),
+          datasets: [{
+            label: this.$t('rank.chart.thinking_time'),
+            data: chartData,
+            pointStyle: 'circle',
+            backgroundColor: chartData.map((item, index) => {
+              if(item.winner_id === this.gameStatistic.winner_id) {
+                return 'rgba(54, 162, 235, 0.5)'; //blue
+              } else {
+                return 'rgba(0, 0, 0, 0.5)'; //black
+              }
+            }),
+            borderColor: '#000000', //black
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: {
+            onComplete: () => {
+              this.autoScrollChartToEnd(container);
+            }
+          },
+          layout: {
+            padding: 10
+          },
+          scales: {
+            x : {
+              ticks: {
+                callback: (value, index, values) => {
+                  // For a category axis, the val is the index.
+                  return this.$t('rank.chart.round', {round: value + 1});
+                },
+              }
+            },
+            y : {
+              type: 'linear',
+              display: true,
+              beginAtZero: true,
+              position: 'right',
+              min: 0,
+              ticks:{
+                stepSize: 1,
+                precision: 0,
+                callback: (value, index, values) => {
+                  return value + 's';
+                },
+                // autoSkip: false,
+                // maxTicksLimit: 100,
+              },
+
+            },
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: this.$t('rank.chart.title.timeline'),
+            },
+            legend: {
+              display: false,
+              position: 'chartArea',
+              labels: {
+                usePointStyle: true,
+                pointStyle: 'rect',
+                boxWidth: 10,
+                boxHeight: 10,
+                padding: 20,
+              },
+              onClick: ()=>{}
+            },
+            tooltip: {
+              callbacks: {
+                label: (tooltipItems) => {
+                  return this.$t('rank.chart.thinking_time') + ': ' + tooltipItems.parsed.y + 's';
+                },
+                footer: (tooltipItems) => {
+                  // show the winner and loser
+                  const winner = tooltipItems[0].dataset.data[tooltipItems[0].dataIndex].winner;
+                  const loser = tooltipItems[0].dataset.data[tooltipItems[0].dataIndex].loser;
+                  return this.$t('rank.chart.winner') + ': ' + winner + '\n' + this.$t('rank.chart.loser') + ': ' + loser;
+                }
+              }
+            },
+          }
+        }
+      });
+    },
+    initChart() {
+      if (this.championHistories && this.championHistories['my']) {
+        this.drawChart('my-champion', 'my-champion-container', this.championHistories['my']['data']);
+      }
+      if (this.championHistories && this.championHistories['global']) {
+        this.drawChart('global-champion', 'global-champion-container', this.championHistories['global']['data']);
+      }
+      if (this.gameStatistic && this.gameStatistic['timeline']) {
+        this.drawMyTimeline('my-timeline', 'my-timeline-container', this.gameStatistic['timeline']);
+      }
+    },
+    getGlobalRankAxisDescription() {
+      if(this.gameStatistic){
+        return this.$t('rank.chart.title.rank_history');
+      }else{
+        return this.$t('rank.chart.title.rank_history');
+      }
+    },
+    autoScrollChartToEnd(container) {
+      if(!this.chartLoaded.includes(container)){
+        this.chartLoaded.push(container);
+        // scroll target to the end
+        const targetElement = document.getElementById(container);
+        if(!targetElement){
+          return;
+        }
+        // scroll right smooth
+        targetElement.scrollTo({
+          left: targetElement.scrollWidth,
+          behavior: 'smooth'
+        });  
+      }
+    },
   }
 }
 </script>
