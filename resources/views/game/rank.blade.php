@@ -75,7 +75,7 @@
 
                             <div class="row">
                                 @if(config('setting.show_rank_history'))
-                                <div v-show="showRankHistory" id="my-champion-container" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showMyTimeline}">
+                                <div v-show="showRankHistory" id="my-champion-container" class="col-12" :class="{'col-xl-6': showMyTimeline}" style="overflow-x: scroll;">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
                                         <canvas id="my-champion"></canvas>
                                     </div>
@@ -142,7 +142,7 @@
                                         @include('game.partial.global-element-container', ['rank' => $rank])
                                     </div>
                                     @if(config('setting.show_rank_history'))
-                                    <div id="global-champion-container" class="col-12 overflow-scroll hide-scrollbar">
+                                    <div id="global-champion-container" class="col-12 overflow-scroll">
                                         <div class="rank-chart-container d-flex align-content-center justify-content-center">
                                             <canvas id="global-champion"></canvas>
                                         </div>
