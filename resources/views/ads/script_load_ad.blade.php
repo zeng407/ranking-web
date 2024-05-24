@@ -11,7 +11,7 @@
                 (adsbygoogle = window.adsbygoogle || []).push({});
             } catch (e) {
                 @if(config('app.debug'))
-                    console.error(e.message);
+                    console.warn('{{ $id ??'' }} '+e.message);
                 @endif
                 if (e.message.includes(
                         `All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
@@ -26,6 +26,7 @@
             }
         }, intervalDelay);
 
+        @if($relocation ?? false)
         retry = 20;
         let relocation = setInterval(() => {
             try {
@@ -44,7 +45,7 @@
                 }
             }
         }, 100);
-
+        @endif
     }
 
     loadAd(10, 500);

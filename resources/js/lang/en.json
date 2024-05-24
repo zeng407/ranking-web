@@ -91,6 +91,16 @@
     "game.password": "Password",
     "game.invalid_password": "Invalid password",
 
+    "rank.no_rank": "No data",
+    "rank.chart.rank": "Rank",
+    "rank.chart.win_rate": "Winning Rate",
+    "rank.chart.thinking_time": "Thinking Time",
+    "rank.chart.winner": "Winner",
+    "rank.chart.loser": "Loser",
+    "rank.chart.round": "Round {round}",
+    "rank.chart.title.rank_history": "Rank History",
+    "rank.chart.title.timeline": "My Timeline",
+
     "total elements": "total materials : {count}",
     "report_comment_other_reason_required": "You need to write something!",
     "Max :number elements": "Max {number} elements",

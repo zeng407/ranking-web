@@ -7,7 +7,7 @@
         <div class="d-flex justify-content-center">
           <!-- loading -->
           <div class="d-flex w-100 position-absolute justify-content-center">
-            <i v-show="firstCarouselLoading" class="fas fa-spinner fa-spin fa-3x preview-carsousel-loading"></i>
+            <i v-show="firstCarouselLoading" class="fas fa-spinner fa-spin preview-carsousel-loading"></i>
             <img v-show="item.image_url && item.type === 'video' && index === 0 && firstCarouselLoading"
               :src="item.image_url" class="preview-carsousel-image" :alt="item.title" style="pointer-events:none">
           </div>

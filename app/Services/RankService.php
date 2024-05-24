@@ -3,14 +3,17 @@
 
 namespace App\Services;
 
-
+use App\Enums\RankReportTimeRange;
 use App\Enums\RankType;
+use App\Jobs\UpdateRankReportHistory;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\GameElement;
 use App\Models\Post;
 use App\Models\Rank;
 use App\Models\RankReport;
+use App\Models\RankReportHistory;
+use App\Services\Builders\RankReprortHistoryBuilder;
 use DB;
 
 class RankService
@@ -34,6 +37,27 @@ class RankService
             ->first();
 
         return $report?->rank;
+    }
+
+    public function getRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $limit = 10, $page = null)
+    {
+        $reports = $rankReport->rank_report_histories()
+            ->where('time_range', $timeRange)
+            ->orderByDesc('start_date')
+            ->paginate($limit, ['*'], 'page', $page);
+
+        return $reports;
+    }
+
+    public function getRankReportHistoryByElement(Post $post, Element $element, RankReportTimeRange $timeRange, $limit = 10, $page = null)
+    {
+        $reports = RankReportHistory::where('post_id', $post->id)
+            ->where('element_id', $element->id)
+            ->where('time_range', $timeRange)
+            ->orderByDesc('start_date')
+            ->paginate($limit, ['*'], 'page', $page);
+
+        return $reports;
     }
 
     public function createElementRank(Game $game, Element $element)
@@ -105,7 +129,7 @@ class RankService
         }
     }
 
-    public function createRankReport(Post $post)
+    public function createRankReports(Post $post)
     {
         \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
         $counter = 0;
@@ -150,11 +174,12 @@ class RankService
                 ]);
             });
 
-        $counter = 0;
         RankReport::where('post_id', $post->id)
             ->whereHas('element', function ($query) {
-                $query->whereNull('deleted_at');
-            })
+                $query->whereNotNull('deleted_at');
+            })->delete();
+        $counter = 0;
+        RankReport::where('post_id', $post->id)
             ->orderByDesc('win_rate')
             ->orderByDesc('final_win_rate')
             ->get()
@@ -164,5 +189,32 @@ class RankService
                     'rank' => $counter
                 ]);
             });
+    }
+
+    public function createRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $refresh = false)
+    {
+        $builder = new RankReprortHistoryBuilder;
+        return $builder->setRankReport($rankReport)
+            ->setRange($timeRange)
+            ->setRefresh($refresh)
+            ->build();
+    }
+
+    public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange, $startDate = null)
+    {
+        $query = RankReportHistory::where('post_id', $post->id)
+            ->where('time_range', $timeRange);
+        if($startDate) {
+            $$query->where('start_date', '>=', $startDate);
+        }
+
+        $dates = $query->select('start_date')
+            ->distinct()
+            ->get()
+            ->pluck('start_date');
+
+        foreach ($dates as $date) {
+            UpdateRankReportHistory::dispatch($post->id, $timeRange, $date);
+        }
     }
 }

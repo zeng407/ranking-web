@@ -4,11 +4,14 @@
 namespace App\Http\Controllers\Post;
 
 
+use App\Enums\RankReportTimeRange;
 use App\Helper\AccessTokenService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Rank\RankReportHistoryResource;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Post;
+use App\Models\RankReport;
 use App\Services\GameService;
 use App\Services\RankService;
 use App\Services\PostService;
@@ -34,7 +37,7 @@ class GameController extends Controller
         $post = $this->getPostOrFail($request);
         $element = $this->getElementForOG($post);
         $requiredPassword = $post->isPasswordRequired() && !AccessTokenService::verifyPostAccessToken($post);
-        if(!$element) {
+        if (!$element) {
             return redirect()->back()->with('error', __('No element found in the post.'));
         }
 
@@ -53,26 +56,30 @@ class GameController extends Controller
         // we first check if user has access to the post
         $embed = $request->session()->pull('rank-embed', false);
 
-        if($post->isPasswordRequired()){
-
-            
-            if($embed && $post->user_id == optional($request->user())->id){
+        if ($post->isPasswordRequired()) {
+            if ($embed && $post->user_id == optional($request->user())->id) {
                 // if user is the owner of the post and trying to embed the post
                 // we allow the user to access the post
-            }else if(AccessTokenService::verifyPostAccessToken($post) === false){
+            } else if (AccessTokenService::verifyPostAccessToken($post) === false) {
                 return redirect()->route('game.rank-access', ['post' => $post->serial]);
             }
         }
 
         $gameResult = $this->getGameResult($request);
         $reports = $this->rankService->getRankReports($post, 10);
-    
+        $myChampionHistories = $this->getChampionRankReportHistoryByGameResult($post, $gameResult, 365);
+        $globalChampionHistories = $this->getChampionRankReportHistory($reports, 365);
+        
         return view('game.rank', [
             'serial' => $post->serial,
             'post' => $post,
             'ogElement' => $this->getElementForOG($post),
             'reports' => $reports,
-            'gameResult' => $gameResult,
+            'gameResult' => $gameResult?->toResponse($request)->getData(),
+            'champion_histories' => [
+                'my' => $myChampionHistories,
+                'global' => $globalChampionHistories
+            ],
             'shared' => $request->query('s') ? true : false,
             'embed' => $embed
         ]);
@@ -125,9 +132,41 @@ class GameController extends Controller
         return $gameResult;
     }
 
+    protected function getChampionRankReportHistoryByGameResult(Post $post, $gameResult, $limit = 10, $page = null)
+    {
+        if($gameResult) {
+            $element = $gameResult->additional['winner'];
+        }else{
+            return null;
+        }
+
+        $championRankReportHistories = $this->rankService->getRankReportHistoryByElement(
+            $post,
+            $element,
+            RankReportTimeRange::ALL,
+            $limit,
+            $page);
+        return RankReportHistoryResource::collection($championRankReportHistories)
+            ->toResponse(request())
+            ->getData();
+
+    }
+
+    protected function getChampionRankReportHistory($gameResult, $limit = 10, $page = null)
+    {
+        if ($gameResult && isset($gameResult[0])) {
+            $championRankReportHistories = $this->rankService->getRankReportHistory($gameResult[0], RankReportTimeRange::ALL, $limit, $page);
+            return RankReportHistoryResource::collection($championRankReportHistories)
+                ->toResponse(request())
+                ->getData();
+        }
+
+        return null;
+    }
+
     protected function abortPrivatePost(Post $post, Request $request)
     {
-        if($post->isPrivate() && $post->user_id !== optional($request->user())->id){
+        if ($post->isPrivate() && $post->user_id !== optional($request->user())->id) {
             abort(403);
         }
     }

@@ -105,6 +105,14 @@
     "game.invalid_password": "密碼錯誤",
 
     "rank.no_rank": "尚未有資料",
+    "rank.chart.rank": "排名",
+    "rank.chart.win_rate": "勝率",
+    "rank.chart.thinking_time": "思考時間",
+    "rank.chart.winner": "獲勝",
+    "rank.chart.loser": "淘汰",
+    "rank.chart.round": "第{round}局",
+    "rank.chart.title.rank_history": "歷史排名",
+    "rank.chart.title.timeline": "我的時間線",
     "Are you sure you want to report this comment?": "要檢舉此留言嗎?",
 
     "OK": "確定",

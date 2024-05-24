@@ -368,6 +368,7 @@ export default {
         }).promise();
 
         $('#google-ad-container').animate({top: 200});
+        $('#google-ad2').animate({top: -160});
 
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500).promise();
         $.when(loseAnimate).then(() => {
@@ -439,6 +440,7 @@ export default {
           }, 1200);
         }).promise();
 
+        $('#google-ad-container').animate({top: 180});
         $('#google-ad2').animate({top: -200});
 
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();

@@ -236,18 +236,6 @@ export default {
       return window.scrollY < this.lastScrollPosition && window.scrollY > 625;
     },
     initGoogleAds() {
-      if (window.adsbygoogle) {
-        setTimeout(() => {
-          if (window.adsbygoogle) {
-            // if ($('#google-ad-1')) {
-            //   $('#google-ad-1').addClass('d-flex justify-content-center');
-            // }
-            // if ($('#home-ad-top')) {
-            //   $('#home-ad-top').addClass('d-flex justify-content-center');
-            // }
-          }
-        }, 1000);
-      }
       //handle event when google-ads is loaded
       window.addEventListener('ad-loaded', () => {
         if (window.adsbygoogle) {

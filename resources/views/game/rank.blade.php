@@ -16,6 +16,9 @@
         index-comment-endpoint="{{ route('api.public-post.comment.index', $post->serial) }}"
         create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"
         report-comment-endpoint="{{ route('api.public-post.comment.report', [$post->serial, '_comment_id']) }}"
+        :champion-histories="{{ json_encode($champion_histories) }}"
+        :max-rank="{{ $reports->total()}}"
+        :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
     >
         {{-- Main --}}
         <div class="container" v-cloak>
@@ -50,52 +53,48 @@
                             <span class="text-left w-25 rank-number">1</span>
                             <h2 class="text-center d-none d-md-block w-50 element-title">{{ $gameResult->winner->title }}</h2>
                             <div class="text-right ml-auto">
-                                {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}
+                                {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}<br>
                             </div>
                         </div>
                         {{-- Rank #1 --}}
                         <div class="card-body text-center rank-card">
                             <h2 class="text-center d-block d-md-none element-title">{{ $gameResult->winner->title }}</h2>
-                            @if($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube')
-                                <youtube-player 
-                                    width="100%" height="270" ref-id="{{ $gameResult->winner->id }}"
-                                    video-id="{{ $gameResult->winner->video_id }}"
-                                    :controls="true" 
-                                    :autoplay="false" 
-                                    :rel="0" origin="{{ request()->getSchemeAndHttpHost() }}">
-                                </youtube-player>
-                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'youtube_embed')
-                                {!! inject_youtube_embed($gameResult->winner->source_url, ['autoplay' => false]) !!}
-                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'twitch_video')
-                                <iframe
-                                    src="https://player.twitch.tv/?video={{$gameResult->winner->video_id}}&parent={{request()->getHost()}}"
-                                    height="270"
-                                    width="100%"
-                                    allowfullscreen>
-                                </iframe>
-                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'twitch_clip')
-                                <iframe src="https://clips.twitch.tv/embed?clip={{$gameResult->winner->video_id}}&parent={{request()->getHost()}}&autoplay=false"
-                                    height="270"
-                                    width="100%"
-                                    allowfullscreen>
-                                </iframe>
-                            @elseif($gameResult->winner->type === 'video' && $gameResult->winner->video_source === 'bilibili_video')
-                                <bilibili-video
-                                    width="100%" height="270"
-                                    :element="{{json_encode(['id' => $gameResult->winner->id, 'video_id' => $gameResult->winner->video_id, 'thumb_url' => $gameResult->winner->thumb_url])}}"
-                                    :autoplay="false" :muted="false" height="270" :preview="true">
-                                </bilibili-video>
-                            @elseif($gameResult->winner->type === 'video')
-                                <video width="100%" height="270" loop controls playsinline src="{{ $gameResult->winner->source_url }}"></video>
-                            @elseif($gameResult->winner->type === 'image')
-                                <viewer image="{{ $gameResult->winner->thumb_url }}" :options="viewerOptions">
-                                    <img class="cursor-pointer" src="{{ $gameResult->winner->thumb_url }}" height="270" class="w-100" alt="{{ $gameResult->winner->title }}">
-                                </viewer>
+                            @include('game.partial.my-champion-container', ['gameResult' => $gameResult])
+
+                            
+                            @if(config('setting.show_rank_history'))
+                            <div class="custom-control custom-switch text-right">
+                                <input type="checkbox" class="custom-control-input" id="switchRankHistory" v-model="showRankHistory">
+                                <label class="custom-control-label btn-link" for="switchRankHistory"><i class="fa-solid fa-chart-line"></i>&nbsp;@{{$t('rank.chart.title.rank_history')}}</label>
+                            </div>
                             @endif
+                            <div class="custom-control custom-switch text-right">
+                                <input type="checkbox" class="custom-control-input" id="switchTimeline" v-model="showMyTimeline">
+                                <label class="custom-control-label btn-link" for="switchTimeline"><i class="fa-solid fa-chart-line"></i>&nbsp;@{{$t('rank.chart.title.timeline')}}</label>
+                            </div>
+
+                            <div class="row">
+                                @if(config('setting.show_rank_history'))
+                                <div v-show="showRankHistory" id="my-champion-container" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showMyTimeline}">
+                                    <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
+                                        <canvas id="my-champion"></canvas>
+                                    </div>
+                                </div>
+                                @else
+                                <div class="offset-3"></div>
+                                @endif
+
+                                <div v-show="showMyTimeline" id="my-timeline-container" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showRankHistory}">
+                                    <div class="rank-chart-container d-flex align-content-center justify-content-center p-0" style="min-width: {{400 + $gameResult->rounds * 8}}px">
+                                        <canvas id="my-timeline"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {{-- Rank #2 ~ #10 --}}
                     @foreach ($gameResult->data as $index => $rank)
+                    
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
                             <span class="text-left w-25 rank-number">{{ (int)$index + 2 }}</span>
@@ -106,49 +105,14 @@
                         </div>
                         <div class="card-body text-center rank-card">
                             <h2 class="text-center d-block d-md-none element-title">{{ $rank->loser->title }}</h2>
-                            @if($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube')
-                                <youtube-player 
-                                    width="100%" height="270" ref-id="{{ $rank->loser->id }}"
-                                    video-id="{{ $rank->loser->video_id }}"
-                                    :controls="true"
-                                    :autoplay="false" 
-                                    :rel="0" 
-                                    origin="{{ request()->getSchemeAndHttpHost() }}">
-                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube_embed')
-                                {!! inject_youtube_embed($rank->loser->source_url, ['autoplay' => false]) !!}
-                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'bilibili_video')
-                                <bilibili-video
-                                    width="100%" height="270"
-                                    :element="{{json_encode(['id' => $rank->loser->id, 'video_id' => $rank->loser->video_id, 'thumb_url' => $rank->loser->thumb_url])}}"
-                                    :autoplay="false" :muted="false" height="270" :preview="true">
-                                </bilibili-video>
-                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'twitch_video')
-                                <iframe
-                                    src="https://player.twitch.tv/?video={{$rank->loser->video_id}}&parent={{request()->getHost()}}&autoplay=false"
-                                    height="270"
-                                    width="100%"
-                                    allowfullscreen>
-                                </iframe>
-                            @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'twitch_clip')
-                                <iframe src="https://clips.twitch.tv/embed?clip={{$rank->loser->video_id}}&parent={{request()->getHost()}}&autoplay=false"
-                                    height="270"
-                                    width="100%"
-                                    allowfullscreen>
-                                </iframe>
-                            @elseif($rank->loser->type === 'video')
-                                <video width="100%" height="270" loop controls playsinline src="{{$rank->loser->source_url}}"></video>    
-                            @elseif($rank->loser->type === 'image')
-                                <viewer image="{{$rank->loser->thumb_url}}" :options="viewerOptions">
-                                    <img class="cursor-pointer" src="{{$rank->loser->thumb_url}}" height="270" class="w-100" alt="{{$rank->loser->title}}">
-                                </viewer>
-                            @endif
+                            @include('game.partial.my-element-container', ['rank' => $rank])
                         </div>
                     </div>
 
                     @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 3)
                     <div class="row">
                         <div id="google-ad-1" class="col-12">
-                            @include('ads.rank_ad_1')
+                            @include('ads.rank_ad_1', ['id' => 'google-ad-1'])
                         </div>
                     </div>
                     @endif
@@ -171,51 +135,30 @@
                             </div>
                         </div>
                         <div class="card-body text-center rank-card">
-                            <h2 class="text-center d-block d-md-none element-title">{{ $rank->element->title }}</h2>
-                            @if($rank->element->type === 'video' && $rank->element->video_source === 'youtube')
-                                <youtube-player 
-                                    width="100%" height="270" ref-id="{{ $rank->element->id }}"
-                                    video-id="{{ $rank->element->video_id }}"
-                                    :controls="true"
-                                    :autoplay="false" 
-                                    :rel="0" 
-                                    origin="{{ request()->getSchemeAndHttpHost() }}">
-                                </youtube-player>
-                            @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'youtube_embed')
-                                {!! inject_youtube_embed($rank->element->source_url, ['autoplay' => false]) !!}
-                            @elseif($rank->element->type === 'video' && $rank->element->video_source === 'twitch_video')
-                                <iframe
-                                    src="https://player.twitch.tv/?video={{$rank->element->video_id}}&parent={{request()->getHost()}}&autoplay=false"
-                                    height="270"
-                                    width="100%"
-                                    allowfullscreen>
-                                </iframe>
-                            @elseif($rank->element->type === 'video' && $rank->element->video_source === 'twitch_clip')
-                                <iframe src="https://clips.twitch.tv/embed?clip={{$rank->element->video_id}}&parent={{request()->getHost()}}&autoplay=false"
-                                    height="270"
-                                    width="100%"
-                                    allowfullscreen>
-                                </iframe>
-                            @elseif ($rank->element->type === 'video' && $rank->element->video_source === 'bilibili_video')
-                                <bilibili-video
-                                    width="100%" height="270"
-                                    :element="{{json_encode(['id' => $rank->element->id, 'video_id' => $rank->element->video_id, 'thumb_url' => $rank->element->thumb_url])}}"
-                                    :autoplay="false" :muted="false" height="270" :preview="true">
-                                </bilibili-video>
-                            @elseif($rank->element->type === 'video')
-                                <video width="100%" height="270" loop controls playsinline src="{{$rank->element->source_url}}"></video>
-                            @elseif($rank->element->type === 'image')
-                                <viewer image="{{$rank->element->thumb_url}}" :options="viewerOptions">
-                                    <img class="cursor-pointer" src="{{$rank->element->thumb_url}}" height="270" class="w-100" alt="{{$rank->element->title}}">
-                                </viewer>
-                            @endif
+                            <div>
+                                <h2 class="text-center d-block d-md-none element-title">{{ $rank->element->title }}</h2>
+                                @if($rank->rank === 1)
+                                    <div class="col-12 align-content-center justify-content-center">
+                                        @include('game.partial.global-element-container', ['rank' => $rank])
+                                    </div>
+                                    @if(config('setting.show_rank_history'))
+                                    <div id="global-champion-container" class="col-12 overflow-scroll hide-scrollbar">
+                                        <div class="rank-chart-container d-flex align-content-center justify-content-center">
+                                            <canvas id="global-champion"></canvas>
+                                        </div>
+                                    </div>
+                                    @endif
+                                @else
+                                    @include('game.partial.global-element-container', ['rank' => $rank])
+                                @endif
+                            </div>
                         </div>
                     </div>    
 
                     @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 4)
                     <div class="row">
-                        <div id="google-ad-1" class="col-12">
-                            @include('ads.rank_ad_2')
+                        <div id="google-ad-2" class="col-12">
+                            @include('ads.rank_ad_2',['id' => 'google-ad-2'])
                         </div>
                     </div>
                     @endif

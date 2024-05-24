@@ -2,7 +2,9 @@
 
 namespace App\Jobs;
 
+use App\Enums\RankReportTimeRange;
 use App\Models\Post;
+use App\Models\RankReport;
 use App\Services\RankService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -36,7 +38,12 @@ class UpdateRankReport implements ShouldQueue, ShouldBeUnique
     public function handle(RankService $rankService)
     {
         logger('UpdateRankReport job fired');
-        $rankService->createRankReport($this->post);
+        $rankService->createRankReports($this->post);
+        // RankReport::with('post')->where('post_id', $this->post->id)->eachById(function ($report) use ($rankService) {
+        //     $rankService->createRankReportHistory($report, RankReportTimeRange::ALL);
+        //     $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
+        // });
+        
     }
 
 

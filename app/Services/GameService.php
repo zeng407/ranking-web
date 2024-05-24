@@ -86,13 +86,20 @@ class GameService
             ->get();
 
         $winner = $this->getWinner($game);
+        $winnerRank = $rankService->getRankPosition($game->post, $winner);
 
         $gameResult = GameResultResource::collection($rounds)
             ->additional([
                 'winner' => $winner,
-                'winner_rank' => $rankService->getRankPosition($game->post, $winner)
-            ])
-            ->toResponse($request)->getData();
+                'winner_rank' => $winnerRank,
+                'statistics' => [
+                    'timeline' => $this->getGameTimeline($game),
+                    'game_time' => $game->created_at->diffInSeconds($game->completed_at),
+                    'winner_id' => $winner->id,
+                    'winner_global_rank' => $winnerRank
+                ],
+                'rounds' => $game->element_count
+            ]);
 
         return $gameResult;
     }
@@ -195,5 +202,35 @@ class GameService
             'candidates' => $candidates
         ];
         return UserGameResult::create($data);
+    }
+
+    public function getGameTimeline(Game $game)
+    {
+        $rounds = $game->game_1v1_rounds()
+            ->orderBy('id')
+            ->get();
+        // push game to first
+        $rounds = collect([$game])->concat($rounds);
+        
+        // get diff in every 2 timestamps
+        $timeline = $rounds->map(function ($round, $key) use ($rounds, $game) {
+            if ($key === 0) {
+                return null;
+            }
+            return [
+                'diff' => $round->created_at->diffInSeconds($rounds[$key - 1]->created_at),
+                'winner' => $round->winner_id,
+                'winner_name' => $round->winner->title,
+                'loser' => $round->loser_id,
+                'loser_name' => $round->loser->title,
+                'current_round' => $round->current_round,
+                'of_round' => $round->of_round,
+                'start_at' => $rounds[$key - 1]->created_at->format('Y-m-d H:i:s'),
+                'end_at' => $round->created_at->format('Y-m-d H:i:s'),
+                'rounds' => $game->element_count - $round->remain_elements,
+            ];
+        });
+        $timeline->shift();
+        return $timeline;
     }
 }

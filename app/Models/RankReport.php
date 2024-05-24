@@ -38,7 +38,7 @@ class RankReport extends Model
 
     public function post()
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(Post::class)->withTrashed();
     }
 
     public function element()
@@ -46,5 +46,9 @@ class RankReport extends Model
         return $this->belongsTo(Element::class)->withTrashed();
     }
 
+    public function rank_report_histories()
+    {
+        return $this->hasMany(RankReportHistory::class);
+    }
 
 }
