@@ -84,7 +84,7 @@
                                 <div class="offset-3"></div>
                                 @endif
 
-                                <div v-show="showMyTimeline" id="my-timeline-container" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showRankHistory}">
+                                <div v-show="showMyTimeline" id="my-timeline-container" class="col-12" :class="{'col-xl-6': showRankHistory}" style="overflow-x: scroll">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0" style="min-width: {{400 + $gameResult->rounds * 8}}px">
                                         <canvas id="my-timeline"></canvas>
                                     </div>
@@ -142,7 +142,7 @@
                                         @include('game.partial.global-element-container', ['rank' => $rank])
                                     </div>
                                     @if(config('setting.show_rank_history'))
-                                    <div id="global-champion-container" class="col-12 overflow-scroll">
+                                    <div id="global-champion-container" class="col-12" style="overflow-x: scroll">
                                         <div class="rank-chart-container d-flex align-content-center justify-content-center">
                                             <canvas id="global-champion"></canvas>
                                         </div>
