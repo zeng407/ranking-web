@@ -130,7 +130,7 @@ class RankService
         }
     }
 
-    public function createRankReport(Post $post)
+    public function createRankReports(Post $post)
     {
         \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
         $counter = 0;
@@ -201,20 +201,15 @@ class RankService
             ->build();
     }
 
-    public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange)
+    public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange, $startDate = null)
     {
-        RankReportHistory::where('post_id', $post->id)
-            ->where('time_range', $timeRange)
-            ->where('rank', 0) // we just update the rank of the new created rank_report_history
-            ->whereHas('element', function ($query) {
-                $query->whereNotNull('deleted_at');
-            })
-            ->delete();
+        $query = RankReportHistory::where('post_id', $post->id)
+            ->where('time_range', $timeRange);
+        if($startDate) {
+            $$query->where('start_date', '>=', $startDate);
+        }
 
-        $dates = RankReportHistory::where('post_id', $post->id)
-            ->where('time_range', $timeRange)
-            ->where('rank', 0)
-            ->select('start_date')
+        $dates = $query->select('start_date')
             ->distinct()
             ->get()
             ->pluck('start_date');

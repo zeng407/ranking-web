@@ -56,9 +56,9 @@ class RankReprortHistoryBuilder
 
         $start = $this->getLastStartDate(RankReportTimeRange::ALL);
 
-        // 錯誤容忍度，如果有遺漏的資料，最多補 3 天
+        // 錯誤容忍度，如果有遺漏的資料，最多回補 1 天
         // fail tolerance, if there are missing data, at most fill in 3 days
-        $start = carbon($start)->subDay(3);
+        // $start = carbon($start)->subDay(1);
         
         $gameRoundRecords = $this->getGameRoundRecords();
         $lastRecord = $gameRoundRecords->last();

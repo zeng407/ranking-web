@@ -437,11 +437,12 @@ export default {
               beginAtZero: true,
               position: 'right',
               min: 0,
+              max: 3600,
               ticks:{
                 stepSize: 1,
                 precision: 0,
                 callback: (value, index, values) => {
-                  return value + 's';
+                  return this.secondsToHms(value);
                 },
                 // autoSkip: false,
                 // maxTicksLimit: 100,
@@ -473,7 +474,7 @@ export default {
             tooltip: {
               callbacks: {
                 label: (tooltipItems) => {
-                  return this.$t('rank.chart.thinking_time') + ': ' + tooltipItems.parsed.y + 's';
+                  return this.$t('rank.chart.thinking_time') + ': ' + this.secondsToHms(tooltipItems.parsed.y);
                 },
                 footer: (tooltipItems) => {
                   // show the winner and loser
@@ -518,6 +519,22 @@ export default {
           left: targetElement.scrollWidth,
           behavior: 'smooth'
         });  
+      }
+    },
+    secondsToHms(value) {
+      // seconds to H:i:s
+      const hours = Math.floor(value / 3600);
+      const minutes = Math.floor((value % 3600) / 60);
+      const seconds = value % 60;
+      // don't show hours if it's 0
+      if(hours > 0){
+        return hours + 'h' + minutes + 'm' + seconds + 's';
+      }else if(minutes > 0){
+        return minutes + 'm' + seconds + 's';
+      }else if(seconds > 0){
+        return seconds + 's';
+      }else{
+        return '0s';
       }
     },
   }
