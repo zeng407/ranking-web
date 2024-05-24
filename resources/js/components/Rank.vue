@@ -283,7 +283,7 @@ export default {
           responsive: true,
           animation: {
             onComplete: () => {
-              this.autoScrollChartToEnd(container);
+              // this.autoScrollChartToEnd(container);
             }
           },
           scales: {
@@ -424,9 +424,10 @@ export default {
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           animation: {
             onComplete: () => {
-              this.autoScrollChartToEnd(container);
+              // this.autoScrollChartToEnd(container);
             }
           },
           layout: {
@@ -439,7 +440,8 @@ export default {
                   // For a category axis, the val is the index.
                   return this.$t('rank.chart.round', {round: value + 1});
                 },
-              }
+                
+              },
             },
             y : {
               type: 'linear',

@@ -75,7 +75,7 @@
 
                             <div class="row">
                                 @if(config('setting.show_rank_history'))
-                                <div v-show="showRankHistory" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showMyTimeline}">
+                                <div v-show="showRankHistory" id="my-champion-container" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showMyTimeline}">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
                                         <canvas id="my-champion"></canvas>
                                     </div>
@@ -84,8 +84,8 @@
                                 <div class="offset-3"></div>
                                 @endif
 
-                                <div v-show="showMyTimeline" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showRankHistory}">
-                                    <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
+                                <div v-show="showMyTimeline" id="my-timeline-container" class="overflow-scroll hide-scrollbar col-12" :class="{'col-xl-6': showRankHistory}">
+                                    <div class="rank-chart-container d-flex align-content-center justify-content-center p-0" style="min-width: {{400 + $gameResult->rounds * 8}}px">
                                         <canvas id="my-timeline"></canvas>
                                     </div>
                                 </div>

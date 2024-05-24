@@ -97,7 +97,8 @@ class GameService
                     'game_time' => $game->created_at->diffInSeconds($game->completed_at),
                     'winner_id' => $winner->id,
                     'winner_global_rank' => $winnerRank
-                ]
+                ],
+                'rounds' => $game->element_count
             ]);
 
         return $gameResult;
