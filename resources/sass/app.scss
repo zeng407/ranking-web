@@ -717,3 +717,11 @@
 ::-webkit-scrollbar-button {
     display: none;
 }
+
+.list-enter-active, .list-leave-active {
+    transition: all .5s ease;
+  }
+.list-enter, .list-leave-to {
+    opacity: 0;
+    transform: translateY(-30px);
+}
