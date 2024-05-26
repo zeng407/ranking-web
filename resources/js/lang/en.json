@@ -100,6 +100,10 @@
     "rank.chart.round": "Round {round}",
     "rank.chart.title.rank_history": "Rank History",
     "rank.chart.title.timeline": "My Timeline",
+    "rank.chart.median_time": "Median of thinking time",
+    "rank.chart.total_time": "Total thinking time",
+    "rank.chart.average_time": "Average thinking time",
+
 
     "total elements": "total materials : {count}",
     "report_comment_other_reason_required": "You need to write something!",

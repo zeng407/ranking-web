@@ -337,19 +337,11 @@
     white-space: nowrap;
 }
 
-.overflow-scroll {
-    overflow: scroll;
-}
-
 .w-100 {
     width: 100%;
 }
 .w-auto {
     width: auto;
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-    display: none;
 }
 
 .btn-shine {
@@ -635,6 +627,7 @@
 }
 
 .rank-chart-container {
+    min-width: 400px;
     width: 100%;
     height: 400px;
     
@@ -658,4 +651,77 @@
     @media (max-width: 576px) {
         height: 270px;
     }
+}
+
+.chart-tooltip-bg {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    color: white;
+    opacity: 1;
+    pointer-events: none;
+    transition: all .1s ease;
+    padding: 10px;
+    table {
+        margin: 0;
+    }
+}
+
+.overflow-scroll {
+    overflow: scroll;
+}
+.overflow-x-scroll {
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+}
+
+/* For Webkit browsers like Chrome and Safari */
+::-webkit-scrollbar {
+    @media (min-width: 576px) {
+        scrollbar-width: thin;
+    }
+}
+.schrollbar-thin::-webkit-scrollbar {
+    scrollbar-width: thin;
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar-md::-webkit-scrollbar {
+    @media (max-width: 768px) {
+        display: none !important;
+    }
+}
+.hide-scrollbar-sm::-webkit-scrollbar {
+    @media (max-width: 576px) {
+        display: none !important;
+    }
+}
+
+::-webkit-scrollbar-track {
+    background: #ffffff;
+    -webkit-box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, .3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* For Webkit browsers like Chrome and Safari */
+::-webkit-scrollbar-button {
+    display: none;
+}
+
+.list-enter-active, .list-leave-active {
+    transition: all .5s ease;
+  }
+.list-enter, .list-leave-to {
+    opacity: 0;
+    transform: translateY(-30px);
 }

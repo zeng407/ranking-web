@@ -43,7 +43,7 @@ export default {
       anonymous: false,
       chartLoaded: [],
       showMyTimeline: true,
-      showRankHistory: true,
+      showRankHistory: false,
     }
   },
   props: {
@@ -281,11 +281,6 @@ export default {
         },
         options: {
           responsive: true,
-          animation: {
-            onComplete: () => {
-              // this.autoScrollChartToEnd(container);
-            }
-          },
           scales: {
             x :{
               type: 'time',
@@ -317,39 +312,15 @@ export default {
               position: 'right',
               reverse: true,
               min: 1,
-              // max: this.maxRank,
               ticks:{
                 stepSize: 1,
                 precision: 0,
                 callback: (value, index, values) => {
                   return '#'+value;
                 },
-                
-                // autoSkip: false,
-                // maxTicksLimit: 100,
               },
 
             },
-            // 'y-axis-2': {
-            //   max: 100,
-            //   min: 1,
-            //   type: 'linear',
-            //   display: false,
-            //   position: 'right',
-            //   beginAtZero: true,
-            //   reverse: false,
-            //   grid: {
-            //     drawOnChartArea: false, // only want the grid lines for one axis to show up
-            //   },
-            //   backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            //   ticks: {
-            //     callback: function (value, index, values) {
-            //       return Math.round(value) + '%';
-            //     },
-            //     stepSize: 1,
-            //     precision: 0.1
-            //   },
-            // },
           },
           interaction: {
             intersect: false,
@@ -399,6 +370,8 @@ export default {
           winner: item.winner_name,
           loser: item.loser_name,
           winner_id: item.winner,
+          current_round: item.current_round,
+          of_round: item.of_round
         }
       });
 
@@ -406,7 +379,29 @@ export default {
         type: 'bar',
         data: {
           labels: chartData.map((item, index) => {
-            return this.$t('rank.chart.round', {round: item.x});
+            let text = '';
+            console.log(item);
+            let roundKeys = {
+              1: 'game_round_final',
+              2: 'game_round_semifinal',
+              4: 'game_round_quarterfinal',
+              8: 'game_round_of',
+              16: 'game_round_of',
+              32: 'game_round_of',
+              64: 'game_round_of',
+              128: 'game_round_of',
+              256: 'game_round_of',
+              512: 'game_round_of',
+              1024: 'game_round_of'
+            };
+            let round = Object.keys(roundKeys).find(r => item.of_round <= r);
+            if (round) {
+              text = this.$t(roundKeys[round], { round: round });
+            } else {
+              text = this.$t('game_round_of', { round: item.of_round });
+            }
+
+            return this.$t('rank.chart.round', {round: item.x}) + `  (${text} ${item.current_round}/${item.of_round})`;
           }),
           datasets: [{
             label: this.$t('rank.chart.thinking_time'),
@@ -425,11 +420,6 @@ export default {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: {
-            onComplete: () => {
-              // this.autoScrollChartToEnd(container);
-            }
-          },
           layout: {
             padding: 10
           },
@@ -444,7 +434,7 @@ export default {
               },
             },
             y : {
-              type: 'linear',
+              type: 'logarithmic',
               display: true,
               beginAtZero: true,
               position: 'right',
@@ -473,7 +463,7 @@ export default {
           },
           plugins: {
             title: {
-              display: true,
+              display: false,
               text: this.$t('rank.chart.title.timeline'),
             },
             legend: {
@@ -489,6 +479,11 @@ export default {
               onClick: ()=>{}
             },
             tooltip: {
+              enabled: false,
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+              },
               callbacks: {
                 label: (tooltipItems) => {
                   return this.$t('rank.chart.thinking_time') + ': ' + this.secondsToHms(tooltipItems.parsed.y);
@@ -499,6 +494,136 @@ export default {
                   const loser = tooltipItems[0].dataset.data[tooltipItems[0].dataIndex].loser;
                   return this.$t('rank.chart.winner') + ': ' + winner + '\n' + this.$t('rank.chart.loser') + ': ' + loser;
                 }
+              },
+              external: (context) => {
+                const getOrCreateTooltip = (chart) => {
+                  
+                  // let tooltipEl = chart.canvas.parentNode.querySelector('div');
+                  let tooltipEl = document.getElementById('chartjs-tooltip');
+                  tooltipEl.style.display = 'block';
+                  return tooltipEl;
+                };
+
+                const externalTooltipHandler = (context) => {
+                  console.log(context);
+                  // Tooltip Element
+                  const {chart, tooltip} = context;
+                  const tooltipEl = getOrCreateTooltip(chart);
+
+                  
+
+                  // Set Text
+                  if (tooltip.body) {
+                    const titleLines = tooltip.title || [];
+                    const bodyLines = tooltip.body.map(b => b.lines);
+
+                    const tableHead = document.createElement('thead');
+
+                    titleLines.forEach(title => {
+                      const tr = document.createElement('tr');
+                      tr.style.borderWidth = 0;
+
+                      const th = document.createElement('th');
+                      th.style.borderWidth = 0;
+                      const text = document.createTextNode(title);
+
+                      th.appendChild(text);
+                      tr.appendChild(th);
+                      tableHead.appendChild(tr);
+                    });
+
+                    const tableBody = document.createElement('tbody');
+                    bodyLines.forEach((body, i) => {
+                      const colors = tooltip.labelColors[i];
+
+                      const span = document.createElement('span');
+                      span.style.background = colors.backgroundColor;
+                      span.style.borderColor = '#fff';
+                      span.style.borderStyle = 'solid';
+                      span.style.borderWidth = '1px';
+                      span.style.marginRight = '10px';
+                      span.style.height = '10px';
+                      span.style.width = '10px';
+                      span.style.display = 'inline-block';
+
+                      const tr = document.createElement('tr');
+                      tr.style.backgroundColor = 'inherit';
+                      tr.style.borderWidth = 0;
+
+                      const td = document.createElement('td');
+                      td.style.borderWidth = 0;
+
+                      const text = document.createTextNode(body);
+
+                      td.appendChild(span);
+                      td.appendChild(text);
+                      tr.appendChild(td);
+                      tableBody.appendChild(tr);
+                    });
+
+                    // merge footer
+                    const footerLines = tooltip.footer || [];
+                    const tableFoot = document.createElement('tfoot');
+                    
+                    footerLines.forEach(line => {
+                      const tr = document.createElement('tr');
+                      tr.style.borderWidth = 0;
+
+                      const th = document.createElement('th');
+                      th.style.borderWidth = 0;
+
+                      if(line.startsWith(this.$t('rank.chart.winner'))){
+                        // replace the first apperance
+                        line = line.replace(this.$t('rank.chart.winner')+':', '');
+                        // put a icon instead of text
+                        const icon = document.createElement('i');
+                        icon.classList.add('fa-solid', 'fa-thumbs-up');
+                        icon.style.marginRight = '5px';
+                        icon.style.width = '10px';
+                        th.appendChild(icon);
+                      }
+                      
+                      if(line.includes(this.$t('rank.chart.loser'))){
+                        line = line.replace(this.$t('rank.chart.loser')+':', '');
+                        // put a icon instead of text
+                        const icon = document.createElement('i');
+                        icon.classList.add('fa-solid', 'fa-xmark');
+                        icon.style.marginRight = '5px';
+                        icon.style.width = '10px';
+                        th.appendChild(icon);
+                      }
+
+                      let text = document.createTextNode(line);
+
+                      th.appendChild(text);
+                      tr.appendChild(th);
+                      tableFoot.appendChild(tr);
+                    });
+
+                    const tableRoot = tooltipEl.querySelector('table');
+
+                    // Remove old children
+                    while (tableRoot.firstChild) {
+                      tableRoot.firstChild.remove();
+                    }
+
+                    // Add new children
+                    tableRoot.appendChild(tableHead);
+                    tableRoot.appendChild(tableBody);
+                    tableRoot.appendChild(tableFoot);
+                  }
+
+                  const {offsetLeft: positionX, offsetTop: positionY} = chart.canvas;
+
+                  // Display, position, and set styles for font
+                  tooltipEl.style.opacity = 1;
+                  // tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+                  // tooltipEl.style.top = positionY + tooltip.caretY + 'px';
+                  tooltipEl.style.font = tooltip.options.bodyFont.string;
+                  // tooltipEl.style.padding = tooltip.options.padding + 'px ' + tooltip.options.padding + 'px';
+                };
+
+                externalTooltipHandler(context);
               }
             },
           }
@@ -523,21 +648,6 @@ export default {
         return this.$t('rank.chart.title.rank_history');
       }
     },
-    autoScrollChartToEnd(container) {
-      if(!this.chartLoaded.includes(container)){
-        this.chartLoaded.push(container);
-        // scroll target to the end
-        const targetElement = document.getElementById(container);
-        if(!targetElement){
-          return;
-        }
-        // scroll right smooth
-        targetElement.scrollTo({
-          left: targetElement.scrollWidth,
-          behavior: 'smooth'
-        });  
-      }
-    },
     secondsToHms(value) {
       // seconds to H:i:s
       const hours = Math.floor(value / 3600);
@@ -553,6 +663,34 @@ export default {
       }else{
         return '0s';
       }
+    },
+    computeAverageTime() {
+      if(this.gameStatistic){
+        const times = this.gameStatistic['timeline'].map((item, index) => {
+          return item.diff;
+        });
+        const average = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+        return this.secondsToHms(average);
+      }
+      return '0s';
+    },
+    computeMedianTime() {
+      if(this.gameStatistic){
+        const times = this.gameStatistic['timeline'].map((item, index) => {
+          return item.diff;
+        });
+        const median = this.median(times);
+        return this.secondsToHms(median);
+      }
+      return '0s';
+    },
+    median(values) {
+      values.sort((a, b) => a - b);
+      const half = Math.floor(values.length / 2);
+      if (values.length % 2) {
+        return values[half];
+      }
+      return (values[half - 1] + values[half]) / 2.0;
     },
   }
 }

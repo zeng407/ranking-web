@@ -75,7 +75,7 @@
 
                             <div class="row">
                                 @if(config('setting.show_rank_history'))
-                                <div v-show="showRankHistory" id="my-champion-container" class="col-12" :class="{'col-xl-6': showMyTimeline}" style="overflow-x: scroll;">
+                                <div v-show="showRankHistory" id="my-champion-container overflow-x-scroll" class="col-12" :class="{'col-xl-6': showMyTimeline}">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
                                         <canvas id="my-champion"></canvas>
                                     </div>
@@ -84,9 +84,34 @@
                                 <div class="offset-3"></div>
                                 @endif
 
-                                <div v-show="showMyTimeline" id="my-timeline-container" class="col-12" :class="{'col-xl-6': showRankHistory}" style="overflow-x: scroll">
+                                <div v-show="showMyTimeline" id="my-timeline-container" class="col-12 hide-scrollbar-md overflow-x-scroll" :class="{'col-xl-6': showRankHistory}">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0" style="min-width: {{400 + $gameResult->rounds * 8}}px">
                                         <canvas id="my-timeline"></canvas>
+                                    </div>
+                                </div>
+                                <div v-show="showMyTimeline" class="w-100">
+                                    <div id="chartjs-tooltip" style="padding-left:15px; padding-top:15px; padding-right:15px; display:none">
+                                        <div class="chart-tooltip-bg">
+                                            <table class="text-left">
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div style="padding-left:15px; padding-top:15px; padding-right:15px">
+                                        <div class="chart-tooltip-bg">
+                                            <table class="text-left">
+                                                <thead>
+                                                    <tr style="border-width: 0px;">
+                                                        <th style="border-width: 0px;">@{{$t('rank.chart.total_time')}}:&nbsp@{{secondsToHms(gameStatistic.game_time)}}</th>
+                                                    </tr>
+                                                    <tr style="border-width: 0px;">
+                                                        <th style="border-width: 0px;">@{{$t('rank.chart.median_time')}}:&nbsp;@{{computeMedianTime()}}</th>
+                                                    </tr>
+                                                    <tr style="border-width: 0px;">
+                                                        <th style="border-width: 0px;">@{{$t('rank.chart.average_time')}}:&nbsp;@{{computeAverageTime()}}</th>
+                                                    </tr>
+                                                </thead>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -153,7 +178,7 @@
                                 @endif
                             </div>
                         </div>
-                    </div>    
+                    </div>
 
                     @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 4)
                     <div class="row">
