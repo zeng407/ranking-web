@@ -21,9 +21,7 @@
                   @click="deleteFile"><i class="fas fa-times"></i></button>
                 <b-popover ref="delete-hint" :target="'delete-button' + elementId">{{ $t('Please delete first, then upload the URL')}}</b-popover>
                 <img v-if="is_image" class="w-100" :src="preview_image_url">
-                <video v-else class="w-100" controls>
-                  <source :src="preview_image_url" type="video">
-                </video>
+                <video v-else class="w-50" controls :src="preview_image_url"></video>
               </div>
             </div>
             <div class="row">
@@ -123,7 +121,7 @@ export default {
       };
 
       //remove null values
-      Object.keys(data).forEach(key => data[key] == null && delete data[key]);
+      Object.keys(data).forEach(key => (data[key] == null || data[key] == "") && delete data[key]);
       axios.put(route, data)
         .then(response => {
           $(`#editElementModal${this.elementId}`).modal('hide');
