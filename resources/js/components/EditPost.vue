@@ -347,7 +347,7 @@
               <!-- display by card -->
               <template v-for="(element, index) in elements.data">
                 <!-- show video card -->
-                <div class="col-lg-4 col-md-6" v-if="isVideoSource(element)">
+                <div class="col-lg-4 col-md-6" v-if="isVideoSource(element)" :key="element.id + '_' + index+'_'+element.source_url">
                   <!-- youtube source -->
                   <div class="card mb-3" v-if="isYoutubeSource(element)">
                     <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
@@ -546,7 +546,7 @@
                   <!-- video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
-                    <video width="100%" height="270" loop controls playsinline :src="element.source_url"></video>
+                    <video width="100%" height="270" loop controls playsinline :src="element.source_url" :poster="element.thumb_url"></video>
                     <!-- editor -->
                     <div class="card-body">
                       <input class="form-control-plaintext bg-light cursor-pointer mb-2 p-2" type="text"
@@ -576,7 +576,7 @@
                 </div>
 
                 <!-- image -->
-                <div class="col-lg-4 col-md-6" v-if="element.type === 'image'">
+                <div class="col-lg-4 col-md-6" v-if="element.type === 'image'" :key="element.id + '_' + index+'_'+element.source_url">
                   <div class="card mb-3">
                     <img @error="onImageError(element, $event)" :src="element.thumb_url" class="card-img-top" :alt="element.title"
                       style="max-height: 300px; object-fit: contain;"
@@ -670,7 +670,7 @@
 
                         <!-- video source -->
                         <template v-else>
-                          <video width="200px" height="100px" loop controls playsinline :src="element.source_url"></video>
+                          <video width="200px" height="100px" loop controls playsinline :src="element.source_url" :poster="element.thumb_url"></video>
                         </template>
                       </template>
                       <template v-else>
@@ -977,7 +977,6 @@ export default {
         },
         tags: this.tags
       };
-      console.log(data);
 
       axios.put(this.updatePostEndpoint, data)
         .then(res => {
@@ -1414,6 +1413,8 @@ export default {
       let filename = file.name;
       this.$set(this.uploadingFiles, filename, -1);
     },
+
+    /** Time **/
     toTimeFormat: function (seconds) {
       if (seconds === null || seconds === '') {
         return null;
@@ -1432,9 +1433,7 @@ export default {
         hours: timeGroup[1],
       }).asSeconds();
     },
-    handleElementPageChange: function (page) {
-      this.loadElements(page);
-    },
+  
 
     /** Player **/
     getYoutubePlayer(element) {
@@ -1500,6 +1499,9 @@ export default {
     playButtonOnHoverOut() {
       // console.log('playButtonOnHoverOut');
       this.showPlayPopover = false;
+    },
+    handleElementPageChange: function (page) {
+      this.loadElements(page);
     },
     share() {
       let url = this.playGameRoute;

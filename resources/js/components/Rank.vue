@@ -72,7 +72,7 @@ export default {
       required: true
     },
     gameStatistic: {
-      type: Object,
+      type: Object|null,
       required: true
     }
   },
