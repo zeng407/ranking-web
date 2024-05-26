@@ -20,7 +20,7 @@
             height="270" width="100%" allowfullscreen>
         </iframe>
     @elseif($rank->loser->type === 'video')
-        <video width="100%" height="270" loop controls playsinline src="{{ $rank->loser->source_url }}"></video>
+        <video width="100%" height="270" loop controls playsinline src="{{ $rank->loser->source_url }}" poster="{{ $rank->loser->thumb_url }}"></video>
     @elseif($rank->loser->type === 'image')
         <viewer image="{{ $rank->loser->thumb_url }}" :options="viewerOptions">
             <img class="w-auto mw-100 cursor-pointer" src="{{ $rank->loser->thumb_url }}" height="270" class="w-auto mw-100"

@@ -21,7 +21,7 @@
         :autoplay="false" :muted="false" height="270" :preview="true">
     </bilibili-video>
 @elseif($rank->element->type === 'video')
-    <video width="100%" height="270" loop controls playsinline src="{{ $rank->element->source_url }}"></video>
+    <video width="100%" height="270" loop controls playsinline src="{{ $rank->element->source_url }}" poster="{{ $rank->element->thumb_url }}"></video>
 @elseif($rank->element->type === 'image')
     <viewer image="{{ $rank->element->thumb_url }}" :options="viewerOptions">
         <img class="w-auto mw-100 cursor-pointer" src="{{ $rank->element->thumb_url }}" height="270"

@@ -71,7 +71,7 @@
               {{-- placeholder div --}}
               <div style="height: 250px"></div>
             </div>
-            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll">
+            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll hide-scrollbar">
               <div class="row flex-nowrap">
                 <div class="col-auto mx-2 position-relative" v-for="championResult in champions" v-cloak>
                   <div class="row">
