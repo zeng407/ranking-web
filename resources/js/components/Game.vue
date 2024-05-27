@@ -74,6 +74,9 @@ export default {
         },
         rotatable: true,
       },
+      animationShowLeftPlayer: true,
+      animationShowRightPlayer: true,
+      animationShowRoundSession: true,
     }
   },
   computed: {
@@ -245,17 +248,7 @@ export default {
             this.errorImages = [];
             this.isDataLoading = false;
             setTimeout(() => {
-              $('#left-player').show();
-              $('#right-player').show();
-              $('#rounds-session').show();
-              $('#left-player').css('opacity', '1');
-              $('#right-player').css('opacity', '1');
-              $('#rounds-session').css('opacity', '1');
-
-              if(this.isMobileScreen){
-                $('#google-ad').css('opacity', '1');
-                $('#google-ad2').css('opacity', '1');
-              }
+              this.showAllPlayers();
               
               this.doPlay(this.le, this.isLeftPlaying, 'left');
               this.doPlay(this.re, this.isRightPlaying, 'right');
@@ -377,7 +370,6 @@ export default {
       } else {
         let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
           $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
-            // $('#left-player').hide();
             this.leftReady = true;
           });
         }).promise();
@@ -536,10 +528,10 @@ export default {
           let interval = setInterval(() => {
             // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
             if(this.leftReady && this.rightReady){
-              this.isDataLoading = true;
               
               if(this.game.current_round == 1 && this.currentRemainElement == 2){
                 // final round
+                this.isDataLoading = true;
                 this.finishingGame = true;
               }
 
@@ -548,13 +540,23 @@ export default {
               }
               
               clearInterval(interval);
-              $('#left-player').css('opacity', '0');
-              $('#right-player').css('opacity', '0');
               if(this.isMobileScreen){
-                $('#google-ad').css('opacity', '0');
-                $('#google-ad2').css('opacity', '0');
+                Promise.all([
+                  $('#left-player').animate({left: 300, opacity:0}, 150).promise(),
+                  $('#right-player').animate({left: 300, opacity:0}, 150).promise(),
+                  $('#google-ad').animate({top: 100, opacity:0}, 150).promise(),
+                  $('#google-ad2').animate({top: 100, opacity:0}, 150).promise()
+                ]).then(() => {
+                  this.animationShowLeftPlayer = false;
+                  this.animationShowRightPlayer = false;
+                  this.animationShowRoundSession = false;
+                  this.isDataLoading = true;
+                  this.handleSendVote(res);
+                });
+              }else{
+                this.isDataLoading = true;
+                this.handleSendVote(res);  
               }
-              this.handleSendVote(res);
             }
           }, 10);
         })
@@ -581,12 +583,7 @@ export default {
               this.resetPlayingStatus();
               clearInterval(interval);
               setTimeout(() => {
-                $('#left-player').show();
-                $('#right-player').show();
-                $('#rounds-session').show();
-                $('#left-player').css('opacity', '1');
-                $('#right-player').css('opacity', '1');
-                $('#rounds-session').css('opacity', '1');
+                this.showAllPlayers();
                 this.isDataLoading = false;
                 this.isVoting = false;
               }, 300);
@@ -596,6 +593,21 @@ export default {
         }).finally(() => {
           
         });
+    },
+    showAllPlayers(){
+      this.animationShowLeftPlayer = true;
+      this.animationShowRightPlayer = true;
+      this.animationShowRoundSession = true;
+      $('#left-player').show();
+      $('#right-player').show();
+      $('#rounds-session').show();
+      $('#left-player').css('opacity', '1');
+      $('#right-player').css('opacity', '1');
+      $('#rounds-session').css('opacity', '1');  
+      if(this.isMobileScreen){
+        $('#google-ad').css('opacity', '1');
+        $('#google-ad2').css('opacity', '1');
+      }
     },
     handleSendVote(res){
       this.status = res.data.status;

@@ -725,3 +725,18 @@
     opacity: 0;
     transform: translateY(-30px);
 }
+
+.slide-in-left-enter-active {
+    animation: slide-in-left 0.2s ease;
+}
+.slide-in-left-leave-active {
+    animation: slide-in-left 0.2s ease reverse;
+}
+@keyframes slide-in-left {
+0% {
+    transform: translateX(-100%);
+}
+100% {
+    transform: translateX(0);
+}
+}
