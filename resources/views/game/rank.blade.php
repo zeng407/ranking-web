@@ -11,7 +11,8 @@
 @endsection
 
 @section('content')
-    <Rank inline-template 
+    <Rank inline-template
+        post-serial="{{ $post->serial }}"
         comment-max-length="{{ config('setting.comment_max_length') }}"
         index-comment-endpoint="{{ route('api.public-post.comment.index', $post->serial) }}"
         create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"
@@ -19,6 +20,7 @@
         :champion-histories="{{ json_encode($champion_histories) }}"
         :max-rank="{{ $reports->total()}}"
         :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
+        index-rank-endpoint="{{ route('api.rank.index') }}"
     >
         {{-- Main --}}
         <div class="container" v-cloak>
@@ -36,7 +38,7 @@
                 </div>
             </div>
             <hr>
-            
+
             <div class="d-flex position-relative">
                 <h1 class="break-all post-title">{{ $post->title }} - {{__('Ranking')}}</h1>
                 @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
@@ -61,28 +63,26 @@
                             <h2 class="text-center d-block d-md-none element-title">{{ $gameResult->winner->title }}</h2>
                             @include('game.partial.my-champion-container', ['gameResult' => $gameResult])
 
-                            
-                            @if(config('setting.show_rank_history'))
+
                             <div class="custom-control custom-switch text-right">
                                 <input type="checkbox" class="custom-control-input" id="switchRankHistory" v-model="showRankHistory">
                                 <label class="custom-control-label btn-link" for="switchRankHistory"><i class="fa-solid fa-chart-line"></i>&nbsp;@{{$t('rank.chart.title.rank_history')}}</label>
                             </div>
-                            @endif
                             <div class="custom-control custom-switch text-right">
                                 <input type="checkbox" class="custom-control-input" id="switchTimeline" v-model="showMyTimeline">
                                 <label class="custom-control-label btn-link" for="switchTimeline"><i class="fa-solid fa-chart-line"></i>&nbsp;@{{$t('rank.chart.title.timeline')}}</label>
                             </div>
 
                             <div class="row">
-                                @if(config('setting.show_rank_history'))
-                                <div v-show="showRankHistory" id="my-champion-container overflow-x-scroll" class="col-12" :class="{'col-xl-6': showMyTimeline}">
-                                    <div class="rank-chart-container d-flex align-content-center justify-content-center p-0">
-                                        <canvas id="my-champion"></canvas>
-                                    </div>
+                                <div v-show="showRankHistory" class="col-12" :class="{'col-xl-6': showMyTimeline}">
+                                    <rank-history-chart
+                                      chart-id="{{'my-rank-history-chart-'.$gameResult->winner->id}}"
+                                      element-id="{{$gameResult->winner->id}}"
+                                      post-serial="{{$post->serial}}"
+                                      index-rank-endpoint="{{ route('api.rank.index') }}"
+                                    >
+                                    </rank-history-chart>
                                 </div>
-                                @else
-                                <div class="offset-3"></div>
-                                @endif
 
                                 <div v-show="showMyTimeline" id="my-timeline-container" class="col-12 hide-scrollbar-md overflow-x-scroll" :class="{'col-xl-6': showRankHistory}">
                                     <div class="rank-chart-container d-flex align-content-center justify-content-center p-0" style="min-width: {{400 + $gameResult->rounds * 8}}px">
@@ -119,7 +119,7 @@
                     </div>
                     {{-- Rank #2 ~ #10 --}}
                     @foreach ($gameResult->data as $index => $rank)
-                    
+
                     <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
                             <span class="text-left w-25 rank-number">{{ (int)$index + 2 }}</span>
@@ -144,51 +144,78 @@
                     @endforeach
                 </b-tab>
                 @endif
+
                 {{-- Global Rank --}}
                 <b-tab :title="$t('Global Rank')" {{request('tab') == 1 ? 'active':''}} @click="clickTab('1')">
-                    @foreach ($reports as $index => $rank)
-                    <div class="card my-2 card-hover">
-                        <div class="card-header rank-header">
-                            <span class="text-left w-25 rank-number">{{ $rank->rank }}</span>
-                            <h2 class="text-center d-none d-md-block w-50 element-title">{{ $rank->element->title }}</h2>
-                            <div class="text-right ml-auto w-auto">
-                                @if($rank->win_rate)
-                                    {{ __('rank.win_rate') }}:&nbsp;{{ round($rank->win_rate,1) }}%
-                                @else
-                                    {{ __('rank.win_rate') }}:&nbsp;0%
-                                @endif
-                            </div>
-                        </div>
-                        <div class="card-body text-center rank-card">
-                            <div>
-                                <h2 class="text-center d-block d-md-none element-title">{{ $rank->element->title }}</h2>
-                                @if($rank->rank === 1)
-                                    <div class="col-12 align-content-center justify-content-center">
-                                        @include('game.partial.global-element-container', ['rank' => $rank])
+                    <div class="row">
+                        @foreach ($reports as $index => $rank)
+                        @if(in_array($rank->rank, [1,2,3,4, $reports->total(), $reports->total()-1]))
+                            <div class="col-12">
+                              <div class="card my-2 card-hover">
+                                <div class="card-header rank-header">
+                                    <span class="text-left w-25 rank-number">{{ $rank->rank }}</span>
+                                    <h2 class="text-center d-none d-md-block w-50 element-title">{{ $rank->element->title }}</h2>
+                                    <div class="text-right ml-auto w-auto">
+                                        @if($rank->win_rate)
+                                            {{ __('rank.win_rate') }}:&nbsp;{{ round($rank->win_rate,1) }}%
+                                        @else
+                                            {{ __('rank.win_rate') }}:&nbsp;0%
+                                        @endif
                                     </div>
-                                    @if(config('setting.show_rank_history'))
-                                    <div id="global-champion-container" class="col-12" style="overflow-x: scroll">
-                                        <div class="rank-chart-container d-flex align-content-center justify-content-center">
-                                            <canvas id="global-champion"></canvas>
+                                </div>
+                                <div class="card-body text-center rank-card">
+                                  <div class="row">
+                                    <div class="col-12 col-lg-6">
+                                      <h2 class="text-center d-block d-md-none element-title">{{ $rank->element->title }}</h2>
+                                      <div class="col-12 align-content-center justify-content-center">
+                                          @include('game.partial.global-element-container', ['rank' => $rank])
+                                      </div>
+                                    </div>
+                                    <div class="col-12 col-lg-6">
+                                      <rank-history-chart
+                                        chart-id="{{'global-rank-history-chart-'.$rank->element->id}}"
+                                        element-id="{{$rank->element->id}}"
+                                        post-serial="{{$post->serial}}"
+                                        index-rank-endpoint="{{ route('api.rank.index') }}"
+                                      >
+                                      </rank-history-chart>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                        @else
+                            <div class="col-12 col-lg-6">
+                                <div class="card my-2 card-hover">
+                                    <div class="card-header rank-header">
+                                        <span class="text-left w-25 rank-number">{{ $rank->rank }}</span>
+                                        <h2 class="text-center d-none d-md-block w-50 element-title">{{ $rank->element->title }}</h2>
+                                        <div class="text-right ml-auto w-auto">
+                                            @if($rank->win_rate)
+                                                {{ __('rank.win_rate') }}:&nbsp;{{ round($rank->win_rate,1) }}%
+                                            @else
+                                                {{ __('rank.win_rate') }}:&nbsp;0%
+                                            @endif
                                         </div>
                                     </div>
-                                    @endif
-                                @else
-                                    @include('game.partial.global-element-container', ['rank' => $rank])
-                                @endif
+                                    <div class="card-body text-center rank-card">
+                                        <div>
+                                            <h2 class="text-center d-block d-md-none element-title">{{ $rank->element->title }}</h2>
+                                            @if($rank->rank === 1)
+                                                <div class="col-12 align-content-center justify-content-center">
+                                                    @include('game.partial.global-element-container', ['rank' => $rank])
+                                                </div>
+                                            @else
+                                                @include('game.partial.global-element-container', ['rank' => $rank])
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        @endif
+                        @endforeach
                     </div>
 
-                    @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 4)
-                    <div class="row">
-                        <div id="google-ad-2" class="col-12">
-                            @include('ads.rank_ad_2',['id' => 'google-ad-2'])
-                        </div>
-                    </div>
-                    @endif
-                    @endforeach
-                    
                     @if($reports && count($reports) == 0)
                     <div class="card my-2 card-hover">
                         <div class="card-body text-center rank-card">
@@ -198,6 +225,7 @@
                         </div>
                     </div>
                     @endif
+
                     {{-- Pagination --}}
                     <div class="d-none d-md-block">
                         <div class="row justify-content-center pt-2">
@@ -237,13 +265,13 @@
                                                 {{-- timestamp --}}
                                                 <div class="text-right text-muted mr-4">
                                                     @{{comment.created_at | formNow}}
-                                                </div>  
+                                                </div>
                                                 {{-- options --}}
                                                 <div class="dropdown">
                                                     <span href="#" role="button" id="reportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                         <i class="fa-xl fa-solid fa-ellipsis-vertical cursor-pointer text-center" style="width: 20px"></i>
                                                     </span>
-                                                        
+
                                                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="reportDropdown">
                                                         <a class="dropdown-item" @click.prevent="reportComment(comment)" href="#"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;{{__('comment.report')}}</a>
                                                     </div>
@@ -273,14 +301,14 @@
                                     <img v-else src="{{asset('storage/default-avatar.webp')}}" :alt="comment.nickname">
                                     </div>
                                 </div>
-                                
+
                                 <div>
                                     {{--nickname--}}
                                     <span class="text-black-50 font-size-large text-break"><h5> @{{ comment.nickname }}</h5></span>
                                     {{-- timestamp --}}
                                     <div class="text-muted">
                                         @{{comment.created_at | formNow}}
-                                    </div>  
+                                    </div>
                                 </div>
                                 <div class="ml-auto">
                                     <div class="text-align-end">
@@ -296,7 +324,7 @@
                                     </div>
                                 </div>
                             </div>
-                                
+
                             {{-- champions --}}
                             <h5 class="overflow-hidden" v-if="comment.champions.length">
                                 <template v-for="champion in comment.champions">

@@ -47,6 +47,7 @@ class UpdateRankReportHistory implements ShouldQueue
             ->where('time_range', $this->timeRange)
             ->where('start_date', $this->startDate)
             ->orderByDesc('win_rate')
+            ->orderByDesc('champion_rate')
             ->orderByDesc('win_count')
             ->get()
             ->each(function (RankReportHistory $rankReport) use (&$counter) {

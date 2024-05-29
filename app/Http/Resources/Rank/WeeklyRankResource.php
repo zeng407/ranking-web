@@ -2,16 +2,16 @@
 
 namespace App\Http\Resources\Rank;
 
-use App\Enums\RankType;
-use App\Models\Post;
+use App\Http\Resources\Game\GameElementResource;
+use App\Models\RankReportHistory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class PostRankResource
+ * Class RankReportHistoryResource
  * @package App\Http\Resources\Rank
- * @mixin Post
+ * @mixin RankReportHistory
  */
-class PostRankResource extends JsonResource
+class WeeklyRankResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -22,8 +22,10 @@ class PostRankResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'title' => $this->title,
-            'description' => $this->description,
+            'rank' => $this->rank,
+            'win_rate' => $this->win_rate,
+            'date' => $this->start_date,
+            'element' => GameElementResource::make($this->element),
         ];
     }
 }

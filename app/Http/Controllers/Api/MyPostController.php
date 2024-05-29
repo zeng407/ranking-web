@@ -162,18 +162,6 @@ class MyPostController extends Controller
         ]);
     }
 
-
-    public function rank(Post $post)
-    {
-        /**
-         * @see \App\Policies\PostPolicy::read()
-         */
-        $this->authorize('read', $post);
-        $reports = $this->rankService->getRankReports($post);
-
-        return PostRankResource::collection($reports);
-    }
-
     protected function parsePaginationOptions($input)
     {
         $paginationOptions = [

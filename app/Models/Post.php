@@ -64,6 +64,11 @@ class Post extends Model
         return $this->hasMany(RankReport::class);
     }
 
+    public function rank_report_histories()
+    {
+        return $this->hasMany(RankReportHistory::class);
+    }
+
     public function post_trends()
     {
         return $this->hasMany(PostTrend::class);

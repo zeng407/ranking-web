@@ -23,11 +23,11 @@
     "create_game.submit" :"Submit",
     "create_game.description.hint": "Briefly describe the vote",
     "create_game.password.hint": "Enter Password",
-    
+
     "post_policy.private": "Private",
     "post_policy.public": "Public",
     "post_policy.password": "Password Requird",
-    
+
     "edit_post.new_password": "Set New Password",
     "edit_post.tab.info": "Information",
     "edit_post.tab.element": "Media",
@@ -60,7 +60,7 @@
     "edit_post.video_range": "Range",
     "edit_post.rank.game_plays": "Vote count",
     "edit_post.rank.win_at_final": "Champion",
-    "edit_post.rank.win_rate": "Winning",
+    "edit_post.rank.win_rate": "Winning Rate",
     "edit_post.tag.enter": "Enter",
     "edit_post.info.cancel_save": "Cancel",
     "edit_post.rank": "Rank",
@@ -98,11 +98,14 @@
     "rank.chart.winner": "Winner",
     "rank.chart.loser": "Loser",
     "rank.chart.round": "Round {round}",
-    "rank.chart.title.rank_history": "Rank History",
+    "rank.chart.title.rank_history": "Rank History (All)",
+    "rank.chart.title.rank_history.week": "Rank History (Weekly)",
+    "rank.chart.title.rank_history.all": "Rank History (All)",
     "rank.chart.title.timeline": "My Timeline",
     "rank.chart.median_time": "Median of thinking time",
     "rank.chart.total_time": "Total thinking time",
     "rank.chart.average_time": "Average thinking time",
+    "rank.win_rate": "Winning Rate",
 
 
     "total elements": "total materials : {count}",

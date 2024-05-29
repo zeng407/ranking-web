@@ -24,39 +24,50 @@
               <div v-if="champions.length && !mobileScreen" v-cloak>
                 <h4 class="text-center my-1">@{{$t('home.new_champions')}}</h4>
                 <transition-group name="list" tag="div">
-                  <div class="position-relative" v-for="championResult in champions" :key="championResult.key">
+                  <div class="card champion-card-container card shadow position-relative mb-1" v-for="championResult in champions" :key="championResult.key">
+                    <div class="card-body">
                     <div class="text-center"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
                     <div class="row">
                       <div class="col-6 pr-0">
                         <div class="position-relative">
-                          {{-- if championResult.left.thumb_url is end with mp4 --}}
                           <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
                           <img v-else @load="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url">
+                          <div class="champion-footer-icons">
+                            <i class="fa-solid fa-x" v-if="!championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
+                            <i class="fa-solid fa-thumbs-up" v-if="championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
+                          </div>
                           <div v-show="isChampionLoading(championResult.left)" class="champion-card">
                             <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
                               <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
                             </div>
                           </div>
-                          <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
                         </div>
-                        <h5 class="text-center font-size-small">@{{championResult.left.name}}</h5> 
+                        <h5 class="text-center font-size-small">
+                          @{{championResult.left.name}}
+                        </h5>
                       </div>
                       <div class="col-6 pl-0" v-if="championResult.right.name">
                         <div class="position-relative">
                           <video  v-if="isEndWith(championResult.right.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
                           <img v-else @load="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
+                          <div class="champion-footer-icons">
+                            <i class="fa-solid fa-x" v-if="!championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
+                            <i class="fa-solid fa-thumbs-up" v-if="championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
+                          </div>
                           <div  v-show="isChampionLoading(championResult.right)" class="champion-card">
                             <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
                               <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
                             </div>
                           </div>
-                          <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
                         </div>
-                        <h5 class="text-center font-size-small">@{{championResult.right.name}}</h5> 
+                        <h5 class="text-center font-size-small">
+                          @{{championResult.right.name}}
+                        </h5>
                       </div>
                     </div>
-                    <p  :key="refreshKey" class="text-right font-size-small">@{{humanizeDate(championResult.datetime)}}</p>
-                    <hr>
+                    <p :key="refreshKey" class="text-right font-size-small">@{{humanizeDate(championResult.datetime)}}</p>
+
+                    </div>
                   </div>
                 </transition-group>
               </div>
@@ -67,7 +78,6 @@
             @include('partial.home-carousel')
 
             {{-- champions --}}
-
             <h4 v-if="champions.length" class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
             <div v-if="!champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll">
               {{-- placeholder div --}}
@@ -75,51 +85,58 @@
             </div>
             <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll hide-scrollbar">
               <transition-group name="list" tag="div" class="row flex-nowrap">
-                <div class="col-auto mx-2 position-relative list-item" v-for="championResult in champions" :key="championResult.key" v-cloak>
-                  <div class="row">
-                    <div style="max-width: 150px">
-                      <div class="position-relative">
-                        {{-- if championResult.left.thumb_url is end with mp4 --}}
-                        <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
-                        <img v-else @load="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url">
-                        <div v-show="isChampionLoading(championResult.left)" class="champion-card">
-                          <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
-                            <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
+                <div class="card champion-card-container shadow col-auto list-item m-2" v-for="championResult in champions" :key="championResult.key" v-cloak>
+                  <div class="card-body">
+                    <div class="row">
+                      <div style="max-width: 150px">
+                        <div class="position-relative">
+                          <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
+                          <img v-else @load="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url">
+                          <div class="champion-footer-icons">
+                            <i class="fa-solid fa-x" v-if="!championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
+                            <i class="fa-solid fa-thumbs-up" v-if="championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
+                          </div>
+                          <div v-show="isChampionLoading(championResult.left)" class="champion-card">
+                            <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
+                              <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
+                            </div>
                           </div>
                         </div>
-                        <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
+                        <h5 class="text-center font-size-small">@{{championResult.left.name}}</h5>
                       </div>
-                      <h5 class="text-center font-size-small">@{{championResult.left.name}}</h5>
-                    </div>
-                    <div style="max-width: 150px" v-if="championResult.right.name">
-                      <div class="position-relative">
-                        <video  v-if="isEndWith(championResult.right.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
-                        <img v-else @load="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
-                        <div  v-show="isChampionLoading(championResult.right)" class="champion-card">
-                          <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
-                            <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
+                      <div style="max-width: 150px" v-if="championResult.right.name">
+                        <div class="position-relative">
+                          <video  v-if="isEndWith(championResult.right.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
+                          <img v-else @load="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
+                          <div class="champion-footer-icons">
+                            <i class="fa-solid fa-x" v-if="!championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
+                            <i class="fa-solid fa-thumbs-up" v-if="championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
+                          </div>
+                          <div  v-show="isChampionLoading(championResult.right)" class="champion-card">
+                            <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
+                              <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
+                            </div>
                           </div>
                         </div>
-                        <i class="fa-solid fa-5x fa-x eliminated-x" v-if="!championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
+                        <h5 class="text-center font-size-small">@{{championResult.right.name}}</h5>
                       </div>
-                      <h5 class="text-center font-size-small">@{{championResult.right.name}}</h5> 
                     </div>
-                  </div>
-                  <div class="row d-flex justify-content-end">
-                    <div class="text-center d-inline-block"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
-                    &nbsp;
-                    <p :key="refreshKey" class="d-inline-block font-size-small">@{{humanizeDate(championResult.datetime)}}</p>
+                    <div class="row d-flex justify-content-end">
+                      <div class="text-center d-inline-block"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
+                      &nbsp;
+                      <p :key="refreshKey" class="d-inline-block font-size-small">@{{humanizeDate(championResult.datetime)}}</p>
+                    </div>
                   </div>
                 </div>
               </transition-group>
             </div>
-            
+
 
             {{-- sorter --}}
             <div class="d-flex justify-content-between flex-nowrap mt-4">
               <div class="form-inline">
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
-        
+
                   <label class="btn btn-outline-dark mr-2">
                     <input type="radio" v-model="filters.sort_by" value="hot">
                     <i class="fas fa-fire-alt"></i>&nbsp;@{{ $t('Hot') }}
@@ -148,7 +165,7 @@
                 </div>
               </div>
             </div>
-            
+
             {{-- preload posts --}}
             <div class="grid pt-4">
               @foreach($posts as $index => $post)
