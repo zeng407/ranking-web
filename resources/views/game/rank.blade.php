@@ -168,7 +168,7 @@
                                     <div class="col-12 col-lg-6">
                                       <h2 class="text-center d-block d-md-none element-title">{{ $rank->element->title }}</h2>
                                       <div class="col-12 align-content-center justify-content-center">
-                                          @include('game.partial.global-element-container', ['rank' => $rank])
+                                          @include('game.partial.global-element-container', ['rank' => $rank, 'height' => 400])
                                       </div>
                                     </div>
                                     <div class="col-12 col-lg-6">

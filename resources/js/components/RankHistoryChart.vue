@@ -1,6 +1,6 @@
 <template>
   <div class="hide-scrollbar-md overflow-x-scroll">
-      <div class="d-flex align-content-center justify-content-center p-0 rank-chart-container" :style="'min-width:'+ getChartWidth()">
+      <div class="d-flex align-content-center align-items-center justify-content-center p-0 rank-chart-container" :style="'min-width:'+ getChartWidth()">
         <canvas :id="chartId"></canvas>
       </div>
   </div>
@@ -106,7 +106,7 @@ export default {
           {
             label: this.$t('rank.chart.title.rank_history.week'),
             data: weeklyRankData,
-            pointStyle: 'triangle',
+            pointStyle: 'circle',
             borderColor: 'rgba(255, 99, 132, 0.5)',
             backgroundColor: 'rgba(255, 99, 132, 1)', //red,
           }
@@ -149,6 +149,10 @@ export default {
                   return '#'+value;
                 },
               },
+              afterDataLimits: (axis) => {
+                axis.max = axis.max;
+                axis.min = Math.max(axis.min,1);
+              }
             },
           },
           interaction: {
@@ -157,7 +161,7 @@ export default {
           },
           plugins: {
             title: {
-              display: true,
+              display: false,
               text: this.$t('rank.chart.title.rank_history.week'),
             },
             tooltip: {
