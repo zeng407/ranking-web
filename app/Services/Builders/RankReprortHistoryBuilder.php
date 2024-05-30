@@ -133,7 +133,7 @@ class RankReprortHistoryBuilder
 
         $lastPKRecord = $this->getLastRankRecord($start, RankType::PK_KING);
         $lastWinCount = $lastPKRecord->win_count ?? 0;
-        $lastLoseCount = $lastPKRecord->round_count - $lastPKRecord->win_count ?? 0;
+        $lastLoseCount = $lastPKRecord ? $lastPKRecord->round_count - $lastPKRecord->win_count : 0;
         $lastRounds = $lastPKRecord->round_count ?? 0;
 
         $timeline = carbon($start);
