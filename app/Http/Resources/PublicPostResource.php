@@ -43,8 +43,8 @@ class PublicPostResource extends JsonResource
             'is_private' => $this->isPrivate(),
             'description' => $this->description,
             'element1' => [
-                'video_source' => $element1->video_source,
-                'type' => $element1->type,
+                'video_source' => $element1?->video_source,
+                'type' => $element1?->type,
                 'id' => $element1?->id,
                 'url' => $element1?->thumb_url,
                 'url2' => $element1?->imgur_image?->link,
@@ -52,8 +52,8 @@ class PublicPostResource extends JsonResource
                 'previewable'=> $this->isPreviewable($element1)
             ],
             'element2' => [
-                'video_source' => $element2->video_source,
-                'type' => $element2->type,
+                'video_source' => $element2?->video_source,
+                'type' => $element2?->type,
                 'id' => $element2?->id,
                 'url' => $element2?->thumb_url,
                 'url2' => $element2?->imgur_image?->link,
@@ -68,10 +68,13 @@ class PublicPostResource extends JsonResource
         ];
     }
 
-    protected function isPreviewable(Element $element)
+    protected function isPreviewable(?Element $element)
     {
-        return $element->type === \App\Enums\ElementType::IMAGE || 
-            $element->video_source === \App\Enums\VideoSource::YOUTUBE || 
+        if (!$element) {
+            return false;
+        }
+        return $element->type === \App\Enums\ElementType::IMAGE ||
+            $element->video_source === \App\Enums\VideoSource::YOUTUBE ||
             $element->video_source === \App\Enums\VideoSource::YOUTUBE_EMBED ||
             $element->video_source === \App\Enums\VideoSource::BILIBILI_VIDEO ||
             $element->video_source === \App\Enums\VideoSource::TWITCH_VIDEO ||

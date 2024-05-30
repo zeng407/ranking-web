@@ -174,6 +174,14 @@ export default {
         }).catch(error => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
+          }else if(error.response.status === 422){
+            Swal.fire({
+              icon: 'error',
+              toast: true,
+              text: this.$t('The number of elements must be at least 2.'),
+            }).then(() => {
+              location.reload();
+            });
           }else{
             Swal.fire({
               icon: 'error',
