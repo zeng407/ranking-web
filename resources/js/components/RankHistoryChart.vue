@@ -162,6 +162,10 @@ export default {
                 callback: (value, index, values) => {
                   return '#'+value;
                 },
+              },
+              afterDataLimits: (axis) => {
+                axis.max = axis.max;
+                axis.min = 1;
               }
             },
           },
