@@ -12,7 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class UpdateRankReportHistory implements ShouldQueue
+class UpdateRankForReportHistory implements ShouldQueue
 {
     use Dispatchable, SerializesModels, Queueable, InteractsWithQueue;
 
@@ -40,7 +40,7 @@ class UpdateRankReportHistory implements ShouldQueue
      */
     public function handle()
     {
-        logger('UpdateRankReportHistory job fired postId: ' .
+        logger('UpdateRankForReportHistory job fired postId: ' .
             $this->postId . ' timeRange: ' . $this->timeRange->value . ' startDate: ' . $this->startDate);
         $counter = 0;
         RankReportHistory::where('post_id', $this->postId)

@@ -52,7 +52,7 @@ class MakeRankReportHistoryCommand extends Command
                 $this->info("Rank report history created for report id: $report->id");
             }
         });
-        
+
         // after creating rank_report_history, update the rank of each rank_report_history
         Post::chunkById(1000, function ($posts) use ($rankService, $range) {
             foreach ($posts as $post) {
@@ -60,7 +60,7 @@ class MakeRankReportHistoryCommand extends Command
                 $this->info("Rank report history updated for post id: $post->id");
             }
         });
-        
+
         return 0;
     }
 }

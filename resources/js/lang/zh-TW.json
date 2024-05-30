@@ -114,7 +114,7 @@
     "rank.chart.round": "第{round}局",
     "rank.chart.title.rank_history": "歷史排名",
     "rank.chart.title.rank_history.week": "週排名",
-    "rank.chart.title.rank_history.all": "歷史排名",
+    "rank.chart.title.rank_history.all": "累計排名",
     "rank.chart.title.timeline": "我的時間線",
     "rank.chart.median_time": "中位數",
     "rank.chart.average_time": "平均數",

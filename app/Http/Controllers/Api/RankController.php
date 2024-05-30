@@ -40,6 +40,9 @@ class RankController extends Controller
             'time' => ['required', 'string', 'in:'. implode(',',RankReportTimeRange::toArray())],
         ]);
         $post = $this->getPost($request->post_serial);
+        /** @see \App\Policies\PostPolicy::readRank() */
+        $this->authorize('read-rank', $post);
+
         $element = $this->getElement($request->element_id);
         $time = RankReportTimeRange::from($request->time);
         if($time == RankReportTimeRange::YEAR){
@@ -60,7 +63,7 @@ class RankController extends Controller
 
     protected function getPost($postSerial)
     {
-        return  Post::where('serial', $postSerial)->firstOrFail();
+        return Post::where('serial', $postSerial)->firstOrFail();
     }
 
     protected function getElement($elementId)

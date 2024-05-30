@@ -63,6 +63,10 @@ class GameController extends Controller
             } else if (AccessTokenService::verifyPostAccessToken($post) === false) {
                 return redirect()->route('game.rank-access', ['post' => $post->serial]);
             }
+        }elseif($post->user_id !== optional($request->user())->id){
+            // if post is not password protected and user is not the owner of the post
+            // we disable the embed option
+            $embed = false;
         }
 
         $gameResult = $this->getGameResult($request);

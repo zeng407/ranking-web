@@ -61,7 +61,7 @@ class RankReprortHistoryBuilder
         // 錯誤容忍度，如果有遺漏的資料，最多回補 1 天
         // fail tolerance, if there are missing data, at most fill in 3 days
         // $start = carbon($start)->subDay(1);
-        
+
         $rankRecords = $this->getRankRecords($start);
         $sumWinCount = 0;
         $sumLoseCount = 0;
@@ -70,7 +70,7 @@ class RankReprortHistoryBuilder
         $gameCompleteCount = 0;
 
         $timeline = carbon($start);
-        while($timeline->lte(today())) {
+        while($timeline->lte(today()->endOfDay())) {
             $rankPKRecord = $rankRecords->where('record_date', carbon($timeline)->toDateString())
                 ->where('rank_type', RankType::PK_KING)
                 ->first();
@@ -90,23 +90,22 @@ class RankReprortHistoryBuilder
 
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
-            if($sumRounds > 0){    
-                RankReportHistory::updateOrCreate([
-                    'element_id' => $this->report->element_id,
-                    'post_id' => $this->report->post_id,
-                    'rank_report_id' => $this->report->id,
-                    'time_range' => RankReportTimeRange::ALL,
-                    'start_date' => $timeline->toDateString(),
-                ], [
-                    'rank' => 0, // we mark the rank as 0, then update the rank later
-                    'win_rate' => $winRate,
-                    'win_count' => $sumWinCount,
-                    'lose_count' => $sumLoseCount,
-                    'champion_count' => $championCount,
-                    'game_complete_count' => $gameCompleteCount,
-                    'champion_rate' => $championRate
-                ]);
-            }
+
+            RankReportHistory::updateOrCreate([
+                'element_id' => $this->report->element_id,
+                'post_id' => $this->report->post_id,
+                'rank_report_id' => $this->report->id,
+                'time_range' => RankReportTimeRange::ALL,
+                'start_date' => $timeline->toDateString(),
+            ], [
+                'rank' => 0, // we mark the rank as 0, then update the rank later
+                'win_rate' => $winRate,
+                'win_count' => $sumWinCount,
+                'lose_count' => $sumLoseCount,
+                'champion_count' => $championCount,
+                'game_complete_count' => $gameCompleteCount,
+                'champion_rate' => $championRate
+            ]);
 
             $timeline->addDay();
         }
@@ -124,15 +123,15 @@ class RankReprortHistoryBuilder
         // 錯誤容忍度，如果有遺漏的資料，最多回補 1 天
         // fail tolerance, if there are missing data, at most fill in 3 days
         // $start = carbon($start)->subDay(1);
-        
+
         $rankRecords = $this->getRankRecords($start);
-        
+
         $lastChampionCount = 0;
         $lastGameCompleteCount = 0;
         $lastWinCount = 0;
         $lastLoseCount = 0;
         $lastRounds = 0;
-        
+
         $timeline = carbon($start);
         $endOfWeek = carbon(today())->endOfWeek();
         while($timeline->lte($endOfWeek)) {
@@ -145,29 +144,29 @@ class RankReprortHistoryBuilder
                 ->where('rank_type', RankType::CHAMPION)
                 ->last();
             $sumRounds = $rankPKRecord ? $rankPKRecord->round_count - $lastRounds : 0;
-            if($sumRounds > 0){    
-                $sumWinCount = $rankPKRecord ? $rankPKRecord->win_count - $lastWinCount : 0;
-                $sumLoseCount = $rankPKRecord ? $rankPKRecord->round_count - $rankPKRecord->win_count - $lastLoseCount : 0;
-                $championCount = $rankChampionRecord ? $rankChampionRecord->win_count - $lastChampionCount : 0;
-                $gameCompleteCount = $rankChampionRecord ? $rankChampionRecord->round_count - $lastGameCompleteCount : 0;
-                $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
-                $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
-                RankReportHistory::updateOrCreate([
-                    'element_id' => $this->report->element_id,
-                    'post_id' => $this->report->post_id,
-                    'rank_report_id' => $this->report->id,
-                    'time_range' => RankReportTimeRange::WEEK,
-                    'start_date' => $timeline->toDateString(),
-                ], [
-                    'rank' => 0, // we mark the rank as 0, then update the rank later
-                    'win_rate' => $winRate,
-                    'win_count' => $sumWinCount,
-                    'lose_count' => $sumLoseCount,
-                    'champion_count' => $championCount,
-                    'game_complete_count' => $gameCompleteCount,
-                    'champion_rate' => $championRate
-                ]);
-            }
+
+            $sumWinCount = $rankPKRecord ? $rankPKRecord->win_count - $lastWinCount : 0;
+            $sumLoseCount = $rankPKRecord ? $rankPKRecord->round_count - $rankPKRecord->win_count - $lastLoseCount : 0;
+            $championCount = $rankChampionRecord ? $rankChampionRecord->win_count - $lastChampionCount : 0;
+            $gameCompleteCount = $rankChampionRecord ? $rankChampionRecord->round_count - $lastGameCompleteCount : 0;
+            $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
+            $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
+            RankReportHistory::updateOrCreate([
+                'element_id' => $this->report->element_id,
+                'post_id' => $this->report->post_id,
+                'rank_report_id' => $this->report->id,
+                'time_range' => RankReportTimeRange::WEEK,
+                'start_date' => $timeline->toDateString(),
+            ], [
+                'rank' => 0, // we mark the rank as 0, then update the rank later
+                'win_rate' => $winRate,
+                'win_count' => $sumWinCount,
+                'lose_count' => $sumLoseCount,
+                'champion_count' => $championCount,
+                'game_complete_count' => $gameCompleteCount,
+                'champion_rate' => $championRate
+            ]);
+
 
             $lastChampionCount = $rankChampionRecord ? $rankChampionRecord->win_count : 0;
             $lastGameCompleteCount = $rankChampionRecord ? $rankChampionRecord->round_count : 0;
@@ -181,12 +180,12 @@ class RankReprortHistoryBuilder
 
     protected function buildMonth()
     {
-        
+
     }
 
     protected function buildYear()
     {
-        
+
     }
 
     protected function getLastStartDate(RankReportTimeRange $range)
@@ -199,7 +198,7 @@ class RankReprortHistoryBuilder
             $start = $lastReport->start_date;
         } else {
             $start = $this->report->post->created_at;
-        }   
+        }
 
         return $start;
     }
@@ -213,21 +212,6 @@ class RankReprortHistoryBuilder
 
     protected function getRankRecords($startDate)
     {
-        // $gameRecords = Game1V1Round::join('games', 'games.id', '=', 'game_1v1_rounds.game_id')
-        //     ->where('games.post_id', $this->report->post_id)
-        //     ->where(function($query){
-        //         $query->where('game_1v1_rounds.winner_id', $this->report->element_id)
-        //             ->orWhere('game_1v1_rounds.loser_id', $this->report->element_id);
-        //     })
-        //     ->orderByRaw('date(game_1v1_rounds.created_at)')
-        //     ->selectRaw(
-        //         'date(game_1v1_rounds.created_at) as date,
-        //         sum(game_1v1_rounds.winner_id = ?) as win_count,
-        //         sum(game_1v1_rounds.loser_id = ?) as lose_count',
-        //         [$this->report->element_id, $this->report->element_id])
-        //     ->groupByRaw('date(game_1v1_rounds.created_at)')
-        //     ->get();
-
         $gameRecords = Rank::where('post_id', $this->report->post_id)
             ->where('element_id', $this->report->element_id)
             ->where('record_date', '>=', $startDate)

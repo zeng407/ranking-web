@@ -452,16 +452,16 @@ export default {
                 }
                 return item.y;
               })),
+              suggestedMin: 1,
               ticks:{
                 stepSize: 1,
-                precision: 0,
+                precision: 1,
                 callback: (value, index, values) => {
                   return this.secondsToHms(value);
                 },
                 // autoSkip: false,
                 // maxTicksLimit: 100,
               },
-
             },
           },
           interaction: {

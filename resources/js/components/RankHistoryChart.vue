@@ -81,9 +81,9 @@ export default {
           win_rate: item.win_rate
         }
       });
-      const allRankData = this.ranks['all'].filter((item) => {
-        return this.ranks['week'].some((item2) => {
-          return item.date === item2.date;
+      const allRankData = this.ranks['all'].filter((item, index) => {
+        return weeklyRankData.some((item2) => {
+          return item.date === item2.x;
         });
       }).map((item, index) => {
         return {
@@ -92,7 +92,6 @@ export default {
           win_rate: item.win_rate
         }
       });
-
       new Chart(ctx, {
         type: 'line',
         data: {
@@ -133,7 +132,7 @@ export default {
                   if(this.ranks['week'].length < 10){
                     return 1;
                   }else{
-                    return Math.ceil(this.ranks['week'] / 10);
+                    return Math.ceil(this.ranks['week'].length / 10);
                   }
                 },
               }
@@ -148,10 +147,6 @@ export default {
                 callback: (value, index, values) => {
                   return '#'+value;
                 },
-              },
-              afterDataLimits: (axis) => {
-                axis.max = axis.max;
-                axis.min = Math.max(axis.min,1);
               }
             },
           },
