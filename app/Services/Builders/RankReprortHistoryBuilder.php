@@ -201,7 +201,7 @@ class RankReprortHistoryBuilder
         if($lastReport) {
             $start = $lastReport->start_date;
         } else {
-            $start = $this->report->post->created_at;
+            $start = carbon($this->report->post->created_at)->toDateString();
         }
 
         return $start;
