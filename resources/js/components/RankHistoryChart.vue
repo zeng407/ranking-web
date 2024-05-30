@@ -75,6 +75,13 @@ export default {
       }
       const ctx = target;
       const weeklyRankData = this.ranks['week'].map((item, index) => {
+        if(item.rank === 0 || item.win_rate <= 0){
+          return {
+            x: item.date,
+            y: null,
+            win_rate: 0
+          }
+        }
         return {
           x: item.date,
           y: item.rank,
@@ -86,6 +93,13 @@ export default {
           return item.date === item2.x;
         });
       }).map((item, index) => {
+        if(item.rank === 0 || item.win_rate <= 0){
+          return {
+            x: item.date,
+            y: null,
+            win_rate: 0
+          }
+        }
         return {
           x: item.date,
           y: item.rank,
@@ -138,6 +152,7 @@ export default {
               }
             },
             y: {
+              suggestedMin: 1,
               type: 'linear',
               position: 'right',
               reverse: true,

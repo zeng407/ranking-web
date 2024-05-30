@@ -126,11 +126,15 @@ class RankReprortHistoryBuilder
 
         $rankRecords = $this->getRankRecords($start);
 
-        $lastChampionCount = 0;
-        $lastGameCompleteCount = 0;
-        $lastWinCount = 0;
-        $lastLoseCount = 0;
-        $lastRounds = 0;
+
+        $lastChampionRecord = $this->getLastRankRecord($start, RankType::CHAMPION);
+        $lastChampionCount = $lastChampionRecord->win_count ?? 0;
+        $lastGameCompleteCount = $lastChampionRecord->round_count ?? 0;
+
+        $lastPKRecord = $this->getLastRankRecord($start, RankType::PK_KING);
+        $lastWinCount = $lastPKRecord->win_count ?? 0;
+        $lastLoseCount = $lastPKRecord->round_count - $lastPKRecord->win_count ?? 0;
+        $lastRounds = $lastPKRecord->round_count ?? 0;
 
         $timeline = carbon($start);
         $endOfWeek = carbon(today())->endOfWeek();
@@ -219,6 +223,20 @@ class RankReprortHistoryBuilder
             ->get();
 
         return $gameRecords;
+    }
+
+    protected function getLastRankRecord($beforeDate, $rankType = null)
+    {
+        $lastRecord = Rank::where('post_id', $this->report->post_id)
+            ->where('element_id', $this->report->element_id)
+            ->when($rankType, function($query) use ($rankType){
+                $query->where('rank_type', $rankType);
+            })
+            ->where('record_date', '<', $beforeDate)
+            ->orderByDesc('record_date')
+            ->first();
+
+        return $lastRecord;
     }
 
 }

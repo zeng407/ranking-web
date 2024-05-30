@@ -47,8 +47,6 @@ class RankService
         $reports = $post->rank_report_histories()->with('element')
             ->where('time_range', RankReportTimeRange::WEEK)
             ->where('start_date', $latestDate)
-            ->where('rank', '>', 0)
-            ->where('win_rate', '>', 0)
             ->orderBy('rank')
             ->paginate($limit, ['*'], 'page', $page);
 
@@ -58,8 +56,6 @@ class RankService
     public function getRankReportHistoryByRankReport(RankReport $rankReport, RankReportTimeRange $timeRange, $limit = 10, $page = null)
     {
         $reports = $rankReport->rank_report_histories()
-            ->where('rank', '>', 0)
-            ->where('win_rate', '>', 0)
             ->where('time_range', $timeRange)
             ->orderByDesc('start_date')
             ->paginate($limit, ['*'], 'page', $page);
@@ -70,8 +66,6 @@ class RankService
     public function getRankReportHistoryByElement(Post $post, Element $element, RankReportTimeRange $timeRange, $limit = 10, $page = null)
     {
         $reports = RankReportHistory::where('post_id', $post->id)
-            ->where('rank', '>', 0)
-            ->where('win_rate', '>', 0)
             ->where('element_id', $element->id)
             ->where('time_range', $timeRange)
             ->orderByDesc('start_date')
