@@ -27,6 +27,9 @@ class AddChampionCountIntoRankReportHistories extends Migration
      */
     public function down()
     {
+        if(app()->environment('testing')){
+            return;
+        }
         Schema::table('rank_report_histories', function (Blueprint $table) {
             $table->dropColumn('champion_count');
             $table->dropColumn('game_complete_count');
