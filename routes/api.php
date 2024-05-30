@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\HomeCarouselController;
+use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\TagController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MyPostController;
@@ -17,6 +18,9 @@ Route::get('carousel-items', [HomeCarouselController::class, 'index'])->name('ap
 /** Post */
 Route::get('posts', [PublicPostController::class, 'getPosts'])->name('api.public-post.index');
 Route::get('champions', [PublicPostController::class, 'getChampions'])->name('api.champion.index');
+
+/** Rank */
+Route::get('rank', [RankController::class, 'getRank'])->name('api.rank.index');
 
 /** Game */
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');
@@ -40,7 +44,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('account/post/{post:serial}', [MyPostController::class, 'update'])->name('api.post.update');
     Route::delete('account/post/{post:serial}', [MyPostController::class, 'delete'])->name('api.post.delete');
     Route::get('account/post/{post:serial}/elements', [MyPostController::class, 'elements'])->name('api.post.elements');
-    Route::get('account/post/{post:serial}/rank', [MyPostController::class, 'rank'])->name('api.post.rank');
 
     /** Edit Element */
     Route::post('account/elements/media', [ElementController::class, 'createMedia'])->name('api.element.create-media');

@@ -63,13 +63,16 @@ class GameController extends Controller
             } else if (AccessTokenService::verifyPostAccessToken($post) === false) {
                 return redirect()->route('game.rank-access', ['post' => $post->serial]);
             }
+        }elseif($post->user_id !== optional($request->user())->id){
+            // if post is not password protected and user is not the owner of the post
+            // we disable the embed option
+            $embed = false;
         }
 
         $gameResult = $this->getGameResult($request);
         $reports = $this->rankService->getRankReports($post, 10);
         $myChampionHistories = $this->getChampionRankReportHistoryByGameResult($post, $gameResult, 365);
-        $globalChampionHistories = $this->getChampionRankReportHistory($reports, 365);
-        
+
         return view('game.rank', [
             'serial' => $post->serial,
             'post' => $post,
@@ -77,8 +80,7 @@ class GameController extends Controller
             'reports' => $reports,
             'gameResult' => $gameResult?->toResponse($request)->getData(),
             'champion_histories' => [
-                'my' => $myChampionHistories,
-                'global' => $globalChampionHistories
+                'my' => $myChampionHistories
             ],
             'shared' => $request->query('s') ? true : false,
             'embed' => $embed
@@ -155,7 +157,7 @@ class GameController extends Controller
     protected function getChampionRankReportHistory($gameResult, $limit = 10, $page = null)
     {
         if ($gameResult && isset($gameResult[0])) {
-            $championRankReportHistories = $this->rankService->getRankReportHistory($gameResult[0], RankReportTimeRange::ALL, $limit, $page);
+            $championRankReportHistories = $this->rankService->getRankReportHistoryByRankReport($gameResult[0], RankReportTimeRange::ALL, $limit, $page);
             return RankReportHistoryResource::collection($championRankReportHistories)
                 ->toResponse(request())
                 ->getData();

@@ -26,11 +26,11 @@ class PostPolicy
             if(empty($password)){
                 return false;
             }
-            
+
             if(hash('sha256',$password) !== $post->post_policy->password){
                 throw new AuthorizationException(self::INVALID_PASSWORD, 403);
             }
-            
+
             return true;
         }
 
@@ -89,6 +89,24 @@ class PostPolicy
             }
 
             return hash('sha256', $password) === $post->post_policy->password;
+        }
+
+        if($user && $user->id === $post->user_id){
+            return true;
+        }
+
+        return $post->isPublic();
+    }
+
+    public function readRank(?User $user, Post $post)
+    {
+        if($post->isPasswordRequired()){
+            if(AccessTokenService::verifyPostAccessToken($post)){
+                AccessTokenService::extendPostAccessToken($post);
+                return true;
+            }else{
+                return false;
+            }
         }
 
         if($user && $user->id === $post->user_id){

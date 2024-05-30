@@ -10,11 +10,11 @@ export default {
     this.showGameSettingPanel();
     this.origin = window.location.origin;
     this.host = window.location.host;
-    // update elementHeight to 70% of current window height
+    // update elementHeight to 50% of current window height
     if(!this.isMobileScreen){
       this.elementHeight = Math.max(window.innerHeight * 0.5, 360);
     }
-    this.gameBodyHeight = Math.max(this.elementHeight+260, 700);
+    this.gameBodyHeight = Math.max(this.elementHeight+260, 900);
   },
   props: {
     postSerial: String,
@@ -60,7 +60,7 @@ export default {
       leftReady: true,
       rightReady: true,
       knownIncorrectPassword: false,
-      viewerOptions: { 
+      viewerOptions: {
         inline: false,
         button: true,
         movable: true,
@@ -68,7 +68,7 @@ export default {
         title: false,
         toolbar: {
           zoomIn: 1,
-          zoomOut :1, 
+          zoomOut :1,
           reset: 1,
           rotateRight: 1,
         },
@@ -185,9 +185,9 @@ export default {
           }
         })
         .finally(() => {
-          this.creatingGame = false; 
+          this.creatingGame = false;
         });
-        
+
       $('#gameSettingPanel').modal('hide');
     },
     continueGame: function () {
@@ -219,7 +219,7 @@ export default {
           });
           return;
       }
-      new Promise((resolve, reject) => {        
+      new Promise((resolve, reject) => {
           this.game = data.data;
           if(this.game.current_round == 1 || this.currentRemainElement == false){
             this.currentRemainElement = this.game.remain_elements;
@@ -249,7 +249,7 @@ export default {
             this.isDataLoading = false;
             setTimeout(() => {
               this.showAllPlayers();
-              
+
               this.doPlay(this.le, this.isLeftPlaying, 'left');
               this.doPlay(this.re, this.isRightPlaying, 'right');
             }, 300);
@@ -267,7 +267,7 @@ export default {
           if(this.isMobileScreen){
             $('#google-ad2').css('top', '0');
           }
-          
+
           if(this.needReloadAD()){
             this.reloadGoogleAds();
           }
@@ -344,7 +344,7 @@ export default {
       let sendWinnerData = () => {
         this.vote(this.le, this.re);
       }
-      
+
       this.bounceThumbUp(event.target.children[0]);
       $('#left-player').css('z-index', '100');
       $('#right-player').css('opacity', 0.5);
@@ -353,7 +353,7 @@ export default {
 
       if (this.isMobileScreen) {
         $('#rounds-session').animate({opacity: 0}, 500, "linear");
-        
+
         let winAnimate = $('#left-player').animate({top: 200}, null, () => {
           setTimeout(() => {
             this.leftReady = true;
@@ -490,7 +490,7 @@ export default {
       $('#right-player').css('scale', '1');
       $('#right-player').removeClass('zoom-in');
       $('#right-player').css('z-index', '0');
-      
+
       $('#rounds-session').css('opacity', '0');
       $('.game-image-container img').css('object-fit', 'contain');
     },
@@ -528,7 +528,7 @@ export default {
           let interval = setInterval(() => {
             // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
             if(this.leftReady && this.rightReady){
-              
+
               if(this.game.current_round == 1 && this.currentRemainElement == 2){
                 // final round
                 this.isDataLoading = true;
@@ -538,7 +538,7 @@ export default {
               if(!this.finishingGame){
                 this.pauseAllVideo();
               }
-              
+
               clearInterval(interval);
               if(this.isMobileScreen){
                 Promise.all([
@@ -555,7 +555,7 @@ export default {
                 });
               }else{
                 this.isDataLoading = true;
-                this.handleSendVote(res);  
+                this.handleSendVote(res);
               }
             }
           }, 10);
@@ -589,9 +589,9 @@ export default {
               }, 300);
             }
           }, 10);
-    
+
         }).finally(() => {
-          
+
         });
     },
     showAllPlayers(){
@@ -603,7 +603,7 @@ export default {
       $('#rounds-session').show();
       $('#left-player').css('opacity', '1');
       $('#right-player').css('opacity', '1');
-      $('#rounds-session').css('opacity', '1');  
+      $('#rounds-session').css('opacity', '1');
       if(this.isMobileScreen){
         $('#google-ad').css('opacity', '1');
         $('#google-ad2').css('opacity', '1');
@@ -643,7 +643,7 @@ export default {
       return document.getElementById(id);
     },
     getTwitchPlayer(element) {
-      
+
 
       //check twitch-video-{{element.id}} is exist
         if (document.getElementById("twitch-video-" + element.id) === null) {
@@ -686,10 +686,10 @@ export default {
             player.addEventListener(Twitch.Embed.VIDEO_READY, () => {
               embed.getPlayer().play();
             });
-            player.seek(element.video_start_second);  
+            player.seek(element.video_start_second);
         }else if(element.video_source === 'twitch_clip'){
           //
-        } 
+        }
       }
     },
     initPlayerEventLister(player, element) {
@@ -748,7 +748,7 @@ export default {
             theirPlayer.pauseVideo();
             theirPlayer.mute();
           }
-        }); 
+        });
       }
 
       let myVideoPlyaer = null;
@@ -760,7 +760,7 @@ export default {
         myVideoPlyaer = this.getVideoPlayer('right-video-player');
         theirVideoPlyaer = this.getVideoPlayer('left-video-player');
       }
-    
+
       if(myVideoPlyaer){
         myVideoPlyaer.play();
       }
@@ -823,7 +823,7 @@ export default {
       }catch(e){
 
       }
-      
+
     },
     reloadGoogleAds() {
       $('#google-ad2-container').css('height', '360px').css('position', 'relative');
@@ -870,7 +870,7 @@ export default {
   beforeMount() {
     // less md size
     if ($(window).width() < MD_WIDTH_SIZE) {
-      this.elementHeight = 200
+      this.elementHeight = 300
     }
   }
 }

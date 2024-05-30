@@ -24,6 +24,9 @@ class RankReportHistory extends Model
         'win_rate',
         'win_count',
         'lose_count',
+        'champion_count',
+        'game_complete_count',
+        'champion_rate'
     ];
 
     public function rank_report()

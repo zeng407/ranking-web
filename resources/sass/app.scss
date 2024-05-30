@@ -35,7 +35,7 @@
 .post-element-container img,
 .post-element-container video {
     width: 100%;
-    height: 300px;
+    height: 400px;
     display: block;
     object-fit: cover;
 }
@@ -72,15 +72,26 @@
     top: 0;
     left: 0;
     position: relative;
+    border-radius: 20px;
 }
 
 .left-player {
     background-color: $blue-light;
     border-color: #000;
+    img, iframe, video {
+        border-radius: 20px 20px 0 0;
+    }
 }
 .right-player {
     background-color: $red-light;
     border-color: #000;
+    img, iframe, video {
+        border-radius: 20px 20px 0 0;
+        @media (max-width: 786px) {
+            border-radius: 0 0 20px 20px;
+        }
+    }
+
 }
 
 .zoom-in {
@@ -565,14 +576,14 @@
     color: #f8fafc;
 }
 
-.grid-sizer, .grid-item { 
-    width: 49%; 
+.grid-sizer, .grid-item {
+    width: 49%;
 }
 .gutter-sizer { width: 2%; }
 
 @media (max-width: 576px) {
-    .grid-sizer, .grid-item { 
-        width: 100%; 
+    .grid-sizer, .grid-item {
+        width: 100%;
     }
     .gutter-sizer { width: 0%; }
 }
@@ -586,6 +597,9 @@
     @media (min-width: 2160px) {
         height: 200px;
     }
+}
+.champion-card-container {
+    border-radius: 20px;
 }
 
 
@@ -605,16 +619,27 @@
     font-weight: 100;
     color: white;
 }
+.champion-footer-icons {
+    display: block;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    i {
+        color: white;
+    }
+}
 
 .champions-container {
-    top:70px; 
-    overflow:auto; 
+    top:70px;
+    overflow:auto;
     max-height:90vh;
 }
 
 .return-top-button {
     width: 30px;
-    height:30px; 
+    height:30px;
     border-radius:5px
 }
 
@@ -630,7 +655,7 @@
     min-width: 400px;
     width: 100%;
     height: 400px;
-    
+
     @media (max-width: 992px) {
         height: 300px;
         min-width: 400px;

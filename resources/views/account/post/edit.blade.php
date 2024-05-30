@@ -15,7 +15,6 @@
 
         show-post-endpoint="{{route('api.post.show', $serial)}}"
         get-elements-endpoint="{{route('api.post.elements', $serial)}}"
-        get-rank-endpoint="{{route('api.post.rank', $serial)}}"
         update-post-endpoint="{{route('api.post.update', $serial)}}"
 
         update-element-endpoint="{{route('api.element.update', '_id')}}"

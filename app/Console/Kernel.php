@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
+use Artisan;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -15,7 +16,7 @@ class Kernel extends ConsoleKernel
      * @return void
      */
     protected function schedule(Schedule $schedule)
-    {   
+    {
         $schedule->call(function(){
             app(PostTrendScheduleExecutor::class)->createPostTrends();
         })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping();
@@ -35,7 +36,10 @@ class Kernel extends ConsoleKernel
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 4]));
         })->name('cachePosts')->everyFiveMinutes()->withoutOverlapping();
 
-        // $schedule->command('make:rank-report-history all')->name('Make Rank Report History')->dailyAt('06:10');
+        $schedule->call(function(){
+            Artisan::call('make:rank-report-history all');
+            Artisan::call('make:rank-report-history week');
+        })->name('Make Rank Report History')->dailyAt('06:15');
 
         if(config('services.twitch.auto_refresh_token')){
             $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily();

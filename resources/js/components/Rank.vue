@@ -43,11 +43,19 @@ export default {
       anonymous: false,
       chartLoaded: [],
       showMyTimeline: true,
-      showRankHistory: false,
+      showRankHistory: true,
     }
   },
   props: {
+    postSerial: {
+      type: String,
+      required: true
+    },
     commentMaxLength: {
+      type: String,
+      required: true
+    },
+    indexRankEndpoint: {
       type: String,
       required: true
     },
@@ -90,8 +98,8 @@ export default {
         page: page
       }
       axios.get(this.indexCommentEndpoint, {
-        params: urlParams
-      })
+          params: urlParams
+        })
         .then(response => {
           this.comments = response.data.data;
           this.meta = response.data.meta;
@@ -295,7 +303,7 @@ export default {
                   moment.locale(this.$i18n.locale);
                   return moment(value).format('yyyy-MM-DD');
                 },
-                // if number is less 10, it will show all, if more than 10, it will show 10 
+                // if number is less 10, it will show all, if more than 10, it will show 10
                 stepSize: () => {
                   if(chartRankData.length < 10){
                     return 1;
@@ -329,7 +337,7 @@ export default {
           plugins: {
             title: {
               display: true,
-              text: this.getGlobalRankAxisDescription(),
+              text: this.$t('rank.chart.title.rank_history'),
             },
             legend: {
               display: false,
@@ -380,7 +388,6 @@ export default {
         data: {
           labels: chartData.map((item, index) => {
             let text = '';
-            console.log(item);
             let roundKeys = {
               1: 'game_round_final',
               2: 'game_round_semifinal',
@@ -430,7 +437,7 @@ export default {
                   // For a category axis, the val is the index.
                   return this.$t('rank.chart.round', {round: value + 1});
                 },
-                
+
               },
             },
             y : {
@@ -445,16 +452,16 @@ export default {
                 }
                 return item.y;
               })),
+              suggestedMin: 1,
               ticks:{
                 stepSize: 1,
-                precision: 0,
+                precision: 1,
                 callback: (value, index, values) => {
                   return this.secondsToHms(value);
                 },
                 // autoSkip: false,
                 // maxTicksLimit: 100,
               },
-
             },
           },
           interaction: {
@@ -497,7 +504,7 @@ export default {
               },
               external: (context) => {
                 const getOrCreateTooltip = (chart) => {
-                  
+
                   // let tooltipEl = chart.canvas.parentNode.querySelector('div');
                   let tooltipEl = document.getElementById('chartjs-tooltip');
                   tooltipEl.style.display = 'block';
@@ -505,12 +512,11 @@ export default {
                 };
 
                 const externalTooltipHandler = (context) => {
-                  console.log(context);
                   // Tooltip Element
                   const {chart, tooltip} = context;
                   const tooltipEl = getOrCreateTooltip(chart);
 
-                  
+
 
                   // Set Text
                   if (tooltip.body) {
@@ -564,7 +570,7 @@ export default {
                     // merge footer
                     const footerLines = tooltip.footer || [];
                     const tableFoot = document.createElement('tfoot');
-                    
+
                     footerLines.forEach(line => {
                       const tr = document.createElement('tr');
                       tr.style.borderWidth = 0;
@@ -582,7 +588,7 @@ export default {
                         icon.style.width = '10px';
                         th.appendChild(icon);
                       }
-                      
+
                       if(line.includes(this.$t('rank.chart.loser'))){
                         line = line.replace(this.$t('rank.chart.loser')+':', '');
                         // put a icon instead of text
@@ -631,21 +637,8 @@ export default {
       });
     },
     initChart() {
-      if (this.championHistories && this.championHistories['my']) {
-        this.drawChart('my-champion', 'my-champion-container', this.championHistories['my']['data']);
-      }
-      if (this.championHistories && this.championHistories['global']) {
-        this.drawChart('global-champion', 'global-champion-container', this.championHistories['global']['data']);
-      }
       if (this.gameStatistic && this.gameStatistic['timeline']) {
         this.drawMyTimeline('my-timeline', 'my-timeline-container', this.gameStatistic['timeline']);
-      }
-    },
-    getGlobalRankAxisDescription() {
-      if(this.gameStatistic){
-        return this.$t('rank.chart.title.rank_history');
-      }else{
-        return this.$t('rank.chart.title.rank_history');
       }
     },
     secondsToHms(value) {

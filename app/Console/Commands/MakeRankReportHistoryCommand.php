@@ -3,9 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Enums\RankReportTimeRange;
+use App\Jobs\CreateAndUpdateRankHistory;
 use App\Models\Post;
-use App\Models\RankReport;
-use App\Services\RankService;
 use Illuminate\Console\Command;
 
 class MakeRankReportHistoryCommand extends Command
@@ -41,26 +40,16 @@ class MakeRankReportHistoryCommand extends Command
      */
     public function handle()
     {
-        $rankService = new RankService;
         $range = $this->argument('range');
-        $refresh = $this->option('refresh');
         $range = RankReportTimeRange::from($range);
 
-        RankReport::with('post')->chunkById(1000, function ($reports) use ($rankService, $range, $refresh) {
-            foreach ($reports as $report) {
-                $rankService->createRankReportHistory($report, $range, $refresh);
-                $this->info("Rank report history created for report id: $report->id");
-            }
-        });
-        
-        // after creating rank_report_history, update the rank of each rank_report_history
-        Post::chunkById(1000, function ($posts) use ($rankService, $range) {
+        Post::chunkById(1000, function ($posts){
             foreach ($posts as $post) {
-                $rankService->updateRankReportHistoryRank($post, $range);
-                $this->info("Rank report history updated for post id: $post->id");
+                CreateAndUpdateRankHistory::dispatch($post);
+                $this->info("Rank report history created for post id: $post->id");
             }
         });
-        
+
         return 0;
     }
 }

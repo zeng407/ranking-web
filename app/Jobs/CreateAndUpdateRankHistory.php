@@ -13,8 +13,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-
-class UpdateRankReport implements ShouldQueue, ShouldBeUnique
+class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -28,6 +27,8 @@ class UpdateRankReport implements ShouldQueue, ShouldBeUnique
     public function __construct(Post $post)
     {
         $this->post = $post;
+        $this->onQueue('rank_report_history');
+        $this->delay(now()->addSeconds(10));
     }
 
     /**
@@ -37,11 +38,15 @@ class UpdateRankReport implements ShouldQueue, ShouldBeUnique
      */
     public function handle(RankService $rankService)
     {
-        logger('UpdateRankReport job fired');
-        $rankService->createRankReports($this->post);
-        CreateAndUpdateRankHistory::dispatch($this->post);
-    }
+        logger('CreateAndUpdateRankHistory job fired for post id: ' . $this->post->id);
+        RankReport::with('post')->where('post_id', $this->post->id)->eachById(function ($report) use($rankService){
+            $rankService->createRankReportHistory($report, RankReportTimeRange::ALL);
+            $rankService->createRankReportHistory($report, RankReportTimeRange::WEEK);
+        });
 
+        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
+        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::WEEK);
+    }
 
     public function uniqueId()
     {

@@ -12,7 +12,7 @@
     "home.start": "開始投票",
     "home.rank": "排行榜",
     "home.new_champions": "冠軍出爐！",
-    
+
     "post_policy.private": "私人",
     "post_policy.public": "公開",
     "post_policy.password": "密碼存取",
@@ -25,7 +25,7 @@
     "my_games.table.edit": "編輯",
     "my_games.table.delete": "刪除",
     "my_games.table.no_data": "無資料",
-    
+
 
     "create_game.publishment": "發佈",
     "create_game.title" :"基本資訊",
@@ -88,7 +88,7 @@
     "game.select": "選擇",
     "game.rank": "查看排行榜",
     "game.continue": "繼續",
-    "game.continue_hint": "繼續上次未完的投票嗎", 
+    "game.continue_hint": "繼續上次未完的投票嗎",
     "game.setting": "設定",
     "game.start": "開始",
     "game.cancel": "回首頁",
@@ -103,6 +103,7 @@
     "game.checkout_result": "正在查看投票結果...",
     "game.password": "請輸入密碼",
     "game.invalid_password": "密碼錯誤",
+    "rank.win_rate": "勝率",
 
     "rank.no_rank": "尚未有資料",
     "rank.chart.rank": "排名",
@@ -112,6 +113,8 @@
     "rank.chart.loser": "淘汰",
     "rank.chart.round": "第{round}局",
     "rank.chart.title.rank_history": "歷史排名",
+    "rank.chart.title.rank_history.week": "週排名",
+    "rank.chart.title.rank_history.all": "累計排名",
     "rank.chart.title.timeline": "我的時間線",
     "rank.chart.median_time": "中位數",
     "rank.chart.average_time": "平均數",

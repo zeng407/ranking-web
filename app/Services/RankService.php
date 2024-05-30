@@ -5,7 +5,7 @@ namespace App\Services;
 
 use App\Enums\RankReportTimeRange;
 use App\Enums\RankType;
-use App\Jobs\UpdateRankReportHistory;
+use App\Jobs\UpdateRankForReportHistory;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\GameElement;
@@ -39,7 +39,21 @@ class RankService
         return $report?->rank;
     }
 
-    public function getRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $limit = 10, $page = null)
+    public function getRankWeeklyReport(Post $post, $limit = 10, $page = null)
+    {
+        $latestDate = RankReportHistory::where('post_id', $post->id)
+            ->where('time_range', RankReportTimeRange::WEEK)
+            ->max('start_date');
+        $reports = $post->rank_report_histories()->with('element')
+            ->where('time_range', RankReportTimeRange::WEEK)
+            ->where('start_date', $latestDate)
+            ->orderBy('rank')
+            ->paginate($limit, ['*'], 'page', $page);
+
+        return $reports;
+    }
+
+    public function getRankReportHistoryByRankReport(RankReport $rankReport, RankReportTimeRange $timeRange, $limit = 10, $page = null)
     {
         $reports = $rankReport->rank_report_histories()
             ->where('time_range', $timeRange)
@@ -214,7 +228,7 @@ class RankService
             ->pluck('start_date');
 
         foreach ($dates as $date) {
-            UpdateRankReportHistory::dispatch($post->id, $timeRange, $date);
+            UpdateRankForReportHistory::dispatch($post->id, $timeRange, $date);
         }
     }
 }

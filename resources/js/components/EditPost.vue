@@ -789,7 +789,6 @@ export default {
     gameRankRoute: String,
     showPostEndpoint: String,
     getElementsEndpoint: String,
-    getRankEndpoint: String,
     updatePostEndpoint: String,
     updateElementEndpoint: String,
     uploadElementEndpoint: String,
