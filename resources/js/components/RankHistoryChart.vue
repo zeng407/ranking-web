@@ -89,6 +89,10 @@ export default {
         }
       });
       const allRankData = this.ranks['all'].filter((item, index) => {
+        //  turr if recent 7 days
+        if(index < 7){
+          return true;
+        }
         return weeklyRankData.some((item2) => {
           return item.date === item2.x;
         });
