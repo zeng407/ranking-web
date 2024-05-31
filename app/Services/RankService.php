@@ -223,7 +223,7 @@ class RankService
         }else{
             // get last date of the report
             $query->orderByDesc('start_date')
-                ->limit(1);
+                ->limit(2);
         }
 
         $dates = $query->select('start_date')
