@@ -6,6 +6,7 @@ use App\Enums\RankReportTimeRange;
 use App\Models\Post;
 use App\Models\RankReport;
 use App\Services\RankService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,14 +19,14 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected Post $post;
-    protected $startDate;
+    protected ?string $startDate;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Post $post, $startDate = null)
+    public function __construct(Post $post, string $startDate = null)
     {
         $this->post = $post;
         $this->startDate = $startDate;

@@ -214,12 +214,12 @@ class RankService
             ->build();
     }
 
-    public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange, $startDate = null)
+    public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange, ?string $startDate = null)
     {
         $query = RankReportHistory::where('post_id', $post->id)
             ->where('time_range', $timeRange);
         if($startDate) {
-            $$query->where('start_date', '>=', $startDate);
+            $query->where('start_date', '>=', $startDate);
         }
 
         $dates = $query->select('start_date')
