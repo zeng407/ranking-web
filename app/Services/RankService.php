@@ -13,7 +13,7 @@ use App\Models\Post;
 use App\Models\Rank;
 use App\Models\RankReport;
 use App\Models\RankReportHistory;
-use App\Services\Builders\RankReprortHistoryBuilder;
+use App\Services\Builders\RankReportHistoryBuilder;
 use DB;
 
 class RankService
@@ -207,7 +207,7 @@ class RankService
 
     public function createRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $refresh = false)
     {
-        $builder = new RankReprortHistoryBuilder;
+        $builder = new RankReportHistoryBuilder;
         return $builder->setRankReport($rankReport)
             ->setRange($timeRange)
             ->setRefresh($refresh)
@@ -223,7 +223,7 @@ class RankService
         }else{
             // get last date of the report
             $query->orderByDesc('start_date')
-                ->limit(1);
+                ->limit(2);
         }
 
         $dates = $query->select('start_date')
