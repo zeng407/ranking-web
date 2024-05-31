@@ -58,8 +58,9 @@ return [
         'rank_page' => env('GOOGLE_AD_RANK_PAGE', false),
         'rank_page_ad_1_slot' => env('GOOGLE_AD_RANK_PAGE_AD_1_SLOT', ''),
         'rank_page_ad_2_slot' => env('GOOGLE_AD_RANK_PAGE_AD_2_SLOT', ''),
+        'rank_page_sides' => env('GOOGLE_AD_RANK_PAGE_SIDES_SLOT', ''),
     ],
-    
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

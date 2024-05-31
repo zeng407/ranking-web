@@ -39,7 +39,7 @@ class UpdateRankReport implements ShouldQueue, ShouldBeUnique
     {
         logger('UpdateRankReport job fired');
         $rankService->createRankReports($this->post);
-        CreateAndUpdateRankHistory::dispatch($this->post);
+        CreateAndUpdateRankHistory::dispatch($this->post, today()->subDays(1)->toDateString());
     }
 
 

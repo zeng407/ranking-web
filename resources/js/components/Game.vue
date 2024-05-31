@@ -13,8 +13,11 @@ export default {
     // update elementHeight to 50% of current window height
     if(!this.isMobileScreen){
       this.elementHeight = Math.max(window.innerHeight * 0.5, 360);
+      this.gameBodyHeight = Math.max(this.elementHeight+260, 700);
+    }else{
+      this.gameBodyHeight = Math.max(this.elementHeight+260, 900);
     }
-    this.gameBodyHeight = Math.max(this.elementHeight+260, 900);
+
   },
   props: {
     postSerial: String,
@@ -369,7 +372,7 @@ export default {
         }).promise();
 
         $('#google-ad-container').animate({top: 200});
-        $('#google-ad2').animate({top: -160});
+        $('#google-ad2').animate({top: -250});
 
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500).promise();
         $.when(loseAnimate).then(() => {
@@ -440,7 +443,7 @@ export default {
           }, 1200);
         }).promise();
 
-        $('#google-ad-container').animate({top: 180});
+        $('#google-ad-container').animate({top: 250});
         $('#google-ad2').animate({top: -200});
 
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();

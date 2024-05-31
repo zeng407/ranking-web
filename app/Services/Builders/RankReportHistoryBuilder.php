@@ -94,21 +94,23 @@ class RankReportHistoryBuilder
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
 
-            RankReportHistory::updateOrCreate([
-                'element_id' => $this->report->element_id,
-                'post_id' => $this->report->post_id,
-                'rank_report_id' => $this->report->id,
-                'time_range' => RankReportTimeRange::ALL,
-                'start_date' => $timeline->toDateString(),
-            ], [
-                'rank' => 0, // we mark the rank as 0, then update the rank later
-                'win_rate' => $winRate,
-                'win_count' => $sumWinCount,
-                'lose_count' => $sumLoseCount,
-                'champion_count' => $championCount,
-                'game_complete_count' => $gameCompleteCount,
-                'champion_rate' => $championRate
-            ]);
+            if($sumWinCount > 0) {
+                RankReportHistory::updateOrCreate([
+                    'element_id' => $this->report->element_id,
+                    'post_id' => $this->report->post_id,
+                    'rank_report_id' => $this->report->id,
+                    'time_range' => RankReportTimeRange::ALL,
+                    'start_date' => $timeline->toDateString(),
+                ], [
+                    'rank' => 0, // we mark the rank as 0, then update the rank later
+                    'win_rate' => $winRate,
+                    'win_count' => $sumWinCount,
+                    'lose_count' => $sumLoseCount,
+                    'champion_count' => $championCount,
+                    'game_complete_count' => $gameCompleteCount,
+                    'champion_rate' => $championRate
+                ]);
+            }
 
             $timeline->addDay();
         }
@@ -158,22 +160,24 @@ class RankReportHistoryBuilder
             $gameCompleteCount = $rankChampionRecord ? $rankChampionRecord->round_count - $lastGameCompleteCount : 0;
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
-            RankReportHistory::updateOrCreate([
-                'element_id' => $this->report->element_id,
-                'post_id' => $this->report->post_id,
-                'rank_report_id' => $this->report->id,
-                'time_range' => RankReportTimeRange::WEEK,
-                'start_date' => $timeline->toDateString(),
-            ], [
-                'rank' => 0, // we mark the rank as 0, then update the rank later
-                'win_rate' => $winRate,
-                'win_count' => $sumWinCount,
-                'lose_count' => $sumLoseCount,
-                'champion_count' => $championCount,
-                'game_complete_count' => $gameCompleteCount,
-                'champion_rate' => $championRate
-            ]);
 
+            if($sumWinCount > 0){
+                RankReportHistory::updateOrCreate([
+                    'element_id' => $this->report->element_id,
+                    'post_id' => $this->report->post_id,
+                    'rank_report_id' => $this->report->id,
+                    'time_range' => RankReportTimeRange::WEEK,
+                    'start_date' => $timeline->toDateString(),
+                ], [
+                    'rank' => 0, // we mark the rank as 0, then update the rank later
+                    'win_rate' => $winRate,
+                    'win_count' => $sumWinCount,
+                    'lose_count' => $sumLoseCount,
+                    'champion_count' => $championCount,
+                    'game_complete_count' => $gameCompleteCount,
+                    'champion_rate' => $championRate
+                ]);
+            }
 
             $lastChampionCount = $rankChampionRecord ? $rankChampionRecord->win_count : 0;
             $lastGameCompleteCount = $rankChampionRecord ? $rankChampionRecord->round_count : 0;
