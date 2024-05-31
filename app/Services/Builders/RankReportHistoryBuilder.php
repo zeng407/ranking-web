@@ -11,7 +11,7 @@ use App\Models\Rank;
 use App\Models\RankReport;
 use App\Models\RankReportHistory;
 
-class RankReprortHistoryBuilder
+class RankReportHistoryBuilder
 {
     protected RankReport $report;
     protected RankReportTimeRange $range;
@@ -60,15 +60,18 @@ class RankReprortHistoryBuilder
 
         // 錯誤容忍度，如果有遺漏的資料，最多回補 1 天
         // fail tolerance, if there are missing data, at most fill in 3 days
-        // $start = carbon($start)->subDay(1);
+        $start = carbon($start)->subDays(1);
+
+        $lastRecord = $this->getLastRankRecord($start, RankType::PK_KING);
+        $sumWinCount = $lastRecord->win_count ?? 0;
+        $sumLoseCount = $lastRecord ? $lastRecord->round_count - $lastRecord->win_count : 0;
+        $sumRounds = $lastRecord->round_count ?? 0;
+
+        $lastRecord = $this->getLastRankRecord($start, RankType::CHAMPION);
+        $championCount = $lastRecord->win_count ?? 0;
+        $gameCompleteCount = $lastRecord->round_count ?? 0;
 
         $rankRecords = $this->getRankRecords($start);
-        $sumWinCount = 0;
-        $sumLoseCount = 0;
-        $sumRounds = 0;
-        $championCount = 0;
-        $gameCompleteCount = 0;
-
         $timeline = carbon($start);
         while($timeline->lte(today()->endOfDay())) {
             $rankPKRecord = $rankRecords->where('record_date', carbon($timeline)->toDateString())
