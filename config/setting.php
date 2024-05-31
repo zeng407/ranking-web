@@ -23,4 +23,5 @@ return [
     'upload_media_size_mb_at_a_time' => 30,
     'upload_media_file_size_mb'=> 8,
     'upload_media_file_count_at_a_time' => 30,
+    'refres_rank_report_history_days' => env('REFRESH_RANK_REPORT_HISTORY_DAYS', 30),
 ];

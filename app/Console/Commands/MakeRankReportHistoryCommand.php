@@ -45,7 +45,7 @@ class MakeRankReportHistoryCommand extends Command
 
         Post::chunkById(1000, function ($posts){
             foreach ($posts as $post) {
-                CreateAndUpdateRankHistory::dispatch($post);
+                CreateAndUpdateRankHistory::dispatch($post, today()->subDays(config('setting.refres_rank_report_history_days')));
                 $this->info("Rank report history created for post id: $post->id");
             }
         });

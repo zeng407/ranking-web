@@ -16,7 +16,7 @@
         "datePublished": "{{$post->created_at->toIso8601String()}}",
         "dateModified": "{{$post->updated_at->toIso8601String()}}"
     }
-    </script>  
+    </script>
   @endif
 
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
@@ -81,10 +81,10 @@
 
         {{-- game info --}}
         <div v-if="game && !finishingGame">
-          <h2 class="text-center text-break">{{$post->title}}</h2>
+          <h2 class="text-center text-break mt-1">{{$post->title}}</h2>
           <div class="d-none d-sm-flex" style="flex-flow: row wrap">
             <h5 style="width: 20%"></h5>
-            
+
             <h5 class="text-center align-self-center" style="width: 60%">
               <span v-if="currentRemainElement <= 2">@{{ $t('game_round_final') }}</span>
               <span v-else-if="currentRemainElement <= 4">@{{ $t('game_round_semifinal') }}</span>
@@ -159,7 +159,7 @@
                       </button>
                     </div>
                   </div>
-                  
+
                   <div v-else>
                     <button class="btn btn-primary btn-block btn-lg d-block d-md-none" :disabled="isVoting"
                       @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
@@ -169,7 +169,7 @@
               </div>
             </transition>
           </div>
-    
+
           <!-- mobile rounds session -->
           <transition name="slide-in-left">
             <div v-if="animationShowRoundSession" id="rounds-session" class="col-sm-12 d-md-none">
@@ -184,7 +184,7 @@
               </div>
             </div>
           </transition>
-    
+
           <!--right part-->
           <div class="col-sm-12 col-md-6 pl-md-1 mb-4 mb-md-0">
             <transition name="slide-in-left">
@@ -222,7 +222,7 @@
                   <video id="right-video-player" v-if="isMobileScreen" width="100%" :height="elementHeight" loop controls playsinline :src="re.source_url" :poster="re.thumb_url"></video>
                   <video @mouseover="videoHoverIn(re, le, false)" id="right-video-player" v-else width="100%" :height="elementHeight" loop autoplay controls playsinline muted :src="re.source_url" :poster="re.thumb_url"></video>
                 </div>
-      
+
                 <!-- reverse when device size width less md(768px)-->
                 <div class="card-body text-center"
                   :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
@@ -298,7 +298,7 @@
                 <div class="alert alert-danger" v-if="processingGame">
                   <i class="fas fa-exclamation-triangle"></i>&nbsp;@{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
-        
+
                     <i class="fas fa-play"></i>&nbsp;@{{ $t('game.continue') }}
                   </span>
                 </div>
@@ -396,12 +396,12 @@
                   </div>
                 </div>
               </div>
-        
+
               <div class="modal-footer mb-sm-0 mb-4">
                 <button v-if="post && elementsCount > 0" @click="createGame" type="submit" class="btn btn-primary btn-block" >
                   <i class="fas fa-play">&nbsp;</i>@{{ $t('game.start') }}
                 </button>
-                
+
                 <span v-if="post && elementsCount == 0" @click="hintSelect" class="btn btn-primary disabled btn-block">
                   <i class="fas fa-play"></i>&nbsp;@{{ $t('game.start') }}
                 </span>
@@ -411,8 +411,8 @@
           </div>
         </div>
 
-        
+
     </div>
   </game>
-  
+
 @endsection

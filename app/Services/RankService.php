@@ -220,10 +220,6 @@ class RankService
             ->where('time_range', $timeRange);
         if($startDate) {
             $$query->where('start_date', '>=', $startDate);
-        }else{
-            // get last date of the report
-            $query->orderByDesc('start_date')
-                ->limit(2);
         }
 
         $dates = $query->select('start_date')
