@@ -235,7 +235,6 @@ class RankService
                         $query->where('start_date', '>=', $firstDate->start_date);
                     }
                 })
-                ->where('start_date', '>=', $firstDate->start_date)
                 ->distinct()
                 ->get()
                 ->pluck('start_date');
