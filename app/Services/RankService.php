@@ -217,15 +217,28 @@ class RankService
     public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange, ?string $startDate = null)
     {
         $query = RankReportHistory::where('post_id', $post->id)
-            ->where('time_range', $timeRange);
-        if($startDate) {
-            $query->where('start_date', '>=', $startDate);
+            ->where('time_range', $timeRange)
+            ->select('start_date');
+        if($startDate){
+            $firstDate = $query->where('start_date', '<=', $startDate)
+                ->orderByDesc('start_date')
+                ->first();
+        }else{
+            $firstDate = $query->first();
         }
 
-        $dates = $query->select('start_date')
-            ->distinct()
-            ->get()
-            ->pluck('start_date');
+        $dates = RankReportHistory::where('post_id', $post->id)
+                ->select('start_date')
+                ->where('time_range', $timeRange)
+                ->where(function($query)use($firstDate){
+                    if($firstDate){
+                        $query->where('start_date', '>=', $firstDate->start_date);
+                    }
+                })
+                ->where('start_date', '>=', $firstDate->start_date)
+                ->distinct()
+                ->get()
+                ->pluck('start_date');
 
         foreach ($dates as $date) {
             UpdateRankForReportHistory::dispatch($post->id, $timeRange, $date);
