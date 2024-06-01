@@ -1,15 +1,15 @@
 <template>
   <div id="home-carousel" class="carousel slide mb-5" data-ride="carousel" data-interval="false">
     <!-- carousel -->
-    <div id="preserve-for-carousel" class="preserve-for-carousel"></div>
+    <div id="preserve-for-carousel" class="preserve-for-carousel d-flex justify-content-center">
+      <div class="w-75 d-none d-md-flex h-100" style="background-color: black;"></div>
+      <div class="w-100 d-flex d-sm-none h-100" style="background-color: black;"></div>
+    </div>
     <div v-show="items.length" class="carousel-inner position-absolute" style="top:0">
       <div v-for="(item, index) in items" :key="index" class="carousel-item" :class="{ active: index === 0 }">
         <div class="d-flex justify-content-center">
           <!-- loading -->
           <div class="d-flex w-100 position-absolute justify-content-center">
-            <i v-show="firstCarouselLoading" class="fas fa-spinner fa-spin preview-carsousel-loading"></i>
-            <img v-show="item.image_url && item.type === 'video' && index === 0 && firstCarouselLoading"
-              :src="item.image_url" class="preview-carsousel-image" :alt="item.title" style="pointer-events:none">
           </div>
 
           <!-- iframe -->
@@ -44,7 +44,7 @@
           </h5>
         </div>
       </div>
-      
+
     </div>
 
     <div v-show="items.length > 1">
@@ -95,7 +95,7 @@ export default {
         .then(response => {
           this.items = response.data.data;
           //set css position absolute to the first carousel item
-          
+
           if(this.items.length == 0){
             $('#preserve-for-carousel').remove();
           }
@@ -161,7 +161,7 @@ export default {
         //then restore the src
         setTimeout(() => {
           iframe.src = src;
-        }, 100); 
+        }, 100);
       } else if(iframe.player){
         iframe.player.pauseVideo();
         return;

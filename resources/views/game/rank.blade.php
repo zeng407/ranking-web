@@ -39,11 +39,13 @@
                     <div class="col-auto">
                         <a class="btn btn-outline-dark btn-sm m-1" href="{{route('home')}}"><i class="fa-solid fa-home"></i>&nbsp;{{__('rank.return_home')}}</a>
                         <a class="btn btn-outline-dark btn-sm m-1" href={{route('game.show', $post->serial)}}><i class="fa-solid fa-play"></i>&nbsp;{{__('rank.play')}}</a>
-                        <button @click="share" id="popover-button-event" type="button" class="btn btn-outline-dark btn-sm m-1"><i class="fa-solid fa-share-square"></i>&nbsp;{{__('rank.share')}}</button>
-                        <b-popover ref="popover" target="popover-button-event" :disabled="true">{{__('Copied link')}}</b-popover>
+                        <div class="m-1 d-inline-block">
+                          <share-link id="rank" :url="shareRankLink()" text="{{__('rank.share')}}" after-copy-text="{{__('Copied link')}}"></share-link>
+                        </div>
                         @if($gameResult && !$shared)
-                            <button @click="shareResult" id="share-result-button-event" type="button" class="btn btn-primary btn-sm m-1"><i class="fa-solid fa-share-square">&nbsp;{{__('rank.share-result')}}</i></button>
-                            <b-popover ref="share-popover" target="share-result-button-event" :disabled="true">{{__('Copied link')}}</b-popover>
+                          <div class="m-1 d-inline-block">
+                            <share-link id="result" :url="shareResultLink()" text="{{__('rank.share-result')}}" after-copy-text="{{__('Copied link')}}" custom-class="btn btn-primary btn-sm"></share-link>
+                          </div>
                         @endif
                     </div>
                 </div>
