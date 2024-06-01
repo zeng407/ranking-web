@@ -283,24 +283,28 @@
           <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
             <div class="modal-content">
               <div class="modal-header">
-                <div class="d-flex ">
+                <div class="d-none d-sm-flex white-space-no-wrap">
                   <h5 class="modal-title align-self-center" id="gameSettingPanelLabel">@{{ $t('game.setting') }}</h5>
                 </div>
-                <div>
-                  <a class="btn btn-outline-secondary" :href="gameRankUrl">
-                    <i class="fas fa-trophy"></i>&nbsp;@{{$t('game.rank')}}
-                  </a>
-                  <share-link
-                    id="{{$post['serial']}}"
-                    url="{{route('game.show',$post['serial'])}}"
-                    text="{{__('Share')}}"
-                    after-copy-text="{{__('Copied link')}}"
-                    custom-class="btn btn-outline-secondary"
-                    >
-                  </share-link>
-                  <a class="btn btn-outline-secondary" href="/">
-                    <i class="fas fa-home"></i>&nbsp;@{{ $t('game.cancel') }}
-                  </a>
+                <div class="d-flex justify-content-between w-auto">
+                  <div>
+                    <share-link
+                      id="{{$post['serial']}}"
+                      url="{{route('game.show',$post['serial'])}}"
+                      text="{{__('Share')}}"
+                      after-copy-text="{{__('Copied link')}}"
+                      custom-class="btn btn-outline-secondary mx-1 white-space-no-wrap"
+                      >
+                    </share-link>
+                  </div>
+                  <div>
+                    <a class="btn btn-outline-secondary white-space-no-wrap" :href="gameRankUrl">
+                      <i class="fas fa-trophy"></i>&nbsp;@{{$t('game.rank')}}
+                    </a>
+                    <a class="btn btn-outline-secondary white-space-no-wrap" href="/">
+                      <i class="fas fa-home"></i>&nbsp;@{{ $t('game.cancel') }}
+                    </a>
+                  </div>
                 </div>
               </div>
               <div class="modal-body">
