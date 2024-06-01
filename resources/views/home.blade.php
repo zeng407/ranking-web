@@ -15,7 +15,7 @@
       show-rank-endpoint="{{route('game.rank', '_serial')}}"
       get-champions-endpoint="{{route('api.champion.index')}}"
     >
-    <div class="container-fuild home-container">
+    <div class="container-fuild">
       {{-- main container --}}
         <div class="row m-0">
           {{-- left part: champions --}}
