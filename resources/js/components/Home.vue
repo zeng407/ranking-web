@@ -151,7 +151,6 @@ export default {
       this.search();
     },
     share(url, id) {
-      url = url + '?utm_medium=share_game';
       if (navigator.share) {
         navigator.share({
           url: url
@@ -165,7 +164,6 @@ export default {
       }
     },
     handleChildShare(popover, url, id) {
-      url = url + '?utm_medium=share_game';
       if (navigator.share) {
         navigator.share({
           url: url
@@ -224,7 +222,7 @@ export default {
         this.showReturnUpButton = true;
       }else{
         this.showReturnUpButton = false;
-      }      
+      }
     },
     scrollToTop() {
       window.scrollTo({

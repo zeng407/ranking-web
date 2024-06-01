@@ -81,7 +81,7 @@
 
         {{-- game info --}}
         <div v-if="game && !finishingGame">
-          <h2 class="text-center text-break mt-1">{{$post->title}}</h2>
+          <h1 class="text-center text-break mt-1">{{$post->title}}</h1>
           <div class="d-none d-sm-flex" style="flex-flow: row wrap">
             <h5 style="width: 20%"></h5>
 
@@ -283,13 +283,23 @@
           <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title align-self-center" id="gameSettingPanelLabel">@{{ $t('game.setting') }}</h5>
+                <div class="d-flex ">
+                  <h5 class="modal-title align-self-center" id="gameSettingPanelLabel">@{{ $t('game.setting') }}</h5>
+                </div>
                 <div>
                   <a class="btn btn-outline-secondary" :href="gameRankUrl">
                     <i class="fas fa-trophy"></i>&nbsp;@{{$t('game.rank')}}
                   </a>
+                  <share-link
+                    id="{{$post['serial']}}"
+                    url="{{route('game.show',$post['serial'])}}"
+                    text="{{__('Share')}}"
+                    after-copy-text="{{__('Copied link')}}"
+                    custom-class="btn btn-outline-secondary"
+                    >
+                  </share-link>
                   <a class="btn btn-outline-secondary" href="/">
-                    <i class="fas fa-times"></i>&nbsp;@{{ $t('game.cancel') }}
+                    <i class="fas fa-home"></i>&nbsp;@{{ $t('game.cancel') }}
                   </a>
                 </div>
               </div>

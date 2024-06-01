@@ -227,7 +227,7 @@ export default {
         });
     },
     share() {
-      const url = window.location.origin + window.location.pathname + '?utm_medium=share_rank';
+      const url = window.location.origin + window.location.pathname;
       if (navigator.share) {
         navigator.share({
           url: url
@@ -240,26 +240,14 @@ export default {
         }, 2000);
       }
     },
-    shareResult() {
-
-      //get parameter g
+    shareRankLink() {
+      return window.location.origin + window.location.pathname;
+    },
+    shareResultLink() {
       const urlParams = new URLSearchParams(window.location.search);
       const g = urlParams.get('g');
-      const url = window.location.origin + window.location.pathname + '?s=' + g + '&utm_medium=share_result';
-
-      if (navigator.share) {
-        navigator.share({
-          url: url,
-          title: this.$t('My Voting Game Result'),
-          text: this.$t('Check out my result on this voting game!'),
-        }).catch(console.error);
-      } else {
-        this.$refs['share-popover'].$emit('open');
-        navigator.clipboard.writeText(url);
-        setTimeout(() => {
-          this.$root.$emit('bv::hide::popover');
-        }, 2000);
-      }
+      const url = window.location.origin + window.location.pathname + '?s=' + g;
+      return url;
     },
     drawChart(target, container, data) {
       // skip if target is not found
