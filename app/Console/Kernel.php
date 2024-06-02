@@ -43,8 +43,8 @@ class Kernel extends ConsoleKernel
         })->name('Make Rank Report History')->dailyAt('06:15');
 
         $schedule->call(function(){
-            app(ThumbnailExecutor::class)->makeElementThumbnails(1000);
-        })->name('Make Thumbnails')->everyThreeHours()->withoutOverlapping();
+            app(ThumbnailExecutor::class)->makeElementThumbnails(300);
+        })->name('Make Thumbnails')->hourly()->withoutOverlapping();
 
 
         if(config('services.twitch.auto_refresh_token')){
