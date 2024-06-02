@@ -27,8 +27,10 @@ if(!isset($height)) $height = 270
 @elseif($rank->element->type === 'video')
     <video width="100%" height="{{$height}}" loop controls playsinline src="{{ $rank->element->source_url }}" poster="{{ $rank->element->thumb_url }}"></video>
 @elseif($rank->element->type === 'image')
-    <viewer image="{{ $rank->element->thumb_url }}" :options="viewerOptions">
-        <img class="w-auto mw-100 cursor-pointer" src="{{ $rank->element->thumb_url }}" height="{{$height}}"
-            alt="{{ $rank->element->title }}">
+    <viewer :options="viewerOptions">
+        <img class="w-auto mw-100 cursor-pointer"
+          src="{{ $rank->element->getScaledThumbUrl()}}"
+          height="{{$height}}"
+          alt="{{ $rank->element->title }}">
     </viewer>
 @endif

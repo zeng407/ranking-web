@@ -70,8 +70,8 @@
                         {{$t('Copied link')}}
                       </b-popover>
 
-                      <span v-if="!isEditing" 
-                        id="play-button" class="btn btn-outline-dark mr-3"  
+                      <span v-if="!isEditing"
+                        id="play-button" class="btn btn-outline-dark mr-3"
                         :class="{disabled: elements.data.length < 2}"
                         @click="playGame" @mouseover="playButtonOnHoverIn" @mouseleave="playButtonOnHoverOut">
                         {{ $t('edit_post.info.start') }}&nbsp;<i class="fas fa-play"></i>
@@ -183,7 +183,7 @@
                       <label class="col-form-label-lg">
                         {{ $t('Publishment') }}
                       </label>
-                      <div v-if="isEditing"> 
+                      <div v-if="isEditing">
                         <ValidationProvider rules="required" v-slot="{ errors }">
                           <label class="form-control btn btn-outline-dark" for="post-privacy-public">
                             <input type="radio" id="post-privacy-public" v-model="post.policy" value="public"
@@ -246,7 +246,7 @@
               </div>
             </ValidationObserver>
           </div>
-          
+
           <!-- tab elements -->
           <div class="tab-pane fade" id="v-pills-elements" role="tabpanel" aria-labelledby="v-pills-elements-tab">
             <!-- upload image from device -->
@@ -409,13 +409,13 @@
                           :post-serial="post.serial"
                           :element-id="String(element.id)"
                           :source-url="element.source_url"
-                          :update-element-route="updateElementEndpoint" 
+                          :update-element-route="updateElementEndpoint"
                           :upload-element-route="uploadElementEndpoint"
                           @elementUpdated="handleElementUpdated"/>
                       </div>
                     </div>
                   </div>
-                  
+
                   <!-- youtube embed source -->
                   <div class="card mb-3" v-else-if="isYoutubeEmbedSource(element)">
                     <YoutubeEmbed :element="element" v-if="element" :autoplay="false"/>
@@ -432,7 +432,7 @@
                         <br>
                         <small class="text-muted">{{ element.created_at | datetime}}</small>
                       </span>
-                      
+
                       <!--delete button-->
                       <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
@@ -443,7 +443,7 @@
                         :post-serial="post.serial"
                         :element-id="String(element.id)"
                         :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint" 
+                        :update-element-route="updateElementEndpoint"
                         :upload-element-route="uploadElementEndpoint"
                         @elementUpdated="handleElementUpdated"/>
                     </div>
@@ -503,7 +503,7 @@
                           :post-serial="post.serial"
                           :element-id="String(element.id)"
                           :source-url="element.source_url"
-                          :update-element-route="updateElementEndpoint" 
+                          :update-element-route="updateElementEndpoint"
                           :upload-element-route="uploadElementEndpoint"
                           @elementUpdated="handleElementUpdated"/>
                       </div>
@@ -526,7 +526,7 @@
                         <br>
                         <small class="text-muted">{{ element.created_at | datetime}}</small>
                       </span>
-                      
+
                       <!--delete button-->
                       <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
                         <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
@@ -537,12 +537,12 @@
                         :post-serial="post.serial"
                         :element-id="String(element.id)"
                         :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint" 
+                        :update-element-route="updateElementEndpoint"
                         :upload-element-route="uploadElementEndpoint"
                         @elementUpdated="handleElementUpdated"/>
                     </div>
                   </div>
-                  
+
                   <!-- video source -->
                   <div class="card mb-3" v-else>
                     <!-- load the video player -->
@@ -568,7 +568,7 @@
                         :post-serial="post.serial"
                         :element-id="String(element.id)"
                         :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint" 
+                        :update-element-route="updateElementEndpoint"
                         :upload-element-route="uploadElementEndpoint"
                         @elementUpdated="handleElementUpdated"/>
                     </div>
@@ -578,7 +578,7 @@
                 <!-- image -->
                 <div class="col-lg-4 col-md-6" v-if="element.type === 'image'" :key="element.id + '_' + index+'_'+element.source_url">
                   <div class="card mb-3">
-                    <img @error="onImageError(element, $event)" :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                    <img @error="onImageError(element, $event)" :src="getThumbnailUrl(element)" class="card-img-top" :alt="element.title"
                       style="max-height: 300px; object-fit: contain;"
                       v-if="element.type === 'image'">
 
@@ -603,7 +603,7 @@
                         :post-serial="post.serial"
                         :element-id="String(element.id)"
                         :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint" 
+                        :update-element-route="updateElementEndpoint"
                         :upload-element-route="uploadElementEndpoint"
                         @elementUpdated="handleElementUpdated"/>
                     </div>
@@ -674,7 +674,7 @@
                         </template>
                       </template>
                       <template v-else>
-                        <img @error="onImageError(element, $event)" :src="element.thumb_url" class="card-img-top" :alt="element.title"
+                        <img @error="onImageError(element, $event)" :src="getThumbnailUrl(element)" class="card-img-top" :alt="element.title"
                           v-if="element.type === 'image'" style="width: 200px; height: 100px; object-fit: contain;">
                       </template>
                     </td>
@@ -719,16 +719,16 @@
                         :post-serial="post.serial"
                         :element-id="String(element.id)"
                         :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint" 
+                        :update-element-route="updateElementEndpoint"
                         :upload-element-route="uploadElementEndpoint"
                         @elementUpdated="handleElementUpdated"/>
                     </td>
                   </tr>
-                </tbody>  
+                </tbody>
               </table>
             </div>
-            
-            
+
+
             <!-- per page setting -->
             <div class="d-flex justify-content-end">
               <div class="form-group" v-if="elements.data.length > 0">
@@ -818,7 +818,7 @@ export default {
         policy: '',
         password: '',
         tags: [],
-        
+
       },
       keep_post: null,
       isEditing: false,
@@ -873,7 +873,7 @@ export default {
     }
   },
   components: {
-    
+
   },
   computed: {
     totalRow: function () {
@@ -883,7 +883,7 @@ export default {
       return 0;
     },
     isShareable: function () {
-      return this.elements.data.length > 1 
+      return this.elements.data.length > 1
       && (this.post.policy == 'public' || this.post.policy == 'password');
     },
 
@@ -1432,7 +1432,7 @@ export default {
         hours: timeGroup[1],
       }).asSeconds();
     },
-  
+
 
     /** Player **/
     getYoutubePlayer(element) {
@@ -1513,6 +1513,9 @@ export default {
           this.showSharePopover = false;
         }, 2000);
       });
+    },
+    getThumbnailUrl(element) {
+      return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
     }
   }
 }

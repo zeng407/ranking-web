@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $post->isPublic() ? $post : __('title.access'),
     'ogTitle' => $post->isPublic() ? $post->title : null,
-    'ogImage' => $post->isPublic() ? $element?->thumb_url : null,
+    'ogImage' => $post->isPublic() ? $element?->getScaledThumbUrl() : null,
     'ogDescription' => $post->isPublic() ? $post->description : null,
     ])
 
@@ -106,8 +106,14 @@
                     <i class="fas fa-3x fa-spinner fa-spin" ></i>
                   </div>
                   <viewer ref="leftViewer" :options="viewerOptions">
-                    <img @load="handleLeftLoaded" v-show="leftImageLoaded" @@error="onImageError(le.id, le.thumb_url2,$event)" class="game-image" :src="le.thumb_url"
-                      :style="{ height: this.elementHeight + 'px' }" :key="le.thumb_url">
+                    <img
+                      v-show="leftImageLoaded"
+                      @load="handleLeftLoaded"
+                      @@error="onImageError(le.id, le.thumb_url2,$event)"
+                      class="game-image"
+                      :src="getThumbUrl(le)"
+                      :style="{ height: this.elementHeight + 'px' }"
+                      :key="le.thumb_url">
                   </viewer>
                 </div>
                 <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
@@ -193,8 +199,13 @@
                   <div v-show="!rightImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
                     <i class="fas fa-3x fa-spinner fa-spin" ></i>
                   </div>
-                  <viewer :image="re.thumb_url" ref="rightViewer" :options="viewerOptions">
-                    <img @load="handleRightLoaded" v-show="rightImageLoaded" @click="clickImage('rightViewer')" @@error="onImageError(re.id, re.thumb_url2, $event)" class="game-image" :src="re.thumb_url"
+                  <viewer ref="rightViewer" :options="viewerOptions">
+                    <img
+                      v-show="rightImageLoaded"
+                      @load="handleRightLoaded"
+                      @@error="onImageError(re.id, re.thumb_url2, $event)"
+                      class="game-image"
+                      :src="getThumbUrl(re)"
                       :style="{ height: this.elementHeight + 'px' }" :key="re.thumb_url">
                   </viewer>
                 </div>

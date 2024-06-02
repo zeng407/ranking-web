@@ -42,29 +42,36 @@ class PublicPostResource extends JsonResource
             'serial' => $this->serial,
             'is_private' => $this->isPrivate(),
             'description' => $this->description,
-            'element1' => [
-                'video_source' => $element1?->video_source,
-                'type' => $element1?->type,
-                'id' => $element1?->id,
-                'url' => $element1?->thumb_url,
-                'url2' => $element1?->imgur_image?->link,
-                'title' => $element1?->title,
-                'previewable'=> $this->isPreviewable($element1)
-            ],
-            'element2' => [
-                'video_source' => $element2?->video_source,
-                'type' => $element2?->type,
-                'id' => $element2?->id,
-                'url' => $element2?->thumb_url,
-                'url2' => $element2?->imgur_image?->link,
-                'title' => $element2?->title,
-                'previewable'=> $this->isPreviewable($element2)
-            ],
+            'element1' => $this->getElement($element1),
+            'element2' => $this->getElement($element2),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'play_count' => $this->games()->count(),
             'elements_count' => $elementsCount,
             'tags' => $this->tags->pluck('name')->toArray(),
+        ];
+    }
+
+    protected function getElement(?Element $element)
+    {
+        if(!$element) return [
+            'video_source' => null,
+            'type' => null,
+            'id' => null,
+            'url' => null,
+            'url2' => null,
+            'title' => null,
+            'previewable'=> false
+        ];
+
+        return [
+            'video_source' => $element->video_source,
+            'type' => $element->type,
+            'id' => $element->id,
+            'url' => $element->getScaledThumbUrl(),
+            'url2' => $element->imgur_image?->link,
+            'title' => $element->title,
+            'previewable'=> $this->isPreviewable($element)
         ];
     }
 

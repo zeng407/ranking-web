@@ -22,8 +22,11 @@
     @elseif($rank->loser->type === 'video')
         <video width="100%" height="270" loop controls playsinline src="{{ $rank->loser->source_url }}" poster="{{ $rank->loser->thumb_url }}"></video>
     @elseif($rank->loser->type === 'image')
-        <viewer image="{{ $rank->loser->thumb_url }}" :options="viewerOptions">
-            <img class="w-auto mw-100 cursor-pointer" src="{{ $rank->loser->thumb_url }}" height="270" class="w-auto mw-100"
-                alt="{{ $rank->loser->title }}">
+        <viewer :options="viewerOptions">
+            <img class="w-auto mw-100 cursor-pointer"
+              src="{{ $rank->loser->getScaledThumbUrl() }}"
+              height="270"
+              class="w-auto mw-100"
+              alt="{{ $rank->loser->title }}">
         </viewer>
 @endif

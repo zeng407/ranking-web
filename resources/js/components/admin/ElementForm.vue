@@ -4,12 +4,12 @@
       <div class="card">
         <div class="card-body">
           <template v-if="element.type === 'image'">
-            <img :src="element.thumb_url" class="img-fluid">
+            <img :src="getThumbUrl(element)" class="img-fluid">
             <i class="fas fa-image"></i>
           </template>
           <template v-if="element.type === 'video'">
             <a target="_blank" :href="element.source_url">
-              <img :src="element.thumb_url" class="img-fluid">
+              <img :src="getThumbUrl(element)" class="img-fluid">
             </a>
             <i class="fas fa-video"></i>
           </template>
@@ -112,6 +112,9 @@ export default {
             this.$set(this.titles, element.id, element.title);
           });
         });
+    },
+    getThumbUrl(element) {
+      return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
     },
     onclickUpdateElement(elementId) {
       this.updateElement(elementId);

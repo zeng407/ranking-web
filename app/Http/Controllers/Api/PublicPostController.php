@@ -7,8 +7,6 @@ use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Comment\CommentResource;
 use App\Http\Resources\Game\ChampionResource;
-use App\Http\Resources\PublicPostResource;
-use App\Models\Game;
 use App\Models\Post;
 use App\Models\UserGameResult;
 use App\Services\Builders\CommentBuilder;
@@ -40,8 +38,8 @@ class PublicPostController extends Controller
         ]);
         $sort = $this->getSort($request);
         $posts = CacheService::rememberPosts($request, $sort);
-        
-        return response()->json($posts);    
+
+        return response()->json($posts);
     }
 
     public function getChampions(Request $request)
@@ -52,7 +50,7 @@ class PublicPostController extends Controller
             })
             ->orderByDesc('id')
             ->cursorPaginate(5);
-        
+
         return ChampionResource::collection($games);
     }
 
@@ -105,7 +103,7 @@ class PublicPostController extends Controller
             );
         }
 
-        if (!$comment) { 
+        if (!$comment) {
             return response()->json(['message' => __('Too many requests')], 429);
         }
 
@@ -134,5 +132,5 @@ class PublicPostController extends Controller
 
         return $sort;
     }
-    
+
 }

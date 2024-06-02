@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\MyPost\PostElementResource;
 use App\Models\Element;
 use App\Models\Post;
-use App\Policies\ElementPolicy;
 use App\Services\ElementService;
 use App\Services\ElementSourceGuess;
 use App\Services\Traits\FileHelper;
