@@ -49,7 +49,7 @@ trait FileHelper
 
     protected function moveUploadedFile(UploadedFile $file, string $directory): string|bool
     {
-        $image = new \Imagick($file);
+        $image = new \Imagick($file->getRealPath());
         $mineType = $image->getImageMimeType();
         if($mineType){
             $extension = '.' . explode('/', $mineType)[1];
