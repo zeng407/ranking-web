@@ -49,8 +49,13 @@ trait FileHelper
 
     protected function moveUploadedFile(UploadedFile $file, string $directory): string|bool
     {
-        $extension = $file->getClientOriginalExtension();
-        $extension = $extension ? ('.' . $extension) : '';
+        $image = new \Imagick($file->getRealPath());
+        $mineType = $image->getImageMimeType();
+        if($mineType){
+            $extension = '.' . explode('/', $mineType)[1];
+        }else {
+            $extension = null;
+        }
         $path = $file->storeAs($directory, $this->generateFileName(). $extension);
         Storage::setVisibility($path, 'public');
         return $path;
