@@ -24,7 +24,7 @@
     @elseif($rank->loser->type === 'image')
         <viewer :options="viewerOptions">
             <img class="w-auto mw-100 cursor-pointer"
-              src="{{ $rank->loser->getScaledThumbUrl() }}"
+              src="{{ $rank->loser->lowthumb_url ?: $rank->loser->thumb_url }}"
               height="270"
               class="w-auto mw-100"
               alt="{{ $rank->loser->title }}">
