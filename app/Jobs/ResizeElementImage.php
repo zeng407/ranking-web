@@ -41,18 +41,32 @@ class ResizeElementImage implements ShouldQueue
         $url = $this->element->thumb_url;
         $image = \Image::make($url);
         $image->resize($this->width, $this->height);
-        $extension = pathinfo($url, PATHINFO_EXTENSION);
-        $extension = $extension ? ('.'.$extension) : '';
-        $tempFile = storage_path('app/tmp/'.$this->generateFileName() . $extension);
-        $image->save($tempFile);
-        $mineType = mime_content_type($tempFile);
-        $file = new \Illuminate\Http\UploadedFile($tempFile, 'image_low_thumbnail'. $extension, $mineType, null, true);
+        $extension = $this->getExtension($image);
+        $path = storage_path('app/tmp/' . $this->generateFileName() . $extension);
+        $image->save($path);
+        $mineType = $image->mime();
+        $file = new \Illuminate\Http\UploadedFile($path, 'image_low_thumbnail'. $extension, $mineType, null, true);
         $newPath = $this->moveUploadedFile($file,  "low/{$this->width}x{$this->height}");
         $url = \Storage::url($newPath);
         $this->element->update([
             'lowthumb_url' => $url
         ]);
         // delete temp file
-        unlink($tempFile);
+        unlink($path);
+    }
+
+    protected function getExtension(\Intervention\Image\Image $image)
+    {
+        try{
+            $mime = $image->mime();
+            if($mime){
+                $extension = explode('/', $mime)[1];
+                return ".".$extension;
+            }
+        }catch (\Exception $e){
+            logger($e->getMessage());
+        }
+
+        return "";
     }
 }
