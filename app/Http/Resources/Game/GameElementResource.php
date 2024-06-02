@@ -24,6 +24,7 @@ class GameElementResource extends JsonResource
             'id' => $this->id,
             'source_url' => $this->source_url,
             'thumb_url' => $this->thumb_url,
+            'lowthumb_url' => $this->lowthumb_url,
             'thumb_url2' => $this->imgur_image?->link,
             'title' => $this->title,
             'type' => $this->type,

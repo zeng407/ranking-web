@@ -247,7 +247,7 @@ export default {
         }).then(() => {
           if(reset){
             this.resetPlayerPosition();
-            this.scrollToLastPosition();
+            // this.scrollToLastPosition();
             this.resetPlayingStatus();
             // destroy viwer
             if(this.$refs.rightViewer){
@@ -590,7 +590,7 @@ export default {
           let interval = setInterval(() => {
             if(this.leftReady && this.rightReady){
               this.resetPlayerPosition();
-              this.scrollToLastPosition();
+              // this.scrollToLastPosition();
               this.resetPlayingStatus();
               clearInterval(interval);
               setTimeout(() => {
@@ -843,7 +843,13 @@ export default {
         this.refreshAD = false;
       }, 0);
 
+      let retry = 5;
       let interval = setInterval(() => {
+        if(retry <= 0){
+          clearInterval(interval);
+          return;
+        }
+        retry--;
         if (window.adsbygoogle) {
           try{
             window.adsbygoogle.push({});
@@ -876,6 +882,13 @@ export default {
       let second = time % 60;
       return `${hour}h${minute}m${second}s`;
     },
+    getThumbUrl(element){
+      if(this.isMobileScreen){
+        return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
+      }else{
+        return element.thumb_url;
+      }
+    }
   },
 
   beforeMount() {

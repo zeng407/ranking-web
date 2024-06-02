@@ -3,9 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Helper\CacheService;
-use App\Http\Resources\PublicPostResource;
-use App\Models\Post;
-use App\Repositories\Filters\PostFilter;
 use Illuminate\Http\Request;
 use App\Services\TagService;
 use App\Services\PostService;

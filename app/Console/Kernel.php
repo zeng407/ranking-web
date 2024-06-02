@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
+use App\ScheduleExecutor\ThumbnailExecutor;
 use Artisan;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -40,6 +41,11 @@ class Kernel extends ConsoleKernel
             Artisan::call('make:rank-report-history all');
             Artisan::call('make:rank-report-history week');
         })->name('Make Rank Report History')->dailyAt('06:15');
+
+        $schedule->call(function(){
+            app(ThumbnailExecutor::class)->makeElementThumbnails(1000);
+        })->name('Make Thumbnails')->everyThreeHours()->withoutOverlapping();
+
 
         if(config('services.twitch.auto_refresh_token')){
             $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily();

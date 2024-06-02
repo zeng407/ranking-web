@@ -55,10 +55,6 @@ export default {
       type: String,
       required: true
     },
-    indexRankEndpoint: {
-      type: String,
-      required: true
-    },
     indexCommentEndpoint: {
       type: String,
       required: true

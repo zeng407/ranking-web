@@ -47,8 +47,7 @@ export default {
   methods: {
     initChart() {
       Promise.all([
-        this.loadRanks('all'),
-        this.loadRanks('week'),
+        this.loadRanks(['all','week']),
       ]).then(() => {
         this.drawChart(this.chartId);
       });
@@ -63,7 +62,8 @@ export default {
       return axios.get(this.indexRankEndpoint,{
           params: params
         }).then(response => {
-          this.ranks[time] = response.data.data;
+          this.ranks['all'] = response.data.all;
+          this.ranks['week'] = response.data.week;
         }).catch(error => {
           console.log(error);
         });

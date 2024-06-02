@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $post->title.' - '.__('title.rank'),
     'ogTitle' => $post->title.' - '.__('title.rank'),
-    'ogImage' => $ogElement?->thumb_url,
+    'ogImage' => $ogElement?->getScaledThumbUrl(),
     'ogDescription' => $post->description,
     'embed' => $embed,
 ])
@@ -20,7 +20,6 @@
         :champion-histories="{{ json_encode($champion_histories) }}"
         :max-rank="{{ $reports->total()}}"
         :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
-        index-rank-endpoint="{{ route('api.rank.index') }}"
     >
         {{-- Main --}}
         <div class="container-fuild" v-cloak>

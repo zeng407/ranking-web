@@ -22,8 +22,9 @@
 @elseif($gameResult->winner->type === 'video')
     <video width="100%" height="270" loop controls playsinline src="{{ $gameResult->winner->source_url }}" poster="{{ $gameResult->winner->thumb_url }}"></video>
 @elseif($gameResult->winner->type === 'image')
-    <viewer image="{{ $gameResult->winner->thumb_url }}" :options="viewerOptions">
-        <img class="w-auto mw-100 cursor-pointer my-champion-element" src="{{ $gameResult->winner->thumb_url }}"
+    <viewer :options="viewerOptions">
+        <img class="w-auto mw-100 cursor-pointer my-champion-element"
+          src="{{ $gameResult->winner->getScaledThumbUrl() }}"
             alt="{{ $gameResult->winner->title }}">
     </viewer>
 @endif

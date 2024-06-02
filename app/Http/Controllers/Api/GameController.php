@@ -6,18 +6,14 @@ use App\Events\GameElementVoted;
 use App\Events\GameComplete;
 use App\Helper\AccessTokenService;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Game\GameResultResource;
 use App\Http\Resources\Game\GameRoundResource;
 use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
-use App\Models\Game1V1Round;
 use App\Models\Post;
 use App\Rules\GameCandicateRule;
-use App\Rules\GameElementRule;
 use App\Services\GameService;
 use App\Services\RankService;
 use Illuminate\Http\Request;
-use Ramsey\Uuid\Uuid;
 
 class GameController extends Controller
 {
@@ -49,7 +45,7 @@ class GameController extends Controller
     {
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
-    
+
         return $this->getNextElements($game);
     }
 
@@ -84,7 +80,7 @@ class GameController extends Controller
     {
         // rate limit access for 10 times per minute
         $accessKey = 'access:' . $post->id;
-        
+
         if (!\RateLimiter::tooManyAttempts($accessKey, 10)) {
             \RateLimiter::hit($accessKey, 60);
         } else {
@@ -92,7 +88,7 @@ class GameController extends Controller
         }
         logger('accessed', ['post' => $post->id]);
         if(
-            $post->isPasswordRequired() 
+            $post->isPasswordRequired()
             && !empty($request->header('Authorization')
             && is_string($request->header('Authorization')))
         ){
@@ -107,7 +103,7 @@ class GameController extends Controller
 
     public function vote(Request $request)
     {
-        
+
         $request->validate([
             'game_serial' => 'required',
         ]);
@@ -117,7 +113,7 @@ class GameController extends Controller
             'winner_id' => ['required', 'different:loser_id', new GameCandicateRule($game)],
             'loser_id' => ['required', 'different:winner_id', new GameCandicateRule($game)]
         ]);
-        
+
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
 

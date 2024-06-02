@@ -30,6 +30,7 @@ class Element extends Model
         'path',
         'source_url',
         'thumb_url',
+        'lowthumb_url',
         'title',
         'type',
         'video_source',
@@ -54,6 +55,11 @@ class Element extends Model
     public function rank_reports()
     {
         return $this->hasMany(RankReport::class);
+    }
+
+    public function getScaledThumbUrl()
+    {
+        return $this->lowthumb_url ?: $this->thumb_url;
     }
 
 }
