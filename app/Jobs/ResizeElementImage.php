@@ -42,10 +42,11 @@ class ResizeElementImage implements ShouldQueue
         $image = \Image::make($url);
         $image->resize($this->width, $this->height);
         $extension = pathinfo($url, PATHINFO_EXTENSION);
-        $tempFile = storage_path('app/tmp/'.$this->generateFileName() . '.' . $extension);
+        $extension = $extension ? ('.'.$extension) : '';
+        $tempFile = storage_path('app/tmp/'.$this->generateFileName() . $extension);
         $image->save($tempFile);
         $mineType = mime_content_type($tempFile);
-        $file = new \Illuminate\Http\UploadedFile($tempFile, 'image_low_thumbnail.'.$extension, $mineType, null, true);
+        $file = new \Illuminate\Http\UploadedFile($tempFile, 'image_low_thumbnail'. $extension, $mineType, null, true);
         $newPath = $this->moveUploadedFile($file,  "low/{$this->width}x{$this->height}");
         $url = \Storage::url($newPath);
         $this->element->update([
