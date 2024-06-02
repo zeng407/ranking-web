@@ -46,10 +46,12 @@ trait FileHelper
         return new StoragedImage($url, $path, $fileInfo);
     }
 
-    
+
     protected function moveUploadedFile(UploadedFile $file, string $directory): string|bool
     {
-        $path = $file->storeAs($directory, $this->generateFileName() . '.' . $file->getClientOriginalExtension());
+        $extension = $file->getClientOriginalExtension();
+        $extension = $extension ? ('.' . $extension) : '';
+        $path = $file->storeAs($directory, $this->generateFileName(). $extension);
         Storage::setVisibility($path, 'public');
         return $path;
     }
