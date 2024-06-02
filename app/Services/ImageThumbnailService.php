@@ -11,13 +11,13 @@ class ImageThumbnailService
     {
         $url = $element->thumb_url;
         try{
-            $image = \Image::make($url);
+            $image = new \Imagick($url);
         }catch (\Exception $e){
             \Log::error('Error making thumbnail', ['element_id' => $element->id, 'url' => $url, 'error' => $e->getMessage()]);
             return;
         }
-        $originalWidth = $image->width();
-        $originalHeight = $image->height();
+        $originalWidth = $image->getImageWidth();
+        $originalHeight = $image->getImageHeight();
         $ratio = $originalWidth / $originalHeight;
         $maxRatio = $maxWidth / $maxHeight;
 
