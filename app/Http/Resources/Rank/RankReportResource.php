@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Rank;
 
-use App\Models\RankReportHistory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class RankReportResource extends JsonResource
@@ -15,6 +14,9 @@ class RankReportResource extends JsonResource
      */
     public function toArray($request)
     {
+        if($this->resource == null){
+            return [];
+        }
         return [
             'rank' => $this->rank,
             'win_rate' => (string) round($this->win_rate,1),
