@@ -2,7 +2,7 @@
 import Swal from 'sweetalert2';
 
 const MD_WIDTH_SIZE = 768;
-const MOBILE_HEIGHT = 900;
+const MOBILE_HEIGHT = 700;
 export default {
   mounted() {
     if(!this.requirePassword){
@@ -369,8 +369,9 @@ export default {
         let scrollPosition = window.scrollY;
         let verticalCenter = $(window).height() / 2 - $('#left-player').height() / 2;
         let playOriginalOffset = $('#left-player').offset().top;
-
+        let titleHeight = $('#game-title').height();
         let screenCenterPosition = Math.max(verticalCenter + scrollPosition - playOriginalOffset, 0);
+        screenCenterPosition = Math.min(screenCenterPosition, 350);
         let winAnimate = $('#left-player').animate({top: screenCenterPosition}, null, () => {
           setTimeout(() => {
             this.leftReady = true;
@@ -378,8 +379,7 @@ export default {
         }).promise();
 
 
-        let adTopPosition = screenCenterPosition + playOriginalOffset
-            - $('#left-player').height() / 2;
+        let adTopPosition = titleHeight + screenCenterPosition;
         $('#google-ad-container').animate({top: adTopPosition});
 
         let adBottomPosition = -$('#right-player').height() - 30 + screenCenterPosition;
@@ -451,8 +451,10 @@ export default {
         let scrollPosition = window.scrollY;
         let verticalCenter = $(window).height() / 2 - $('#right-player').height() / 2;
         let playOriginalOffset = $('#right-player').offset().top;
+        let titleHeight = $('#game-title').height();
 
         let screenCenterPosition = Math.min(verticalCenter + scrollPosition - playOriginalOffset, 0);
+        screenCenterPosition = Math.max(screenCenterPosition, -320);
         // animate right player buttom to top
         let winAnimate = $('#right-player').animate({top: screenCenterPosition}, null, () => {
           setTimeout(() => {
@@ -460,8 +462,7 @@ export default {
           }, 1200);
         }).promise();
 
-        let adTopPosition = screenCenterPosition + playOriginalOffset
-            - $('#right-player').height() / 2;
+        let adTopPosition = titleHeight + screenCenterPosition+ $('#left-player').height() + 30;
         $('#google-ad-container').animate({top: adTopPosition});
 
         let adBottomPosition = screenCenterPosition;
@@ -915,7 +916,7 @@ export default {
   beforeMount() {
     // less md size
     if ($(window).width() < MD_WIDTH_SIZE) {
-      this.elementHeight = 300
+      this.elementHeight = 200
     }
   }
 }

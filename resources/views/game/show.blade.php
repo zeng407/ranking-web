@@ -81,7 +81,7 @@
 
         {{-- game info --}}
         <div v-if="game && !finishingGame">
-          <h1 class="text-center text-break mt-1">{{$post->title}}</h1>
+          <h1 id="game-title" class="text-center text-break mt-1">{{$post->title}}</h1>
           <div class="d-none d-sm-flex" style="flex-flow: row wrap">
             <h5 style="width: 20%"></h5>
 
