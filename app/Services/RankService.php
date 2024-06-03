@@ -30,11 +30,16 @@ class RankService
         return $reports;
     }
 
-    public function getRankPosition(Post $post, Element $element): ?int
+    public function getRankReportByElement(Post $post, Element $element): ?RankReport
     {
-        $report = RankReport::where('post_id', $post->id)
+        return RankReport::where('post_id', $post->id)
             ->where('element_id', $element->id)
             ->first();
+    }
+
+    public function getRankPosition(Post $post, Element $element): ?int
+    {
+        $report = $this->getRankReportByElement($post, $element);
 
         return $report?->rank;
     }

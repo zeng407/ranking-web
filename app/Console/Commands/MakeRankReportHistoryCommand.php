@@ -43,11 +43,14 @@ class MakeRankReportHistoryCommand extends Command
         $range = $this->argument('range');
         $range = RankReportTimeRange::from($range);
 
-        Post::chunkById(1000, function ($posts){
+        $refresh = $this->option('refresh');
+
+        Post::chunkById(1000, function ($posts)use($refresh){
             foreach ($posts as $post) {
                 CreateAndUpdateRankHistory::dispatch(
                     $post,
-                    today()->subDays(config('setting.refres_rank_report_history_days'))->toDateString()
+                    today()->subDays(config('setting.refres_rank_report_history_days'))->toDateString(),
+                    $refresh
                 );
                 $this->info("Rank report history created for post id: $post->id");
             }

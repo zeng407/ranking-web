@@ -73,7 +73,7 @@ class RankReportHistoryBuilder
 
         $rankRecords = $this->getRankRecords($start);
         $timeline = carbon($start);
-        while($timeline->lte(today()->endOfDay())) {
+        while($timeline->lt(today())) {
             $rankPKRecord = $rankRecords->where('record_date', carbon($timeline)->toDateString())
                 ->where('rank_type', RankType::PK_KING)
                 ->first();

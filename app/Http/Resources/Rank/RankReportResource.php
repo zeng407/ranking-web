@@ -5,12 +5,7 @@ namespace App\Http\Resources\Rank;
 use App\Models\RankReportHistory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * Class RankReportHistoryResource
- * @package App\Http\Resources\Rank
- * @mixin RankReportHistory
- */
-class RankReportHistoryResource extends JsonResource
+class RankReportResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -23,7 +18,7 @@ class RankReportHistoryResource extends JsonResource
         return [
             'rank' => $this->rank,
             'win_rate' => (string) round($this->win_rate,1),
-            'date' => $this->start_date,
+            'date' => today()->toDateString(),
         ];
     }
 }
