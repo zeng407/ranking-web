@@ -2,6 +2,7 @@
 import Swal from 'sweetalert2';
 
 const MD_WIDTH_SIZE = 768;
+const MOBILE_HEIGHT = 900;
 export default {
   mounted() {
     if(!this.requirePassword){
@@ -15,7 +16,7 @@ export default {
       this.elementHeight = Math.max(window.innerHeight * 0.5, 360);
       this.gameBodyHeight = Math.max(this.elementHeight+260, 700);
     }else{
-      this.gameBodyHeight = Math.max(this.elementHeight+260, 900);
+      this.gameBodyHeight = Math.max(this.elementHeight+260, MOBILE_HEIGHT);
     }
 
   },
@@ -363,16 +364,26 @@ export default {
       this.leftReady = false;
 
       if (this.isMobileScreen) {
-        $('#rounds-session').animate({opacity: 0}, 500, "linear");
+        $('#rounds-session').animate({opacity: 0}, 100, "linear");
+        // move #left-plyaer to the certical center of screen
+        let scrollPosition = window.scrollY;
+        let verticalCenter = $(window).height() / 2 - $('#left-player').height() / 2;
+        let playOriginalOffset = $('#left-player').offset().top;
 
-        let winAnimate = $('#left-player').animate({top: 200}, null, () => {
+        let screenCenterPosition = Math.max(verticalCenter + scrollPosition - playOriginalOffset, 0);
+        let winAnimate = $('#left-player').animate({top: screenCenterPosition}, null, () => {
           setTimeout(() => {
             this.leftReady = true;
           }, 1200);
         }).promise();
 
-        $('#google-ad-container').animate({top: 200});
-        $('#google-ad2').animate({top: -250});
+
+        let adTopPosition = screenCenterPosition + playOriginalOffset
+            - $('#left-player').height() / 2;
+        $('#google-ad-container').animate({top: adTopPosition});
+
+        let adBottomPosition = -$('#right-player').height() - 30 + screenCenterPosition;
+        $('#google-ad2').animate({top: adBottomPosition});
 
         let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500).promise();
         $.when(loseAnimate).then(() => {
@@ -434,17 +445,27 @@ export default {
       $('#left-player').css('opacity', 0.5);
 
       if (this.isMobileScreen) {
-        $('#rounds-session').animate({opacity: 0}, 500, "linear");
+        $('#rounds-session').animate({opacity: 0}, 100, "linear");
 
+        // move #right-plyaer to the certical center of screen
+        let scrollPosition = window.scrollY;
+        let verticalCenter = $(window).height() / 2 - $('#right-player').height() / 2;
+        let playOriginalOffset = $('#right-player').offset().top;
+
+        let screenCenterPosition = Math.min(verticalCenter + scrollPosition - playOriginalOffset, 0);
         // animate right player buttom to top
-        let winAnimate = $('#right-player').animate({top: -200}, null, () => {
+        let winAnimate = $('#right-player').animate({top: screenCenterPosition}, null, () => {
           setTimeout(() => {
           this.rightReady = true;
           }, 1200);
         }).promise();
 
-        $('#google-ad-container').animate({top: 250});
-        $('#google-ad2').animate({top: -200});
+        let adTopPosition = screenCenterPosition + playOriginalOffset
+            - $('#right-player').height() / 2;
+        $('#google-ad-container').animate({top: adTopPosition});
+
+        let adBottomPosition = screenCenterPosition;
+        $('#google-ad2').animate({top: adBottomPosition});
 
         let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
 
