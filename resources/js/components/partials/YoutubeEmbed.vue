@@ -1,5 +1,5 @@
 <template>
-  <div :id="'embed'+element.id" ref="embedDiv" style="width: 100%;">
+  <div :id="'embed'+element.id" ref="embedDiv" :style="{'width': '100%', 'height': height +'px'}">
   </div>
 </template>
 
@@ -17,7 +17,7 @@ export default {
       }
     }
   },
-  
+
   props: {
     element: {
       type: Object,
@@ -42,14 +42,14 @@ export default {
       while (this.$refs.embedDiv.firstChild) {
         this.$refs.embedDiv.firstChild.remove();
       }
-    
-      
+
+
       let parser = new DOMParser();
       let code = element.source_url;
       // repalce height and width
       code = code.replace(/width="\d+"/, `width="${this.width}"`);
       code = code.replace(/height="\d+"/, `height="${this.height}"`);
-      
+
       if(this.autoplay == false){
         code = code.replace(/autoplay=1/, `autoplay=0`);
       }
