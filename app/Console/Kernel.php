@@ -19,6 +19,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->call(function(){
+            //todo fix memory exhausted
             app(PostTrendScheduleExecutor::class)->createPostTrends();
         })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping();
 
