@@ -2,9 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Enums\RankReportTimeRange;
 use App\Models\Post;
-use App\Models\RankReport;
 use App\Services\RankService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -39,7 +37,6 @@ class UpdateRankReport implements ShouldQueue, ShouldBeUnique
     {
         logger('UpdateRankReport job fired');
         $rankService->createRankReports($this->post);
-        CreateAndUpdateRankHistory::dispatch($this->post, today()->subDays(1)->toDateString());
     }
 
 

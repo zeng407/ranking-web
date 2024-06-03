@@ -41,6 +41,7 @@ export default {
       ranks: {
         'week': [],
         'all': [],
+        'current': []
       },
     }
   },
@@ -64,6 +65,7 @@ export default {
         }).then(response => {
           this.ranks['all'] = response.data.all;
           this.ranks['week'] = response.data.week;
+          this.ranks['current'] = response.data.current;
         }).catch(error => {
           console.log(error);
         });
@@ -88,28 +90,33 @@ export default {
           win_rate: item.win_rate
         }
       });
-      const allRankData = this.ranks['all'].filter((item, index) => {
-        //  turr if recent 7 days
-        if(index < 7){
-          return true;
-        }
-        return weeklyRankData.some((item2) => {
-          return item.date === item2.x;
-        });
-      }).map((item, index) => {
-        if(item.rank === 0 || item.win_rate <= 0){
+      const allRankData = [this.ranks['current']]
+        .concat(this.ranks['all'].filter((item) => item.date !== moment().format('YYYY-MM-DD')))
+        .filter((item, index) => {
+          //  ture if index is 0 2 4
+          if((index % 2 == 0 && index < 5) || item.date == moment().format('YYYY-MM-DD')){
+            return true;
+          }
+          return weeklyRankData.some((item2) => {
+            return item.date === item2.x;
+          });
+        })
+        .map((item, index) => {
+          if(item.rank === 0 || item.win_rate <= 0){
+            return {
+              x: item.date,
+              y: null,
+              win_rate: 0
+            }
+          }
           return {
             x: item.date,
-            y: null,
-            win_rate: 0
+            y: item.rank,
+            win_rate: item.win_rate
           }
-        }
-        return {
-          x: item.date,
-          y: item.rank,
-          win_rate: item.win_rate
-        }
-      });
+        });
+
+
       new Chart(ctx, {
         type: 'line',
         data: {

@@ -86,17 +86,18 @@ class GameService
             ->get();
 
         $winner = $this->getWinner($game);
-        $winnerRank = $rankService->getRankPosition($game->post, $winner);
+        $rankReport = $rankService->getRankReportByElement($game->post, $winner);
 
         $gameResult = GameResultResource::collection($rounds)
             ->additional([
                 'winner' => $winner,
-                'winner_rank' => $winnerRank,
+                'winner_rank' => $rankReport?->rank,
+                'winner_win_rate' => $rankReport?->win_rate,
                 'statistics' => [
                     'timeline' => $this->getGameTimeline($game),
                     'game_time' => $game->created_at->diffInSeconds($game->completed_at),
                     'winner_id' => $winner->id,
-                    'winner_global_rank' => $winnerRank
+                    'winner_global_rank' => $rankReport?->rank
                 ],
                 'rounds' => $game->element_count
             ]);
@@ -133,7 +134,7 @@ class GameService
         try {
             $lock = Locker::lockUpdateGameElement($game);
             $lock->block(5);
-            
+
             \DB::transaction(function () use ($game, $winnerId, $loserId) {
                 // update winner
                 $gameElement = $game->game_elements()
@@ -211,7 +212,7 @@ class GameService
             ->get();
         // push game to first
         $rounds = collect([$game])->concat($rounds);
-        
+
         // get diff in every 2 timestamps
         $timeline = $rounds->map(function ($round, $key) use ($rounds, $game) {
             if ($key === 0) {

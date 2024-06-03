@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\RankReportTimeRange;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Rank\RankReportHistoryResource;
+use App\Http\Resources\Rank\RankReportResource;
 use App\Models\Element;
 use App\Models\Post;
 use App\Services\RankService;
@@ -32,6 +33,7 @@ class RankController extends Controller
         $this->authorize('read-rank', $post);
 
         $result = [];
+        $result['current'] = RankReportResource::make($this->rankService->getRankReportByElement($post, $this->getElement($request->element_id)));
         $element = $this->getElement($request->element_id);
         foreach ((array)$request->time as $time){
             $time = RankReportTimeRange::from($time);
