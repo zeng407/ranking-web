@@ -74,6 +74,11 @@ class Post extends Model
         return $this->hasMany(PostTrend::class);
     }
 
+    public function post_statistics()
+    {
+        return $this->hasMany(PostStatistic::class);
+    }
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'post_tags')->withTimestamps();

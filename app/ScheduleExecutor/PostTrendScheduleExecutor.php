@@ -50,17 +50,31 @@ class PostTrendScheduleExecutor
                 break;
         }
 
-        $query = Game::whereRaw('games.post_id = posts.id')
-            ->selectRaw('count(*)')
-            ->where(function ($query) use ($startDate) {
-                if ($startDate) {
+        Post::withCount(['games' => function ($query) use ($startDate) {
+                if ($startDate){
                     $query->where('created_at', '>=', $startDate);
                 }
+            }])
+            ->orderBy('games_count', 'desc')
+            ->orderBy('posts.id', 'desc')
+            ->eachById(function (Post $post) use ($startDate) {
+                $date = $startDate ?: $post->created_at->toDateString();
+                $post->post_statistics()->updateOrCreate([
+                    'start_date' => $date
+                ], [
+                    'start_date' => $date,
+                    'play_count' => $post->games_count
+                ]);
             });
 
-        Post::orderByRaw("( {$query->toSql()} ) desc", $query->getBindings())
-            ->orderBy('posts.created_at', 'desc')
-            ->each(function (Post $post, $count) use ($range, $startDate) {
+        $count = 0;
+        Post::join('post_statistics', 'posts.id', '=', 'post_statistics.post_id')
+            ->where('post_statistics.start_date', $startDate)
+            ->orderBy('post_statistics.play_count', 'desc')
+            ->orderBy('posts.id', 'desc')
+            ->selectRaw('posts.*')
+            ->eachById(function (Post $post) use ($range, $startDate, &$count) {
+                $count++;
                 $post->post_trends()->updateOrCreate([
                     'trend_type' => TrendType::HOT,
                     'time_range' => $range,
@@ -68,7 +82,7 @@ class PostTrendScheduleExecutor
                 ], [
                     'trend_type' => TrendType::HOT,
                     'time_range' => $range,
-                    'position' => $count + 1,
+                    'position' => $count,
                     'start_date' => $startDate
                 ]);
             });
