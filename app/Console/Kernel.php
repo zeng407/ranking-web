@@ -20,18 +20,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->call(function(){
-            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::ALL);
-        })->after(function(){
-            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::YEAR);
-        })->after(function(){
-            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::MONTH);
-        })->after(function(){
-            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::WEEK);
-        })->after(function(){
-            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::TODAY);
-            CacheService::rememberPostUpdatedTimestamp(true);
-        })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping(120);
+        $schedule->command('make:post-trend')->hourlyAt(5)->withoutOverlapping(120);
 
         $schedule->call(function(){
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'day']));

@@ -4,24 +4,21 @@
 namespace App\ScheduleExecutor;
 
 
-use App\Enums\RankType;
 use App\Enums\TrendTimeRange;
 use App\Enums\TrendType;
 use App\Helper\CacheService;
-use App\Models\Element;
-use App\Models\Game;
-use App\Models\Game1V1Round;
 use App\Models\Post;
-use App\Models\Rank;
-use App\Models\RankReport;
-use App\Services\RankService;
-use DB;
 
 class PostTrendScheduleExecutor
 {
-    public function createPostTrends($trendTimeRange)
+    public function createPostTrends()
     {
-        $this->createHotTrendPost($trendTimeRange);
+        $this->createHotTrendPost(TrendTimeRange::ALL);
+        $this->createHotTrendPost(TrendTimeRange::YEAR);
+        $this->createHotTrendPost(TrendTimeRange::MONTH);
+        $this->createHotTrendPost(TrendTimeRange::WEEK);
+        $this->createHotTrendPost(TrendTimeRange::TODAY);
+        CacheService::rememberPostUpdatedTimestamp();
     }
 
     protected function createHotTrendPost($range)
