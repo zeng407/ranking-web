@@ -2,6 +2,8 @@
 
 namespace App\Console;
 
+use App\Enums\TrendTimeRange;
+use App\Helper\CacheService;
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
 use App\ScheduleExecutor\ThumbnailExecutor;
 use Artisan;
@@ -19,9 +21,17 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->call(function(){
-            //todo fix memory exhausted
-            app(PostTrendScheduleExecutor::class)->createPostTrends();
-        })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping();
+            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::ALL);
+        })->after(function(){
+            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::YEAR);
+        })->after(function(){
+            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::MONTH);
+        })->after(function(){
+            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::WEEK);
+        })->after(function(){
+            app(PostTrendScheduleExecutor::class)->createPostTrends(TrendTimeRange::TODAY);
+            CacheService::rememberPostUpdatedTimestamp(true);
+        })->name('createPostTrend')->hourlyAt(5)->withoutOverlapping(120);
 
         $schedule->call(function(){
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'day']));

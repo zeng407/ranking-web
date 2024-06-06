@@ -4,6 +4,7 @@
     'ogImage' => $ogElement?->getScaledThumbUrl(),
     'ogDescription' => $post->description,
     'embed' => $embed,
+    'stickyNav' => 'sticky-top-desktop'
 ])
 
 @section('header')
@@ -22,7 +23,7 @@
             <div class="row m-0">
                 {{-- left part: ads --}}
                 <div class="d-none d-lg-block col-lg-2">
-                    <div class="position-sticky sticky-top" style="width: 100%; top:30px">
+                    <div class="position-sticky sticky-top" style="width: 100%; top:100px">
                         @include('ads.rank_ad_sides')
                     </div>
                 </div>
@@ -59,7 +60,7 @@
                     @endif
 
                     <b-tabs content-class="mt-3"
-                        nav-wrapper-class="@if ($gameResult) sticky-top bg-default @endif">
+                        nav-wrapper-class="@if ($gameResult) sticky-top-rank-tab bg-default @endif">
                         {{-- my game result --}}
                         @if ($gameResult)
                             <b-tab :title="$t('My Rank')" {{ request('tab') == 0 ? 'active' : '' }} @click="clickTab('0')">
@@ -467,7 +468,7 @@
 
                 {{-- left part: comments --}}
                 <div class="d-none d-lg-block col-lg-2">
-                    <div class="position-sticky sticky-top" style="width: 100%; top:30px">
+                    <div class="position-sticky sticky-top" style="width: 100%; top:100px">
                         @include('ads.rank_ad_sides')
                     </div>
                 </div>

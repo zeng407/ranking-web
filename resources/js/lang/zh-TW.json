@@ -192,9 +192,12 @@
     "Video": "影片",
     "Shorts": "Shorts短片",
     "Share": "分享",
+    "Announcement": "公告",
 
     "element.type.image": "圖片",
     "element.type.video": "影片",
+
+    "Never show again": "不再顯示",
 
     "":""
 }

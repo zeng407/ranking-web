@@ -14,6 +14,17 @@ use Illuminate\Http\Request;
 
 class CacheService
 {
+    static public function rememberAnnouncement($data = null, $minutes = 60, $refresh = false)
+    {
+        if ($refresh) {
+            Cache::forget('announcement');
+        }
+        $seconds = $minutes * 60;
+        return Cache::remember('announcement', $seconds, function() use ($data) {
+            return $data;
+        });
+    }
+
     static public function rememberUserRole(User $user, $refresh = false)
     {
         if ($refresh) {

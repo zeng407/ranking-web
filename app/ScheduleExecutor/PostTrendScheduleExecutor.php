@@ -19,14 +19,9 @@ use DB;
 
 class PostTrendScheduleExecutor
 {
-    public function createPostTrends()
+    public function createPostTrends($trendTimeRange)
     {
-        $this->createHotTrendPost(TrendTimeRange::ALL);
-        $this->createHotTrendPost(TrendTimeRange::YEAR);
-        $this->createHotTrendPost(TrendTimeRange::MONTH);
-        $this->createHotTrendPost(TrendTimeRange::WEEK);
-        $this->createHotTrendPost(TrendTimeRange::TODAY);
-        CacheService::rememberPostUpdatedTimestamp(true);
+        $this->createHotTrendPost($trendTimeRange);
     }
 
     protected function createHotTrendPost($range)
