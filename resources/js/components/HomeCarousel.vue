@@ -107,7 +107,6 @@ export default {
     handleIframeLoaded(index) {
       if (index === 0) {
         this.firstCarouselLoading = false;
-        console.log('first carousel loaded');
       }
     },
     waitFirstCarouselLoading(index) {

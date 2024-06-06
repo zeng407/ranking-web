@@ -65,7 +65,7 @@
     <div id="app">
         @if (!isset($embed) || !$embed)
             <nav
-                class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{ isset($stickyNav) && $stickyNav ? 'sticky-top' : '' }}">
+                class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{ isset($stickyNav) ? $stickyNav : '' }}">
                 <div class="container-fluid">
                     <div class="d-flex justify-content-start">
                         {{-- logo --}}
@@ -102,7 +102,7 @@
                             <span class="navbar-toggler-icon"></span>
                         </button>
                     </div>
-                    
+
                     {{-- profile --}}
                     <div class="collapse navbar-collapse text-right" id="navbarSupportedContent" style="flex-grow:inherit">
                         {{-- Left Side Of Navbar --}}
@@ -147,7 +147,7 @@
                             @endguest
                         </ul>
                     </div>
-                    
+
                 </div>
             </nav>
         @endif
@@ -155,9 +155,11 @@
         <main class="mt-2">
             @include('layouts.flash')
             @yield('content')
+            <announcement
+              :announcement="{{ json_encode(\App\Helper\CacheService::rememberAnnouncement()) }}"
+            ></announcement>
         </main>
     </div>
-
     @yield('footer')
 </body>
 

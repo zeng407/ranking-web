@@ -19,10 +19,6 @@ use App\Http\Controllers\Post\GameController;
 */
 
 
-// Route::get('/test', function () {
-//     return view('sample');
-// });
-
 Auth::routes([
     'login' => true,
     'logout' => true,
@@ -49,7 +45,7 @@ Route::get('post/{post:serial}/rank', fn() => redirect()->route('game.rank', ['p
 Route::get('post/{post:serial}/rank-embed', fn() => redirect()->route('game.rank-embed', ['post' => request()->post]));
 
 /** Oauth */
- 
+
 Route::get('/auth/google/redirect', [SocialiteController::class, 'redirectGoogle'])->name('auth.redirect.google');
 Route::get('/auth/google/connect', [SocialiteController::class, 'connectGoogle'])->name('auth.connect.google');
 Route::get('/auth/google/callback', [SocialiteController::class, 'callbackGoogle'])->name('auth.callback.google');

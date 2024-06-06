@@ -15,4 +15,7 @@
     <a class="btn btn-lg btn-outline-light m-1" href="{{ route('admin.home-carousel') }}">
         {{ __('首頁輪播') }}
     </a>
+    <a class="btn btn-lg btn-outline-light m-1" href="{{ route('admin.announcement.index') }}">
+      {{ __('公告') }}
+  </a>
 </div>

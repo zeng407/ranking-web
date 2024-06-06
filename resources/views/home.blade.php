@@ -359,7 +359,6 @@
 
     </div>
   </home>
-
 @endsection
 
 @section('footer')
