@@ -76,14 +76,14 @@ export default {
         return;
       }
       const ctx = target;
-      const weeklyRankData = this.ranks['week'].map((item, index) => {
+      const weeklyRankData = this.ranks['week']
+      .filter((item) => {
         if(item.rank === 0 || item.win_rate <= 0){
-          return {
-            x: item.date,
-            y: null,
-            win_rate: 0
-          }
+          return false;
         }
+        return true;
+      })
+      .map((item, index) => {
         return {
           x: item.date,
           y: item.rank,
@@ -93,6 +93,10 @@ export default {
       const allRankData = [this.ranks['current']]
         .concat(this.ranks['all'].filter((item) => item.date !== moment().format('YYYY-MM-DD')))
         .filter((item, index) => {
+          if(item.rank === 0 || item.win_rate <= 0){
+            return false;
+          }
+
           //  ture if index is 0 2 4
           if((index % 2 == 0 && index < 5) || item.date == moment().format('YYYY-MM-DD')){
             return true;
@@ -102,13 +106,6 @@ export default {
           });
         })
         .map((item, index) => {
-          if(item.rank === 0 || item.win_rate <= 0){
-            return {
-              x: item.date,
-              y: null,
-              win_rate: 0
-            }
-          }
           return {
             x: item.date,
             y: item.rank,
