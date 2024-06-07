@@ -1,3 +1,4 @@
+<template></template>
 <script>
 import Swal from 'sweetalert2';
 export default {
@@ -5,7 +6,9 @@ export default {
     this.showAnnouncement();
   },
   props: {
-    announcement: Object,
+    announcement: {
+      required: true
+    }
   },
   data: function () {
     return {
@@ -17,9 +20,14 @@ export default {
   },
   methods: {
     showAnnouncement() {
+      if(!this.announcement) {
+        return;
+      }
+
       if (this.isReadBefore() || !this.announcement.content) {
         return;
       }
+
       Swal.fire({
         title: this.$t('Announcement'),
         text: this.announcement.content,
