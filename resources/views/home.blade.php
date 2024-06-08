@@ -107,11 +107,11 @@
 
             {{-- champions --}}
             <h4 class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
-            {{-- preserve for champion --}}
+            {{-- dummy champion, preserve for champion --}}
             <div v-if="!champions.length && mobileScreen" class="d-flex d-lg-none overflow-hidden">
               <div class="row flex-nowrap ml-0">
                   {{-- create a empty card --}}
-                  @for ($i = 0; $i < 2; $i++)
+                  @for ($i = 0; $i < 3; $i++)
                   <div class="card champion-card-container shadow col-auto list-item m-2">
                     <div class="card-body">
                       <div class="row">
@@ -143,7 +143,7 @@
                 <div class="card champion-card-container shadow col-auto list-item m-2" v-for="championResult in champions" :key="championResult.key" v-cloak>
                   <div class="card-body">
                     <div class="row">
-                      <div style="max-width: 150px">
+                      <div class="w-50">
                         <div class="position-relative">
                           <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
                           <img v-else @load="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url">
@@ -157,9 +157,9 @@
                             </div>
                           </div>
                         </div>
-                        <h5 class="text-center font-size-small">@{{championResult.left.name}}</h5>
+                        <h5 class="text-center font-size-small">@{{championResult.left.name | cut(30)}}</h5>
                       </div>
-                      <div style="max-width: 150px" v-if="championResult.right.name">
+                      <div class="w-50" v-if="championResult.right.name">
                         <div class="position-relative">
                           <video  v-if="isEndWith(championResult.right.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
                           <img v-else @load="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
@@ -173,7 +173,7 @@
                             </div>
                           </div>
                         </div>
-                        <h5 class="text-center font-size-small">@{{championResult.right.name}}</h5>
+                        <h5 class="text-center font-size-small">@{{championResult.right.name | cut(30)}}</h5>
                       </div>
                     </div>
                     <div class="row d-flex justify-content-end">

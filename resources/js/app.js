@@ -96,6 +96,11 @@ Vue.filter('formNow', function (value, locale = 'zh-tw') {
     moment.locale(locale || 'en');
     return moment(value).fromNow();
 });
+Vue.filter('cut', function(value, maxLength) {
+    if (!value) return '';
+    if (value.length <= maxLength) return value;
+    return value.slice(0, maxLength) + '...';
+  });
 
 /* Viewer */
 import 'viewerjs/dist/viewer.css'

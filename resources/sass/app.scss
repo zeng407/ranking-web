@@ -606,6 +606,11 @@
 }
 .champion-card-container {
     border-radius: 20px;
+
+    @media (max-width: 992px) {
+        width: 350px;
+        height: 230px;
+    }
 }
 
 
