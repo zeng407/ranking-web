@@ -32,6 +32,11 @@ class HomeController extends Controller
         ]);
     }
 
+    public function donate()
+    {
+        return view('donate');
+    }
+
     protected function getSort(Request $request)
     {
         $sort = $request->query('sort_by', 'hot');
