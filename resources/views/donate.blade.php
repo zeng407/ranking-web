@@ -19,7 +19,7 @@
       <div class="col-12 text-center my-2">
         <h5>{{__('Payment')}}</h5>
         {{-- <img src="https://payment.opay.tw/Content/themes/WebStyle201404/images/allpay.png"/> --}}
-        <p>(歐付寶支付系統)</p>
+        <p>(歐付寶)</p>
       </div>
       <div class="col-12 col-md-3 text-center mt-2">
         <a target="_blank" href="https://p.opay.tw/bmlRV">

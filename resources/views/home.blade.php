@@ -250,8 +250,8 @@
                   @{{$t('Search Results',{keyword: filters.keyword})}}<i class="fas fa-times ml-1 cursor-pointer"></i>
                 </span>
               </h5>
-              <div class="d-inline-block">
-                <i v-if="isSearching" class="fas fa-spinner fa-spin"></i>
+              <div class="d-inline-block position-absolute" style="left: 50%; transform: translateX(-50%);">
+                <i v-if="isSearching" class="fas fa-spinner fa-spin fa-2x"></i>
               </div>
             </div>
 

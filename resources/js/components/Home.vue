@@ -141,7 +141,8 @@ export default {
     loadTags() {
       axios.get(this.indexTagsEndpoint)
         .then(response => {
-          this.tags = response.data;
+          const sortedEntries = _.orderBy(Object.entries(response.data), [1], ['desc']); // 'desc' for descending order
+          this.tags = _.fromPairs(sortedEntries);
         })
         .catch(error => {
           console.error(error);
