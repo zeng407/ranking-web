@@ -41,7 +41,7 @@ class CacheService
         if ($refresh) {
             Cache::forget('hot_tags');
         }
-        $seconds = 60 * 180; // 3 hours
+        $seconds = 60 * 60; // 1 hour
         return Cache::remember('hot_tags', $seconds, function() {
             return app(TagService::class)->getHotTags();
         });
