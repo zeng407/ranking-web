@@ -37,7 +37,7 @@ class TagService
             PostFilter::PUBLIC => true,
             PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
         ],[
-            'sort_by' => 'hot',
+            'sort_by' => 'hot_week',
             'sort_dir' => 'week',
         ], [
             'per_page' => config('setting.home_post_per_page')
