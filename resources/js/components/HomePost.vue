@@ -10,14 +10,14 @@
         <div class="row no-gutters">
           <div class="col-6">
             <div class="post-element-container">
-              <img v-if="post.element1.previewable" :src="post.element1.url" @error="onImageError(post.element1.url2, $event)">
+              <img :key="post.element1.id" v-if="post.element1.previewable" :src="post.element1.url" @error="onImageError(post.element1.url2, $event)">
               <video v-else :src="getVideoPreviewUrl(post.element1.url)"></video>
             </div>
             <h3 class="text-center mt-1 p-1 element-title">{{ post.element1.title }}</h3>
           </div>
           <div class="col-6">
             <div class="post-element-container">
-              <img v-if="post.element2.previewable" :src="post.element2.url" @error="onImageError(post.element2.url2, $event)">
+              <img :key="post.element2.id" v-if="post.element2.previewable" :src="post.element2.url" @error="onImageError(post.element2.url2, $event)">
               <video v-else :src="getVideoPreviewUrl(post.element2.url)"></video>
             </div>
             <h3 class="text-center mt-1 p-1 element-title">{{ post.element2.title }}</h3>
@@ -88,11 +88,11 @@ export default {
   },
   data: function () {
     return {
-      
+
     }
   },
   watch: {
-    
+
   },
   methods: {
     getVideoPreviewUrl(videoUrl) {

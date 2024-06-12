@@ -91,6 +91,16 @@
     "Password is required.": "請輸入密碼",
 
     "comment.anonymous": "使用匿名",
-    
+    "Donate": "贊助",
+    "donate.description": "如果你喜歡這個網站，你可以考慮贊助我，讓我能持續改善網站功能",
+    "Payment": "付款方式",
+    "donate.coffee": "請我喝咖啡",
+    "donate.catfood": "貓罐頭",
+    "donate.see_the_cat": "看貓",
+    "donate.lunch": "請我吃午餐",
+    "donate.server": "伺服器維運1天",
+    "donate.whatever": "隨便 (金額自訂)",
+
+
     "":""
 }

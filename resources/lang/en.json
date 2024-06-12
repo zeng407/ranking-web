@@ -11,7 +11,7 @@
     "socialite.connect.success": "Connect successfully",
     "nickname_length": "Nickname must be between 1 and 20 characters",
     "nickname_update_rate": "Can be changed once per day",
-    "home.posts": "2PickPosts",
+    "home.posts": "Votes",
     "home.start": "Start",
     "home.rank": "Rank",
     "rank.return_home": "Home",
@@ -31,6 +31,13 @@
     "game.save_progress": "Your progress will be automatically saved for 3 days, so you can continue voting when you come back.",
     "game.select_option_hint": "You need to select an option.",
     "comment.anonymous": "Anonymous",
+    "donate.description": "If you like this website, consider supporting me so I can continue to improve its features",
+    "donate.coffee": "Buy me a coffee",
+    "donate.catfood": "Feed my cat",
+    "donate.see_the_cat": "See the cat",
+    "donate.lunch": "Buy me lunch",
+    "donate.server": "Server cost a day",
+    "donate.whatever": "Whatever you want",
 
     "":""
 }
