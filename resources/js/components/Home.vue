@@ -7,17 +7,23 @@ export default {
   name: 'home',
   mounted() {
     this.registerScrollEvent();
+    this.registerInitSearch();
     this.initSorter();
     this.initGoogleAds();
     this.initMasonry();
+    this.loadTags();
     this.getChampions();
     this.handleNewChampion();
-    this.autoRefreshChampions();
+    this.autoRefreshChampionsTimestamp();
     window.addEventListener('resize', this.updateMobileScreen);
 
   },
   props: {
     indexPostsEndpoint: {
+      type: String,
+      required: true
+    },
+    indexTagsEndpoint: {
       type: String,
       required: true
     },
@@ -58,8 +64,10 @@ export default {
         range: this.range,
         page: this.currentPage
       },
+      tags: [],
       timeRangeText: '',
       errorImages: [],
+      isSearching: false,
       isLoadingMorePosts: false,
       delayLoading: false,
       readyQueueForLoadPosts: false,
@@ -84,13 +92,38 @@ export default {
     },
   },
   methods: {
-    loadPosts(page) {
-      // mutex lock to prevent multiple requests
+    loadPosts(page, concat = false) {
+      // prevent multiple requests
       if(this.isLoadingMorePosts || this.isFetchAllPosts) {
         return;
       }
       this.isLoadingMorePosts = true;
       this.delayLoading = true;
+      const params = this.normalizeParams(page);
+      this.sendIndexPostsRequest(params, true)
+        .catch(error => {
+          this.resetLoading();
+          console.error(error);
+        });
+    },
+    sendIndexPostsRequest(params, concat) {
+      return axios.get(this.indexPostsEndpoint, {
+        params: params
+      }).then(response => {
+        this.resetLoading();
+        this.filters.page = response.data.current_page;
+        this.last_page = response.data.last_page;
+        if(concat){
+          this.posts = this.posts.concat(response.data.data);
+        }else{
+          this.posts = response.data.data;
+        }
+        //update posts
+        Vue.set(this, 'posts', this.posts);
+        this.initMasonry();
+      })
+    },
+    normalizeParams(page) {
       let params = {
         page: page,
         sort_by: this.filters.sort_by,
@@ -103,23 +136,21 @@ export default {
       if (this.filters.sort_by === 'new') {
         delete params.range;
       }
-      axios.get(this.indexPostsEndpoint, {
-        params: params
-      }).then(response => {
-        this.resetLoading();
-        this.filters.page = response.data.current_page;
-        this.last_page = response.data.last_page;
-        this.posts = this.posts.concat(response.data.data);
-        //update posts
-        Vue.set(this, 'posts', this.posts);
-
-        this.initMasonry();
-      }).catch(error => {
-        this.resetLoading();
-        console.error(error);
-      });
+      return params;
+    },
+    loadTags() {
+      axios.get(this.indexTagsEndpoint)
+        .then(response => {
+          this.tags = response.data;
+        })
+        .catch(error => {
+          console.error(error);
+        });
     },
     resetLoading() {
+      setTimeout(() => {
+        this.isSearching = false;
+      },300);
       this.isLoadingMorePosts = false;
       setTimeout(() => {
         if(this.readyQueueForLoadPosts){
@@ -133,21 +164,37 @@ export default {
         }, 3000);
     },
     search() {
-      let query = {
-        k: this.filters.keyword,
-        sort_by: this.filters.sort_by,
-        range: this.filters.range
-      };
-      // Remove null values from the query
-      query = Object.fromEntries(Object.entries(query).filter(([_, v]) => v !== null && v !== ''));
-      // if sort_by is new, we don't need to pass the range
-      if (this.filters.sort_by === 'new') {
-        delete query.range;
+      // update current sort text after swtich sortBy
+      this.initSorter();
+
+      this.isSearching = true;
+
+      // remove preload-posts by class
+      document.querySelectorAll('.preload-post').forEach((element) => {
+        element.remove();
+      });
+      const params = this.normalizeParams(1);
+      this.sendIndexPostsRequest(params, false);
+
+      // scroll to #sorter + 40px
+      const sorter = document.getElementById('sorter');
+      if(sorter){
+        window.scrollTo({
+          top: sorter.offsetTop,
+          behavior: 'smooth'
+        });
       }
-      window.location.href = '?' + new URLSearchParams(query).toString();
     },
     addTag(tag) {
       this.filters.keyword = tag;
+      // update keyword-input value
+      document.getElementById('keyword-input').value = tag;
+      this.search();
+    },
+    clearKeyword() {
+      this.filters.keyword = '';
+      // update keyword-input value
+      document.getElementById('keyword-input').value = '';
       this.search();
     },
     share(url, id) {
@@ -242,8 +289,8 @@ export default {
       });
     },
     initSorter() {
-      if (this.sortBy === 'hot') {
-        if (this.range === 'all') {
+      if (this.filters.sort_by === 'hot') {
+        if (this.filters.range === 'all') {
           this.timeRangeText = this.$t('All Time');
         } else if (this.range === 'week') {
           this.timeRangeText = this.$t('This Week');
@@ -256,6 +303,16 @@ export default {
         }
       }
     },
+    registerInitSearch() {
+      this.$bus.$on('initiate-search', ($event) => {
+        const parentForm = $event.target.closest('form');
+        const formData = new FormData(parentForm);
+        const keyword = formData.get('k');
+        this.filters.keyword = keyword;
+        this.search();
+      });
+    }
+    ,
     registerScrollEvent() {
       window.addEventListener('scroll', this.handleScroll);
     },
@@ -336,9 +393,9 @@ export default {
     isEndWith(str, suffix) {
       return str.endsWith(suffix);
     },
-    autoRefreshChampions() {
+    autoRefreshChampionsTimestamp() {
       setInterval(() => {
-        //reredner the champions
+        //reredner the champions timestamp
         this.refreshKey++
       }, 60 * 1000);
     },

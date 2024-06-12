@@ -9,11 +9,11 @@
 
 @endphp
 
-<div class="lang-options d-flex flex-column-reverse flex-md-row justify-content-end mt-3 mt-md-0">
-    <ul class="list-unstyled">
+<div class="lang-options d-flex flex-column-reverse flex-md-row justify-content-end mt-md-0">
+    <ul class="list-unstyled m-0">
       <li class="dropdown d-inline-block">
-        <a class="nav-link text-dark" href="#" id="dropdownLangButton" role="button" data-toggle="dropdown"
-          aria-expanded="false">
+        <a href="#" class="nav-link text-dark" id="dropdownLangButton" role="button" data-toggle="dropdown"
+          aria-expanded="false" @click.prevent>
           <i class="fas fa-globe-asia"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownLangButton">

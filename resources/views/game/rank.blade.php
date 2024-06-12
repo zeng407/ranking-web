@@ -32,7 +32,7 @@
                 <div class="col-12 col-lg-8">
                     @if (!$embed)
                         <div class="row mb-3">
-                            <div class="col-auto">
+                            <div class="col-10">
                                 <a class="btn btn-outline-dark btn-sm m-1" href="{{ route('home') }}"><i
                                         class="fa-solid fa-home"></i>&nbsp;{{ __('rank.return_home') }}</a>
                                 <a class="btn btn-outline-dark btn-sm m-1" href={{ route('game.show', $post->serial) }}><i
@@ -49,12 +49,14 @@
                                     </div>
                                 @endif
                             </div>
+                            <div class="col-2">
+                              @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
+                            </div>
                         </div>
                         <hr>
 
                         <div class="d-flex position-relative">
                             <h1 class="break-all post-title">{{ $post->title }} - {{ __('Ranking') }}</h1>
-                            @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
                         </div>
                         <p>{{ $post->description }}</p>
                     @endif

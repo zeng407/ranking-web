@@ -107,6 +107,8 @@ import 'viewerjs/dist/viewer.css'
 import VueViewer from 'v-viewer'
 Vue.use(VueViewer)
 
+// EventBus
+Vue.prototype.$bus = new Vue(); // Define EventBus globally
 const app = new Vue({
     el: '#app',
     i18n

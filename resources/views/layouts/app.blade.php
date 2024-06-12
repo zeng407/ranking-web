@@ -64,8 +64,7 @@
 <body class="d-flex flex-column min-vh-100">
     <div id="app">
         @if (!isset($embed) || !$embed)
-            <nav
-                class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{ isset($stickyNav) ? $stickyNav : '' }}">
+            <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{ isset($stickyNav) ? $stickyNav : '' }}">
                 <div class="container-fluid">
                     <div class="d-flex justify-content-start">
                         {{-- logo --}}
@@ -83,15 +82,7 @@
                     </div>
 
                     <div class="d-flex justify-content-center">
-                        {{-- search --}}
-                        <form class="form-inline my-2 my-lg-0" action="{{ route('home') }}" >
-                            <input class="mr-sm-2 search-bar" type="search" placeholder="{{ __('Search') }}"
-                                value="{{ Request::get('k') }}" name="k"
-                                aria-label="Search">
-                            <button class="btn btn-outline-white my-2 my-sm-0" type="submit">
-                                <i class="fas fa-search text-white"></i>
-                            </button>
-                        </form>
+                        @yield('search')
                     </div>
 
                     {{-- menu --}}

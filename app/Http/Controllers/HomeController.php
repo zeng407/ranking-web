@@ -4,17 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Helper\CacheService;
 use Illuminate\Http\Request;
-use App\Services\TagService;
 use App\Services\PostService;
 
 class HomeController extends Controller
 {
-    protected $tagService;
     protected $postService;
 
-    public function __construct(TagService $tagService, PostService $postService)
+    public function __construct(PostService $postService)
     {
-        $this->tagService = $tagService;
         $this->postService = $postService;
     }
 
@@ -26,13 +23,11 @@ class HomeController extends Controller
             'k' => ['nullable', 'string', 'max:255'],
         ]);
         $sort = $this->getSort($request);
-        $tags = $this->getHotTags();
         $posts = $this->getPosts($request, $sort);
 
         return view('home', [
             'sort' => $request->query('sort_by', 'hot'),
-            'range'=> $request->query('range', config('setting.home_page_default_range')),
-            'tags' => $tags,
+            'range' => $request->query('range', config('setting.home_page_default_range')),
             'posts' => $posts
         ]);
     }
@@ -49,17 +44,12 @@ class HomeController extends Controller
         return $sort;
     }
 
-    protected function getHotTags()
-    {
-        return CacheService::rememberHotTags();
-    }
-
     protected function getPosts(Request $request, $sort)
     {
         return CacheService::rememberPosts($request, $sort);
     }
 
-    public function lang(Request $request , $locale)
+    public function lang(Request $request, $locale)
     {
         session()->put('locale', $locale);
         app()->setLocale($locale);

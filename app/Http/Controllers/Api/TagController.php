@@ -20,9 +20,7 @@ class TagController extends Controller
 
     public function index(Request $request)
     {
-        $prompt = $request->query("prompt");
-
-        $tags = $this->tagService->get($prompt);
+        $tags = $this->tagService->getHotTags();
 
         return response()->json($tags);
     }
