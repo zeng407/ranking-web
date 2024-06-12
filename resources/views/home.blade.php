@@ -233,10 +233,10 @@
 
             {{-- tags --}}
             <div class="tag-container mt-2 d-flex d-md-block overflow-x-scroll-sm hide-scrollbar-sm">
-              <h5 v-for="(count, tag) in tags" class="d-inline-block text-nowrap mr-1 mb-1">
+              <h5 v-for="tag in tags" class="d-inline-block text-nowrap mr-1 mb-1">
                 <span>
-                <a class="btn btn-outline-dark btn-sm badge badge-pill badge-secondary"  href="#" @click.prevent="addTag(tag)">
-                  @{{tag}}(@{{count}})
+                <a class="btn btn-outline-dark btn-sm badge badge-pill badge-secondary"  href="#" @click.prevent="addTag(tag.name)">
+                  @{{tag.name}}(@{{tag.count}})
                 </a>
                 </span>
               </h5>
