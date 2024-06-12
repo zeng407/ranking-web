@@ -64,7 +64,6 @@ class CacheService
                 PostFilter::KEYWORD_LIKE => $request->query('k')
             ],[
                 'sort_by' => $sort,
-                'sort_dir' => $request->query('sort_dir'),
             ], [
                 'per_page' => config('setting.home_post_per_page')
             ]);
