@@ -31,7 +31,7 @@ class PostSorter
         } else if ($sortBy === self::HOT_DAY) {
             $query = self::hot($query, TrendTimeRange::TODAY);
         } else if ($sortBy === self::NEW) {
-            $query = self::new($query, $sortBy, $dir);
+            $query = self::new($query);
         }
 
         return $query;
@@ -52,7 +52,7 @@ class PostSorter
         return $query;
     }
 
-    public static function new(Builder $query, $sortBy, $dir)
+    public static function new(Builder $query)
     {
         $query->orderByDesc('created_at');
         return $query;
