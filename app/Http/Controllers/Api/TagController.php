@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\PostAccessPolicy;
+use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
 use App\Models\Tag;
 use Illuminate\Http\Request;
@@ -20,7 +21,7 @@ class TagController extends Controller
 
     public function index(Request $request)
     {
-        $tags = $this->tagService->getHotTags();
+        $tags = CacheService::rememberHotTags();
 
         return response()->json($tags);
     }

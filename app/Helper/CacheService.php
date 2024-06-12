@@ -43,8 +43,7 @@ class CacheService
         }
         $seconds = 60 * 180; // 3 hours
         return Cache::remember('hot_tags', $seconds, function() {
-            $tags = (new TagService)->get();
-            return $tags;
+            return app(TagService::class)->getHotTags();
         });
     }
 
@@ -77,6 +76,7 @@ class CacheService
 
         return $cache;
     }
+
 
     static public function rememberPostUpdatedTimestamp($fresh = false)
     {

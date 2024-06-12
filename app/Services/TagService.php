@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\PostAccessPolicy;
 use App\Helper\CacheService;
+use App\Repositories\Filters\PostFilter;
 use DB;
 use App\Models\Tag;
 
@@ -32,13 +33,21 @@ class TagService
     public function getHotTags(int $limit = 10)
     {
         // get the hot psots
-        $posts = CacheService::rememberPosts(request(), 'hot');
+        $posts = app(PostService::class)->getList([
+            PostFilter::PUBLIC => true,
+            PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
+        ],[
+            'sort_by' => 'hot',
+            'sort_dir' => 'week',
+        ], [
+            'per_page' => config('setting.home_post_per_page')
+        ]);
 
         $tags = [];
         foreach ($posts as $post) {
-            foreach ($post['tags'] as $tag) {
-                if(!in_array($tag, $tags)) {
-                    $tags[] = $tag;
+            foreach ($post->tags as $tag) {
+                if(!in_array($tag->name, $tags)) {
+                    $tags[] = $tag->name;
                 }
             }
         }
