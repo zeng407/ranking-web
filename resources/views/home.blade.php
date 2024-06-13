@@ -257,9 +257,10 @@
 
               {{-- preload posts --}}
             <div class="grid">
+              <div class="grid-sizer"></div>
+              <div class="gutter-sizer"></div>
+
               @foreach($posts as $index => $post)
-              <div class="grid-sizer preload-post"></div>
-              <div class="gutter-sizer preload-post"></div>
               <div class="grid-item pt-2 preload-post">
                 <div class="card shadow">
                   <div class="card-header text-center">
@@ -315,7 +316,7 @@
               </div>
               @endforeach
 
-              <template v-for="post in posts">
+              <template v-for="(post,index) in posts">
                 <home-post
                   :show-game-endpoint="showGameEndpoint"
                   :show-rank-endpoint="showRankEndpoint"
