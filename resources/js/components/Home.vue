@@ -1,6 +1,7 @@
 <script>
 import masonry from 'masonry-layout';
 import moment from 'moment';
+import Vue from 'vue';
 
 const mobileScreenWidth = 991;
 export default {
@@ -79,6 +80,7 @@ export default {
       refreshKey: 0,
       championLoading:[],
       mobileScreen: window.innerWidth <= mobileScreenWidth,
+      postRefreshKey: 0
     }
   },
   watch: {
@@ -120,7 +122,9 @@ export default {
         }
         //update posts
         Vue.set(this, 'posts', this.posts);
-        this.initMasonry();
+        Vue.nextTick(() => {
+          this.initMasonry();
+        })
       })
     },
     normalizeParams(page) {
@@ -149,6 +153,9 @@ export default {
         .catch(error => {
           console.error(error);
         });
+    },
+    addRefreshKey(){
+      return this.postRefreshKey++;
     },
     resetLoading() {
       setTimeout(() => {
