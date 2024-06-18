@@ -23,7 +23,7 @@
             <div class="row m-0">
                 {{-- left part: ads --}}
                 <div class="d-none d-lg-block col-lg-2">
-                    <div class="position-sticky sticky-top" style="width: 100%; top:100px">
+                    <div class="sticky-top-rank-ad" >
                         @include('ads.rank_ad_sides')
                     </div>
                 </div>
@@ -65,7 +65,11 @@
                         nav-wrapper-class="@if ($gameResult) sticky-top-rank-tab bg-default @endif">
                         {{-- my game result --}}
                         @if ($gameResult)
-                            <b-tab :title="$t('My Rank')" {{ request('tab') == 0 ? 'active' : '' }} @click="clickTab('0')">
+                            <b-tab {{ request('tab') == 0 ? 'active' : '' }} @click="clickTab('0')">
+                              <template #title>
+                                @{{$t('My Rank')}}
+                                <i class="fa-solid fa-trophy"></i>
+                              </template>
                                 <div class="card my-2 card-hover">
                                     <div class="card-header rank-header">
                                         <span class="text-left w-25 rank-number">1</span>
@@ -179,7 +183,11 @@
                         @endif
 
                         {{-- Global Rank --}}
-                        <b-tab :title="$t('Global Rank')" {{ request('tab') == 1 ? 'active' : '' }} @click="clickTab('1')">
+                        <b-tab {{ request('tab') == 1 ? 'active' : '' }} @click="clickTab('1')">
+                            <template #title>
+                              @{{$t('Global Rank')}}
+                              <i class="fa-solid fa-chart-line"></i>
+                            </template>
                             <div class="row">
                                 @foreach ($reports as $index => $rank)
                                     @if ($embed || in_array($rank->rank, [1, 2, 3, 4, $reports->total(), $reports->total() - 1]))
@@ -468,9 +476,9 @@
                     </div>
                 </div>
 
-                {{-- left part: comments --}}
+                {{-- right part: comments --}}
                 <div class="d-none d-lg-block col-lg-2">
-                    <div class="position-sticky sticky-top" style="width: 100%; top:100px">
+                    <div class="sticky-top-rank-ad">
                         @include('ads.rank_ad_sides')
                     </div>
                 </div>

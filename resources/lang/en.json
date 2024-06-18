@@ -11,7 +11,7 @@
     "socialite.connect.success": "Connect successfully",
     "nickname_length": "Nickname must be between 1 and 20 characters",
     "nickname_update_rate": "Can be changed once per day",
-    "home.posts": "Votes",
+    "home.posts": "2Pick",
     "home.start": "Start",
     "home.rank": "Rank",
     "rank.return_home": "Home",

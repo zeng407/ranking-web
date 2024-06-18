@@ -49,7 +49,6 @@ class MakeRankReportHistoryCommand extends Command
             foreach ($posts as $post) {
                 CreateAndUpdateRankHistory::dispatch(
                     $post,
-                    today()->subDays(config('setting.refres_rank_report_history_days'))->toDateString(),
                     $refresh
                 );
                 $this->info("Rank report history created for post id: $post->id");

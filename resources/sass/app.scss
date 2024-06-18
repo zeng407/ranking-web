@@ -320,6 +320,7 @@
 
 .comment-container {
     width: 90%;
+    padding: 4px;
 }
 @media (max-width: 992px) {
     .comment-container {
@@ -559,7 +560,7 @@
     }
 }
 
-.tag-container{
+.tag-container {
     min-height: 100px;
     @media (max-width: 576px) {
         min-height: 30px;
@@ -631,7 +632,6 @@
 }
 .champion-card-container {
     border-radius: 20px;
-
     @media (max-width: 992px) {
         width: 350px;
         height: 240px;
@@ -668,7 +668,7 @@
 }
 
 .champions-container {
-    top:70px;
+    top:56.45px;
     overflow:auto;
     max-height:90vh;
 }
@@ -676,7 +676,7 @@
 .return-top-button {
     width: 30px;
     height:30px;
-    border-radius:5px
+    border-radius:5px;
 }
 
 .comment-input-field {
@@ -809,6 +809,14 @@
 }
 }
 
+.sticky-top-rank-ad {
+    width: 100%;
+    top: 100px;
+    position: -webkit-sticky;
+    position: sticky;
+    z-index: 999;
+}
+
 .sticky-top-desktop {
     @media (min-width: 576px) {
         position: -webkit-sticky;
@@ -824,6 +832,10 @@
     top: 0;
     z-index: 1020;
     @media (min-width: 576px) {
-        top: 62px;
+        top: 56.45px;
     }
+}
+
+.z-1030 {
+    z-index: 1030 !important;
 }
