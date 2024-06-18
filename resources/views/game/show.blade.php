@@ -141,7 +141,7 @@
                   <video @mouseover="videoHoverIn(le, re, true)" id="left-video-player" v-else width="100%" :height="elementHeight" loop autoplay controls playsinline muted :src="le.source_url" :poster="le.thumb_url"></video>
                 </div>
                 <div class="card-body text-center">
-                  <div class="my-1" style="max-height: 120px" v-if="isMobileScreen">
+                  <div class="my-1 overflow-scroll" style="max-height: 35px" v-if="isMobileScreen">
                     <h1 class="my-1 font-size-small">@{{ le.title }}</h1>
                   </div>
                   <div class="my-1" style="height: 120px" v-else>
@@ -237,7 +237,7 @@
                 <!-- reverse when device size width less md(768px)-->
                 <div class="card-body text-center"
                   :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
-                  <div class="my-1 flex-column-reverse d-flex" style="max-height: 120px" v-if="isMobileScreen">
+                  <div class="my-1 flex-column-reverse d-flex overflow-scroll" style="max-height: 35px" v-if="isMobileScreen">
                     <h1 class="my-1 font-size-small">@{{ re.title }}</h1>
                   </div>
                   <div class="my-1" style="height: 120px" v-else>

@@ -2,7 +2,7 @@
 import Swal from 'sweetalert2';
 
 const MD_WIDTH_SIZE = 768;
-const MOBILE_HEIGHT = 700;
+const MOBILE_HEIGHT = 740;
 export default {
   mounted() {
     if(!this.requirePassword){
