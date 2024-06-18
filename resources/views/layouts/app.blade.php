@@ -75,8 +75,10 @@
                         {{-- posts --}}
                         <ul class="navbar-nav mr-auto">
                             <li class="nav-item d-none d-md-block">
+                              <h1 class="font-size-large m-0">
                                 <a class="nav-link" href="{{ route('home') }}"
                                     title="{{ __('home.posts') }}">{{ __('home.posts') }}</a>
+                              </h1>
                             </li>
                         </ul>
                     </div>
@@ -119,7 +121,7 @@
                                     <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
                                         data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
                                         <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
-                                            class="rounded-circle" width="30" height="30" style="object-fit: cover"
+                                            class="rounded-circle" width="24" height="24" style="object-fit: cover"
                                             alt="{{ __('Avatar') }}">
                                         <span class="caret"></span>
                                     </a>
@@ -146,7 +148,7 @@
             </nav>
         @endif
 
-        <main class="mt-2">
+        <main>
             @include('layouts.flash')
             @yield('content')
             <announcement

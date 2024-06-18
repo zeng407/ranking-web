@@ -38,7 +38,7 @@
       </div>
       <div class="col-12 col-md-3 text-center mt-2">
         <a target="_blank" href="https://p.opay.tw/r8DGF">
-          <img src="https://i.imgur.com/8dZff5T.jpeg" height="100px">
+          <img src="https://i.imgur.com/eMuh010.png" height="100px">
           <h5 class="pt-1 text-nowrap">{{__('donate.lunch')}} ($120)</h5>
         </a>
       </div>

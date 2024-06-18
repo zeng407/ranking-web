@@ -29,11 +29,11 @@
       get-champions-endpoint="{{route('api.champion.index')}}"
     >
 
-    <div class="container-fuild">
+    <div class="container-fuild mt-1">
       {{-- main container --}}
         <div class="row m-0">
           {{-- left part: champions --}}
-          <div class="d-none d-lg-block col-lg-2 p-0">
+          <div class="d-none d-lg-block col-lg-3 col-xl-2 p-0 m-0" v-cloak>
             <div class="container position-sticky hide-scrollbar champions-container">
 
               {{-- dummy chmpaion --}}
@@ -116,7 +116,7 @@
             </div>
           </div>
           {{-- main part: posts --}}
-          <div id="main-region" class="col-12 col-lg-8" v-cloak>
+          <div id="main-region" class="col-12 col-lg-9 col-xl-8" v-cloak>
             @include('partial.home-carousel')
 
             {{-- champions --}}
@@ -200,8 +200,9 @@
               </transition-group>
             </div>
 
+            <hr id="sorter-hr">
             {{-- sorter --}}
-            <div id="sorter" class="d-flex justify-content-between flex-nowrap mt-1">
+            <div class="d-flex justify-content-between align-items-center flex-nowrap mt-1">
               <div class="form-inline">
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
                   <label class="btn btn-outline-dark">
@@ -232,7 +233,7 @@
             </div>
 
             {{-- tags --}}
-            <div class="tag-container mt-2 d-flex d-md-block overflow-x-scroll-sm hide-scrollbar-sm">
+            <div class="tag-container mt-2 d-flex d-sm-block overflow-x-scroll-sm hide-scrollbar-sm">
               <h5 v-for="tag in tags" class="d-inline-block text-nowrap mr-1 mb-1">
                 <span>
                 <a class="btn btn-outline-dark btn-sm badge badge-pill badge-secondary"  href="#" @click.prevent="addTag(tag.name)">
@@ -243,10 +244,9 @@
             </div>
 
             {{-- search result --}}
-            <hr>
-            <div class="d-flex" style=" height:25px">
+            <div class="d-flex mt-2" style=" height:25px">
               <h5 v-if="filters.keyword" class="mr-2 d-inline-block">
-                <span class="btn btn-outline-dark badge badge-secondary" @click="clearKeyword">
+                <span class="btn btn-outline-dark badge badge-dark" @click="clearKeyword">
                   @{{$t('Search Results',{keyword: filters.keyword})}}<i class="fas fa-times ml-1 cursor-pointer"></i>
                 </span>
               </h5>
@@ -354,16 +354,16 @@
             @endif
 
             {{-- return to top --}}
-            <div v-if="showReturnUpButton" class="align-content-center" style="position: fixed; right: 20px; bottom: 20px; z-index:999">
-              <span class="cursor-pointer" @click="scrollToTop">
-                <div class="bg-white text-center align-content-center return-top-button">
-                  <i class="fas fa-arrow-up"></i>
+            <div v-if="showReturnUpButton" class="align-content-center" style="position: fixed; right: 20px; bottom: 20px; z-index:1050;">
+              <span class="cursor-pointer" @click="scrollToSorter">
+                <div class="bg-secondary text-center align-content-center return-top-button">
+                  <i class="fas fa-arrow-up text-white"></i>
                 </div>
               </span>
             </div>
           </div>
 
-          <div class="d-none d-lg-block col-lg-2">
+          <div class="d-none d-xl-block col-xl-2">
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
             {{-- right part:ads --}}
             <div class="px-2 mx-auto">

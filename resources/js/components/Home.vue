@@ -186,8 +186,10 @@ export default {
       const params = this.normalizeParams(1);
       this.sendIndexPostsRequest(params, false);
 
-      // scroll to #sorter + 40px
-      const sorter = document.getElementById('sorter');
+      this.scrollToSorter();
+    },
+    scrollToSorter() {
+      const sorter = document.getElementById('sorter-hr');
       if(sorter){
         window.scrollTo({
           top: sorter.offsetTop,

@@ -19,7 +19,6 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected Post $post;
-    protected ?string $startDate;
 
     protected $refresh;
 
@@ -28,10 +27,9 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
      *
      * @return void
      */
-    public function __construct(Post $post, string $startDate = null, $refresh = false)
+    public function __construct(Post $post, $refresh = false)
     {
         $this->post = $post;
-        $this->startDate = $startDate;
         $this->refresh = $refresh;
         $this->onQueue('rank_report_history');
         $this->delay(now()->addSeconds(10));
@@ -50,8 +48,8 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
             $rankService->createRankReportHistory($report, RankReportTimeRange::WEEK, $this->refresh);
         });
 
-        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL, $this->startDate);
-        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::WEEK, $this->startDate);
+        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
+        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::WEEK);
     }
 
     public function uniqueId()
