@@ -117,6 +117,7 @@ export default {
       gameRoomVotes: [],
       isListeningGameBet: false,
       showGameRoomVotes: false,
+      sortByTop: true,
     };
   },
   computed: {
@@ -180,8 +181,19 @@ export default {
 
       return Math.round(this.rightVotes / (this.leftVotes + this.rightVotes) * 100);
     },
+    getSortedRanks() {
+      if(!this.gameBetRanks){
+        return [];
+      }
+      if(this.sortByTop){
+        return this.gameBetRanks.top_10;
+      }else{
+        return this.gameBetRanks.bottom_10;
+      }
+    },
   },
   methods: {
+    // game room
     showGameRoomJoinSetting () {
       $("#gameRoomJoin").modal("show");
     },
@@ -192,7 +204,9 @@ export default {
       this.listenGameRoomRefresh();
       this.getGameRoom();
     },
-    // game room
+    changeSortRanks(){
+      this.sortByTop = !this.sortByTop;
+    },
     loadGameSerialFromCookie() {
       return this.game_serial = this.$cookies.get(this.postSerial);
     },

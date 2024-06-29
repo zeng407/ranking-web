@@ -349,16 +349,16 @@
                 <div class="text-center" v-show="isEditingNickname">(上限10個字元，每小時可更改一次)</div>
                 <h4 class="d-flex justify-content-center">
                   <div class="position-relative">
-                    <u v-if="!isEditingNickname">@{{gameRoom.user.name | cut(10)}}</u>
+                    <u class="cursor-pointer" v-if="!isEditingNickname" @click="toggleEditNickname">@{{gameRoom.user.name | cut(10)}}</u>
                     {{-- edit name --}}
-                    <button v-if="!isEditingNickname && !gameRoom.is_game_completed" class="btn btn-secondary btn-sm position-absolute m-0 p-0 px-1" @click="toggleEditNickname">
+                    <button v-if="!isEditingNickname && !gameRoom.is_game_completed" class="btn btn-secondary btn-sm position-absolute m-0 p-1 px-1" @click="toggleEditNickname">
                       <i class="fa-solid fa-pen-to-square"></i>
                     </button>
                     <div v-if="isEditingNickname && !gameRoom.is_game_completed">
-                      <button class="btn btn-secondary btn-sm m-0 p-0 px-1" @click="saveNickname">
+                      <button class="btn btn-secondary m-0 p-0 px-1" :disabled="!newNickname" @click="saveNickname">
                         <i class="fa-solid fa-check"></i>
                       </button>
-                      <button class="btn btn-secondary btn-sm m-0 p-0 px-1" @click="toggleEditNickname">
+                      <button class="btn btn-secondary m-0 p-0 px-1" @click="toggleEditNickname">
                         <i class="fa-solid fa-xmark"></i>
                       </button>
                     </div>
@@ -407,7 +407,14 @@
               </div>
               {{-- rank --}}
               <div class="p-1 my-1">
-                <h3 class="text-center">排行榜</h3>
+                <h3 class="text-center position-relative">排行榜
+                  <span v-show="sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
+                    <i class="fa-solid fa-arrow-up-wide-short"></i>
+                  </span>
+                  <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
+                    <i class="fa-solid fa-arrow-down-short-wide"></i>
+                  </span>
+                </h3>
                 <h5 class="d-flex justify-content-between bet-rank-broad">
                   <div class="d-flex align-items-center">
                     <span class="badge badge-pill badge-light mr-1">
@@ -421,9 +428,16 @@
                 </h5>
                 <hr class="my-1 text-white bg-white">
                 <transition-group name="list-left" tag="div">
-                  <div class="d-flex justify-content-between position-relative align-items-center" v-if="gameBetRanks.top_10" v-for="(rank,index) in gameBetRanks.top_10" :key="rank.user_id+':'+rank.rank">
+                  <div class="d-flex justify-content-between position-relative align-items-center" v-if="getSortedRanks" v-for="(rank,index) in getSortedRanks" :key="rank.user_id+':'+rank.rank">
                     <h5 class="d-flex align-items-center bet-rank-broad">
-                      <span class="badge badge-pill badge-light mr-1" v-if="rank.rank">
+
+                      <i v-if="rank.rank == 1" class="fa-solid fa-trophy mr-1" style="color:gold"></i>
+                      <i v-else-if="rank.rank == 2" class="fa-solid fa-trophy mr-1" style="color:silver"></i>
+                      <i v-else-if="rank.rank == 3" class="fa-solid fa-trophy mr-1" style="color:chocolate"></i>
+                      <i v-else-if="rank.rank == gameBetRanks.total_users" class="fa-solid fa-poo mr-1" style="color:gold"></i>
+                      <i v-else-if="rank.rank == gameBetRanks.total_users -1" class="fa-solid fa-poo mr-1" style="color:silver"></i>
+                      <i v-else-if="rank.rank == gameBetRanks.total_users -2" class="fa-solid fa-poo mr-1" style="color:chocolate"></i>
+                      <span v-else-if="rank.rank > 0" class="badge badge-pill badge-light mr-1">
                         @{{rank.rank}}
                       </span>
                       <span :class="{'text-warning':isSameUser(rank)}">
@@ -457,15 +471,17 @@
             <div v-if="gameRoomUrl" class="text-center">
               <div v-show="showRoomInvitation">
                 <hr>
-                {{-- join game, invitation --}}
-                <h2 class="position-relative">
-                  加入遊戲
-                  <button class="btn btn-sm btn-outline-dark position-absolute text-white"
-                      style="top: 0; right: 0"
+                <h2 class="d-flex justify-content-end">
+                  <button class="btn btn-sm btn-outline-dark text-white"
                       @click="toogleRoomInvitation"
                       data-toggle="tooltip" data-placement="top" title="縮小">
                     <i class="fa-regular fa-square-minus"></i>
                   </button>
+                </h2>
+                {{-- join game, invitation --}}
+                <h2 class="position-relative">
+                  邀請朋友加入遊戲
+                  <i class="fa-solid fa-question-circle" data-toggle="tooltip" data-placement="top" title="沒有朋友？"></i>
                 </h2>
                 <div class="row">
                   <div class="col-12">
@@ -481,13 +497,33 @@
                 </div>
               </div>
             </div>
-            <div v-show="!showRoomInvitation"
-              class="position-absolute btn btnsm btn-outline-dark mr-1 mb-1"
-              data-toggle="tooltip" data-placement="top" title="展開"
-              style="right: 0; bottom:0"
-              @click="toogleRoomInvitation">
-              <div class="text-white">
-                在線人數：<I-Count-Up :end-val="gameRoom.total_users"></I-Count-Up>
+
+            <div class="d-flex position-absolute mr-2 mb-4" style="right: 0; bottom:0">
+              <div v-show="!showRoomInvitation"
+                class="btn btn-outline-dark"
+                data-toggle="tooltip" data-placement="top" title="展開"
+                @click="toogleRoomInvitation">
+                <h3 class="text-white align-content-center">
+                  在線人數：<I-Count-Up :end-val="gameRoom.total_users"></I-Count-Up>
+                </h3>
+              </div>
+              <div v-if="gameRoom">
+                <button v-if="!showGameRoomVotes"
+                  v-b-tooltip.hover="'打開黑箱'"
+                  style="min-width: 45px"
+                  class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
+                  <h3>
+                    <i class="fa-solid fa-box"></i>&nbsp;黑箱
+                  </h3>
+                </button>
+                <button v-else
+                  v-b-tooltip.hover="'關閉黑箱'"
+                  style="min-width: 45px"
+                  class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
+                  <h3>
+                    <i class="fa-solid fa-box-open"></i>&nbsp;黑箱
+                  </h3>
+                </button>
               </div>
             </div>
 
@@ -501,20 +537,6 @@
             :get-game-serial="getGameSerial"
             :handle-created-room="handleCreatedRoom"
           ></create-game-room>
-          <div v-if="gameRoom" id="game-room-votes">
-            <button v-if="!showGameRoomVotes"
-              v-b-tooltip.hover="'打開黑箱'"
-              style="min-width: 45px"
-              class="btn btn-outline-secondary mx-1" @click="toggleShowGameRoomVotes">
-              <i class="fa-solid fa-box text-dark"></i>&nbsp;黑箱
-            </button>
-            <button v-else
-              v-b-tooltip.hover="'關閉黑箱'"
-              style="min-width: 45px"
-              class="btn btn-outline-secondary mx-1" @click="toggleShowGameRoomVotes">
-              <i class="fa-solid fa-box-open text-dark"></i>&nbsp;黑箱
-            </button>
-          </div>
         </div>
 
         {{-- ads at bottom --}}
@@ -688,11 +710,11 @@
           <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">你已加入<u>某人</u>的投票房</h5>
+                <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">多人投票模式：猜喜好</h5>
               </div>
               <div class="modal-body">
                 <h3 class="text-center">
-                  精準預測他的喜好，獲得積分，成為榜1
+                  精準預測主持人的喜好，獲得積分成為榜首！
                 </h3>
               </div>
               <div class="modal-footer mb-sm-0 mb-4">

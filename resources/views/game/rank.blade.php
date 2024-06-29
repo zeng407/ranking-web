@@ -259,7 +259,7 @@
                             </template>
                             <div class="row">
                                 @foreach ($reports as $index => $rank)
-                                    @if ($embed || in_array($rank->rank, [1, 2, 3, 4]))
+                                    @if ($embed || in_array($rank->rank, [1, 2, 3, 4, $reports->total(), $reports->total() - 1]))
                                         <div class="col-12">
                                             <div class="card my-2 card-hover">
                                                 <div class="card-header rank-header">
