@@ -186,8 +186,8 @@
                         @click="leftWin">
                         <i class="fa-solid fa-2x fa-thumbs-up"></i>
                         <h3 class="d-inline-block m-0" v-if="showGameRoomVotes">
-                          <I-Count-Up :end-val="leftVotes" :options="{'duration':1}" :delay="0"></I-Count-Up>
-                          (<I-Count-Up :end-val="leftVotesPercentage" :options="{'duration':1}" :delay="0"></I-Count-Up>%)
+                          <I-Count-Up :end-val="leftVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
+                          (<I-Count-Up :end-val="leftVotesPercentage" :options="{'duration':0.5}" :delay="0"></I-Count-Up>%)
                         </h3>
                       </button>
                       <div class="row" v-if="isYoutubeSource(le) || isVideoUrlSource(le)">
@@ -203,8 +203,8 @@
                           <button class="btn btn-primary btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
                             @click="leftWin"><i class="fa-solid fa-thumbs-up"></i>
                             <p class="d-inline-block m-0" v-if="showGameRoomVotes">
-                              <I-Count-Up :end-val="leftVotes" :options="{'duration':1}" :delay="0"></I-Count-Up>
-                              (<I-Count-Up :end-val="leftVotesPercentage" :options="{'duration':1}" :delay="0"></I-Count-Up>%)
+                              <I-Count-Up :end-val="leftVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
+                              (<I-Count-Up :end-val="leftVotesPercentage" :options="{'duration':0.5}" :delay="0"></I-Count-Up>%)
                             </p>
                           </button>
                         </div>
@@ -214,8 +214,8 @@
                         <button class="btn btn-primary btn-block btn-lg d-block d-sm-none" :disabled="isVoting"
                           @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                           <p class="d-inline-block m-0" v-if="showGameRoomVotes">
-                            <I-Count-Up :end-val="leftVotes" :options="{'duration':1}" :delay="0"></I-Count-Up>
-                            (<I-Count-Up :end-val="leftVotesPercentage" :options="{'duration':1}" :delay="0"></I-Count-Up>%)
+                            <I-Count-Up :end-val="leftVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
+                            (<I-Count-Up :end-val="leftVotesPercentage" :options="{'duration':0.5}" :delay="0"></I-Count-Up>%)
                           </p>
                         </button>
                       </div>
@@ -299,8 +299,8 @@
                       <button id="right-btn" class="btn btn-danger vote-button btn-block d-none d-sm-block" :disabled="isVoting"
                         @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                         <h3 class="d-inline-block m-0" v-if="showGameRoomVotes">
-                          <I-Count-Up :end-val="rightVotes" :options="{'duration':1}" :delay="0"></I-Count-Up>
-                          (<I-Count-Up :end-val="rightVotesPercentage" :options="{'duration':1}" :delay="0"></I-Count-Up>%)
+                          <I-Count-Up :end-val="rightVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
+                          (<I-Count-Up :end-val="rightVotesPercentage" :options="{'duration':0.5}" :delay="0"></I-Count-Up>%)
                         </h3>
                       </button>
                       <div class="row" v-if="isYoutubeSource(re) || isVideoUrlSource(re)">
@@ -316,8 +316,8 @@
                           <button class="btn btn-danger btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
                             @click="rightWin"><i class="fa-solid fa-thumbs-up"></i>
                             <p class="d-inline-block m-0" v-if="showGameRoomVotes">
-                              <I-Count-Up :end-val="rightVotes" :options="{'duration':1}" :delay="0"></I-Count-Up>
-                              (<I-Count-Up :end-val="rightVotesPercentage" :options="{'duration':1}" :delay="0"></I-Count-Up>%)
+                              <I-Count-Up :end-val="rightVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
+                              (<I-Count-Up :end-val="rightVotesPercentage" :options="{'duration':0.5}" :delay="0"></I-Count-Up>%)
                             </p>
                           </button>
                         </div>
@@ -326,8 +326,8 @@
                         <button class="btn btn-danger btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
                           @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                           <p class="d-inline-block m-0" v-if="showGameRoomVotes">
-                            <I-Count-Up :end-val="rightVotes" :options="{'duration':1}" :delay="0"></I-Count-Up>
-                            (<I-Count-Up :end-val="rightVotesPercentage" :options="{'duration':1}" :delay="0"></I-Count-Up>%)
+                            <I-Count-Up :end-val="rightVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
+                            (<I-Count-Up :end-val="rightVotesPercentage" :options="{'duration':0.5}" :delay="0"></I-Count-Up>%)
                           </p>
                         </button>
                       </div>
