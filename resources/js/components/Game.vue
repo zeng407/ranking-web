@@ -13,9 +13,7 @@ export default {
   },
   mounted() {
     if (this.gameRoomSerial) {
-      this.listenNotifyVoted();
-      this.listenGameBetRank();
-      this.listenGameRoomRefresh();
+      this.showGameRoomJoinSetting();
     } else {
       if (!this.requirePassword) {
         this.loadGameSetting();
@@ -184,6 +182,16 @@ export default {
     },
   },
   methods: {
+    showGameRoomJoinSetting () {
+      $("#gameRoomJoin").modal("show");
+    },
+    joinRoom() {
+      $("#gameRoomJoin").modal("hide");
+      this.listenNotifyVoted();
+      this.listenGameBetRank();
+      this.listenGameRoomRefresh();
+      this.getGameRoom();
+    },
     // game room
     loadGameSerialFromCookie() {
       return this.game_serial = this.$cookies.get(this.postSerial);
@@ -232,24 +240,7 @@ export default {
       }
       this.enableTooltip();
     },
-    listenGameBet(){
-      if (this.gameRoomSerial) {
-        const channel = "game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial;
-        Echo.channel(channel).listen(".GameBet", (data) => {
-          console.log(data);
-          this.gameRoomVotes = data;
-        });
-      }
-    },
-    listenNotifyVoted() {
-      if (this.gameRoomSerial) {
-        Echo.channel("game-room." + this.gameRoomSerial).listen(".NotifyVoted", (data) => {
-          this.showBetResult(data)
-            .then(() => {
-              this.showNextBetRound(data);
-            });
-        });
-      }
+    getGameRoom(){
       axios
         .get(this.getRoomEndpoint.replace("_serial", this.gameRoomSerial))
         .then((response) => {
@@ -278,10 +269,32 @@ export default {
           this.enableTooltip();
         });
     },
+    listenGameBet(){
+      if (this.gameRoomSerial) {
+        const channel = "game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial;
+        Echo.channel(channel).listen(".GameBet", (data) => {
+          console.log(data);
+          this.gameRoomVotes = data;
+        });
+      }
+    },
+    listenNotifyVoted() {
+      if (this.gameRoomSerial) {
+        Echo.channel("game-room." + this.gameRoomSerial).listen(".NotifyVoted", (data) => {
+          this.showBetResult(data)
+            .then(() => {
+              this.showNextBetRound(data);
+            });
+        });
+      }
+    },
     listenGameRoomRefresh(){
       if (this.gameRoomSerial) {
         Echo.channel("game-room." + this.gameRoomSerial).listen(".GameRoomRefresh", (data) => {
-          this.handleAnimationAfterNextRound(data.next_round, true);
+          this.handleAnimationAfterNextRound(data.next_round, true)
+            .then(() => {
+              this.enableTooltip();
+            });
         });
       }
     },

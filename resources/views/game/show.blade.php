@@ -349,7 +349,7 @@
                 <div class="text-center" v-show="isEditingNickname">(上限10個字元，每小時可更改一次)</div>
                 <h4 class="d-flex justify-content-center">
                   <div class="position-relative">
-                    <span v-if="!isEditingNickname">@{{gameRoom.user.name | cut(10)}}</span>
+                    <u v-if="!isEditingNickname">@{{gameRoom.user.name | cut(10)}}</u>
                     {{-- edit name --}}
                     <button v-if="!isEditingNickname && !gameRoom.is_game_completed" class="btn btn-secondary btn-sm position-absolute m-0 p-0 px-1" @click="toggleEditNickname">
                       <i class="fa-solid fa-pen-to-square"></i>
@@ -429,7 +429,7 @@
                       </span>
                     </h5>
                     <h5 class="position-absolute bet-rank-broad" style="right: 0">
-                      <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo',{number:rank.combo})">
+                      <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
                         <span v-if="rank.combo >= 10" class="badge badge-pill badge-combo-10">
                           @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
                         </span>
@@ -676,6 +676,31 @@
                 </span>
                 <b-popover :show.sync="showPopover"   ref="select-element-count-hint" target="select-element-count-hint-target" placement="top">{{ __('game.select_option_hint')}}</b-popover>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal, Game panel -->
+        <div class="modal fade" id="gameRoomJoin" data-backdrop="static" data-keyboard="false" tabindex="-1"
+          aria-labelledby="gameRoomJoinLabel" aria-hidden="true">
+          <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
+            <div class="modal-content">
+              <div class="modal-header">
+                <div class="d-none d-sm-flex white-space-no-wrap">
+                  <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">你已加入<u>某人</u>的投票房</h5>
+                </div>
+              </div>
+              <div class="modal-body">
+                <h3 class="text-center">
+                  精準預測他的喜好，獲得積分，成為榜1
+                </h3>
+              </div>
+              <div class="modal-footer mb-sm-0 mb-4">
+                <button type="submit" class="btn btn-primary btn-block" @click="joinRoom">
+                  <i class="fas fa-play">&nbsp;</i>開始
+                </button>
+              </div>
+
             </div>
           </div>
         </div>

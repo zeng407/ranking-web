@@ -184,7 +184,7 @@
                                     </div>
                                   </div>
 
-                                  @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 3)
+                                  @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 4)
                                     <div id="google-ad-1" class="col-12">
                                       @include('ads.rank_ad_1', ['id' => 'google-ad-1'])
                                     </div>
@@ -334,8 +334,8 @@
                                         </div>
                                     @endif
 
-                                    @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 3)
-                                        <div id="google-ad-2" class="d-block d-lg-none col-12">
+                                    @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 5)
+                                        <div id="google-ad-2" class="col-12">
                                             @include('ads.rank_ad_1', ['id' => 'google-ad-2'])
                                         </div>
                                     @endif
