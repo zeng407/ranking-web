@@ -302,6 +302,7 @@ export default {
       if (this.gameRoomSerial) {
         Echo.channel("game-room." + this.gameRoomSerial).listen(".GameBetRank", (data) => {
           this.gameBetRanks = data;
+          this.gameRoom.total_users = data.total_users;
           // find the key of current user
           // merge top_10 and bottom_10
           let top10 = this.gameBetRanks.top_10;
