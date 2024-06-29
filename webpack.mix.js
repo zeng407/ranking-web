@@ -12,9 +12,13 @@ const mix = require('laravel-mix');
  */
 
 mix.js('resources/js/app.js', 'public/js')
-    .sourceMaps()
     .vue()
     .sass('resources/sass/app.scss', 'public/css');
+
+// Only include source maps when not in production
+if (!mix.inProduction()) {
+    mix.sourceMaps();
+}
 
 if(mix.inProduction()) {
     mix.sass('resources/sass/prod.scss', 'public/css');
