@@ -2,15 +2,18 @@
 import Swal from 'sweetalert2';
 import CountWords from './partials/CountWords.vue';
 import Chart from 'chart.js/auto';
+import ICountUp from 'vue-countup-v2';
 import 'chartjs-adapter-moment';
 
 export default {
   components: {
-    CountWords
+    CountWords,
+    ICountUp
   },
   mounted() {
     this.loadCommnets();
     this.initChart();
+    this.enableTooltip();
   },
   data() {
     return {
@@ -42,8 +45,8 @@ export default {
       },
       anonymous: false,
       chartLoaded: [],
-      showMyTimeline: true,
-      showRankHistory: true,
+      showMyTimeline: false,
+      showRankHistory: false,
     }
   },
   props: {
@@ -76,9 +79,11 @@ export default {
       required: true
     },
     gameStatistic: {
+      type: Object|null
+    },
+    gameRoomRanks: {
       type: Object|null,
-      required: true
-    }
+    },
   },
   computed: {
     commentWords() {
@@ -566,6 +571,13 @@ export default {
         return values[half];
       }
       return (values[half - 1] + values[half]) / 2.0;
+    },
+    enableTooltip(){
+      Vue.nextTick(() => {
+        $(function () {
+          $('[data-toggle="tooltip"]').tooltip()
+        })
+      });
     },
   }
 }

@@ -47,6 +47,7 @@
         }, 100);
         @endif
     }
-
-    loadAd(10, 500);
+    setTimeout(() => {
+      loadAd(10, 500);
+    }, 500);
 </script>

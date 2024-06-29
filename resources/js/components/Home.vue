@@ -304,13 +304,13 @@ export default {
       if (this.filters.sort_by === 'hot') {
         if (this.filters.range === 'all') {
           this.timeRangeText = this.$t('All Time');
-        } else if (this.range === 'week') {
+        } else if (this.filters.range === 'week') {
           this.timeRangeText = this.$t('This Week');
-        } else if (this.range === 'day') {
+        } else if (this.filters.range === 'day') {
           this.timeRangeText = this.$t('Today');
-        } else if (this.range === 'month') {
+        } else if (this.filters.range === 'month') {
           this.timeRangeText = this.$t('This Month');
-        } else if (this.range === 'year') {
+        } else if (this.filters.range === 'year') {
           this.timeRangeText = this.$t('This Year');
         }
       }

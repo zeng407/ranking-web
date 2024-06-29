@@ -18,7 +18,7 @@ class CommentResource extends JsonResource
             $nickname = config('setting.anonymous_nickname');
             $avatar_url = null;
         }else{
-            $nickname = $this->nickname;
+            $nickname = mb_substr($this->nickname,0,config('setting.user_name_max_size'));
             $avatar_url = $this->user?->avatar_url;
         }
 

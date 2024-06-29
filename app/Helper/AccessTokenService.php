@@ -7,7 +7,7 @@ use App\Models\Post;
 class AccessTokenService
 {
     const TOKEN_EXPIRED_MINUTES = 30;
-    
+
     static public function setPostAccessToken(Post $post, $hashPassword)
     {
         logger('setPostAccessToken', [$post->serial, $hashPassword]);
@@ -19,9 +19,7 @@ class AccessTokenService
 
     static public function getPostAccessToken(Post $post)
     {
-        logger('getPostAccessToken', [$post->serial]);
         $accessToken = \Session::get($post->serial.'_post_access_token');
-        logger('getPostAccessToken', [$accessToken]);
         if(!$accessToken){
             return null;
         }

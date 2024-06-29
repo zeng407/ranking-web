@@ -1,24 +1,36 @@
 <script>
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
+import ICountUp from 'vue-countup-v2';
+import QRCode from 'qrcode';
 
-const MD_WIDTH_SIZE = 768;
+
+const MD_WIDTH_SIZE = 576;
 const MOBILE_HEIGHT = 740;
 export default {
+  beforeMount() {
+    this.loadGameSerialFromCookie();
+    this.bootScreenSize();
+  },
   mounted() {
-    if(!this.requirePassword){
-      this.loadGameSetting();
+    if (this.gameRoomSerial) {
+      this.listenNotifyVoted();
+      this.listenGameBetRank();
+      this.listenGameRoomRefresh();
+    } else {
+      if (!this.requirePassword) {
+        this.loadGameSetting();
+      }
+      this.showGameSettingPanel();
     }
-    this.showGameSettingPanel();
     this.origin = window.location.origin;
     this.host = window.location.host;
     // update elementHeight to 50% of current window height
-    if(!this.isMobileScreen){
-      this.elementHeight = Math.max(window.innerHeight * 0.5, 360);
-      this.gameBodyHeight = Math.max(this.elementHeight+260, 700);
-    }else{
-      this.gameBodyHeight = Math.max(this.elementHeight+260, MOBILE_HEIGHT);
-    }
-
+    this.enableTooltip();
+    this.registerResizeEvent();
+    this.resizeElementHeight();
+  },
+  components: {
+    ICountUp
   },
   props: {
     postSerial: String,
@@ -29,11 +41,19 @@ export default {
     voteGameEndpoint: String,
     requirePassword: Boolean,
     accessEndpoint: String,
+    propsGameRoomSerial: {
+      type: String | null,
+    },
+    getRoomEndpoint: String,
+    betEndpoint: String,
+    updateRoomProfileEndpoint: String,
+    getRoomVotesEndpoint: String,
   },
   data: function () {
     return {
-      origin: '',
-      host: '',
+      isMobileScreen: true,
+      origin: "",
+      host: "",
       elementHeight: 360,
       gameBodyHeight: 700,
       gameSerial: null,
@@ -59,8 +79,8 @@ export default {
       rightImageLoaded: false,
       creatingGame: false,
       finishingGame: false,
-      gameResultUrl: '',
-      inputPassword: '',
+      gameResultUrl: "",
+      inputPassword: "",
       leftReady: true,
       rightReady: true,
       knownIncorrectPassword: false,
@@ -72,7 +92,7 @@ export default {
         title: false,
         toolbar: {
           zoomIn: 1,
-          zoomOut :1,
+          zoomOut: 1,
           reset: 1,
           rotateRight: 1,
         },
@@ -81,14 +101,29 @@ export default {
       animationShowLeftPlayer: true,
       animationShowRightPlayer: true,
       animationShowRoundSession: true,
-    }
+      readyAds: false,
+      // game room
+      gameRoomSerial: this.propsGameRoomSerial,
+      gameRoom: null,
+      currentBetRecord: null,
+      showFirework: false,
+      showBetFailed: false,
+      gameBetRanks: [],
+      isEditingNickname: false,
+      newNickname: "",
+      qrUrl: "",
+      gameRoomUrl: "",
+      isHostingGameRank: false,
+      autoRefreshRoomInterval: null,
+      showRoomInvitation: true,
+      gameRoomVotes: [],
+      isListeningGameBet: false,
+      showGameRoomVotes: false,
+    };
   },
   computed: {
     gameRankUrl: function () {
-      return this.getRankRoute.replace('_serial', this.postSerial);
-    },
-    isMobileScreen: function () {
-      return $(window).width() < MD_WIDTH_SIZE;
+      return this.getRankRoute.replace("_serial", this.postSerial);
     },
     isElementsPowerOfTwo: function () {
       if (!this.post || !this.post.elements_count) {
@@ -97,100 +132,395 @@ export default {
 
       return Number.isInteger(Math.log2(this.post.elements_count));
     },
-    processingGame: function () {
-      return this.$cookies.get(this.postSerial);
+    isGameHost() {
+      return this.gameRoom && !this.gameRoom.user;
+    },
+    isGameClient() {
+      return this.gameRoom && this.gameRoom.user;
+    },
+    leftVotes(){
+      if(!this.gameRoomVotes || this.gameRoomVotes.length === 0){
+        return 0;
+      }
+
+      if(this.gameRoomVotes.remain_elements !== this.game.remain_elements){
+        return 0;
+      }
+
+      if(parseInt(this.gameRoomVotes.first_candidate) !== this.le.id || parseInt(this.gameRoomVotes.second_candidate) !== this.re.id){
+        return 0;
+      }
+
+      return this.gameRoomVotes.first_candidate_votes;
+    },
+    rightVotes(){
+      if(!this.gameRoomVotes || this.gameRoomVotes.length === 0){
+        return 0;
+      }
+
+      if(this.gameRoomVotes.remain_elements !== this.game.remain_elements){
+        return 0;
+      }
+
+      if(parseInt(this.gameRoomVotes.first_candidate) !== this.le.id || parseInt(this.gameRoomVotes.second_candidate) !== this.re.id){
+        return 0;
+      }
+
+      return this.gameRoomVotes.second_candidate_votes;
+    },
+    leftVotesPercentage(){
+      if(this.leftVotes === 0 && this.rightVotes === 0){
+        return 0;
+      }
+
+      return Math.round(this.leftVotes / (this.leftVotes + this.rightVotes) * 100);
+    },
+    rightVotesPercentage(){
+      if(this.leftVotes === 0 && this.rightVotes === 0){
+        return 0;
+      }
+
+      return Math.round(this.rightVotes / (this.leftVotes + this.rightVotes) * 100);
     },
   },
   methods: {
-    loadGameSetting: function () {
-      axios.get(this.getGameSettingEndpoint)
-      .then(res => {
-        this.error403WhenLoad = false;
-        this.post = res.data.data;
-      })
-      .catch(error => {
-        if (error.response.status === 403) {
-          this.error403WhenLoad = true;
-        }
-      });
+    // game room
+    loadGameSerialFromCookie() {
+      return this.game_serial = this.$cookies.get(this.postSerial);
     },
-    accessGame: function () {
-      if(this.inputPassword){
-        axios.defaults.headers.common['Authorization'] = this.inputPassword;
+    getGameSerial() {
+      return this.$cookies.get(this.postSerial);
+    },
+    loadGameSetting() {
+      axios
+        .get(this.getGameSettingEndpoint)
+        .then((res) => {
+          this.error403WhenLoad = false;
+          this.post = res.data.data;
+        })
+        .catch((error) => {
+          if (error.response.status === 403) {
+            this.error403WhenLoad = true;
+          }
+        });
+    },
+    getRoomVotes(){
+      const route = this.getRoomVotesEndpoint.replace("_serial", this.gameRoomSerial);
+      const prams = {
+        params: {
+          game_serial: this.gameSerial
+        }
+      };
+      axios.get(route, prams)
+        .then((res) => {
+          this.gameRoomVotes = res.data.data;
+        });
+    },
+    toggleShowGameRoomVotes(){
+      this.showGameRoomVotes = !this.showGameRoomVotes;
+      if(this.showGameRoomVotes){
+        this.getRoomVotes();
+        if(!this.isListeningGameBet){
+          this.isListeningGameBet = true;
+          this.listenGameBet();
+        }
       }else{
+        if(this.isListeningGameBet){
+          Echo.leave("game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial);
+          this.isListeningGameBet = false;
+        }
+      }
+      this.enableTooltip();
+    },
+    listenGameBet(){
+      if (this.gameRoomSerial) {
+        const channel = "game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial;
+        Echo.channel(channel).listen(".GameBet", (data) => {
+          console.log(data);
+          this.gameRoomVotes = data;
+        });
+      }
+    },
+    listenNotifyVoted() {
+      if (this.gameRoomSerial) {
+        Echo.channel("game-room." + this.gameRoomSerial).listen(".NotifyVoted", (data) => {
+          this.showBetResult(data)
+            .then(() => {
+              this.showNextBetRound(data);
+            });
+        });
+      }
+      axios
+        .get(this.getRoomEndpoint.replace("_serial", this.gameRoomSerial))
+        .then((response) => {
+          this.gameRoom = response.data.data;
+          this.gameBetRanks = this.gameRoom.ranks;
+          // clear ranks to prevent duplicate
+          this.gameRoom.ranks = null;
+          let promise = new Promise((resolve) => {
+            resolve();
+          })
+          if(response.data.data.current_round){
+            promise = this.handleAnimationAfterNextRound(response.data.data.current_round);
+          }
+
+          if (this.isBetBefore()) {
+            if (this.le.id === this.gameRoom.bet.winner_id) {
+              promise.then(() => {
+                $("#left-btn").trigger("click");
+              });
+            } else if (this.re.id === this.gameRoom.bet.winner_id) {
+              promise.then(() => {
+                $("#right-btn").trigger("click");
+              });
+            }
+          }
+          this.enableTooltip();
+        });
+    },
+    listenGameRoomRefresh(){
+      if (this.gameRoomSerial) {
+        Echo.channel("game-room." + this.gameRoomSerial).listen(".GameRoomRefresh", (data) => {
+          this.handleAnimationAfterNextRound(data.next_round, true);
+        });
+      }
+    },
+    listenGameBetRank(){
+      if (this.gameRoomSerial) {
+        Echo.channel("game-room." + this.gameRoomSerial).listen(".GameBetRank", (data) => {
+          this.gameBetRanks = data;
+          // find the key of current user
+          // merge top_10 and bottom_10
+          let top10 = this.gameBetRanks.top_10;
+          let bottom10 = this.gameBetRanks.bottom_10;
+          let currentUserRank = null;
+          let allRanks = top10.concat(bottom10);
+          allRanks.forEach((rank, index) => {
+            if (rank.user_id === this.gameRoom.user.user_id) {
+              currentUserRank = rank;
+            }
+          });
+
+          if(currentUserRank){
+            this.gameRoom.user = currentUserRank;
+          }
+        });
+      }
+    },
+    showBetResult(notifyData){
+      return new Promise((resolve) => {
+          if(!this.currentBetRecord){
+            resolve();
+            return;
+          }
+          const isBetSuccess = notifyData.winner_id === this.currentBetRecord.winner_id;
+          this.currentBetRecord = null;
+          if(isBetSuccess){
+            this.showFirework = true;
+            setTimeout(() => {
+              this.showFirework = false;
+              resolve();
+            }, 2000);
+          } else {
+            this.showBetFailed = true;
+            setTimeout(() => {
+              this.showBetFailed = false;
+              resolve();
+            }, 2000);
+          }
+        })
+    },
+    showNextBetRound(notifyData){
+      if(notifyData.next_round){
+        this.handleAnimationAfterNextRound(notifyData.next_round,true);
+      }else{
+        this.gameRoom.is_game_completed = true;
+        this.finishingGame = true;
+        this.isVoting = false
+      }
+    },
+    isBetBefore() {
+      return (
+        this.gameRoom &&
+        this.gameRoom.bet &&
+        this.gameRoom.current_round &&
+        this.gameRoom.bet.hash === this.gameRoom.current_round.hash
+      );
+    },
+    toggleEditNickname() {
+      this.isEditingNickname = !this.isEditingNickname;
+      if(this.isEditingNickname){
+        this.newNickname = this.gameRoom.user.nickname;
+      }else{
+        this.newNickname = "";
+      }
+    },
+    saveNickname() {
+      axios
+        .put(this.updateRoomProfileEndpoint.replace("_serial", this.gameRoomSerial), {
+          nickname: this.newNickname,
+        })
+        .then((response) => {
+          this.isEditingNickname = false;
+          this.gameRoom.user.name = this.newNickname;
+          // update rank
+          if(this.gameBetRanks){
+            this.gameBetRanks.top_10.forEach((rank, index) => {
+              if (rank.user_id === this.gameRoom.user.user_id) {
+                rank.name = this.newNickname;
+              }
+            });
+            this.gameBetRanks.bottom_10.forEach((rank, index) => {
+              if (rank.user_id === this.gameRoom.user.user_id) {
+                rank.name = this.newNickname;
+              }
+            });
+          }
+        })
+        .catch((error) => {
+          if(error.response.status === 429){
+            Swal.fire({
+              icon: "error",
+              toast: true,
+              text: this.$t("You can only change your nickname once per hour"),
+            });
+          }else{
+            Swal.fire({
+              icon: "error",
+              toast: true,
+              text: this.$t("An error occurred. Please try again later."),
+            });
+          }
+        });
+    },
+    handleCreatedRoom(data,roomUrl) {
+      this.gameRoomSerial = data.serial
+      this.gameRoom = data;
+      this.gameBetRanks = this.gameRoom.ranks;
+      this.gameRoomUrl = roomUrl;
+
+      this.enableTooltip();
+      Vue.nextTick(() => {
+        QRCode.toCanvas(document.getElementById('qrcode'), roomUrl, {
+          width: 200,
+        });
+      });
+
+      if(!this.isHostingGameRank){
+        this.isHostingGameRank = true;
+        Echo.channel("game-room." + this.gameRoomSerial)
+          .listen(".GameBetRank", (data) => {
+            this.gameBetRanks = data;
+            this.gameRoom.total_users = data.total_users;
+            this.enableTooltip();
+          });
+      }
+
+      if(!this.autoRefreshRoomInterval){
+        this.autoRefreshRoomInterval = setInterval(() => {
+          const route = this.getRoomEndpoint.replace("_serial", this.gameRoomSerial);
+          const params = {
+            params: {
+              q: 'rank'
+            }
+          };
+          axios.get(route, params)
+            .then((response) => {
+              this.gameRoom = response.data.data;
+              this.gameBetRanks = this.gameRoom.ranks;
+            });
+        }, 30 * 1000);
+      }
+    },
+    isSameUser(rank) {
+      return this.gameRoom && this.gameRoom.user && rank.user_id === this.gameRoom.user.user_id;
+    },
+    toogleRoomInvitation() {
+      this.showRoomInvitation = !this.showRoomInvitation;
+    },
+    accessGame() {
+      if (this.inputPassword) {
+        axios.defaults.headers.common["Authorization"] = this.inputPassword;
+      } else {
         this.isInvalidPassword = true;
         return;
       }
 
-      axios.get(this.accessEndpoint)
-      .then(response => {
-        if (response.status === 200) {
-          this.hideInvalidPasswordHint();
-          this.loadGameSetting();
-        } else {
-          this.showInvalidPasswordHint();
-          this.knownIncorrectPassword = true;
-        }
-      })
-      .catch(error => {
-        if(error.response.status === 403){
-          this.showInvalidPasswordHint();
-          this.knownIncorrectPassword = true;
-        }else if(error.response.status === 429){
-          Swal.fire({
-            icon: 'error',
-            toast: true,
-            text: this.$t('You have tried too many times. Please try again later.'),
-          });
-        }else{
-          Swal.fire({
-            icon: 'error',
-            toast: true,
-            text: this.$t('An error occurred. Please try again later.'),
-          });
-        }
-      });
+      axios
+        .get(this.accessEndpoint)
+        .then((response) => {
+          if (response.status === 200) {
+            this.hideInvalidPasswordHint();
+            this.loadGameSetting();
+          } else {
+            this.showInvalidPasswordHint();
+            this.knownIncorrectPassword = true;
+          }
+        })
+        .catch((error) => {
+          if (error.response.status === 403) {
+            this.showInvalidPasswordHint();
+            this.knownIncorrectPassword = true;
+          } else if (error.response.status === 429) {
+            Swal.fire({
+              icon: "error",
+              toast: true,
+              text: this.$t("You have tried too many times. Please try again later."),
+            });
+          } else {
+            Swal.fire({
+              icon: "error",
+              toast: true,
+              text: this.$t("An error occurred. Please try again later."),
+            });
+          }
+        });
     },
-    showInvalidPasswordHint: function () {
+    // game
+    showInvalidPasswordHint() {
       this.invalidPasswordWhenLoad = true;
       Swal.fire({
-        icon: 'error',
-        position: 'top-end',
+        icon: "error",
+        position: "top-end",
         timer: 3000,
         toast: true,
-        text: this.$t('game.invalid_password'),
+        text: this.$t("game.invalid_password"),
       });
     },
-    hideInvalidPasswordHint: function () {
+    hideInvalidPasswordHint() {
       this.invalidPasswordWhenLoad = false;
     },
-    createGame: function () {
+
+    createGame() {
       const data = {
-        'post_serial': this.postSerial,
-        'element_count': this.elementsCount,
-        'password': this.inputPassword,
+        post_serial: this.postSerial,
+        element_count: this.elementsCount,
+        password: this.inputPassword,
       };
       this.creatingGame = true;
-      axios.post(this.createGameEndpoint, data)
-        .then(res => {
+      axios
+        .post(this.createGameEndpoint, data)
+        .then((res) => {
           this.gameSerial = res.data.game_serial;
+          this.keepGameCookie();
           this.nextRound(res.data, false);
-        }).catch(error => {
+        })
+        .catch((error) => {
           if (error.response.status === 403) {
             this.error403WhenLoad = true;
-          }else if(error.response.status === 422){
+          } else if (error.response.status === 422) {
             Swal.fire({
-              icon: 'error',
+              icon: "error",
               toast: true,
-              text: this.$t('The number of elements must be at least 2.'),
+              text: this.$t("The number of elements must be at least 2."),
             }).then(() => {
               location.reload();
             });
-          }else{
+          } else {
             Swal.fire({
-              icon: 'error',
+              icon: "error",
               toast: true,
-              text: this.$t('An error occurred. Please try again later.'),
+              text: this.$t("An error occurred. Please try again later."),
             }).then(() => {
               location.reload();
             });
@@ -200,97 +530,106 @@ export default {
           this.creatingGame = false;
         });
 
-      $('#gameSettingPanel').modal('hide');
+      $("#gameSettingPanel").modal("hide");
     },
-    continueGame: function () {
+    continueGame() {
       const gameSerial = this.$cookies.get(this.postSerial);
       if (gameSerial) {
         this.gameSerial = gameSerial;
         this.nextRound(null, false);
       }
-      $('#gameSettingPanel').modal('hide');
+      $("#gameSettingPanel").modal("hide");
     },
-    hintSelect: function () {
+    hintSelect() {
       this.showPopover = true;
-      if(this.timeout){
+      if (this.timeout) {
         clearTimeout(this.timeout);
       }
       this.timeout = setTimeout(() => {
         this.showPopover = false;
       }, 3000);
     },
-    nextRound:  function (data, reset = true) {
-      if(data == null){
-        const url = this.nextRoundEndpoint.replace('_serial', this.gameSerial);
-        axios.get(url)
-          .then(res => {
+    nextRound(data, reset = true) {
+      if (data == null) {
+        const url = this.nextRoundEndpoint.replace("_serial", this.gameSerial);
+        axios
+          .get(url)
+          .then((res) => {
             this.nextRound(res.data);
           })
-          .catch(error => {
+          .catch((error) => {
             this.handleNextRoundError(data, error);
           });
-          return;
+        return;
       }
-      new Promise((resolve, reject) => {
-          this.game = data.data;
-          if(this.game.current_round == 1 || this.currentRemainElement == false){
-            this.currentRemainElement = this.game.remain_elements;
-          }
-          if(this.le && this.game.elements[0] && this.le.id !== this.game.elements[0].id){
-            this.leftImageLoaded = false;
-          }
-          if(this.re && this.game.elements[1] && this.re.id !== this.game.elements[1].id){
-            this.rightImageLoaded = false;
-          }
-          this.le = this.game.elements[0];
-          this.re = this.game.elements[1];
-          resolve();
-        }).then(() => {
-          if(reset){
+      this.handleAnimationAfterNextRound(data.data, reset);
+    },
+    handleAnimationAfterNextRound(game, reset){
+      return new Promise((resolve, reject) => {
+        this.updateGame(game);
+        resolve();
+      })
+        .then(() => {
+          if (reset) {
             this.resetPlayerPosition();
             // this.scrollToLastPosition();
             this.resetPlayingStatus();
-            // destroy viwer
-            if(this.$refs.rightViewer){
+            // destory viwer
+            if (this.$refs.rightViewer) {
               this.$refs.rightViewer.updateViewer();
             }
-            if(this.$refs.leftViewer){
+            if (this.$refs.leftViewer) {
               this.$refs.leftViewer.updateViewer();
             }
             this.errorImages = [];
             this.isDataLoading = false;
             setTimeout(() => {
               this.showAllPlayers();
-
-              this.doPlay(this.le, this.isLeftPlaying, 'left');
-              this.doPlay(this.re, this.isRightPlaying, 'right');
+              this.doPlay(this.le, this.isLeftPlaying, "left");
+              this.doPlay(this.re, this.isRightPlaying, "right");
             }, 300);
-          }else{
-            this.doPlay(this.le, this.isLeftPlaying, 'left');
-            this.doPlay(this.re, this.isRightPlaying, 'right');
+          } else {
+            this.doPlay(this.le, this.isLeftPlaying, "left");
+            this.doPlay(this.re, this.isRightPlaying, "right");
           }
         })
-        .catch(error => {
+        .catch((error) => {
           this.handleNextRoundError(data, error);
-        }).finally(() => {
+        })
+        .finally(() => {
           this.isDataLoading = false;
           this.isVoting = false;
-          $('#google-ad-container').css('top', '0');
-          if(this.isMobileScreen){
-            $('#google-ad2').css('top', '0');
+          $("#google-ad-container").css("top", "0");
+          if (this.isMobileScreen) {
+            $("#google-ad2").css("top", "0");
           }
 
-          if(this.needReloadAD()){
+          if (this.needReloadAD()) {
             this.reloadGoogleAds();
           }
           this.loadGoogleAds();
-        })
+        });
+    },
+    updateGame(game) {
+      this.game = game;
+      if (this.game.current_round == 1 || this.currentRemainElement == false) {
+        this.currentRemainElement = this.game.remain_elements;
+      }
+      if (this.le && this.game.elements[0] && this.le.id !== this.game.elements[0].id) {
+        this.leftImageLoaded = false;
+      }
+      if (this.re && this.game.elements[1] && this.re.id !== this.game.elements[1].id) {
+        this.rightImageLoaded = false;
+      }
+      this.le = this.game.elements[0];
+      this.re = this.game.elements[1];
     },
     handleNextRoundError(data, error) {
       if (error.response.status === 429) {
         let timerInterval;
         Swal.fire({
-          html: this.$t('You have voted too quickly. Please try again later.') + "(<b></b>)",
+          html:
+            this.$t("You have voted too quickly. Please try again later.") + "(<b></b>)",
           timer: 5000,
           timerProgressBar: true,
           icon: "error",
@@ -305,17 +644,17 @@ export default {
           },
           willClose: () => {
             clearInterval(timerInterval);
-          }
-        }).then(result => {
+          },
+        }).then((result) => {
           if (result.dismiss === Swal.DismissReason.timer) {
             this.nextRound(data);
           }
         });
-      }else{
+      } else {
         Swal.fire({
-          icon: 'error',
+          icon: "error",
           toast: true,
-          text: this.$t('An error occurred. Please try again later.'),
+          text: this.$t("An error occurred. Please try again later."),
         }).then(() => {
           location.reload();
         });
@@ -337,69 +676,95 @@ export default {
         this.isRightPlaying = false;
       }
 
-      const myVideoPlyaer = this.getVideoPlayer('left-video-player');
-      if(myVideoPlyaer){
+      const myVideoPlyaer = this.getVideoPlayer("left-video-player");
+      if (myVideoPlyaer) {
         myVideoPlyaer.play();
         this.isLeftPlaying = true;
       }
 
-      const theirVideoPlyaer = this.getVideoPlayer('right-video-player');
-      if(theirVideoPlyaer){
+      const theirVideoPlyaer = this.getVideoPlayer("right-video-player");
+      if (theirVideoPlyaer) {
         theirVideoPlyaer.pause();
         this.isRightPlaying = false;
       }
-
     },
     leftWin(event) {
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
-        this.vote(this.le, this.re);
-      }
+        if (this.isGameClient) {
+          this.bet(this.le, this.re);
+        } else {
+          this.vote(this.le, this.re);
+        }
+      };
 
       this.bounceThumbUp(event.target.children[0]);
-      $('#left-player').css('z-index', '100');
-      $('#right-player').css('opacity', 0.5);
+      $("#left-player").css("z-index", "100");
+      $("#right-player").css("opacity", 0.5);
 
       this.leftReady = false;
 
       if (this.isMobileScreen) {
-        $('#rounds-session').animate({opacity: 0}, 100, "linear");
-        // move #left-plyaer to the certical center of screen
-        let scrollPosition = window.scrollY;
-        let verticalCenter = $(window).height() / 2 - $('#left-player').height() / 2;
-        let playOriginalOffset = $('#left-player').offset().top;
-        let titleHeight = $('#game-title').height();
-        let screenCenterPosition = Math.max(verticalCenter + scrollPosition - playOriginalOffset, 0);
-        screenCenterPosition = Math.min(screenCenterPosition, 350);
-        let winAnimate = $('#left-player').animate({top: screenCenterPosition}, null, () => {
-          setTimeout(() => {
-            this.leftReady = true;
-          }, 1200);
-        }).promise();
-
-
-        let adTopPosition = titleHeight + screenCenterPosition;
-        $('#google-ad-container').animate({top: adTopPosition});
-
-        let adBottomPosition = -$('#right-player').height() - 30 + screenCenterPosition;
-        $('#google-ad2').animate({top: adBottomPosition});
-
-        let loseAnimate = $('#right-player').animate({ opacity: '0' }, 500).promise();
-        $.when(loseAnimate).then(() => {
-          sendWinnerData();
-        });
-      } else {
-        let winAnimate = $('#left-player').animate({ left: '50%' }, 500, () => {
-          $('#left-player').delay(500).animate({ top: '-2000' }, 500, () => {
-            this.leftReady = true;
+        if(this.isGameClient){
+          let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
+          $.when(loseAnimate).then(() => {
+            this.destoryRightVideoPlayer();
+            sendWinnerData();
           });
-        }).promise();
-        let loseAnimate = $('#right-player').animate({ left: '2000' }, 500, () => {
-          $('#right-player').css('opacity', '0');
-        }).promise();
+          this.leftReady = true;
+          sendWinnerData();
+        }else{
+          $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
+          // move #left-plyaer to the certical center of screen
+          let scrollPosition = window.scrollY;
+          let verticalCenter = $(window).height() / 2 - $("#left-player").height() / 2;
+          let playOriginalOffset = $("#left-player").offset().top;
+          let titleHeight = $("#game-title").height();
+          let screenCenterPosition = Math.max(
+            verticalCenter + scrollPosition - playOriginalOffset,
+            0
+          );
+          screenCenterPosition = Math.min(screenCenterPosition, 350);
+          let winAnimate = $("#left-player")
+            .animate({ top: screenCenterPosition }, null, () => {
+              setTimeout(() => {
+                this.leftReady = true;
+              }, 1200);
+            })
+            .promise();
+          let adTopPosition = titleHeight + screenCenterPosition;
+          $("#google-ad-container").animate({ top: adTopPosition });
+          let adBottomPosition = -$("#right-player").height() - 30 + screenCenterPosition;
+          $("#google-ad2").animate({ top: adBottomPosition });
+          let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
+          $.when(loseAnimate).then(() => {
+            this.destoryRightVideoPlayer();
+            sendWinnerData();
+          });
+        }
+      } else {
+        let winAnimate = $("#left-player")
+          .animate({ left: "50%" }, 500, () => {
+            if (this.isGameClient) {
+              this.leftReady = true;
+            } else {
+              $("#left-player")
+                .delay(500)
+                .animate({ top: "-2000" }, 500, () => {
+                  this.leftReady = true;
+                });
+            }
+          })
+          .promise();
+        let loseAnimate = $("#right-player")
+          .animate({ left: "2000" }, 500, () => {
+            $("#right-player").css("opacity", "0");
+          })
+          .promise();
 
         $.when(loseAnimate).then(() => {
+          this.destoryRightVideoPlayer();
           sendWinnerData();
         });
       }
@@ -418,77 +783,121 @@ export default {
         this.isLeftPlaying = false;
       }
 
-      const myVideoPlyaer = this.getVideoPlayer('right-video-player');
-      if(myVideoPlyaer){
+      const myVideoPlyaer = this.getVideoPlayer("right-video-player");
+      if (myVideoPlyaer) {
         myVideoPlyaer.play();
         this.isRightPlaying = true;
       }
 
-      const theirVideoPlyaer = this.getVideoPlayer('left-video-player');
-      if(theirVideoPlyaer){
+      const theirVideoPlyaer = this.getVideoPlayer("left-video-player");
+      if (theirVideoPlyaer) {
         theirVideoPlyaer.pause();
         this.isLeftPlaying = false;
       }
-
     },
     rightWin(event) {
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
-        this.vote(this.re, this.le);
-      }
+        if (this.isGameClient) {
+          this.bet(this.re, this.le);
+        } else {
+          this.vote(this.re, this.le);
+        }
+      };
 
       this.rightReady = false;
 
-      this.bounceThumbUp(event.target.children[0]);
-      $('#right-player').css('z-index', '100');
-      $('#left-player').css('opacity', 0.5);
+      if(event){
+        this.bounceThumbUp(event.target.children[0]);
+      }
+      $("#right-player").css("z-index", "100");
+      $("#left-player").css("opacity", 0.5);
 
       if (this.isMobileScreen) {
-        $('#rounds-session').animate({opacity: 0}, 100, "linear");
+        if(this.isGameClient){
+          let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
 
-        // move #right-plyaer to the certical center of screen
-        let scrollPosition = window.scrollY;
-        let verticalCenter = $(window).height() / 2 - $('#right-player').height() / 2;
-        let playOriginalOffset = $('#right-player').offset().top;
-        let titleHeight = $('#game-title').height();
-
-        let screenCenterPosition = Math.min(verticalCenter + scrollPosition - playOriginalOffset, 0);
-        screenCenterPosition = Math.max(screenCenterPosition, -320);
-        // animate right player buttom to top
-        let winAnimate = $('#right-player').animate({top: screenCenterPosition}, null, () => {
-          setTimeout(() => {
-          this.rightReady = true;
-          }, 1200);
-        }).promise();
-
-        let adTopPosition = titleHeight + screenCenterPosition+ $('#left-player').height() + 30;
-        $('#google-ad-container').animate({top: adTopPosition});
-
-        let adBottomPosition = screenCenterPosition;
-        $('#google-ad2').animate({top: adBottomPosition});
-
-        let loseAnimate = $('#left-player').animate({ opacity: '0' }, 500).promise();
-
-        $.when(loseAnimate).then(() => {
-          sendWinnerData();
-        });
-      } else {
-
-        let winAnimate = $('#right-player').animate({ left: '-50%' }, 500, () => {
-          $('#right-player').delay(500).animate({ top: '-2000' }, 500, () => {
-            $('#right-player').hide();
-            this.rightReady = true;
+          $.when(loseAnimate).then(() => {
+            this.destoryLeftVideoPlayer();
+            sendWinnerData();
           });
-        }).promise();
+          this.rightReady = true;
+          sendWinnerData();
+        }else{
+          $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
+          // move #right-plyaer to the certical center of screen
+          let scrollPosition = window.scrollY;
+          let verticalCenter = $(window).height() / 2 - $("#right-player").height() / 2;
+          let playOriginalOffset = $("#right-player").offset().top;
+          let titleHeight = $("#game-title").height();
+          let screenCenterPosition = Math.min(
+            verticalCenter + scrollPosition - playOriginalOffset,
+            0
+          );
+          screenCenterPosition = Math.max(screenCenterPosition, -320);
+          // animate right player buttom to top
+          let winAnimate = $("#right-player")
+            .animate({ top: screenCenterPosition }, null, () => {
+              setTimeout(() => {
+                this.rightReady = true;
+              }, 1200);
+            })
+            .promise();
+          let adTopPosition = titleHeight + screenCenterPosition + $("#left-player").height() + 30;
+          $("#google-ad-container").animate({ top: adTopPosition });
+          let adBottomPosition = screenCenterPosition;
+          $("#google-ad2").animate({ top: adBottomPosition });
+          let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
+          $.when(loseAnimate).then(() => {
+            this.destoryLeftVideoPlayer();
+            sendWinnerData();
+          });
+        }
+      } else {
+        let winAnimate = $("#right-player")
+          .animate({ left: "-50%" }, 500, () => {
+            if (this.isGameClient) {
+              this.rightReady = true;
+            } else {
+              $("#right-player")
+                .delay(500)
+                .animate({ top: "-2000" }, 500, () => {
+                  $("#right-player").hide();
+                  this.rightReady = true;
+                });
+            }
+          })
+          .promise();
 
-        let loseAnimate = $('#left-player').animate({ left: '-2000' }, 500, () => {
-          $('#left-player').css('opacity', '0');
-        }).promise();
+        let loseAnimate = $("#left-player")
+          .animate({ left: "-2000" }, 500, () => {
+            $("#left-player").css("opacity", "0");
+          })
+          .promise();
 
         $.when(loseAnimate).then(() => {
+          this.destoryLeftVideoPlayer();
           sendWinnerData();
         });
+      }
+    },
+    destoryRightVideoPlayer() {
+      if (this.isVideoSource(this.re)) {
+        // make right as a dummy image
+        this.re = {
+          id: this.re.id,
+          type: "image",
+        };
+      }
+    },
+    destoryLeftVideoPlayer() {
+      if (this.isVideoSource(this.le)) {
+        // make left as a dummy image
+        this.le = {
+          id: this.le.id,
+          type: "image",
+        };
       }
     },
     handleLeftLoaded() {
@@ -499,40 +908,39 @@ export default {
     },
     bounceThumbUp(element) {
       // add class fa-bounce
-      $(element).addClass('fa-bounce');
+      $(element).addClass("fa-bounce");
       setTimeout(() => {
         this.removeBoundThumbUp(element);
       }, 1000);
     },
     removeBoundThumbUp(element) {
-      // remove class fa-bounce
-      $(element).removeClass('fa-bounce');
+      // remove fa-bounce
+      $(element).removeClass("fa-bounce");
     },
     resetPlayerPosition() {
+      $("#left-player").css("left", "0");
+      $("#left-player").css("top", "0");
+      $("#left-player").css("opacity", "0");
+      $("#left-player").css("scale", "1");
+      $("#left-player").removeClass("zoom-in");
+      $("#left-player").css("z-index", "0");
 
-      $('#left-player').css('left', '0');
-      $('#left-player').css('top', '0');
-      $('#left-player').css('opacity', '0');
-      $('#left-player').css('scale', '1');
-      $('#left-player').removeClass('zoom-in');
-      $('#left-player').css('z-index', '0');
+      $("#right-player").css("left", "0");
+      $("#right-player").css("top", "0");
+      $("#right-player").css("opacity", "0");
+      $("#right-player").css("scale", "1");
+      $("#right-player").removeClass("zoom-in");
+      $("#right-player").css("z-index", "0");
 
-      $('#right-player').css('left', '0');
-      $('#right-player').css('top', '0');
-      $('#right-player').css('opacity', '0');
-      $('#right-player').css('scale', '1');
-      $('#right-player').removeClass('zoom-in');
-      $('#right-player').css('z-index', '0');
-
-      $('#rounds-session').css('opacity', '0');
-      $('.game-image-container img').css('object-fit', 'contain');
+      $("#rounds-session").css("opacity", "0");
+      $(".game-image-container img").css("object-fit", "contain");
     },
     scrollToLastPosition() {
       if (this.rememberedScrollPosition !== null) {
         window.scrollTo(0, this.rememberedScrollPosition);
       }
     },
-    pauseAllVideo(){
+    pauseAllVideo() {
       const player = this.getYoutubePlayer(this.le);
       if (player) {
         player.pauseVideo();
@@ -544,73 +952,72 @@ export default {
         player2.pauseVideo();
         player2.seekTo(this.re.start_second);
       }
-
     },
-    vote: function (winner, loser) {
+    bet(winner, loser) {
+      const route = this.betEndpoint.replace("_serial", this.gameRoomSerial);
       const data = {
-        'game_serial': this.gameSerial,
-        'winner_id': winner.id,
-        'loser_id': loser.id
+        winner_id: winner.id,
+        loser_id: loser.id,
+        current_round: this.game.current_round,
+        of_round: this.game.of_round,
+        remain_elements: this.game.remain_elements,
+      };
+      axios.post(route, data).then(res => {
+        this.currentBetRecord = {
+          winner_id: winner.id,
+          loser_id: loser.id,
+        };
+      }).catch((error) => {
+        if (error.response.status === 429) {
+          Swal.fire({
+            icon: "error",
+            toast: true,
+            text: this.$t("You have voted too quickly. Please try again later."),
+          });
+        } else {
+          Swal.fire({
+            icon: "error",
+            toast: true,
+            text: this.$t("An error occurred. Please try again later."),
+          }).then(() => {
+            location.reload();
+          });
+        }
+      });
+    },
+    vote(winner, loser) {
+      const data = {
+        game_serial: this.gameSerial,
+        winner_id: winner.id,
+        loser_id: loser.id,
       };
 
       this.sendVote(data);
     },
-    sendVote(data){
-      axios.post(this.voteGameEndpoint, data)
-        .then(res => {
-          let interval = setInterval(() => {
-            // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
-            if(this.leftReady && this.rightReady){
-
-              if(this.game.current_round == 1 && this.currentRemainElement == 2){
-                // final round
-                this.isDataLoading = true;
-                this.finishingGame = true;
-              }
-
-              if(!this.finishingGame){
-                this.pauseAllVideo();
-              }
-
-              clearInterval(interval);
-              if(this.isMobileScreen){
-                Promise.all([
-                  $('#left-player').animate({left: 300, opacity:0}, 150).promise(),
-                  $('#right-player').animate({left: 300, opacity:0}, 150).promise(),
-                  $('#google-ad').animate({top: 100, opacity:0}, 150).promise(),
-                  $('#google-ad2').animate({top: 100, opacity:0}, 150).promise()
-                ]).then(() => {
-                  this.animationShowLeftPlayer = false;
-                  this.animationShowRightPlayer = false;
-                  this.animationShowRoundSession = false;
-                  this.isDataLoading = true;
-                  this.handleSendVote(res);
-                });
-              }else{
-                this.isDataLoading = true;
-                this.handleSendVote(res);
-              }
-            }
-          }, 10);
+    sendVote(data) {
+      axios
+        .post(this.voteGameEndpoint, data)
+        .then((res) => {
+          this.handleAnimationAfterVoted(res);
         })
-        .catch(error => {
+        .catch((error) => {
           if (error.response.status === 429) {
             Swal.fire({
-              icon: 'error',
+              icon: "error",
               toast: true,
-              text: this.$t('You have voted too quickly. Please try again later.'),
+              text: this.$t("You have voted too quickly. Please try again later."),
             });
-          }else{
+          } else {
             Swal.fire({
-              icon: 'error',
+              icon: "error",
               toast: true,
-              text: this.$t('An error occurred. Please try again later.'),
+              text: this.$t("An error occurred. Please try again later."),
             }).then(() => {
               location.reload();
             });
           }
           let interval = setInterval(() => {
-            if(this.leftReady && this.rightReady){
+            if (this.leftReady && this.rightReady) {
               this.resetPlayerPosition();
               // this.scrollToLastPosition();
               this.resetPlayingStatus();
@@ -622,66 +1029,101 @@ export default {
               }, 300);
             }
           }, 10);
-
-        }).finally(() => {
-
-        });
+        })
+        .finally(() => {});
     },
-    showAllPlayers(){
+    handleAnimationAfterVoted(res){
+      let interval = setInterval(() => {
+        // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
+        if (this.leftReady && this.rightReady) {
+          if (this.game.current_round == 1 && this.currentRemainElement == 2) {
+            // final round
+            this.isDataLoading = true;
+            this.finishingGame = true;
+          }
+
+          if (!this.finishingGame) {
+            this.pauseAllVideo();
+          }
+
+          clearInterval(interval);
+          if (this.isMobileScreen) {
+            Promise.all([
+              $("#left-player").animate({ left: 300, opacity: 0 }, 150).promise(),
+              $("#right-player").animate({ left: 300, opacity: 0 }, 150).promise(),
+              $("#google-ad").animate({ top: 100, opacity: 0 }, 150).promise(),
+              $("#google-ad2").animate({ top: 100, opacity: 0 }, 150).promise(),
+            ]).then(() => {
+              this.animationShowLeftPlayer = false;
+              this.animationShowRightPlayer = false;
+              this.animationShowRoundSession = false;
+              this.isDataLoading = true;
+              this.handleSendVote(res);
+            });
+          } else {
+            this.isDataLoading = true;
+            this.handleSendVote(res);
+          }
+        }
+      }, 10);
+    },
+    showAllPlayers() {
       this.animationShowLeftPlayer = true;
       this.animationShowRightPlayer = true;
       this.animationShowRoundSession = true;
-      $('#left-player').show();
-      $('#right-player').show();
-      $('#rounds-session').show();
-      $('#left-player').css('opacity', '1');
-      $('#right-player').css('opacity', '1');
-      $('#rounds-session').css('opacity', '1');
-      if(this.isMobileScreen){
-        $('#google-ad').css('opacity', '1');
-        $('#google-ad2').css('opacity', '1');
+      $("#left-player").show();
+      $("#right-player").show();
+      $("#rounds-session").show();
+      $("#left-player").css("opacity", "1");
+      $("#right-player").css("opacity", "1");
+      $("#rounds-session").css("opacity", "1");
+      if (this.isMobileScreen) {
+        $("#google-ad").css("opacity", "1");
+        $("#google-ad2").css("opacity", "1");
       }
     },
-    handleSendVote(res){
+    handleSendVote(res) {
       this.status = res.data.status;
-      if (this.status === 'end_game') {
+      if (this.status === "end_game") {
         this.$cookies.remove(this.postSerial);
         this.showGameResult();
       } else {
-        this.$cookies.set(this.postSerial, this.gameSerial, "30d");
+        this.keepGameCookie();
         this.nextRound(res.data);
       }
+    },
+    keepGameCookie(){
+      this.$cookies.set(this.postSerial, this.gameSerial, "30d");
     },
     resetPlayingStatus() {
       this.isLeftPlaying = false;
       this.isRightPlaying = false;
     },
     showGameSettingPanel: function () {
-      $('#gameSettingPanel').modal('show');
+      $("#gameSettingPanel").modal("show");
     },
     showGameResult: function () {
-      const url = this.getRankRoute.replace('_serial', this.postSerial) + '?g=' + this.gameSerial;
+      const url =
+        this.getRankRoute.replace("_serial", this.postSerial) + "?g=" + this.gameSerial;
       setTimeout(() => {
         this.gameResultUrl = url;
-        window.open(url, '_self');
+        window.open(url, "_self");
       }, 1000);
     },
     getYoutubePlayer(element) {
-      if(!element){
+      if (!element) {
         return null;
       }
-      return _.get(this.$refs, element.id + '.player', null);
+      return _.get(this.$refs, element.id + ".player", null);
     },
     getVideoPlayer(id) {
       return document.getElementById(id);
     },
     getTwitchPlayer(element) {
-
-
       //check twitch-video-{{element.id}} is exist
-        if (document.getElementById("twitch-video-" + element.id) === null) {
-          return null;
-        }
+      if (document.getElementById("twitch-video-" + element.id) === null) {
+        return null;
+      }
 
       if (element.twitchPlayer === undefined) {
         element.twitchPlayer = new Twitch.Embed("twitch-video-" + element.id, {
@@ -700,7 +1142,7 @@ export default {
     },
     doPlay(element, loud = false, name) {
       let player = null;
-      if (player = this.getYoutubePlayer(element)) {
+      if ((player = this.getYoutubePlayer(element))) {
         if (loud) {
           player.unMute();
         } else {
@@ -709,24 +1151,23 @@ export default {
         this.initPlayerEventLister(player, element);
         player.getPlayerState().then((state) => {
           //resumed if video is paused
-          if(state === 2){
+          if (state === 2) {
             player.playVideo();
           }
         });
-      }
-      else if (player = this.getTwitchPlayer(element)) {
-        if(element.video_source === 'twitch_video'){
-            player.addEventListener(Twitch.Embed.VIDEO_READY, () => {
-              embed.getPlayer().play();
-            });
-            player.seek(element.video_start_second);
-        }else if(element.video_source === 'twitch_clip'){
+      } else if ((player = this.getTwitchPlayer(element))) {
+        if (element.video_source === "twitch_video") {
+          player.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+            embed.getPlayer().play();
+          });
+          player.seek(element.video_start_second);
+        } else if (element.video_source === "twitch_clip") {
           //
         }
       }
     },
     initPlayerEventLister(player, element) {
-      player.addEventListener('onStateChange', (event) => {
+      player.addEventListener("onStateChange", (event) => {
         let status = event.target.getPlayerState();
         // -1 – 未啟動
         // 0 - 已結束
@@ -758,26 +1199,26 @@ export default {
         // window.p2 = theirPlayer;
         // let retry = 0;
         theirPlayer.getPlayerState().then((state) => {
-          if(state === -1 || state === 3){
+          if (state === -1 || state === 3) {
             let interval = setInterval(() => {
               theirPlayer.getPlayerState().then((state) => {
                 // console.log('mouse:' + this.mousePosition + ' left:' + left);
 
                 // console.log('retry: '+retry+' | theirPlayer status: '+state);
-                if(state === -1 || state === 3){
+                if (state === -1 || state === 3) {
                   theirPlayer.mute();
-                }else{
+                } else {
                   clearInterval(interval);
-                  if(this.mousePosition){
+                  if (this.mousePosition) {
                     this.videoHoverIn(this.le, this.re, true);
-                  }else{
+                  } else {
                     this.videoHoverIn(this.re, this.le, false);
                   }
                 }
                 // retry++;
-            });
+              });
             }, 100);
-          }else{
+          } else {
             theirPlayer.pauseVideo();
             theirPlayer.mute();
           }
@@ -786,80 +1227,77 @@ export default {
 
       let myVideoPlyaer = null;
       let theirVideoPlyaer = null;
-      if(left){
-        myVideoPlyaer = this.getVideoPlayer('left-video-player');
-        theirVideoPlyaer = this.getVideoPlayer('right-video-player');
-      }else{
-        myVideoPlyaer = this.getVideoPlayer('right-video-player');
-        theirVideoPlyaer = this.getVideoPlayer('left-video-player');
+      if (left) {
+        myVideoPlyaer = this.getVideoPlayer("left-video-player");
+        theirVideoPlyaer = this.getVideoPlayer("right-video-player");
+      } else {
+        myVideoPlyaer = this.getVideoPlayer("right-video-player");
+        theirVideoPlyaer = this.getVideoPlayer("left-video-player");
       }
 
-      if(myVideoPlyaer){
+      if (myVideoPlyaer) {
         myVideoPlyaer.play();
       }
-      if(theirVideoPlyaer){
+      if (theirVideoPlyaer) {
         theirVideoPlyaer.pause();
       }
 
-      if(left){
+      if (left) {
         this.isLeftPlaying = true;
         this.isRightPlaying = false;
-      }else{
+      } else {
         this.isLeftPlaying = false;
         this.isRightPlaying = true;
       }
     },
     isImageSource: function (element) {
-      return element.type === 'image';
+      return element.type === "image";
     },
     isVideoSource: function (element) {
-      return element.type === 'video';
+      return element.type === "video";
     },
     isVideoUrlSource: function (element) {
-      return element.type === 'video' && element.video_source === 'url';
+      return element.type === "video" && element.video_source === "url";
     },
     isYoutubeSource: function (element) {
-      return element.type === 'video' && element.video_source === 'youtube';
+      return element.type === "video" && element.video_source === "youtube";
     },
     isTwitchVideoSource: function (element) {
-      return element.type === 'video' && element.video_source === 'twitch_video';
+      return element.type === "video" && element.video_source === "twitch_video";
     },
     isTwitchClipSource: function (element) {
-      return element.type === 'video' && element.video_source === 'twitch_clip';
+      return element.type === "video" && element.video_source === "twitch_clip";
     },
     isBilibiliSource: function (element) {
-      return element.type === 'video' && element.video_source === 'bilibili_video';
+      return element.type === "video" && element.video_source === "bilibili_video";
     },
     isYoutubeEmbedSource: function (element) {
-      return element.type === 'video' && element.video_source === 'youtube_embed';
+      return element.type === "video" && element.video_source === "youtube_embed";
     },
     isGfycatSource: function (element) {
-      return element.type === 'video' && element.video_source === 'gfycat';
+      return element.type === "video" && element.video_source === "gfycat";
     },
     onImageError: function (id, replaceUrl, event) {
-      if(this.errorImages.includes(id)) {
+      if (this.errorImages.includes(id)) {
         return;
       }
 
-      if(replaceUrl !== null) {
+      if (replaceUrl !== null) {
         event.target.src = replaceUrl;
       }
       this.errorImages.push(id);
     },
     loadGoogleAds() {
-      try{
+      try {
         if (window.adsbygoogle) {
-          try{
+          try {
             window.adsbygoogle.push({});
-          }catch(e){}
+          } catch (e) {}
         }
-      }catch(e){
-
-      }
-
+      } catch (e) {}
     },
     reloadGoogleAds() {
-      $('#google-ad2-container').css('height', '360px').css('position', 'relative');
+      $("#google-ad2-container").css("height", "360px").css("position", "relative");
       this.refreshAD = true;
       setTimeout(() => {
         this.refreshAD = false;
@@ -867,31 +1305,35 @@ export default {
 
       let retry = 5;
       let interval = setInterval(() => {
-        if(retry <= 0){
+        if (retry <= 0) {
           clearInterval(interval);
           return;
         }
         retry--;
         if (window.adsbygoogle) {
-          try{
+          try {
             window.adsbygoogle.push({});
-          }catch(e){
-            if (e.message.includes(`All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`)) {
-                clearInterval(interval);
+          } catch (e) {
+            if (
+              e.message.includes(
+                `All 'ins' elements in the DOM with class=adsbygoogle already have ads in them`
+              )
+            ) {
+              clearInterval(interval);
             }
           }
         }
-        if($('#google-ad')){
-          $('#google-ad').addClass('d-flex justify-content-center');
+        if ($("#google-ad")) {
+          $("#google-ad").addClass("d-flex justify-content-center");
         }
       }, 500);
     },
     needReloadAD() {
-      if(this.refreshAD){
+      if (this.refreshAD) {
         return false;
       }
 
-      if(!this.game){
+      if (!this.game) {
         return false;
       }
 
@@ -904,21 +1346,38 @@ export default {
       let second = time % 60;
       return `${hour}h${minute}m${second}s`;
     },
-    getThumbUrl(element){
-      if(this.isMobileScreen){
+    getThumbUrl(element) {
+      if (this.isMobileScreen) {
         return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
-      }else{
+      } else {
         return element.thumb_url;
       }
-    }
+    },
+    enableTooltip(){
+      Vue.nextTick(() => {
+        $(function () {
+          $('[data-toggle="tooltip"]').tooltip()
+        })
+      });
+    },
+    bootScreenSize() {
+      this.isMobileScreen = $(window).width() < MD_WIDTH_SIZE;
+    },
+    resizeElementHeight() {
+      // force update isMobileScreen
+      this.bootScreenSize();
+      if (this.isMobileScreen) {
+        this.elementHeight = 200;
+        this.gameBodyHeight = Math.max(this.elementHeight + 260, MOBILE_HEIGHT);
+      } else {
+        this.elementHeight = Math.max(window.innerHeight * 0.618, 360);
+        this.gameBodyHeight = Math.max(this.elementHeight + 260, 700);
+      }
+    },
+    registerResizeEvent() {
+      window.addEventListener("resize", this.resizeElementHeight);
+    },
+
   },
-
-  beforeMount() {
-    // less md size
-    if ($(window).width() < MD_WIDTH_SIZE) {
-      this.elementHeight = 200
-    }
-  }
-}
-
+};
 </script>

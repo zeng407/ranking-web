@@ -57,11 +57,11 @@ class PublicPostController extends Controller
     public function getComments(Request $request, Post $post)
     {
         $user = $request->user();
-        $comments = $this->postService->getComments($post, 10);
+        $comments = $this->postService->    getComments($post, 10);
         $data = CommentResource::collection($comments)
             ->additional([
                 'profile' => [
-                    'nickname' => $user? $user->name : config('setting.anonymous_nickname'),
+                    'nickname' => $user? mb_substr($user->name,0,config('setting.user_name_max_size')) : config('setting.anonymous_nickname'),
                     'avatar_url' => $user?->avatar_url,
                     'champions' => $this->postService->getUserLastVotes($post, $user, session()->get('anonymous_id', 'unknown')),
                     'is_auth' => $user != null

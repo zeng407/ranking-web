@@ -4,11 +4,16 @@
 namespace App\Services;
 
 
+use App\Helper\CacheService;
 use App\Helper\Locker;
+use App\Helper\SerialGenerator;
 use App\Http\Resources\Game\GameResultResource;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Game1V1Round;
+use App\Models\GameRoom;
+use App\Models\GameRoomUser;
+use App\Models\GameRoomUserBet;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
@@ -99,7 +104,8 @@ class GameService
                     'winner_id' => $winner->id,
                     'winner_global_rank' => $rankReport?->rank
                 ],
-                'rounds' => $game->element_count
+                'rounds' => $game->element_count,
+                'game_room' => $game->game_room ? CacheService::rememberGameBetRank($game->game_room, true) : [],
             ]);
 
         return $gameResult;
@@ -233,5 +239,134 @@ class GameService
         });
         $timeline->shift();
         return $timeline;
+    }
+
+    public function getGameRoomUser(GameRoom $gameRoom, Request $request)
+    {
+        $user = $request->user();
+        $anonymousId = $request->session()->get('anonymous_id', 'unknown');
+        $gameRoomUser = $gameRoom->users()
+            ->where(function($query)use($user, $anonymousId){
+                if($user){
+                    $query->where('user_id', $user->id)
+                        ->orWhere('anonymous_id', $anonymousId);
+                }else{
+                    $query->where('anonymous_id', $anonymousId);
+                }
+            })
+            ->first();
+
+        if(!$gameRoomUser){
+            $gameRoomUser = $gameRoom->users()->create([
+                'user_id' => $user?->id,
+                'anonymous_id' => $anonymousId,
+                'score' => config('setting.default_bet_score'),
+                'nickname' => config('setting.anonymous_nickname'),
+                'rank' => 0,
+                'accuracy' => 0,
+                'total_played' => 0,
+                'total_correct' => 0,
+            ]);
+        }else{
+            $gameRoomUser->update([
+                'user_id' => $user?->id
+            ]);
+        }
+        return $gameRoomUser;
+    }
+
+    public function updateGameRoomUser(GameRoomUser $gameRoomUser, Request $request)
+    {
+        return $gameRoomUser->update([
+            'nickname' => $request->input('nickname')
+        ]);
+    }
+
+    public function bet(GameRoom $gameRoom, GameRoomUser $gameRoomUser, array $data)
+    {
+        $lastRound = $gameRoomUser->bets()
+            ->select(['last_combo', 'won_at'])
+            ->orderByDesc('id')
+            ->first();
+        $lastRoundCombo = $lastRound ? $lastRound->last_combo : 0;
+        $isWon = $lastRound ? $lastRound->won_at !== null : false;
+        $combo = $isWon ? ($lastRoundCombo + 1) : 0;
+
+        $gameRoomUser->bets()->updateOrCreate([
+            'game_room_id' => $gameRoom->id,
+            'game_room_user_id' => $gameRoomUser->id,
+            'current_round' => $data['current_round'],
+            'of_round' => $data['of_round'],
+            'remain_elements' => $data['remain_elements'],
+        ],[
+            'game_room_id' => $gameRoom->id,
+            'game_room_user_id' => $gameRoomUser->id,
+            'current_round' => $data['current_round'],
+            'of_round' => $data['of_round'],
+            'remain_elements' => $data['remain_elements'],
+            'winner_id' => $data['winner_id'],
+            'loser_id' => $data['loser_id'],
+            'last_combo' => $combo,
+        ]);
+    }
+
+    public function createGameRoom(Game $game) : \App\Models\GameRoom
+    {
+        return $game->game_room()->firstOrCreate([], [
+            'serial' => SerialGenerator::genGameRoomSerial()
+        ]);
+    }
+
+    public function updateGameBet(GameRoom $gameRoom, $winnerId, $loserId, array $conditions)
+    {
+        logger('updateGameBet', $conditions);
+        $comboScore = config('setting.bet_combo_score');
+        $wonScore = config('setting.bet_won_score');
+        $loseScore = config('setting.bet_lose_score');
+        GameRoomUserBet::where('game_room_id', $gameRoom->id)
+            ->where('current_round', $conditions['current_round'])
+            ->where('of_round', $conditions['of_round'])
+            ->where('remain_elements', $conditions['remain_elements'] + 1)
+            ->where('winner_id', $winnerId)
+            ->where('loser_id', $loserId)
+            ->update([
+                'won_at' => now(),
+                'score' => \DB::raw("last_combo * {$comboScore} + {$wonScore}")
+            ]);
+
+        GameRoomUserBet::where('game_room_id', $gameRoom->id)
+            ->where('current_round', $conditions['current_round'])
+            ->where('of_round', $conditions['of_round'])
+            ->where('remain_elements', $conditions['remain_elements'] + 1)
+            ->where('winner_id', $loserId)
+            ->where('loser_id', $winnerId)
+            ->update([
+                'lost_at' => now(),
+                'score' => $loseScore
+            ]);
+    }
+
+    public function updateGameRoomUserBetScore(GameRoomUser $gameRoomUser)
+    {
+        $totalPlayed = $gameRoomUser->bets()->count();
+        $totalCorrect = $gameRoomUser->bets()->whereNotNull('won_at')->count();
+        $accuracy = $totalPlayed > 0 ? $totalCorrect / $totalPlayed * 100 : 0;
+        $score = $gameRoomUser->bets()->sum('score') + config('setting.default_bet_score');
+        $lastBet = $gameRoomUser->bets()
+            ->latest('id')
+            ->select(['last_combo','won_at'])
+            ->first();
+        $combo = 0;
+        if($lastBet){
+            $combo = $lastBet->won_at ? ($lastBet->last_combo + 1) : 0;
+        }
+
+        $gameRoomUser->update([
+            'combo' => $combo,
+            'score' => $score,
+            'accuracy' => $accuracy,
+            'total_played' => $totalPlayed,
+            'total_correct' => $totalCorrect
+        ]);
     }
 }

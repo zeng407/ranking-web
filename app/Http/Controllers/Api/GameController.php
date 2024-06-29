@@ -2,13 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\GameBet;
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
+use App\Events\RefreshGameCandidates;
 use App\Helper\AccessTokenService;
+use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Game\GameRoomResource;
+use App\Http\Resources\Game\GameRoomVoteResource;
 use App\Http\Resources\Game\GameRoundResource;
+use App\Http\Resources\Game\HostGameRoomResource;
 use App\Http\Resources\PublicPostResource;
+use App\Jobs\NotifyGameBet;
 use App\Models\Game;
+use App\Models\GameRoom;
 use App\Models\Post;
 use App\Rules\GameCandicateRule;
 use App\Services\GameService;
@@ -46,7 +54,11 @@ class GameController extends Controller
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
 
-        return $this->getNextElements($game);
+        $data = $this->getNextElements($game);
+
+        event(new RefreshGameCandidates($game));
+
+        return $data;
     }
 
     public function create(Request $request)
@@ -103,7 +115,6 @@ class GameController extends Controller
 
     public function vote(Request $request)
     {
-
         $request->validate([
             'game_serial' => 'required',
         ]);
@@ -123,8 +134,10 @@ class GameController extends Controller
             return response()->json([], 422);
         }
 
-        event(new GameElementVoted($game, $gameRound->winner));
-        event(new GameElementVoted($game, $gameRound->loser));
+        // retrieve next round
+        $elements = $this->getNextElements($game);
+
+        event(new GameElementVoted($game, $gameRound));
 
         // update rank when game complete
         if ($this->gameService->isGameComplete($game)) {
@@ -134,14 +147,81 @@ class GameController extends Controller
             event(new GameComplete($request->user(), $anonymousId, $gameRound, $candidates));
         }
 
-        // retrieve next round
-        $elements = $this->getNextElements($game);
-
         return response()->json([
             'status' => $this->getStatus($game),
             'data' => $elements
         ]);
 
+    }
+
+    public function getRoom(Request $request)
+    {
+        $gameRoomSerial = $request->route('gameRoom');
+        $room = GameRoom::where('serial', $gameRoomSerial)->firstOrFail();
+
+        return GameRoomResource::make($room);
+    }
+
+    public function getRoomVotes(Request $request)
+    {
+        $gameRoomSerial = $request->route('gameRoom');
+        $gameSerial = $request->input('game_serial');
+        $room = GameRoom::where('serial', $gameRoomSerial)->firstOrFail();
+        if($gameSerial != $room->game->serial){
+            return response()->json([], 403);
+        }
+
+        return GameRoomVoteResource::make($room);
+    }
+
+    public function bet(Request $request)
+    {
+        $data = $request->validate([
+            'winner_id' => ['required', 'integer'],
+            'loser_id' => ['required', 'integer'],
+            'current_round' => ['required', 'integer'],
+            'of_round' => ['required', 'integer'],
+            'remain_elements' => ['required', 'integer'],
+        ]);
+        $gameRoomSerial = $request->route('gameRoom');
+
+        // todo: use cache for better performance
+        $gameRoom = GameRoom::where('serial', $gameRoomSerial)->firstOrFail();
+        $gameRoomUser = $this->gameService->getGameRoomUser($gameRoom, $request);
+        $this->gameService->bet($gameRoom, $gameRoomUser, $data);
+
+        NotifyGameBet::dispatch($gameRoom);
+        return response()->json();
+    }
+
+    public function updateGameUser(Request $request)
+    {
+        $request->validate([
+            'nickname' => ['required', 'string', 'max:10'],
+        ]);
+        $gameRoomSerial = $request->route('gameRoom');
+        $gameRoom = GameRoom::where('serial', $gameRoomSerial)->firstOrFail();
+        $gameUser = $this->gameService->getGameRoomUser($gameRoom, $request);
+        if(CacheService::hasUpdateGameUserNameThreashold($gameUser)){
+            return response()->json([], 429);
+        }
+        $updated = $this->gameService->updateGameRoomUser($gameUser, $request);
+        if($updated){
+            CacheService::putUpdateGameUserNameThreashold($gameUser);
+        }
+
+
+        return response()->json();
+    }
+
+    public function createRoom(Request $request)
+    {
+        $request->validate([
+            'game_serial' => 'required',
+        ]);
+        $game = $this->getGame($request->input('game_serial'));
+        $room = $this->gameService->createGameRoom($game);
+        return HostGameRoomResource::make($room);
     }
 
     protected function getNextElements(Game $game)

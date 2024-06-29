@@ -4,11 +4,15 @@ namespace App\Providers;
 
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
+use App\Events\RefreshGameCandidates;
 use App\Events\VideoElementCreated;
+use App\Jobs\BroadcastGameBetRank;
 use App\Listeners\CreateGameResult;
 use App\Listeners\DeleteElementRank;
 use App\Listeners\DeletePostRank;
 use App\Listeners\MakeVideoThumbnail;
+use App\Listeners\NofiyGameRoomRefresh;
+use App\Listeners\NotifyVoted;
 use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
 use App\Events\ElementDeleted;
@@ -36,12 +40,16 @@ class EventServiceProvider extends ServiceProvider
 //        Registered::class => [
 //            SendEmailVerificationNotification::class,
 //        ],
+        RefreshGameCandidates::class => [
+            NofiyGameRoomRefresh::class
+        ],
         GameComplete::class => [
             CreateGameResult::class,
             UpdatePostRank::class
         ],
         GameElementVoted::class => [
-            UpdateElementRank::class
+            UpdateElementRank::class,
+            NotifyVoted::class,
         ],
         PostCreated::class => [
             //create a job to create imgur album

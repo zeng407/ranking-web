@@ -67,4 +67,5 @@ Route::middleware('auth')->group(function () {
 Route::get('tos', fn() => view_or("tos.".app()->getLocale(), 'tos.en'))->name('tos');
 Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en'))->name('privacy');
 
-
+/** Game Room */
+Route::get('b/{gameRoom:serial}', [GameController::class, 'joinRoom'])->name('game.room.index');

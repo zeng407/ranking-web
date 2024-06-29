@@ -216,3 +216,12 @@ if(!function_exists('random_emoji')){
         return $emojis[array_rand($emojis)];
     }
 }
+
+if(!function_exists('game_round_hash')){
+    function game_round_hash($currentRound, $ofRound, $remainElements, array $elementIds)
+    {
+        // sort element ids
+        sort($elementIds);
+        return md5("{$currentRound}-{$ofRound}-{$remainElements}-" . implode('-', $elementIds));
+    }
+}

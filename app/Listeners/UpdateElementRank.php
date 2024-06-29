@@ -5,9 +5,8 @@ namespace App\Listeners;
 use App\Events\GameElementVoted;
 use App\Services\RankService;
 
-class UpdateElementRank 
+class UpdateElementRank
 {
-
     protected $rankService;
 
     /**
@@ -28,6 +27,8 @@ class UpdateElementRank
      */
     public function handle(GameElementVoted $event)
     {
-        \App\Jobs\UpdateElementRank::dispatch($event->game, $event->element);
+        $round = $event->gameRound;
+        \App\Jobs\UpdateElementRank::dispatch($event->game, $round->winner)->delay(now()->addSeconds(5));
+        \App\Jobs\UpdateElementRank::dispatch($event->game, $round->loser)->delay(now()->addSeconds(5));
     }
 }

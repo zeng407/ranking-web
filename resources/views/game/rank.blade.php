@@ -17,15 +17,18 @@
         create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"
         report-comment-endpoint="{{ route('api.public-post.comment.report', [$post->serial, '_comment_id']) }}"
         :champion-histories="{{ json_encode($champion_histories) }}" :max-rank="{{ $reports->total() }}"
-        :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}">
+        :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
+        :game-room-ranks="{{ $gameResult ? json_encode($gameResult->game_room) : 'null' }}">
         {{-- Main --}}
         <div class="container-fuild" v-cloak>
             <div class="row m-0">
                 {{-- left part: ads --}}
                 <div class="d-none d-lg-block col-lg-2">
+                  @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
                     <div class="sticky-top-rank-ad" >
                         @include('ads.rank_ad_sides')
                     </div>
+                    @endif
                 </div>
 
                 {{-- main part --}}
@@ -33,19 +36,25 @@
                     @if (!$embed)
                         <div class="row mb-3">
                             <div class="col-10">
-                                <a class="btn btn-outline-dark btn-sm m-1" href="{{ route('home') }}"><i
-                                        class="fa-solid fa-home"></i>&nbsp;{{ __('rank.return_home') }}</a>
-                                <a class="btn btn-outline-dark btn-sm m-1" href={{ route('game.show', $post->serial) }}><i
-                                        class="fa-solid fa-play"></i>&nbsp;{{ __('rank.play') }}</a>
+                                <a class="btn btn-outline-dark btn-sm m-1" href="{{ route('home') }}">
+                                  <h5 class="m-0"><i class="fa-solid fa-home"></i>&nbsp;{{ __('rank.return_home') }}</h5>
+                                </a>
+                                <a class="btn btn-outline-dark btn-sm m-1" href={{ route('game.show', $post->serial) }}>
+                                  <h5 class="m-0"><i class="fa-solid fa-play"></i>&nbsp;{{ __('rank.play') }}</h5>
+                                </a>
                                 <div class="m-1 d-inline-block">
-                                    <share-link id="rank" :url="shareRankLink()" text="{{ __('rank.share') }}"
+                                  <h5 class="m-0">
+                                    <share-link heading-tag="h5" id="rank" :url="shareRankLink()" text="{{ __('rank.share') }}"
                                         after-copy-text="{{ __('Copied link') }}"></share-link>
+                                  </h5>
                                 </div>
                                 @if ($gameResult && !$shared)
                                     <div class="m-1 d-inline-block">
-                                        <share-link id="result" :url="shareResultLink()"
+                                      <h5 class="m-0">
+                                        <share-link heading-tag="h5" id="result" :url="shareResultLink()"
                                             text="{{ __('rank.share-result') }}" after-copy-text="{{ __('Copied link') }}"
                                             custom-class="btn btn-primary btn-sm"></share-link>
+                                      </h5>
                                     </div>
                                 @endif
                             </div>
@@ -62,99 +71,100 @@
                     @endif
 
                     <b-tabs content-class="mt-3"
-                        nav-wrapper-class="@if ($gameResult) sticky-top-rank-tab bg-default @endif">
+                        nav-wrapper-class="@if ($gameResult) sticky-top-rank-tab bg-default @endif rank-tabs hide-scrollbar">
                         {{-- my game result --}}
                         @if ($gameResult)
                             <b-tab {{ request('tab') == 0 ? 'active' : '' }} @click="clickTab('0')">
                               <template #title>
-                                @{{$t('My Rank')}}
-                                <i class="fa-solid fa-trophy"></i>
+                                <h5><i class="fa-solid fa-trophy"></i>&nbsp;@{{$t('My Rank')}}</h5>
                               </template>
                                 <div class="card my-2 card-hover">
-                                    <div class="card-header rank-header">
-                                        <span class="text-left w-25 rank-number">1</span>
-                                        <h2 class="text-center d-none d-md-block w-50 element-title">
-                                            {{ $gameResult->winner->title }}</h2>
-                                        <div class="text-right ml-auto">
-                                            {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}<br>
-                                        </div>
+                                  <div class="card-header rank-header">
+                                    <span class="text-left w-25 rank-number">1</span>
+                                    <h2 class="text-center d-none d-md-block w-50 element-title">
+                                        {{ $gameResult->winner->title }}</h2>
+                                    <div class="text-right ml-auto">
+                                        {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}<br>
                                     </div>
-                                    {{-- Rank #1 --}}
-                                    <div class="card-body text-center rank-card">
-                                        <h2 class="text-center d-block d-md-none element-title ">
-                                            {{ $gameResult->winner->title }}</h2>
-                                        @include('game.partial.my-champion-container', [
-                                            'gameResult' => $gameResult,
-                                        ])
-                                        <div class="custom-control custom-switch text-right">
-                                            <input type="checkbox" class="custom-control-input" id="switchRankHistory"
-                                                v-model="showRankHistory">
-                                            <label class="custom-control-label btn-link" for="switchRankHistory"><i
-                                                    class="fa-solid fa-chart-line"></i>&nbsp;@{{ $t('rank.chart.title.rank_history') }}</label>
-                                        </div>
-                                        <div class="custom-control custom-switch text-right">
-                                            <input type="checkbox" class="custom-control-input" id="switchTimeline"
-                                                v-model="showMyTimeline">
-                                            <label class="custom-control-label btn-link" for="switchTimeline"><i
-                                                    class="fa-solid fa-chart-line"></i>&nbsp;@{{ $t('rank.chart.title.timeline') }}</label>
+                                  </div>
+                                  {{-- Rank #1 --}}
+                                  <div class="card-body text-center rank-card">
+                                    <h2 class="text-center d-block d-md-none element-title ">
+                                        {{ $gameResult->winner->title }}</h2>
+                                    @include('game.partial.my-champion-container', [
+                                        'gameResult' => $gameResult,
+                                    ])
+                                    <div class="custom-control custom-switch text-right">
+                                        <input type="checkbox" class="custom-control-input" id="switchRankHistory"
+                                            v-model="showRankHistory">
+                                        <label class="custom-control-label btn-link" for="switchRankHistory"><i
+                                                class="fa-solid fa-chart-line"></i>&nbsp;@{{ $t('rank.chart.title.rank_history') }}</label>
+                                    </div>
+                                    <div class="custom-control custom-switch text-right">
+                                        <input type="checkbox" class="custom-control-input" id="switchTimeline"
+                                            v-model="showMyTimeline">
+                                        <label class="custom-control-label btn-link" for="switchTimeline"><i
+                                                class="fa-solid fa-chart-line"></i>&nbsp;@{{ $t('rank.chart.title.timeline') }}</label>
+                                    </div>
+
+                                    <div class="row">
+                                        <div v-show="showRankHistory" class="col-12"
+                                            :class="{ 'col-xl-6': showMyTimeline }">
+                                            <rank-history-chart
+                                                chart-id="{{ 'my-rank-history-chart-' . $gameResult->winner->id }}"
+                                                element-id="{{ $gameResult->winner->id }}"
+                                                post-serial="{{ $post->serial }}"
+                                                index-rank-endpoint="{{ route('api.rank.index') }}">
+                                            </rank-history-chart>
                                         </div>
 
-                                        <div class="row">
-                                            <div v-show="showRankHistory" class="col-12"
-                                                :class="{ 'col-xl-6': showMyTimeline }">
-                                                <rank-history-chart
-                                                    chart-id="{{ 'my-rank-history-chart-' . $gameResult->winner->id }}"
-                                                    element-id="{{ $gameResult->winner->id }}"
-                                                    post-serial="{{ $post->serial }}"
-                                                    index-rank-endpoint="{{ route('api.rank.index') }}">
-                                                </rank-history-chart>
+                                        <div v-show="showMyTimeline" id="my-timeline-container"
+                                            class="col-12 hide-scrollbar-md overflow-x-scroll"
+                                            :class="{ 'col-xl-6': showRankHistory }">
+                                            <div class="rank-chart-container d-flex align-content-center justify-content-center p-0"
+                                                style="min-width: {{ 400 + $gameResult->rounds * 8 }}px">
+                                                <canvas id="my-timeline"></canvas>
                                             </div>
-
-                                            <div v-show="showMyTimeline" id="my-timeline-container"
-                                                class="col-12 hide-scrollbar-md overflow-x-scroll"
-                                                :class="{ 'col-xl-6': showRankHistory }">
-                                                <div class="rank-chart-container d-flex align-content-center justify-content-center p-0"
-                                                    style="min-width: {{ 400 + $gameResult->rounds * 8 }}px">
-                                                    <canvas id="my-timeline"></canvas>
+                                        </div>
+                                        <div v-show="showMyTimeline" class="w-100">
+                                            <div id="chartjs-tooltip"
+                                                style="padding-left:15px; padding-top:15px; padding-right:15px; display:none">
+                                                <div class="chart-tooltip-bg">
+                                                    <table class="text-left">
+                                                    </table>
                                                 </div>
                                             </div>
-                                            <div v-show="showMyTimeline" class="w-100">
-                                                <div id="chartjs-tooltip"
-                                                    style="padding-left:15px; padding-top:15px; padding-right:15px; display:none">
-                                                    <div class="chart-tooltip-bg">
-                                                        <table class="text-left">
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                                <div style="padding-left:15px; padding-top:15px; padding-right:15px">
-                                                    <div class="chart-tooltip-bg">
-                                                        <table class="text-left">
-                                                            <thead>
-                                                                <tr style="border-width: 0px;">
-                                                                    <th style="border-width: 0px;">
-                                                                        @{{ $t('rank.chart.total_time') }}:&nbsp@{{ secondsToHms(gameStatistic.game_time) }}
-                                                                    </th>
-                                                                </tr>
-                                                                <tr style="border-width: 0px;">
-                                                                    <th style="border-width: 0px;">
-                                                                        @{{ $t('rank.chart.median_time') }}:&nbsp;@{{ computeMedianTime() }}
-                                                                    </th>
-                                                                </tr>
-                                                                <tr style="border-width: 0px;">
-                                                                    <th style="border-width: 0px;">
-                                                                        @{{ $t('rank.chart.average_time') }}:&nbsp;@{{ computeAverageTime() }}
-                                                                    </th>
-                                                                </tr>
-                                                            </thead>
-                                                        </table>
-                                                    </div>
+                                            <div style="padding-left:15px; padding-top:15px; padding-right:15px">
+                                                <div class="chart-tooltip-bg">
+                                                    <table class="text-left">
+                                                        <thead>
+                                                            <tr style="border-width: 0px;">
+                                                                <th style="border-width: 0px;">
+                                                                    @{{ $t('rank.chart.total_time') }}:&nbsp@{{ secondsToHms(gameStatistic.game_time) }}
+                                                                </th>
+                                                            </tr>
+                                                            <tr style="border-width: 0px;">
+                                                                <th style="border-width: 0px;">
+                                                                    @{{ $t('rank.chart.median_time') }}:&nbsp;@{{ computeMedianTime() }}
+                                                                </th>
+                                                            </tr>
+                                                            <tr style="border-width: 0px;">
+                                                                <th style="border-width: 0px;">
+                                                                    @{{ $t('rank.chart.average_time') }}:&nbsp;@{{ computeAverageTime() }}
+                                                                </th>
+                                                            </tr>
+                                                        </thead>
+                                                    </table>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                  </div>
                                 </div>
                                 {{-- Rank #2 ~ #10 --}}
+                                <div class="row">
                                 @foreach ($gameResult->data as $index => $rank)
+                                  <div class="{{$index < 3 ? 'col-12' : 'col-12 col-xl-6'}}">
                                     <div class="card my-2 card-hover">
                                         <div class="card-header rank-header">
                                             <span class="text-left w-25 rank-number">{{ (int) $index + 2 }}</span>
@@ -172,25 +182,84 @@
                                             ])
                                         </div>
                                     </div>
+                                  </div>
 
-                                    @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 3)
-                                        <div id="google-ad-1" class="col-12">
-                                            @include('ads.rank_ad_1', ['id' => 'google-ad-1'])
-                                        </div>
-                                    @endif
+                                  @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 3)
+                                    <div id="google-ad-1" class="col-12">
+                                      @include('ads.rank_ad_1', ['id' => 'google-ad-1'])
+                                    </div>
+                                  @endif
+
                                 @endforeach
+                                </div>
                             </b-tab>
+                        @endif
+
+                        {{-- Game room rank --}}
+                        @if ($gameResult && isset($gameResult->game_room))
+                          <b-tab {{ request('tab') == 2 ? 'active' : '' }} @click="clickTab('2')">
+                            <template #title>
+                              <h5><i class="fa-solid fa-gamepad"></i>&nbsp;多人模式</h5>
+                            </template>
+                            <div class="container game-room-box bg-secondary text-white" style="max-width: 640px">
+                              <div class="p-1 my-1 game-room-container">
+                                <div class="d-flex justify-content-between p-2">
+                                  <div class="d-flex align-items-center">
+                                    <span class="badge badge-pill badge-light mr-1">
+                                    #
+                                    </span>
+                                    暱稱
+                                  </div>
+                                  <span>積分
+                                    <i class="fa-solid fa-circle-question" data-toggle="tooltip" data-placement="top" data-html="true" title="預測正確:連勝*10分<br>預測失敗:-10分"></i>
+                                  </span>
+                                </div>
+                                <hr class="my-1 text-white bg-white">
+                                <transition-group name="list-left" tag="div">
+                                  <div class="d-flex justify-content-between position-relative align-items-center mx-2" v-if="gameRoomRanks.top_10" v-for="(rank,index) in gameRoomRanks.top_10" :key="rank.user_id+':'+rank.rank">
+                                    <h6 class="d-flex align-items-center">
+                                      <span class="badge badge-pill badge-light mr-1" v-if="rank.rank">
+                                        @{{rank.rank}}
+                                      </span>
+                                      <span>
+                                        @{{rank.name | cut(10)}}
+                                      </span>
+                                    </h6>
+                                    <h5 class="position-absolute" style="right: 0">
+                                      <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo',{number:rank.combo})">
+                                        <span v-if="rank.combo >= 10" class="badge badge-pill badge-combo-10">
+                                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                                        </span>
+                                        <span v-else-if="rank.combo >= 8" class="badge badge-pill badge-combo-8">
+                                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                                        </span>
+                                        <span v-else-if="rank.combo >= 6" class="badge badge-pill badge-combo-6">
+                                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                                        </span>
+                                        <span v-else-if="rank.combo >= 4" class="badge badge-pill badge-combo-4">
+                                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                                        </span>
+                                        <span v-else-if="rank.combo >= 2" class="badge badge-pill badge-combo-2">
+                                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                                        </span>
+                                      </span>
+                                      <I-Count-Up :end-val="rank.score" :options="{startVal:rank.score}"></I-Count-Up>
+                                    </h5>
+                                  </div>
+                                </transition-group>
+                              </div>
+                            </div>
+                          </b-tab>
                         @endif
 
                         {{-- Global Rank --}}
                         <b-tab {{ request('tab') == 1 ? 'active' : '' }} @click="clickTab('1')">
                             <template #title>
-                              @{{$t('Global Rank')}}
-                              <i class="fa-solid fa-chart-line"></i>
+                              <h5><i class="fa-solid fa-chart-line"></i>&nbsp;@{{$t('Global Rank')}}</h5>
                             </template>
                             <div class="row">
                                 @foreach ($reports as $index => $rank)
-                                    @if ($embed || in_array($rank->rank, [1, 2, 3, 4, $reports->total(), $reports->total() - 1]))
+                                    @if ($embed || in_array($rank->rank, [1, 2, 3, 4]))
                                         <div class="col-12">
                                             <div class="card my-2 card-hover">
                                                 <div class="card-header rank-header">
@@ -231,7 +300,7 @@
                                             </div>
                                         </div>
                                     @else
-                                        <div class="col-12 col-lg-6">
+                                        <div class="col-12 col-xl-6">
                                             <div class="card my-2 card-hover">
                                                 <div class="card-header rank-header">
                                                     <span class="text-left w-25 rank-number">{{ $rank->rank }}</span>
@@ -297,6 +366,8 @@
                                 </div>
                             </div>
                         </b-tab>
+
+
                     </b-tabs>
 
                     {{-- Comment --}}
@@ -478,9 +549,11 @@
 
                 {{-- right part: comments --}}
                 <div class="d-none d-lg-block col-lg-2">
+                  @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
                     <div class="sticky-top-rank-ad">
                         @include('ads.rank_ad_sides')
                     </div>
+                  @endif
                 </div>
             </div>
         </div>

@@ -22,5 +22,9 @@ return [
     'upload_url_at_a_time' => 100,
     'upload_media_size_mb_at_a_time' => 30,
     'upload_media_file_size_mb'=> 8,
-    'upload_media_file_count_at_a_time' => 30
+    'upload_media_file_count_at_a_time' => 30,
+    'bet_combo_score' => 10,
+    'bet_won_score' => 10,
+    'bet_lose_score' => -10,
+    'default_bet_score' => 1000,
 ];

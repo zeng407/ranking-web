@@ -2,13 +2,17 @@
 
 namespace App\Helper;
 
+use App\Http\Resources\Game\GameRoomUserResource;
 use App\Http\Resources\PublicPostResource;
+use App\Models\GameRoom;
+use App\Models\GameRoomUser;
 use App\Models\User;
 use App\Repositories\Filters\PostFilter;
 use App\Services\HomeCarouselService;
 use App\Services\PostService;
 use App\Services\TagService;
 use Cache;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 
 
@@ -102,5 +106,70 @@ class CacheService
     static public function clearCarousels()
     {
         Cache::forget('carousels');
+    }
+
+    static public function putJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
+    {
+        Cache::put('waiting_job:update_game_room_rank'.$gameRoom->serial, true, 60 * 24);
+    }
+
+    static public function pullJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
+    {
+        return Cache::pull('waiting_job:update_game_room_rank'.$gameRoom->serial);
+    }
+
+    static public function hasJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
+    {
+        return Cache::has('waiting_job:update_game_room_rank'.$gameRoom->serial);
+    }
+
+    static public function pullJobCacheUpdateGameBet(GameRoom $gameRoom)
+    {
+        return Cache::pull('waiting_job:update_game_bet'.$gameRoom->serial);
+    }
+
+    static public function putJobCacheUpdateGameBet(GameRoom $gameRoom)
+    {
+        Cache::put('waiting_job:update_game_bet'.$gameRoom->serial, true, 60 * 24);
+    }
+
+    static public function hasJobCacheUpdateGameBet(GameRoom $gameRoom)
+    {
+        return Cache::has('waiting_job:update_game_bet'.$gameRoom->serial);
+    }
+
+
+
+    static public function rememberGameBetRank(GameRoom $gameRoom, $refresh = false)
+    {
+        if ($refresh) {
+            Cache::forget('game_bet_rank'.$gameRoom->serial);
+        }
+        $seconds = 60 * 60; // 1 hour
+        return Cache::remember('game_bet_rank'.$gameRoom->serial, $seconds, function()use($gameRoom){
+            $mapData = function(Collection $collection){
+                return $collection->map(function($gameUser) {
+                    return GameRoomUserResource::make($gameUser)->toArray(request());
+                });
+            };
+            $top10 = $mapData($gameRoom->users()->orderBy('rank')->limit(10)->get());
+            $bottom10 = $mapData($gameRoom->users()->orderByDesc('rank')->limit(10)->get());
+            return [
+                'total_users' => $gameRoom->users()->count(),
+                'top_10' => $top10,
+                'bottom_10' => $bottom10
+            ];
+        });
+    }
+
+    static function putUpdateGameUserNameThreashold(GameRoomUser $gameRoomUser)
+    {
+        $time = 60 * 60; // 1 hour
+        Cache::put('update_game_user_name_threashold'.$gameRoomUser->id, true, $time);
+    }
+
+    static function hasUpdateGameUserNameThreashold(GameRoomUser $gameRoomUser)
+    {
+        return Cache::has('update_game_user_name_threashold'.$gameRoomUser->id);
     }
 }
