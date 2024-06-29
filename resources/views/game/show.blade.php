@@ -399,7 +399,9 @@
                 <div class="d-flex justify-content-between">
                   <span>成功率:</span>
                   <span data-toggle="tooltip" data-placement="left" :title="gameRoom.user.total_correct+' / '+gameRoom.user.total_played">
-                    <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
+                    <u>
+                      <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
+                    </u>
                   </span>
                 </div>
               </div>
