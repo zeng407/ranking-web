@@ -1383,7 +1383,7 @@ export default {
         this.elementHeight = 200;
         this.gameBodyHeight = Math.max(this.elementHeight + 260, MOBILE_HEIGHT);
       } else {
-        this.elementHeight = Math.max(window.innerHeight * 0.618, 360);
+        this.elementHeight = Math.max(window.innerHeight * 0.618 - 42, 360);
         this.gameBodyHeight = Math.max(this.elementHeight + 260, 700);
       }
     },
