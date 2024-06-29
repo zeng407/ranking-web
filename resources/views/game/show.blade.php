@@ -345,7 +345,7 @@
             <div class="game-room-container">
               {{-- game room --}}
               <div class="p-1 my-1" v-if="isGameClient">
-                <input v-show="isEditingNickname" id="newNickname" autocomplete="off" v-model="newNickname" type="text" class="form-control badge-secondary bg-secondary-onfocus" maxlength="10">
+                <input v-show="isEditingNickname" id="newNickname" autocomplete="off" v-model="newNickname" type="text" class="form-control badge-secondary bg-secondary-onfocus font-size-16" maxlength="10">
                 <div class="text-center" v-show="isEditingNickname">(上限10個字元，每小時可更改一次)</div>
                 <h4 class="d-flex justify-content-center">
                   <div class="position-relative">
@@ -592,7 +592,7 @@
                   <form @submit.prevent="accessGame">
                     <div class="input-group mb-3">
                       <label class="input-group-text" for="inputPassword">@{{ $t('game.password') }}</label>
-                      <input type="text" class="form-control" v-model="inputPassword" autocomplete="off" @input="knownIncorrectPassword = false">
+                      <input type="text" class="form-control font-size-16" v-model="inputPassword" autocomplete="off" @input="knownIncorrectPassword = false">
                       <div class="input-group-append">
                         <button class="btn btn-primary" type="submit" :disabled="inputPassword.length == 0 || knownIncorrectPassword">
                           <i class="fas fa-key"></i>&nbsp;@{{ $t('Enter') }}
