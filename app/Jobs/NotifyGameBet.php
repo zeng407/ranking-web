@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Events\GameBet;
 use App\Helper\CacheService;
 use App\Http\Resources\Game\GameRoomVoteResource;
 use App\Models\GameRoom;
@@ -34,10 +33,9 @@ class NotifyGameBet implements ShouldQueue, ShouldBeUnique
      *
      * @return void
      */
-    public function handle(GameBet $event)
+    public function handle()
     {
-        $gameRoom = $this->gameRoom ?: $event->gameRoom;
-        logger('NotifyGameBet', ['gameRoom' => $gameRoom]);
+        $gameRoom = $this->gameRoom;
         // pull cache
         CacheService::pullJobCacheUpdateGameBet($gameRoom);
 

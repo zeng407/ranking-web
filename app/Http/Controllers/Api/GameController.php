@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\GameBet;
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
 use App\Events\RefreshGameCandidates;
