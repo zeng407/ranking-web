@@ -367,7 +367,7 @@
                 <div class="d-flex justify-content-between">
                   <span>積分:</span>
                   <div>
-                    <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo',{number: gameRoom.user.combo})">
+                    <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
                       <span v-if="gameRoom.user.combo >= 10" class="badge badge-pill badge-combo-10">
                         @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
                       </span>
