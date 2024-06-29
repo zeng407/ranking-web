@@ -723,10 +723,9 @@ export default {
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
             this.destoryRightVideoPlayer();
+            this.leftReady = true;
             sendWinnerData();
           });
-          this.leftReady = true;
-          sendWinnerData();
         }else{
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
           // move #left-plyaer to the certical center of screen
@@ -833,10 +832,10 @@ export default {
 
           $.when(loseAnimate).then(() => {
             this.destoryLeftVideoPlayer();
+            this.rightReady = true;
             sendWinnerData();
           });
-          this.rightReady = true;
-          sendWinnerData();
+
         }else{
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
           // move #right-plyaer to the certical center of screen
