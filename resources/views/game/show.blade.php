@@ -686,9 +686,7 @@
           <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
             <div class="modal-content">
               <div class="modal-header">
-                <div class="d-none d-sm-flex white-space-no-wrap">
-                  <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">你已加入<u>某人</u>的投票房</h5>
-                </div>
+                <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">你已加入<u>某人</u>的投票房</h5>
               </div>
               <div class="modal-body">
                 <h3 class="text-center">
