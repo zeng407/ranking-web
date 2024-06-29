@@ -226,7 +226,7 @@
                                       </span>
                                     </h6>
                                     <h5 class="position-absolute" style="right: 0">
-                                      <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo',{number:rank.combo})">
+                                      <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
                                         <span v-if="rank.combo >= 10" class="badge badge-pill badge-combo-10">
                                           @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
                                         </span>
