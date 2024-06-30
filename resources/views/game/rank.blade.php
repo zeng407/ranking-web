@@ -202,6 +202,14 @@
                               <h5><i class="fa-solid fa-gamepad"></i>&nbsp;多人模式</h5>
                             </template>
                             <div class="container game-room-box bg-secondary text-white" style="max-width: 640px">
+                              <h3 class="p-1 my-1 text-center position-relative">排行榜
+                                <span v-show="sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
+                                  <i class="fa-solid fa-arrow-up-wide-short"></i>
+                                </span>
+                                <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
+                                  <i class="fa-solid fa-arrow-down-short-wide"></i>
+                                </span>
+                              </h3>
                               <div class="p-1 my-1 game-room-container">
                                 <div class="d-flex justify-content-between p-2">
                                   <div class="d-flex align-items-center">
@@ -216,9 +224,15 @@
                                 </div>
                                 <hr class="my-1 text-white bg-white">
                                 <transition-group name="list-left" tag="div">
-                                  <div class="d-flex justify-content-between position-relative align-items-center mx-2" v-if="gameRoomRanks.top_10" v-for="(rank,index) in gameRoomRanks.top_10" :key="rank.user_id+':'+rank.rank">
+                                  <div class="d-flex justify-content-between position-relative align-items-center mx-2" v-if="getSortedRanks" v-for="(rank,index) in getSortedRanks" :key="rank.user_id+':'+rank.rank">
                                     <h6 class="d-flex align-items-center">
-                                      <span class="badge badge-pill badge-light mr-1" v-if="rank.rank">
+                                      <i v-if="rank.rank == 1" class="fa-solid fa-trophy mr-1" style="color:gold"></i>
+                                      <i v-else-if="rank.rank == 2" class="fa-solid fa-trophy mr-1" style="color:silver"></i>
+                                      <i v-else-if="rank.rank == 3" class="fa-solid fa-trophy mr-1" style="color:chocolate"></i>
+                                      <i v-else-if="rank.rank == gameRoomRanks.total_users" class="fa-solid fa-poo mr-1" style="color:gold"></i>
+                                      <i v-else-if="rank.rank == gameRoomRanks.total_users -1" class="fa-solid fa-poo mr-1" style="color:silver"></i>
+                                      <i v-else-if="rank.rank == gameRoomRanks.total_users -2" class="fa-solid fa-poo mr-1" style="color:chocolate"></i>
+                                      <span v-else-if="rank.rank > 0" class="badge badge-pill badge-light mr-1">
                                         @{{rank.rank}}
                                       </span>
                                       <span>

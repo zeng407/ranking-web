@@ -407,12 +407,21 @@
               </div>
               {{-- rank --}}
               <div class="p-1 my-1">
-                <h3 class="text-center position-relative">排行榜
+                <h3 class="text-center position-relative">
+                  排行榜
                   <span v-show="sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
                     <i class="fa-solid fa-arrow-up-wide-short"></i>
                   </span>
                   <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
+                  </span>
+                  <span class="btn btn-secondary cursor-pointer position-absolute p-0"
+                    data-toggle="tooltip" data-placement="left" title="關閉"
+                    id="close-game-room"
+                    style="right:0"
+                    @click="closeGameRoom">
+
+                  <i class="fa-solid fa-xmark"></i>
                   </span>
                 </h3>
                 <h5 class="d-flex justify-content-between bet-rank-broad">
@@ -472,7 +481,7 @@
               <div v-show="showRoomInvitation">
                 <hr>
                 <h2 class="d-flex justify-content-end">
-                  <button class="btn btn-sm btn-outline-dark text-white"
+                  <button class="btn btn-sm btn-secondary text-white"
                       @click="toogleRoomInvitation"
                       data-toggle="tooltip" data-placement="top" title="縮小">
                     <i class="fa-regular fa-square-minus"></i>

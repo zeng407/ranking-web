@@ -47,6 +47,7 @@ export default {
       chartLoaded: [],
       showMyTimeline: false,
       showRankHistory: false,
+      sortByTop: true,
     }
   },
   props: {
@@ -91,7 +92,17 @@ export default {
     },
     validComment() {
       return this.commentInput.trim().length > 0 && this.commentInput.length <= this.commentMaxLength
-    }
+    },
+    getSortedRanks() {
+      if(!this.gameRoomRanks){
+        return [];
+      }
+      if(this.sortByTop){
+        return this.gameRoomRanks.top_10;
+      }else{
+        return this.gameRoomRanks.bottom_10;
+      }
+    },
   },
   methods: {
     loadCommnets(page = 1) {
@@ -578,6 +589,9 @@ export default {
           $('[data-toggle="tooltip"]').tooltip()
         })
       });
+    },
+    changeSortRanks() {
+      this.sortByTop = !this.sortByTop;
     },
   }
 }

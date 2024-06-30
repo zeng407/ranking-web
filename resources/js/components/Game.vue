@@ -204,6 +204,18 @@ export default {
       this.listenGameRoomRefresh();
       this.getGameRoom();
     },
+    closeGameRoom(){
+      clearInterval(this.autoRefreshRoomInterval);
+      this.leaveGameRoom();
+      this.isHostingGameRank = false;
+      this.gameRoomSerial = null;
+      this.gameRoom = null;
+      this.gameBetRanks = [];
+      this.gameRoomVotes = [];
+      this.showGameRoomVotes = false;
+      this.autoRefreshRoomInterval = null;
+      $("#close-game-room").tooltip("dispose");
+    },
     changeSortRanks(){
       this.sortByTop = !this.sortByTop;
     },
@@ -333,6 +345,12 @@ export default {
             this.gameRoom.user = currentUserRank;
           }
         });
+      }
+    },
+    leaveGameRoom(){
+      if (this.gameRoomSerial) {
+        Echo.leave("game-room." + this.gameRoomSerial);
+        Echo.leave("game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial);
       }
     },
     showBetResult(notifyData){
