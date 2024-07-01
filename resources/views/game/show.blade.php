@@ -116,7 +116,7 @@
               <div class="d-none d-sm-flex" style="flex-flow: row wrap">
                 <h3 style="width: 20%">
                   <span v-if="isBetGameClient && !isVoting">預測誰會勝出？</span>
-                  <span v-if="isBetGameClient && isVoting">等待結果中...</span>
+                  <span v-if="isBetGameClient && isVoting">等待主持人選擇...</span>
                 </h3>
 
                 <h3 class="text-center align-self-center" style="width: 60%">
@@ -400,10 +400,16 @@
                 </div>
                 <div class="d-flex justify-content-between">
                   <span>成功率:</span>
-                  <span data-toggle="tooltip" data-placement="left" :title="gameRoom.user.total_correct+' / '+gameRoom.user.total_played">
-                    <u>
-                      <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
-                    </u>
+                  <span>
+                    <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
+                  </span>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span>預測成功 / 次數</span>
+                  <span>
+                    <I-Count-Up :end-val="gameRoom.user.total_correct"></I-Count-Up>
+                    /
+                    <I-Count-Up :end-val="gameRoom.user.total_played"></I-Count-Up>
                   </span>
                 </div>
               </div>
