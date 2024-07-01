@@ -57,7 +57,7 @@ class PublicPostController extends Controller
     public function getComments(Request $request, Post $post)
     {
         $user = $request->user();
-        $comments = $this->postService->    getComments($post, 10);
+        $comments = $this->postService->getComments($post, 10);
         $data = CommentResource::collection($comments)
             ->additional([
                 'profile' => [

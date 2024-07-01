@@ -105,7 +105,7 @@ class GameService
                     'winner_global_rank' => $rankReport?->rank
                 ],
                 'rounds' => $game->element_count,
-                'game_room' => $game->game_room ? CacheService::rememberGameBetRank($game->game_room, true) : [],
+                'game_room' => $game->game_room ? CacheService::rememberGameBetRank($game->game_room, true) : null,
             ]);
 
         return $gameResult;
