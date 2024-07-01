@@ -5,7 +5,7 @@
         <i class="fa-solid fa-copy"></i>&nbsp;{{ text }}
       </component>
     </button>
-    <b-popover ref="popover" :target="'popover-button-event'+id" :disabled="true">{{ afterCopyText }}</b-popover>
+    <b-popover ref="popover" :placement="placement" :target="'popover-button-event'+id" :disabled="true">{{ afterCopyText }}</b-popover>
   </div>
 
 </template>
@@ -40,6 +40,10 @@ export default {
     headingTag: {
       type: String,
       default: 'div'
+    },
+    placement: {
+      type: String,
+      default: 'right'
     }
   },
   methods: {

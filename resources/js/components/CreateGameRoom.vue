@@ -19,8 +19,10 @@
           </div>
           <div class="modal-body text-center">
             <div class="row" v-show="step == 0">
-              <div class="col-6">
-                <button class="btn btn-outline-dark" @click="updateStep(1)" @mouseenter="flipOnhover" @mouseleave="flipOffhover" data-target="flip-item-1" style="height: 350px;">
+              <div class="col-12 col-md-6 my-2">
+                <button class="btn btn-outline-dark"
+                  @click="updateStep(1)" @mouseenter="flipOnhover" @mouseleave="flipOffhover"
+                  data-target="flip-item-1" style="height: 350px; width: 100%;">
                   <h2>
                     <i id="flip-item-1" class="fa-solid fa-heart"></i>
                   </h2>
@@ -49,7 +51,7 @@
                   </div>
                 </button>
               </div>
-              <div class="col-6">
+              <div class="col-12 col-md-6 my-2">
                 <button class="btn btn-outline-dark disabled position-relative" disabled style="height: 350px;">
                   <div class=" h-100 w-100 position-absolute" style="top: 0; left: 0; background: #FFF7;"></div>
                   <h2>
@@ -104,7 +106,7 @@
                       <a @click="downloadQrcode" class="btn btn-outline-dark btn-sm">
                         <i class="fa-solid fa-download"></i> {{ $t('Download QR code') }}
                       </a>
-                      <copy-link id="game1-room-url" :url="gameRoomUrl" :text="$t('Copy link')" :after-copy-text="$t('Copied link')"></copy-link>
+                      <copy-link id="game1-room-url" placement="bottom" :url="gameRoomUrl" :text="$t('Copy link')" :after-copy-text="$t('Copied link')"></copy-link>
                     </div>
                   </div>
                 </div>
@@ -129,7 +131,7 @@ export default {
   components: {
   },
   mounted() {
-
+    this.registerAfterCloseGameRoom();
   },
   props: {
     getRoomEndpoint: {
@@ -150,12 +152,12 @@ export default {
     },
     handleCreatedRoom: {
       type: Function,
-    }
+    },
+
   },
   data() {
     return {
       roomSerial: '',
-      isListening: false,
       step: 0,
       gameRoomUrl: '',
       gameBetRanks: null,
@@ -201,9 +203,9 @@ export default {
         console.log(error);
       });
     },
-    listenGameBetRank(){
-      Echo.channel("game-room." + this.roomSerial).listen(".GameBetRank", (data) => {
-        this.gameBetRanks = data;
+    registerAfterCloseGameRoom(){
+      this.$bus.$on('closeGameRoom', ($event) => {
+        this.step = 0;
       });
     },
     updateStep(step){
@@ -229,7 +231,7 @@ export default {
         const canvas = document.getElementById(target);
         if(canvas){
           QRCode.toCanvas(canvas, text, {
-            width: 400,
+            width: canvas.offsetWidth,
           });
         }
       });

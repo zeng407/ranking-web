@@ -215,6 +215,7 @@ export default {
       this.showGameRoomVotes = false;
       this.autoRefreshRoomInterval = null;
       $("#close-game-room").tooltip("dispose");
+      this.$bus.$emit("closeGameRoom");
     },
     changeSortRanks(){
       this.sortByTop = !this.sortByTop;
@@ -264,7 +265,6 @@ export default {
           this.isListeningGameBet = false;
         }
       }
-      this.enableTooltip();
     },
     getGameRoom(){
       axios
@@ -620,7 +620,7 @@ export default {
             this.resetPlayerPosition();
             // this.scrollToLastPosition();
             this.resetPlayingStatus();
-            // destory viwer
+            // destroy viwer
             if (this.$refs.rightViewer) {
               this.$refs.rightViewer.updateViewer();
             }
@@ -755,10 +755,12 @@ export default {
         if(this.isGameClient){
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
-            this.destoryRightVideoPlayer();
+            this.destroyRightPlayer();
+            $('#right-part').css('display', 'none');
             this.leftReady = true;
             sendWinnerData();
           });
+
         }else{
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
           // move #left-plyaer to the certical center of screen
@@ -784,7 +786,7 @@ export default {
           $("#google-ad2").animate({ top: adBottomPosition });
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
-            this.destoryRightVideoPlayer();
+            this.destroyRightPlayer();
             sendWinnerData();
           });
         }
@@ -809,7 +811,7 @@ export default {
           .promise();
 
         $.when(loseAnimate).then(() => {
-          this.destoryRightVideoPlayer();
+          this.destroyRightPlayer();
           sendWinnerData();
         });
       }
@@ -864,7 +866,8 @@ export default {
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
 
           $.when(loseAnimate).then(() => {
-            this.destoryLeftVideoPlayer();
+            this.destroyLeftPlayer();
+            $('#left-part').css('display', 'none');
             this.rightReady = true;
             sendWinnerData();
           });
@@ -895,7 +898,7 @@ export default {
           $("#google-ad2").animate({ top: adBottomPosition });
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
-            this.destoryLeftVideoPlayer();
+            this.destroyLeftPlayer();
             sendWinnerData();
           });
         }
@@ -922,28 +925,24 @@ export default {
           .promise();
 
         $.when(loseAnimate).then(() => {
-          this.destoryLeftVideoPlayer();
+          this.destroyLeftPlayer();
           sendWinnerData();
         });
       }
     },
-    destoryRightVideoPlayer() {
-      if (this.isVideoSource(this.re)) {
-        // make right as a dummy image
-        this.re = {
-          id: this.re.id,
-          type: "image",
-        };
-      }
+    destroyRightPlayer() {
+      // make right as a dummy image
+      this.re = {
+        id: this.re.id,
+        type: "image",
+      };
     },
-    destoryLeftVideoPlayer() {
-      if (this.isVideoSource(this.le)) {
+    destroyLeftPlayer() {
         // make left as a dummy image
-        this.le = {
-          id: this.le.id,
-          type: "image",
-        };
-      }
+      this.le = {
+        id: this.le.id,
+        type: "image",
+      };
     },
     handleLeftLoaded() {
       this.leftImageLoaded = true;
@@ -969,6 +968,7 @@ export default {
       $("#left-player").css("scale", "1");
       $("#left-player").removeClass("zoom-in");
       $("#left-player").css("z-index", "0");
+      $('#left-part').css('display', 'block');
 
       $("#right-player").css("left", "0");
       $("#right-player").css("top", "0");
@@ -976,6 +976,7 @@ export default {
       $("#right-player").css("scale", "1");
       $("#right-player").removeClass("zoom-in");
       $("#right-player").css("z-index", "0");
+      $('#right-part').css('display', 'block');
 
       $("#rounds-session").css("opacity", "0");
       $(".game-image-container img").css("object-fit", "contain");
@@ -1415,8 +1416,8 @@ export default {
         this.elementHeight = 200;
         this.gameBodyHeight = Math.max(this.elementHeight + 260, MOBILE_HEIGHT);
       } else {
-        this.elementHeight = Math.max(window.innerHeight * 0.618 - 42, 360);
-        this.gameBodyHeight = Math.max(this.elementHeight + 260, 700);
+        this.elementHeight = Math.max(window.innerHeight * 0.618 - 42, 413);
+        this.gameBodyHeight = Math.max(this.elementHeight + 260, 650);
       }
     },
     registerResizeEvent() {

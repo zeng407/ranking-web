@@ -132,9 +132,9 @@
             </div>
 
             {{-- playground --}}
-            <div class="row overflow-hidden" v-if="game && !finishingGame && (! gameRoom || !gameRoom.is_game_completed)" :style="{'height': this.gameBodyHeight + 'px'}">
+            <div class="row overflow-hidden" v-if="game && !finishingGame && (!gameRoom || !gameRoom.is_game_completed)" :style="{'height': isMobileScreen ? 'auto' : (this.gameBodyHeight + 'px')}">
               <!--left part-->
-              <div class="col-12 col-sm-6 pr-sm-1 mb-2 mb-sm-0">
+              <div class="col-12 col-sm-6 pr-sm-1 mb-2 mb-sm-0" id="left-part">
                 <transition name="slide-in-left">
                   <div v-if="animationShowLeftPlayer" class="card game-player left-player" id="left-player">
                     <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
@@ -246,7 +246,7 @@
               </transition>
 
               <!--right part-->
-              <div class="col-12 col-sm-6 pl-sm-1 mb-4 mb-sm-0">
+              <div class="col-12 col-sm-6 pl-sm-1 mb-4 mb-sm-0" id="right-part">
                 <transition :name="isMobileScreen ? 'slide-in-left' : 'slide-in-right'">
                   <div v-if="animationShowRightPlayer" class="card game-player right-player" id="right-player" :class="{ 'flex-column-reverse': isMobileScreen, 'mb-4': isMobileScreen}">
                     <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
@@ -341,7 +341,7 @@
 
 
           {{-- game room --}}
-          <div v-if="gameRoom" class="col-12 col-xl-3 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
+          <div v-if="gameRoom" id="game-room" class="col-12 col-xl-3 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
             <div class="game-room-container">
               {{-- game room --}}
               <div class="p-1 my-1" v-if="isGameClient">
@@ -415,7 +415,7 @@
                   <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
                   </span>
-                  <span class="btn btn-secondary cursor-pointer position-absolute p-0"
+                  <span v-if="isGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
                     data-toggle="tooltip" data-placement="left" title="關閉"
                     id="close-game-room"
                     style="right:0"
@@ -443,9 +443,9 @@
                       <i v-if="rank.rank == 1" class="fa-solid fa-trophy mr-1" style="color:gold"></i>
                       <i v-else-if="rank.rank == 2" class="fa-solid fa-trophy mr-1" style="color:silver"></i>
                       <i v-else-if="rank.rank == 3" class="fa-solid fa-trophy mr-1" style="color:chocolate"></i>
-                      <i v-else-if="rank.rank == gameBetRanks.total_users" class="fa-solid fa-poo mr-1" style="color:gold"></i>
-                      <i v-else-if="rank.rank == gameBetRanks.total_users -1" class="fa-solid fa-poo mr-1" style="color:silver"></i>
-                      <i v-else-if="rank.rank == gameBetRanks.total_users -2" class="fa-solid fa-poo mr-1" style="color:chocolate"></i>
+                      <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users" class="fa-solid fa-poo mr-1" style="color:gold"></i>
+                      <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users -1" class="fa-solid fa-poo mr-1" style="color:silver"></i>
+                      <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users -2" class="fa-solid fa-poo mr-1" style="color:chocolate"></i>
                       <span v-else-if="rank.rank > 0" class="badge badge-pill badge-light mr-1">
                         @{{rank.rank}}
                       </span>
@@ -478,19 +478,17 @@
               </div>
             </div>
             <div v-if="gameRoomUrl" class="text-center">
-              <div v-show="showRoomInvitation">
+              <div v-show="showRoomInvitation" style="background: #00000042">
                 <hr>
                 <h2 class="d-flex justify-content-end">
-                  <button class="btn btn-sm btn-secondary text-white"
-                      @click="toogleRoomInvitation"
-                      data-toggle="tooltip" data-placement="top" title="縮小">
-                    <i class="fa-regular fa-square-minus"></i>
+                  <button class="btn btn-sm btn-secondary text-white mr-3"
+                      @click="toogleRoomInvitation">
+                    <i class="fa-solid fa-xmark"></i>
                   </button>
                 </h2>
                 {{-- join game, invitation --}}
                 <h2 class="position-relative">
                   邀請朋友加入遊戲
-                  <i class="fa-solid fa-question-circle" data-toggle="tooltip" data-placement="top" title="沒有朋友？"></i>
                 </h2>
                 <div class="row">
                   <div class="col-12">
@@ -498,7 +496,7 @@
                     <h5 class="break-word">
                       <a class="text-white" :href="gameRoomUrl" target="_blank">@{{ gameRoomUrl }}</a>
                     </h5>
-                    <copy-link heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
+                    <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
                   </div>
                   <h3 class="col-12 mt-2">
                     在線人數：<I-Count-Up :end-val="gameRoom.total_users"></I-Count-Up>
@@ -507,18 +505,16 @@
               </div>
             </div>
 
-            <div class="d-flex position-absolute mr-2 mb-4" style="right: 0; bottom:0">
+            <div v-if="isGameHost" class="d-flex position-absolute mr-2 mb-4" style="right: 0; bottom:0">
               <div v-show="!showRoomInvitation"
                 class="btn btn-outline-dark"
-                data-toggle="tooltip" data-placement="top" title="展開"
                 @click="toogleRoomInvitation">
                 <h3 class="text-white align-content-center">
                   在線人數：<I-Count-Up :end-val="gameRoom.total_users"></I-Count-Up>
                 </h3>
               </div>
-              <div v-if="gameRoom">
+              <div>
                 <button v-if="!showGameRoomVotes"
-                  v-b-tooltip.hover="'打開黑箱'"
                   style="min-width: 45px"
                   class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
                   <h3>
@@ -526,7 +522,6 @@
                   </h3>
                 </button>
                 <button v-else
-                  v-b-tooltip.hover="'關閉黑箱'"
                   style="min-width: 45px"
                   class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
                   <h3>
@@ -716,8 +711,8 @@
         <!-- Modal, Game panel -->
         <div class="modal fade" id="gameRoomJoin" data-backdrop="static" data-keyboard="false" tabindex="-1"
           aria-labelledby="gameRoomJoinLabel" aria-hidden="true">
-          <div :class="{ 'modal-dialog': true, 'modal-lg': !isMobileScreen }">
-            <div class="modal-content">
+          <div class="modal-dialog modal-dialog-centered" :class="{'modal-lg': !isMobileScreen }">
+            <div class="modal-content ">
               <div class="modal-header">
                 <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">多人投票模式：猜喜好</h5>
               </div>
