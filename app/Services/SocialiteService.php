@@ -18,7 +18,7 @@ class SocialiteService
      */
     public function handleGoogleCallback() : User
     {
-        $googleUser = Socialite::driver('google')->user();
+        $googleUser = Socialite::driver('google')->stateless()->user();
         logger(json_encode($googleUser));
         $socialite = UserSocialite::where('google_id', $googleUser->id)->first();
         if ($socialite) {
@@ -33,12 +33,14 @@ class SocialiteService
 
         try {
             \DB::beginTransaction();
+            $name = mb_substr($googleUser->nickname ?? $googleUser->name, 0, config('setting.user_name_max_size'));
+
             $user = User::create([
-                'name' => $googleUser->nickname ?? $googleUser->name,
+                'name' => $name,
                 'email' => $googleUser->email,
                 'password' => '',
                 'avatar_url' => $googleUser->avatar,
-                'email_verified_at' => $googleUser->user['email_verified'] ? now() : null, 
+                'email_verified_at' => $googleUser->user['email_verified'] ? now() : null,
             ]);
             $user->user_socialite()->create([
                 'google_email' => $googleUser->email,
@@ -52,7 +54,7 @@ class SocialiteService
             report($e);
             throw $e;
         }
-        
+
         return $user;
     }
 
@@ -82,7 +84,7 @@ class SocialiteService
             report($e);
             throw $e;
         }
-        
+
         return $user;
     }
 }

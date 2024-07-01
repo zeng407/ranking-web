@@ -52,3 +52,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('account/element/{element}/upload', [ElementController::class, 'upload'])->name('api.element.upload');
     Route::delete('account/element/{element}', [ElementController::class, 'delete'])->name('api.element.delete');
 });
+
+/** Game Room */
+Route::post('game/room', [GameController::class, 'createRoom'])->name('api.game-room.create');
+Route::get('game/room/{gameRoom:serial}', [GameController::class, 'getRoom'])->name('api.game-room.get');
+Route::get('game/room/{gameRoom:serial}/votes', [GameController::class, 'getRoomVotes'])->name('api.game-room.get-votes');
+Route::post('game/room/{gameRoom:serial}/bet', [GameController::class, 'bet'])->name('api.game-room.bet');
+Route::put('game/room/{gameRoom:serial}/profile', [GameController::class, 'updateGameUser'])->name('api.game-room.update-profile');
+

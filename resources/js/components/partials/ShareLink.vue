@@ -1,7 +1,10 @@
 <template>
   <div class="d-inline-block">
     <button @click="share" :id="'popover-button-event'+id" type="button" :class="getClass()">
-      <i class="fa-solid fa-share-square"></i>&nbsp;{{ text }}</button>
+      <component :is="headingTag" class="m-0">
+        <i class="fa-solid fa-share-square"></i>&nbsp;{{ text }}
+      </component>
+    </button>
     <b-popover ref="popover" :target="'popover-button-event'+id" :disabled="true">{{ afterCopyText }}</b-popover>
   </div>
 
@@ -33,6 +36,10 @@ export default {
     customClass: {
       type: String,
       default: ''
+    },
+    headingTag: {
+      type: String,
+      default: 'div'
     }
   },
   methods: {

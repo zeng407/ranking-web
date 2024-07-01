@@ -24,7 +24,6 @@ class GamePolicy
 
     public function play(?User $user, Game $game)
     {
-        logger('play', [$game->post->isPasswordRequired(), AccessTokenService::verifyPostAccessToken($game->post)]);
         if($game->post->isPasswordRequired()){
             if(AccessTokenService::verifyPostAccessToken($game->post)){
                 AccessTokenService::extendPostAccessToken($game->post);

@@ -64,7 +64,8 @@ class CommentBuilder
         if ($this->user == null) {
             return config('setting.anonymous_nickname');
         }
-        return $this->user->name;
+        // cut the name if it's too long
+        return mb_substr($this->user->name, 0, config('setting.user_name_max_size'));
     }
 
     public function getUserid(): ?int

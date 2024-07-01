@@ -1,6 +1,6 @@
 <template>
   <div class="w-100" :class="{'loading-animation': loading}">
-    <div v-if="!previewImage && element" :id="'embed'+element.id"ref="embedDiv" :style="{width: '100%',height: height+'px'}">
+    <div v-if="!previewImage && element" :id="'embed'+element.id" ref="embedDiv" :style="{width: '100%',height: height+'px'}">
     </div>
     <div v-else-if="previewImage">
       <img class="w-100 cursor-pointer" :src="element.thumb_url" @click="loadBilibilVideo(element)" :style="{width: '100%',height: height+'px'}">
@@ -25,7 +25,7 @@ export default {
       }
     }
   },
-  
+
   props: {
     element: {
       type: Object,
@@ -73,7 +73,7 @@ export default {
     },
     loadEmbed: async function (element) {
      // remove child
-      
+
       let parser = new DOMParser();
       let code = element.video_id;
       code = `<iframe src="https://player.bilibili.com/player.html?bvid=${code}&autoplay=1&danmaku=0&muted=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="100%" height="270"></iframe>`;
@@ -81,7 +81,7 @@ export default {
       code = code.replace(/width="\d+"/, `width="${this.width}"`);
       code = code.replace(/height="\d+"/, `height="${this.height}"`);
       // console.log(code);
-      
+
       if(this.autoplay){
         code = code.replace(/autoplay=0/, `autoplay=1`);
       }else{

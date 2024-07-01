@@ -49,5 +49,10 @@ class Game extends Model
         )->withTrashed();
     }
 
+    public function game_room()
+    {
+        return $this->hasOne(GameRoom::class);
+    }
+
 
 }

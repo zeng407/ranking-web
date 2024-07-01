@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Rank\RankReportHistoryResource;
 use App\Models\Element;
 use App\Models\Game;
+use App\Models\GameRoom;
 use App\Models\Post;
 use App\Models\RankReport;
 use App\Services\GameService;
@@ -41,12 +42,7 @@ class GameController extends Controller
             return redirect()->back()->with('error', __('No element found in the post.'));
         }
 
-        return view('game.show', [
-            'serial' => $serial,
-            'post' => $post,
-            'element' => $element,
-            'requiredPassword' => $requiredPassword,
-        ]);
+        return $this->gameView($post, $element, $requiredPassword);
     }
 
     public function rank(Request $request)
@@ -101,6 +97,33 @@ class GameController extends Controller
         // put data in session
         $request->session()->put('rank-embed', true);
         return $this->rank($request);
+    }
+
+    public function joinRoom(Request $request)
+    {
+        $gameRoom = GameRoom::where('serial', $request->route('gameRoom'))->first();
+        if (!$gameRoom) {
+            return redirect()->route('home')->with('error', __('Game not found.'));
+        }
+        $post = $gameRoom->game->post;
+        $element = $this->getElementForOG($post);
+
+        if (!$element) {
+            return redirect()->back()->with('error', __('No element found in the post.'));
+        }
+
+        return $this->gameView($post, $element, false, $gameRoom);
+    }
+
+    protected function gameView(Post $post, $element, $requiredPassword, $gameRoom = null)
+    {
+        return view('game.show', [
+            'serial' => $post->serial,
+            'post' => $post,
+            'gameRoom' => $gameRoom,
+            'element' => $element,
+            'requiredPassword' => $requiredPassword,
+        ]);
     }
 
     protected function getElementForOG(Post $post, $limit = 10): ?Element

@@ -2,15 +2,18 @@
 import Swal from 'sweetalert2';
 import CountWords from './partials/CountWords.vue';
 import Chart from 'chart.js/auto';
+import ICountUp from 'vue-countup-v2';
 import 'chartjs-adapter-moment';
 
 export default {
   components: {
-    CountWords
+    CountWords,
+    ICountUp
   },
   mounted() {
     this.loadCommnets();
     this.initChart();
+    this.enableTooltip();
   },
   data() {
     return {
@@ -42,8 +45,9 @@ export default {
       },
       anonymous: false,
       chartLoaded: [],
-      showMyTimeline: true,
-      showRankHistory: true,
+      showMyTimeline: false,
+      showRankHistory: false,
+      sortByTop: true,
     }
   },
   props: {
@@ -76,9 +80,11 @@ export default {
       required: true
     },
     gameStatistic: {
+      type: Object|null
+    },
+    gameRoomRanks: {
       type: Object|null,
-      required: true
-    }
+    },
   },
   computed: {
     commentWords() {
@@ -86,7 +92,17 @@ export default {
     },
     validComment() {
       return this.commentInput.trim().length > 0 && this.commentInput.length <= this.commentMaxLength
-    }
+    },
+    getSortedRanks() {
+      if(!this.gameRoomRanks){
+        return [];
+      }
+      if(this.sortByTop){
+        return this.gameRoomRanks.top_10;
+      }else{
+        return this.gameRoomRanks.bottom_10;
+      }
+    },
   },
   methods: {
     loadCommnets(page = 1) {
@@ -566,6 +582,16 @@ export default {
         return values[half];
       }
       return (values[half - 1] + values[half]) / 2.0;
+    },
+    enableTooltip(){
+      Vue.nextTick(() => {
+        $(function () {
+          $('[data-toggle="tooltip"]').tooltip()
+        })
+      });
+    },
+    changeSortRanks() {
+      this.sortByTop = !this.sortByTop;
     },
   }
 }

@@ -27,7 +27,7 @@
         }, intervalDelay);
 
         @if($relocation ?? false)
-        retry = 20;
+        retry = 4;
         let relocation = setInterval(() => {
             try {
                 retry--;
@@ -44,9 +44,10 @@
                     clearInterval(relocation);
                 }
             }
-        }, 100);
+        }, 500);
         @endif
     }
-
-    loadAd(10, 500);
+    setTimeout(() => {
+      loadAd(5, 200);
+    }, 500);
 </script>

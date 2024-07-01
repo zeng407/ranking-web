@@ -46,6 +46,7 @@ class GameRoundResource extends JsonResource
         }
 
         return [
+            'hash' => game_round_hash($currentRound, $ofRound, $remains, collect($this->elements)->pluck('id')->toArray()),
             'title' => $this->post->title,
             'current_round' => $currentRound,
             'of_round' => $ofRound,

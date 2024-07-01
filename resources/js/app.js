@@ -28,6 +28,10 @@ files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
 
+/**
+ * use svg+js method instead of webfonts
+ */
+// import '@fortawesome/fontawesome-free/js/all.js';
 
 /**
  * import datetime plugin
@@ -48,13 +52,14 @@ Vue.use(VueCookies);
  * BootstrapVue
  */
 
-import {PaginationPlugin, AlertPlugin, TabsPlugin, PopoverPlugin, VBTooltipPlugin} from 'bootstrap-vue';
+import {PaginationPlugin, AlertPlugin, TabsPlugin, PopoverPlugin, VBTooltipPlugin, TooltipPlugin} from 'bootstrap-vue';
 // Make BootstrapVue available throughout your project
 Vue.use(PaginationPlugin);
 Vue.use(AlertPlugin);
 Vue.use(TabsPlugin);
 Vue.use(PopoverPlugin);
-Vue.use(VBTooltipPlugin)
+Vue.use(VBTooltipPlugin);
+Vue.use(TooltipPlugin);
 
 // Optionally install the BootstrapVue icon components plugin
 // Vue.use(IconsPlugin);
@@ -71,8 +76,7 @@ Vue.use(VueYoutube);
  */
 import {i18n} from './plugins/vue-i18n';
 
- require('./plugins/vee-validate');
-
+require('./plugins/vee-validate');
 
 /**
  * Filter
@@ -109,6 +113,26 @@ Vue.use(VueViewer)
 
 // EventBus
 Vue.prototype.$bus = new Vue(); // Define EventBus globally
+
+
+// handle axios response
+
+// axios.interceptors.response.use(response => {
+//     // Check for the 'cf-mitigated' header in the response
+//     const cfMitigated = response.headers.get('cf-mitigated');
+//     if (cfMitigated === 'challenge') {
+//       console.log('Response was mitigated by Cloudflare:', cfMitigated);
+//       // Handle the mitigation here. For example, you might want to log it,
+//       // show a notification to the user, or perform some other action.
+
+//     }
+//     // Always return the response so the calling code receives it
+//     return response;
+//   }, error => {
+//     // Do something with response error
+//     return Promise.reject(error);
+//   });
+
 const app = new Vue({
     el: '#app',
     i18n

@@ -25,9 +25,7 @@ export default {
     },
   },
   methods: {
-    showGuide() {
-      $('#uploadGuide').modal('show');
-    },
+
   },
 };
 </script>

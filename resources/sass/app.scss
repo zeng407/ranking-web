@@ -89,7 +89,7 @@
     border-color: #000;
     img, iframe, video {
         border-radius: 20px 20px 0 0;
-        @media (max-width: 786px) {
+        @media (max-width: 576px) {
             border-radius: 0 0 20px 20px;
         }
     }
@@ -195,7 +195,7 @@
 .alert-message {
     display: block;
     position: fixed;
-    top: 10px;
+    top: 70px;
     right: 10px;
     z-index: 9999;
     width: 300px;
@@ -430,7 +430,7 @@
     font-weight: 400;
 }
 .game-element-title {
-    font-size: calc(10px + 1.4vw);
+    font-size: calc(12px + 1.0vw);
 }
 .rank-number {
     font-size: 1.6rem;
@@ -794,6 +794,14 @@
     transform: translateY(-30px);
 }
 
+.list-left-enter-active {
+    transition: all .5s ease;
+  }
+.list-left-enter {
+    opacity: 0;
+    transform: translateX(-30px);
+}
+
 .slide-in-left-enter-active {
     animation: slide-in-left 0.2s ease;
 }
@@ -801,13 +809,75 @@
     animation: slide-in-left 0.2s ease reverse;
 }
 @keyframes slide-in-left {
-0% {
-    transform: translateX(-100%);
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
 }
-100% {
-    transform: translateX(0);
+
+.list-right-enter-active {
+    transition: all .5s ease;
+  }
+.list-left-enter {
+    opacity: 0;
+    transform: translateX(-30px);
 }
+
+.slide-in-left-enter-active {
+    animation: slide-in-left 0.2s ease;
 }
+.slide-in-left-leave-active {
+    animation: slide-in-left 0.2s ease reverse;
+}
+@keyframes slide-in-left {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.slide-in-right-enter-active {
+    animation: slide-in-right 0.2s ease;
+}
+.slide-in-right-leave-active {
+    animation: slide-in-right 0.2s ease reverse;
+}
+@keyframes slide-in-right {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.bet-result-animation-enter-active {
+    animation: bet-result-animation-in 0.4s ease;
+}
+.bet-result-animation-leave-active {
+    animation: bet-result-animation-leave 0.4s ease;
+}
+@keyframes bet-result-animation-in {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+@keyframes bet-result-animation-leave {
+    0% {
+        transform: translateX(0%);
+    }
+    100% {
+        transform: translatex(100%);
+    }
+}
+
 
 .sticky-top-rank-ad {
     width: 100%;
@@ -830,7 +900,7 @@
     position: -webkit-sticky;
     position: sticky;
     top: 0;
-    z-index: 1020;
+    z-index: 999;
     @media (min-width: 576px) {
         top: 56.45px;
     }
@@ -838,4 +908,232 @@
 
 .z-1030 {
     z-index: 1030 !important;
+}
+
+// firework animation
+$firework-particles: 50;
+$firework-width: 500;
+$firework-height: 500;
+
+// Create the explosion...
+$box-shadow: ();
+$box-shadow2: ();
+@for $i from 0 through $firework-particles {
+  $box-shadow: $box-shadow,
+               random($firework-width)-$firework-width / 2 + px
+               random($firework-height)-$firework-height / 1.2 + px
+               hsl(random(360), 100, 50);
+  $box-shadow2: $box-shadow2, 0 0 #000
+}
+@mixin keyframes ($animationName) {
+    @-webkit-keyframes #{$animationName} {
+        @content;
+    }
+
+    @-moz-keyframes #{$animationName} {
+        @content;
+    }
+
+    @-o-keyframes #{$animationName} {
+        @content;
+    }
+
+    @-ms-keyframes #{$animationName} {
+        @content;
+    }
+
+    @keyframes #{$animationName} {
+        @content;
+    }
+}
+
+@mixin animation-delay ($settings) {
+    -moz-animation-delay: $settings;
+    -webkit-animation-delay: $settings;
+    -o-animation-delay: $settings;
+    -ms-animation-delay: $settings;
+    animation-delay: $settings;
+}
+
+@mixin animation-duration ($settings) {
+    -moz-animation-duration: $settings;
+    -webkit-animation-duration: $settings;
+    -o-animation-duration: $settings;
+    -ms-animation-duration: $settings;
+    animation-duration: $settings;
+}
+
+@mixin animation ($settings) {
+    -moz-animation: $settings;
+    -webkit-animation: $settings;
+    -o-animation: $settings;
+    -ms-animation: $settings;
+    animation: $settings;
+}
+
+@mixin transform ($settings) {
+    transform: $settings;
+    -moz-transform: $settings;
+    -webkit-transform: $settings;
+    -o-transform: $settings;
+    -ms-transform: $settings;
+}
+
+.pyro > .before, .pyro > .after {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  box-shadow: $box-shadow2;
+  @include animation((1s bang ease-out infinite backwards, 1s gravity ease-in infinite backwards, 5s position linear infinite backwards));
+}
+
+.pyro > .after {
+  @include animation-delay((1.25s, 1.25s, 1.25s));
+  @include animation-duration((1.25s, 1.25s, 6.25s));
+}
+
+@include keyframes(bang) {
+  to {
+    box-shadow:$box-shadow;
+  }
+}
+
+@include keyframes(gravity)  {
+  to {
+    @include transform(translateY(200px));
+    opacity: 0;
+  }
+}
+
+@include keyframes(position) {
+  0%, 19.9% {
+    margin-top: 10%;
+    margin-left: 40%;
+  }
+  20%, 39.9% {
+    margin-top: 40%;
+    margin-left: 30%;
+  }
+  40%, 59.9% {
+    margin-top: 20%;
+    margin-left: 70%
+  }
+  60%, 79.9% {
+    margin-top: 30%;
+    margin-left: 20%;
+  }
+  80%, 99.9% {
+    margin-top: 30%;
+    margin-left: 80%;
+  }
+}
+
+.left-0 {
+    left: 0;
+}
+.left-50 {
+    left: 50%;
+}
+.translate-x-50 {
+    transform: translateX(-50%)
+}
+.top-50 {
+    top: 50%;
+}
+.translate-y-50 {
+    transform: translateY(-50%);
+}
+.translate-50-50 {
+    transform: translate(-50%, -50%);
+}
+
+.bg-dark-50 {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+// badge-combo-2, badge-combo-4, badge-combo-6, badge-combo-8, badge-combo-10
+.badge-combo {
+    &-2 {
+        color: #ffffff;
+        background-color: green;
+    }
+    &-4 {
+        color: #ffffff;
+        background-color: blue;
+    }
+    &-6 {
+        color: #ffffff;
+        background-color: purple;
+    }
+    &-8 {
+        color: #000;
+        background-color: gold;
+    }
+    &-10 {
+        color: #ffffff;
+        background-color: red;
+    }
+}
+
+.bg-secondary-onfocus {
+    &:focus {
+        background-color: #6c757d;
+        color: #fff;
+    }
+}
+
+.game-room-container {
+    max-width: 1360px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-right: auto;
+    margin-left: auto;
+    @media (max-width: 1360px) {
+        max-width: 100%;
+        padding-right: 0px;
+        padding-left: 0px;
+    }
+    @media (max-width: 1200px) {
+        max-width: 768px;
+    }
+}
+
+.game-room-box {
+    border-radius: 1rem;
+    border: solid 4px #fff;
+    @media (max-width: 1200px) {
+        min-height: 700px;
+    }
+}
+
+.break-word {
+    word-break: break-word;
+}
+
+.bet-rank-broad {
+    font-size: 0.9rem; //h6
+    @media (min-width: 1530px) {
+        font-size: 1.125rem; //h5
+    }
+    @media (min-width: 1800px) {
+        font-size: 1.35rem; //h4
+    }
+    @media (min-width: 2000px) {
+        font-size: 1.575rem; //h3
+    }
+
+}
+
+.rank-tabs {
+    overflow: scroll;
+    ::-webkit-scrollbar {
+        display: none;
+    }
+    ul {
+        flex-wrap: nowrap;
+    }
+    li {
+        white-space: nowrap;
+    }
 }
