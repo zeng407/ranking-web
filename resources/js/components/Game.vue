@@ -131,11 +131,18 @@ export default {
 
       return Number.isInteger(Math.log2(this.post.elements_count));
     },
-    isGameHost() {
-      return this.gameRoom && !this.gameRoom.user;
+    isBetGameHost() {
+      if(!this.gameRoom){
+        return false;
+      }
+      return !this.gameRoom.user;
     },
-    isGameClient() {
-      return this.gameRoom && this.gameRoom.user;
+    isBetGameClient() {
+      if(!this.gameRoom){
+        return false;
+      }
+      // to boolean
+      return !!this.gameRoom.user;
     },
     leftVotes(){
       if(!this.gameRoomVotes || this.gameRoomVotes.length === 0){
@@ -190,6 +197,12 @@ export default {
       }else{
         return this.gameBetRanks.bottom_10;
       }
+    },
+    isGameRoomFinished(){
+      return this.gameRoom && this.gameRoom.is_game_completed
+    },
+    isFixedGameHeight() {
+      return this.isMobileScreen && !this.isBetGameClient;
     },
   },
   methods: {
@@ -281,17 +294,6 @@ export default {
             promise = this.handleAnimationAfterNextRound(response.data.data.current_round);
           }
 
-          if (this.isBetBefore()) {
-            if (this.le.id === this.gameRoom.bet.winner_id) {
-              promise.then(() => {
-                $("#left-btn").trigger("click");
-              });
-            } else if (this.re.id === this.gameRoom.bet.winner_id) {
-              promise.then(() => {
-                $("#right-btn").trigger("click");
-              });
-            }
-          }
           this.enableTooltip();
         });
     },
@@ -738,7 +740,7 @@ export default {
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
-        if (this.isGameClient) {
+        if (this.isBetGameClient) {
           this.bet(this.le, this.re);
         } else {
           this.vote(this.le, this.re);
@@ -752,7 +754,7 @@ export default {
       this.leftReady = false;
 
       if (this.isMobileScreen) {
-        if(this.isGameClient){
+        if(this.isBetGameClient){
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
             this.destroyRightPlayer();
@@ -786,14 +788,13 @@ export default {
           $("#google-ad2").animate({ top: adBottomPosition });
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
-            this.destroyRightPlayer();
             sendWinnerData();
           });
         }
       } else {
         let winAnimate = $("#left-player")
           .animate({ left: "50%" }, 500, () => {
-            if (this.isGameClient) {
+            if (this.isBetGameClient) {
               this.leftReady = true;
             } else {
               $("#left-player")
@@ -846,7 +847,7 @@ export default {
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
-        if (this.isGameClient) {
+        if (this.isBetGameClient) {
           this.bet(this.re, this.le);
         } else {
           this.vote(this.re, this.le);
@@ -862,7 +863,7 @@ export default {
       $("#left-player").css("opacity", 0.5);
 
       if (this.isMobileScreen) {
-        if(this.isGameClient){
+        if(this.isBetGameClient){
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
 
           $.when(loseAnimate).then(() => {
@@ -898,14 +899,13 @@ export default {
           $("#google-ad2").animate({ top: adBottomPosition });
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
-            this.destroyLeftPlayer();
             sendWinnerData();
           });
         }
       } else {
         let winAnimate = $("#right-player")
           .animate({ left: "-50%" }, 500, () => {
-            if (this.isGameClient) {
+            if (this.isBetGameClient) {
               this.rightReady = true;
             } else {
               $("#right-player")

@@ -46,7 +46,7 @@
                 @include('ads.game_ad_pc')
             </div>
           </div>
-          <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:-1" class="overflow-hidden position-relative">
+            <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
               @include('ads.game_ad_mobile')
             </div>
@@ -67,7 +67,7 @@
         </div>
 
         {{-- finishing game loading --}}
-        <div v-show="finishingGame && !isGameClient">
+        <div v-show="finishingGame && !isBetGameClient">
           <div class="d-flex justify-content-center align-items-center flex-column" style="height: 100vh">
             <img src="{{ asset('storage/logo.png') }}" class="updown-animation" alt="logo" style="width: 50px; height: 50px;">
             <div v-if="gameResultUrl === ''">
@@ -86,7 +86,7 @@
         {{-- main --}}
         <div class="row">
           {{-- elements --}}
-          <div :class="{'col-12 col-xl-9':gameRoomSerial, 'col-12': !gameRoomSerial}">
+          <div :class="{'col-12 col-xl-9':gameRoomSerial , 'col-12': !gameRoomSerial}">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -104,7 +104,7 @@
               </div>
             </transition-group>
 
-            <div v-if="gameRoom && gameRoom.is_game_completed">
+            <div v-if="isGameRoomFinished">
               <div class="d-flex justify-content-center align-content-center mt-4">
                 <h3>投票已結束</h3>
               </div>
@@ -115,8 +115,8 @@
               <h1 id="game-title" class="text-center text-break mt-1">{{$post->title}}</h1>
               <div class="d-none d-sm-flex" style="flex-flow: row wrap">
                 <h3 style="width: 20%">
-                  <span v-if="isGameClient && !isVoting">預測誰會勝出？</span>
-                  <span v-if="isGameClient && isVoting">等待結果中...</span>
+                  <span v-if="isBetGameClient && !isVoting">預測誰會勝出？</span>
+                  <span v-if="isBetGameClient && isVoting">等待結果中...</span>
                 </h3>
 
                 <h3 class="text-center align-self-center" style="width: 60%">
@@ -132,13 +132,14 @@
             </div>
 
             {{-- playground --}}
-            <div class="row overflow-hidden" v-if="game && !finishingGame && (!gameRoom || !gameRoom.is_game_completed)" :style="{'height': isMobileScreen ? 'auto' : (this.gameBodyHeight + 'px')}">
+            <div class="row overflow-hidden" v-if="game && !finishingGame && (!gameRoom || !gameRoom.is_game_completed)"
+              :style="{'height': (isFixedGameHeight ? (gameBodyHeight + 'px') : 'auto')}">
               <!--left part-->
               <div class="col-12 col-sm-6 pr-sm-1 mb-2 mb-sm-0" id="left-part">
                 <transition name="slide-in-left">
                   <div v-if="animationShowLeftPlayer" class="card game-player left-player" id="left-player">
                     <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
-                      <div v-show="!leftImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
+                      <div v-show="!leftImageLoaded" class="text-center align-content-center" :style="{ height: elementHeight + 'px' }">
                         <i class="fas fa-3x fa-spinner fa-spin" ></i>
                       </div>
                       <viewer ref="leftViewer" :options="viewerOptions">
@@ -235,9 +236,9 @@
                       <span v-else-if="currentRemainElement <= 1024">@{{ $t('game_round_of', {round:currentRemainElement}) }}</span>
                         @{{ game.current_round }} / @{{ game.of_round }}
                     </h5>
-                    <h5 v-if="isGameClient">
-                      <span v-if="isGameClient && !isVoting">預測誰會勝出？</span>
-                      <span v-if="isGameClient && isVoting">等待結果中...</span>
+                    <h5 v-if="isBetGameClient">
+                      <span v-if="isBetGameClient && !isVoting">預測誰會勝出？</span>
+                      <span v-if="isBetGameClient && isVoting">等待結果中...</span>
                     </h5>
                     <h5 class="">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h5>
 
@@ -250,7 +251,7 @@
                 <transition :name="isMobileScreen ? 'slide-in-left' : 'slide-in-right'">
                   <div v-if="animationShowRightPlayer" class="card game-player right-player" id="right-player" :class="{ 'flex-column-reverse': isMobileScreen, 'mb-4': isMobileScreen}">
                     <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
-                      <div v-show="!rightImageLoaded" class="text-center align-content-center" :style="{ height: this.elementHeight + 'px' }">
+                      <div v-show="!rightImageLoaded" class="text-center align-content-center" :style="{ height: elementHeight + 'px' }">
                         <i class="fas fa-3x fa-spinner fa-spin" ></i>
                       </div>
                       <viewer ref="rightViewer" :options="viewerOptions">
@@ -259,7 +260,7 @@
                           @load="handleRightLoaded"
                           @@error="onImageError(re.id, re.thumb_url2, $event)"
                           :src="getThumbUrl(re)"
-                          :style="{ height: this.elementHeight + 'px' }" :key="re.thumb_url">
+                          :style="{ height: elementHeight + 'px' }" :key="re.thumb_url">
                       </viewer>
                     </div>
                     <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
@@ -341,10 +342,11 @@
 
 
           {{-- game room --}}
-          <div v-if="gameRoom" id="game-room" class="col-12 col-xl-3 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
+          <div v-if="gameRoom" id="game-room"
+            class="col-12 col-xl-3 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
             <div class="game-room-container">
               {{-- game room --}}
-              <div class="p-1 my-1" v-if="isGameClient">
+              <div class="p-1 my-1" v-if="isBetGameClient">
                 <input v-show="isEditingNickname" id="newNickname" autocomplete="off" v-model="newNickname" type="text" class="form-control badge-secondary bg-secondary-onfocus font-size-16" maxlength="10">
                 <div class="text-center" v-show="isEditingNickname">(上限10個字元，每小時可更改一次)</div>
                 <h4 class="d-flex justify-content-center">
@@ -415,7 +417,7 @@
                   <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
                   </span>
-                  <span v-if="isGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
+                  <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
                     data-toggle="tooltip" data-placement="left" title="關閉"
                     id="close-game-room"
                     style="right:0"
@@ -505,7 +507,7 @@
               </div>
             </div>
 
-            <div v-if="isGameHost" class="d-flex position-absolute mr-2 mb-4" style="right: 0; bottom:0">
+            <div v-if="isBetGameHost" class="d-flex position-absolute mr-2 mb-4" style="right: 0; bottom:0">
               <div v-show="!showRoomInvitation"
                 class="btn btn-outline-dark"
                 @click="toogleRoomInvitation">
@@ -533,7 +535,8 @@
 
           </div>
         </div>
-        <div v-if="gameSerial" class="d-flex justify-content-end my-2">
+
+        <div v-if="gameSerial" class="d-flex justify-content-end my-2" id="create-game">
           <create-game-room
             game-room-route="{{route('game.room.index', '_serial')}}"
             get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
@@ -542,6 +545,7 @@
             :handle-created-room="handleCreatedRoom"
           ></create-game-room>
         </div>
+
 
         {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
@@ -635,6 +639,7 @@
                   <div class="card-header text-center">
                     <h1 class="post-title">{{ $post->title }}</h1>
                   </div>
+
                   <div class="row no-gutters">
                     <div class="col-6">
                       <div class="post-element-container">

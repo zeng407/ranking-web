@@ -23,7 +23,7 @@
                 <button class="btn btn-outline-dark"
                   @click="updateStep(1)" @mouseenter="flipOnhover" @mouseleave="flipOffhover"
                   data-target="flip-item-1" style="height: 350px; width: 100%;">
-                  <h2>
+                  <h2 >
                     <i id="flip-item-1" class="fa-solid fa-heart"></i>
                   </h2>
                   <h2>猜喜好</h2>
@@ -100,7 +100,7 @@
                       <canvas id="gamemode1-qrcode"></canvas>
                     </div>
                     <div v-if="gameRoomUrl">
-                      <h2>
+                      <h2 class="break-word">
                         <a :href="gameRoomUrl" target="_blank">{{ gameRoomUrl }}</a>
                       </h2>
                       <a @click="downloadQrcode" class="btn btn-outline-dark btn-sm">
