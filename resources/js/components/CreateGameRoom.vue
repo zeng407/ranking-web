@@ -94,7 +94,10 @@
               </div>
               <div class="row">
                 <div class="col-12">
-                  <h4><u>掃描</u>或<u>透過連結</u>加入遊戲</h4>
+                  <h4>
+                    你是主持人<br>
+                    請讓朋友<u>掃描</u>或<u>透過連結</u>加入遊戲
+                  </h4>
                   <div class="mb-2">
                     <div class="mb-1">
                       <canvas id="gamemode1-qrcode"></canvas>
