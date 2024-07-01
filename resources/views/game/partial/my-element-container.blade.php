@@ -5,7 +5,7 @@
     @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'youtube_embed')
         {!! inject_youtube_embed($rank->loser->source_url, ['autoplay' => false]) !!}
     @elseif($rank->loser->type === 'video' && $rank->loser->video_source === 'bilibili_video')
-        <bilibili-video width="100%"
+        <bilibili-video width="100%"  
             :element="{{ json_encode(['id' => $rank->loser->id, 'video_id' => $rank->loser->video_id, 'thumb_url' => $rank->loser->thumb_url]) }}"
             :autoplay="false" :muted="false" height="270" :preview="true">
         </bilibili-video>
