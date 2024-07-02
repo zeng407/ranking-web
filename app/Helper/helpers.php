@@ -225,3 +225,18 @@ if(!function_exists('game_round_hash')){
         return md5("{$currentRound}-{$ofRound}-{$remainElements}-" . implode('-', $elementIds));
     }
 }
+
+if(!function_exists('random_nickname')){
+    function random_nickname()
+    {
+        // get random adjective from lang file
+        $adjectives = trans()->get('nickname.adjective');
+        $adjective = $adjectives[array_rand($adjectives)];
+
+        // get random name from lang file
+        $names = trans()->get('nickname.name');
+        $name = $names[array_rand($names)];
+
+        return "{$adjective}{$name}";
+    }
+}
