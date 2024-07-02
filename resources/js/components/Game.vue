@@ -486,6 +486,9 @@ export default {
     toogleRoomInvitation() {
       this.showRoomInvitation = !this.showRoomInvitation;
     },
+    tipMethod(rank) {
+      return `成功率:${rank.accuracy}% (${rank.total_correct} / ${rank.total_played})`;
+    },
     accessGame() {
       if (this.inputPassword) {
         axios.defaults.headers.common["Authorization"] = this.inputPassword;

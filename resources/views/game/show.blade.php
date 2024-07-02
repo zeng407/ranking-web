@@ -479,7 +479,9 @@
                           @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
                         </span>
                       </span>
-                      <I-Count-Up :end-val="rank.score" :options="{startVal:rank.score}"></I-Count-Up>
+                      <span v-b-tooltip.hover.html="tipMethod(rank)">
+                        <I-Count-Up :end-val="rank.score" :options="{startVal:rank.score}"></I-Count-Up>
+                      </span>
                     </h5>
                   </div>
                 </transition-group>
