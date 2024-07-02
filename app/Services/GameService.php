@@ -261,7 +261,7 @@ class GameService
                 'user_id' => $user?->id,
                 'anonymous_id' => $anonymousId,
                 'score' => config('setting.default_bet_score'),
-                'nickname' => config('setting.anonymous_nickname'),
+                'nickname' => random_nickname(),
                 'rank' => 0,
                 'accuracy' => 0,
                 'total_played' => 0,

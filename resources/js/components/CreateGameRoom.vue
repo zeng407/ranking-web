@@ -94,8 +94,8 @@
               </div>
               <div class="row">
                 <div class="col-12">
+                  <h2>你是主持人</h2>
                   <h4>
-                    你是主持人<br>
                     請讓朋友<u>掃描</u>或<u>透過連結</u>加入遊戲
                   </h4>
                   <div class="mb-2">
