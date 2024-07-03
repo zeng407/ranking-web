@@ -319,7 +319,7 @@
               @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index % 5 == 0 && $index>0)
               <div class="grid-item pt-2 preload-post">
                 <div class="p-4">
-                  <div id="google-ad-1" class="bg-ads" style="width: 100%">
+                  <div id="google-ad-1" style="width: 100%">
                     @include('ads.home_ad_1')
                   </div>
                 </div>
@@ -359,7 +359,7 @@
 
             {{-- ads at bottom --}}
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-              <div id="google-ad-1" class="bg-ads" style="width: 100%">
+              <div id="google-ad-1" style="width: 100%">
                 @include('ads.home_ad_1')
               </div>
             @endif
@@ -374,7 +374,7 @@
             </div>
           </div>
 
-          <div class="d-none d-xl-block col-xl-2 bg-ads">
+          <div class="d-none d-xl-block col-xl-2">
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
             {{-- right part:ads --}}
             <div class="px-2 mx-auto">
