@@ -29,7 +29,7 @@
       get-champions-endpoint="{{route('api.champion.index')}}"
     >
 
-    <div class="container-fuild mt-1">
+    <div class="container-fuild">
       {{-- main container --}}
         <div class="row m-0">
           {{-- left part: champions --}}
@@ -348,7 +348,7 @@
 
             {{-- ads at bottom --}}
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-              <div id="google-ad-1" style="width: 100%">
+              <div id="google-ad-1" class="bg-ads" style="width: 100%">
                 @include('ads.home_ad_1')
               </div>
             @endif
@@ -363,7 +363,7 @@
             </div>
           </div>
 
-          <div class="d-none d-xl-block col-xl-2">
+          <div class="d-none d-xl-block col-xl-2 bg-ads">
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
             {{-- right part:ads --}}
             <div class="px-2 mx-auto">

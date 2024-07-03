@@ -13,7 +13,7 @@
       <div class="col-12 col-lg-9 text-center my-2">
         <div class="text-left mb-5 font-size-large p-3 m-2 h-100" style="background: #b3a9a978">
           <h5>如果你喜歡這個網站，你可以考慮贊助我，讓我能持續改善網站功能</h5>
-          <div class="p-2" style="background: #bcbcbc8c;">
+          <div class="p-2" style="background: rgb(255 246 206);">
             <p>贊助任意金額皆可獲得以下所有福利</p>
             <span>序號一組，包含：</span>
             <ul>
@@ -32,6 +32,8 @@
           <div class="mt-2">
           <p>註1：請付款時留下可聯絡的email，我會兩天內將序號透過email寄送給你</p>
           <p>註2：其他對於本站的建議可以寫在備註欄，感謝你的支持</p>
+          <p>註3：本站使用歐付寶支付系統，透過<a href="https://payment.opay.tw/Broadcaster/Donate/EA6A62EF78EB2573D2570E271C1610B7">實況主贊助功能</a>贊助本站可免填資料
+          </p>
           </div>
         </div>
       </div>
