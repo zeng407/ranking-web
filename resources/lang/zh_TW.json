@@ -101,7 +101,9 @@
     "donate.see_the_cat": "看貓",
     "donate.lunch": "請我吃午餐",
     "donate.server": "伺服器1天費用",
-    "donate.whatever": "隨便 (金額自訂)",
+    "donate.whatever": "(金額自訂)",
+    "donate.opay": "歐付寶",
+    "donate.ecpay": "綠界",
     "Game not found.": "投票不存在或已結束",
 
 

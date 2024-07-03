@@ -314,6 +314,17 @@
                   </div>
                 </div>
               </div>
+
+              {{-- ads at bottom --}}
+              @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index % 5 == 0 && $index>0)
+              <div class="grid-item pt-2 preload-post">
+                <div class="p-4">
+                  <div id="google-ad-1" class="bg-ads" style="width: 100%">
+                    @include('ads.home_ad_1')
+                  </div>
+                </div>
+              </div>
+              @endif
               @endforeach
 
               <template v-for="(post,index) in posts">
@@ -369,6 +380,26 @@
             <div class="px-2 mx-auto">
               {{-- google ads --}}
               @include('ads.home_ad_champion_top')
+
+              {{-- ads --}}
+              <div class="mt-4">
+                @include('ads.home_ad_champion_bottom')
+              </div>
+
+              {{-- ads --}}
+              <div class="mt-4">
+                @include('ads.home_ad_champion_bottom')
+              </div>
+
+              {{-- ads --}}
+              <div class="mt-4">
+                @include('ads.home_ad_champion_bottom')
+              </div>
+
+              {{-- ads --}}
+              <div class="mt-4">
+                @include('ads.home_ad_champion_bottom')
+              </div>
 
               {{-- ads --}}
               <div class="mt-4">
