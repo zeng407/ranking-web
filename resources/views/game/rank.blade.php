@@ -23,12 +23,21 @@
         <div class="container-fuild" v-cloak>
             <div class="row m-0">
                 {{-- left part: ads --}}
-                <div class="d-none d-lg-block col-lg-2 bg-ads">
+                <div class="d-none d-lg-block col-lg-2">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
-                    <div class="sticky-top-rank-ad" >
-                        @include('ads.rank_ad_sides')
-                    </div>
-                    @endif
+                  <div class="p-lg-4 p-xl-5">
+                    @include('ads.rank_ad_sides')
+                  </div>
+
+                  <div class="p-lg-4 p-xl-5">
+                    @include('ads.rank_ad_sides')
+                  </div>
+
+                  <div class="p-lg-4 p-xl-5">
+                    @include('ads.rank_ad_sides')
+                  </div>
+
+                  @endif
                 </div>
 
                 {{-- main part --}}
@@ -185,7 +194,7 @@
                                   </div>
 
                                   @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 4)
-                                    <div id="google-ad-1" class="col-12 p-4 bg-ads">
+                                    <div id="google-ad-1" class="col-12 p-4 d-sm-none">
                                       @include('ads.rank_ad_1', ['id' => 'google-ad-1'])
                                     </div>
                                   @endif
@@ -349,8 +358,8 @@
                                     @endif
 
                                     @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 5)
-                                        <div id="google-ad-2" class="col-12">
-                                          <div class="m-4 p-4 bg-ads">
+                                        <div id="google-ad-2" class="col-12 p-4 d-sm-none">
+                                          <div class="m-4 p-4">
                                             @include('ads.rank_ad_1', ['id' => 'google-ad-2'])
                                           </div>
                                         </div>
@@ -563,8 +572,8 @@
                     </div>
                 </div>
 
-                {{-- right part: comments --}}
-                <div class="d-none d-lg-block col-lg-2 bg-ads">
+                {{-- right part: ads --}}
+                <div class="d-none d-lg-block col-lg-2 p-lg-4 p-xl-5">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
                     <div class="sticky-top-rank-ad">
                         @include('ads.rank_ad_sides')
