@@ -158,6 +158,7 @@ return [
     'attributes' => [
         'new_password' => '新密碼',
         "policy.password" => "新密碼",
+        "password" => "密碼"
     ],
 
 ];

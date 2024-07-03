@@ -38,8 +38,10 @@
     "donate.lunch": "Buy me lunch",
     "donate.server": "Server cost a day",
     "donate.whatever": "Whatever you want",
+    "donate.opay": "OPay",
+    "donate.ecpay": "ECPay",
     "game.bet.combo": "Winning streak",
-    
+
 
     "":""
 }

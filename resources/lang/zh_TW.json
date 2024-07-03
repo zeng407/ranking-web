@@ -1,5 +1,8 @@
 {
     "APP": "殘酷二選一",
+    "Reset Password": "重設密碼",
+    "Send Password Reset Link": "寄送重設密碼連結",
+    "Forgot Your Password?": "忘記密碼？",
     "Search": "搜尋",
     "Remember Me": "讓我保持登入",
     "Login & New Post": "登入 / 新增投票",
@@ -98,7 +101,9 @@
     "donate.see_the_cat": "看貓",
     "donate.lunch": "請我吃午餐",
     "donate.server": "伺服器1天費用",
-    "donate.whatever": "隨便 (金額自訂)",
+    "donate.whatever": "(金額自訂)",
+    "donate.opay": "歐付寶",
+    "donate.ecpay": "綠界",
     "Game not found.": "投票不存在或已結束",
 
 
