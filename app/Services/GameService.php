@@ -310,6 +310,30 @@ class GameService
         ]);
     }
 
+    public function getChannelConnectionCount(GameRoom $gameRoom)
+    {
+        $channel = "game-room.{$gameRoom->serial}";
+        return CacheService::rememebrChannelSubscriptionCount($channel);
+    }
+
+    public function getCurrentElements(Game $game)
+    {
+        if($game->completed_at){
+            $elements = [];
+        }else{
+            $elementsId = explode(',', $game->candidates);
+            $unsortElements = $game->elements()
+                ->whereIn('elements.id', $elementsId)
+                ->get();
+            $elements = [
+                $unsortElements->where('id', $elementsId[0])->first(),
+                $unsortElements->where('id', $elementsId[1])->first(),
+            ];
+        }
+
+        return $elements;
+    }
+
     public function createGameRoom(Game $game) : \App\Models\GameRoom
     {
         return $game->game_room()->firstOrCreate([], [

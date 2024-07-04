@@ -46,6 +46,7 @@ export default {
     betEndpoint: String,
     updateRoomProfileEndpoint: String,
     getRoomVotesEndpoint: String,
+    getRoomUserEndpoint: String,
   },
   data: function () {
     return {
@@ -123,6 +124,12 @@ export default {
   computed: {
     gameRankUrl: function () {
       return this.getRankRoute.replace("_serial", this.postSerial);
+    },
+    gameOnlineUsers() {
+      if(this.gameRoom && (this.gameRoom.online_users-1) > 0){
+        return this.gameRoom.online_users-1 ;
+      }
+      return 0;
     },
     isElementsPowerOfTwo: function () {
       if (!this.post || !this.post.elements_count) {
@@ -293,7 +300,7 @@ export default {
           if(response.data.data.current_round){
             promise = this.handleAnimationAfterNextRound(response.data.data.current_round);
           }
-
+          
           this.enableTooltip();
         });
     },
@@ -330,7 +337,6 @@ export default {
       if (this.gameRoomSerial) {
         Echo.channel("game-room." + this.gameRoomSerial).listen(".GameBetRank", (data) => {
           this.gameBetRanks = data;
-          this.gameRoom.total_users = data.total_users;
           // find the key of current user
           // merge top_10 and bottom_10
           let top10 = this.gameBetRanks.top_10;
@@ -345,9 +351,18 @@ export default {
 
           if(currentUserRank){
             this.gameRoom.user = currentUserRank;
+          }else{
+            this.getRoomUser();
           }
         });
       }
+    },
+    getRoomUser(){
+      axios
+        .get(this.getRoomUserEndpoint.replace("_serial", this.gameRoomSerial))
+        .then((response) => {
+          this.gameRoom.user = response.data.data;
+        });
     },
     leaveGameRoom(){
       if (this.gameRoomSerial) {
@@ -441,7 +456,7 @@ export default {
           }
         });
     },
-    handleCreatedRoom(data,roomUrl) {
+    handleCreatedRoom(data, roomUrl) {
       this.gameRoomSerial = data.serial
       this.gameRoom = data;
       this.gameBetRanks = this.gameRoom.ranks;
@@ -487,7 +502,7 @@ export default {
       this.showRoomInvitation = !this.showRoomInvitation;
     },
     tipMethod(rank) {
-      return `成功率:${rank.accuracy}% (${rank.total_correct} / ${rank.total_played})`;
+      return `勝率:${rank.accuracy}% (${rank.total_correct} / ${rank.total_played})`;
     },
     accessGame() {
       if (this.inputPassword) {

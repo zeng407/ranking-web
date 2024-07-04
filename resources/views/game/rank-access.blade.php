@@ -40,7 +40,7 @@
                         <div class="card">
                             <div class="input-group mb-3">
                                 <label class="input-group-text" for="inputPassword">@{{ $t('game.password') }}</label>
-                                <input type="text" class="form-control" v-model="inputPassword" autocomplete="off">
+                                <input type="text" class="form-control font-size-16" v-model="inputPassword" autocomplete="off">
                                 <div class="input-group-append">
                                   <button class="btn btn-primary" @click="submitPassword" :disabled="inputPassword.length == 0">
                                     <i class="fas fa-key"></i>&nbsp;@{{ $t('Enter') }}
@@ -53,5 +53,5 @@
             </div>
         </div>
     </rank-access>
-    
+
 @endsection

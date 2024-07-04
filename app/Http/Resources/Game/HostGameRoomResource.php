@@ -21,8 +21,9 @@ class HostGameRoomResource extends JsonResource
      */
     public function toArray($request)
     {
+        $gameService = new GameService;
         return [
-            'total_users' => $this->users()->count(),
+            'online_users' => $gameService->getChannelConnectionCount($this->resource),
             'serial' => $this->serial,
             'is_game_completed' => $this->game->completed_at !== null,
             'ranks' => CacheService::rememberGameBetRank($this->resource)

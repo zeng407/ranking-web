@@ -35,6 +35,7 @@
         props-game-room-serial="{{$gameRoom?->serial}}"
         get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
         get-room-votes-endpoint="{{route('api.game-room.get-votes', '_serial')}}"
+        get-room-user-endpoint="{{route('api.game-room.get-user', '_serial')}}"
         update-room-profile-endpoint="{{route('api.game-room.update-profile', '_serial')}}"
         bet-endpoint="{{route('api.game-room.bet', '_serial')}}"
     >
@@ -394,12 +395,12 @@
                   <span v-if="gameRoom.user.rank > 0">
                     <I-Count-Up :end-val="gameRoom.user.rank"></I-Count-Up>
                     <span>/</span>
-                    <I-Count-Up :end-val="gameRoom.total_users"></I-Count-Up>
+                    <I-Count-Up :end-val="gameBetRanks.total_users"></I-Count-Up>
                   </span>
-                  <span v-if="gameRoom.user.rank == 0">無 / @{{gameRoom.total_users}}</span>
+                  <span v-if="gameRoom.user.rank == 0">無 / @{{gameBetRanks.total_users}}</span>
                 </div>
                 <div class="d-flex justify-content-between">
-                  <span>成功率:</span>
+                  <span>勝率:</span>
                   <span>
                     <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
                   </span>
@@ -479,7 +480,7 @@
                           @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
                         </span>
                       </span>
-                      <span v-b-tooltip.hover.html="tipMethod(rank)">
+                      <span v-b-tooltip.hover.html.left="tipMethod(rank)">
                         <I-Count-Up :end-val="rank.score" :options="{startVal:rank.score}"></I-Count-Up>
                       </span>
                     </h5>
@@ -492,8 +493,9 @@
                 <hr>
                 <h2 class="d-flex justify-content-end">
                   <button class="btn btn-sm btn-secondary text-white mr-3"
+                    data-toggle="tooltip" data-placement="top" title="縮小"
                       @click="toogleRoomInvitation">
-                    <i class="fa-solid fa-xmark"></i>
+                      <i class="fa-solid fa-window-minimize"></i>
                   </button>
                 </h2>
                 {{-- join game, invitation --}}
@@ -509,7 +511,7 @@
                     <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
                   </div>
                   <h3 class="col-12 mt-2">
-                    在線人數：<I-Count-Up :end-val="gameRoom.total_users"></I-Count-Up>
+                    在線人數：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
                   </h3>
                 </div>
               </div>
@@ -520,7 +522,7 @@
                 class="btn btn-outline-dark"
                 @click="toogleRoomInvitation">
                 <h3 class="text-white align-content-center">
-                  在線人數：<I-Count-Up :end-val="gameRoom.total_users"></I-Count-Up>
+                  在線人數：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
                 </h3>
               </div>
               <div>
@@ -697,7 +699,7 @@
                             v-if="post.elements_count >= count">
                             @{{ count }}
                           </option>
-                          <option :value="post.elements_count" v-if="!isElementsPowerOfTwo">
+                          <option :value="post.elements_count" v-if="!isElementsPowerOfTwo && post.elements_count > 8">
                             @{{ post.elements_count }}
                           </option>
                         </select>
