@@ -32,7 +32,8 @@
           <div class="mt-2">
           <p>註1：請付款時留下可聯絡的email，我會兩天內將序號透過email寄送給你</p>
           <p>註2：其他對於本站的建議可以寫在備註欄，感謝你的支持</p>
-          <p>註3：透過<a target="_blank" href="https://p.ecpay.com.tw/677F5BF">綠界-贊助功能</a>或者<a target="_blank" href="https://payment.opay.tw/Broadcaster/Donate/EA6A62EF78EB2573D2570E271C1610B7">歐付寶-贊助功能</a>，可免填基本資料
+          <p>註3：透過<a target="_blank" href="https://p.ecpay.com.tw/677F5BF">綠界-贊助功能</a>或者<a target="_blank" href="https://payment.opay.tw/Broadcaster/Donate/EA6A62EF78EB2573D2570E271C1610B7">歐付寶-贊助功能</a>
+            ，可免填基本資料，記得在備註欄留連絡信箱。
           </p>
           </div>
         </div>
