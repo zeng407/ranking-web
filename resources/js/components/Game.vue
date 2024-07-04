@@ -300,7 +300,7 @@ export default {
           if(response.data.data.current_round){
             promise = this.handleAnimationAfterNextRound(response.data.data.current_round);
           }
-          
+
           this.enableTooltip();
         });
     },
@@ -830,7 +830,9 @@ export default {
           .promise();
 
         $.when(loseAnimate).then(() => {
-          this.destroyRightPlayer();
+          if(this.isBetGameClient){
+            this.destroyRightPlayer();
+          }
           sendWinnerData();
         });
       }
@@ -943,7 +945,9 @@ export default {
           .promise();
 
         $.when(loseAnimate).then(() => {
-          this.destroyLeftPlayer();
+          if(this.isBetGameClient){
+            this.destroyLeftPlayer();
+          }
           sendWinnerData();
         });
       }
@@ -1107,6 +1111,7 @@ export default {
           }
 
           if (!this.finishingGame) {
+            // to void still playing video if next round loaded the same element
             this.pauseAllVideo();
           }
 
