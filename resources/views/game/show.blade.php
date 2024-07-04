@@ -546,7 +546,7 @@
           </div>
         </div>
 
-        <div v-if="gameSerial" class="d-flex justify-content-end my-2" id="create-game">
+        <div v-if="gameSerial && !finishingGame" class="d-flex justify-content-end my-2" id="create-game">
           <create-game-room
             game-room-route="{{route('game.room.index', '_serial')}}"
             get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
