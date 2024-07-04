@@ -699,7 +699,7 @@
                             v-if="post.elements_count >= count">
                             @{{ count }}
                           </option>
-                          <option :value="post.elements_count" v-if="!isElementsPowerOfTwo">
+                          <option :value="post.elements_count" v-if="!isElementsPowerOfTwo && post.elements_count > 8">
                             @{{ post.elements_count }}
                           </option>
                         </select>
