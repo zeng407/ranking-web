@@ -31,7 +31,6 @@ class GameRoomResource extends JsonResource
             ];
         }
 
-        $round = $this->game->game_1v1_rounds()->orderByDesc('id')->first();
         $elements = $gameService->getCurrentElements($this->game);
         $gameRoomUser = $gameService->getGameRoomUser($this->resource, $request);
         $bet = $gameRoomUser->bets()->where('game_room_id', $this->id)->latest('id')->first();
@@ -39,13 +38,6 @@ class GameRoomResource extends JsonResource
             'user' => GameRoomUserResource::make($gameRoomUser),
             'online_users' => $gameService->getChannelConnectionCount($this->resource),
             'serial' => $this->serial,
-            'last_round' => $round ? [
-                'current_round' => $round->current_round,
-                'of_round' => $round->of_round,
-                'remain_elements' => $round->remain_elements,
-                'winner' => GameElementResource::make($round->winner),
-                'loser' => GameElementResource::make($round->loser),
-            ] : [],
             'current_round' => $elements ? GameRoundResource::make($this->game, $elements) : null,
             'bet' => GameBetResource::make($bet),
             'is_game_completed' => $this->game->completed_at !== null,
