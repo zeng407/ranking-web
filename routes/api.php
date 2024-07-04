@@ -57,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
 Route::post('game/room', [GameController::class, 'createRoom'])->name('api.game-room.create');
 Route::get('game/room/{gameRoom:serial}', [GameController::class, 'getRoom'])->name('api.game-room.get');
 Route::get('game/room/{gameRoom:serial}/votes', [GameController::class, 'getRoomVotes'])->name('api.game-room.get-votes');
+Route::get('game/room/{gameRoom:serial}/user', [GameController::class, 'getRoomUser'])->name('api.game-room.get-user');
 Route::post('game/room/{gameRoom:serial}/bet', [GameController::class, 'bet'])->name('api.game-room.bet');
 Route::put('game/room/{gameRoom:serial}/profile', [GameController::class, 'updateGameUser'])->name('api.game-room.update-profile');
 

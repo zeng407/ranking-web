@@ -4,12 +4,14 @@ namespace App\Helper;
 
 use App\Http\Resources\Game\GameRoomUserResource;
 use App\Http\Resources\PublicPostResource;
+use App\Models\Game;
 use App\Models\GameRoom;
 use App\Models\GameRoomUser;
 use App\Models\User;
 use App\Repositories\Filters\PostFilter;
 use App\Services\HomeCarouselService;
 use App\Services\PostService;
+use App\Services\SoketiService;
 use App\Services\TagService;
 use Cache;
 use Illuminate\Database\Eloquent\Collection;
@@ -145,7 +147,7 @@ class CacheService
         if ($refresh) {
             Cache::forget('game_bet_rank'.$gameRoom->serial);
         }
-        $seconds = 60 * 60; // 1 hour
+        $seconds = 60 ; // 1 minute
         return Cache::remember('game_bet_rank'.$gameRoom->serial, $seconds, function()use($gameRoom){
             $mapData = function(Collection $collection){
                 return $collection->map(function($gameUser) {
@@ -172,4 +174,16 @@ class CacheService
     {
         return Cache::has('update_game_user_name_threashold'.$gameRoomUser->id);
     }
+
+    static function rememebrChannelSubscriptionCount($channel, $refresh = false)
+    {
+        if ($refresh) {
+            Cache::forget('channel_subscription_count'.$channel);
+        }
+        $seconds = 30; // 30 seconds
+        return Cache::remember('channel_subscription_count'.$channel, $seconds, function() use ($channel) {
+            return app(SoketiService::class)->getSubscriptionCount($channel);
+        });
+    }
+
 }

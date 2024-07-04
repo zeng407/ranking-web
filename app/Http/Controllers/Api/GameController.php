@@ -9,6 +9,7 @@ use App\Helper\AccessTokenService;
 use App\Helper\CacheService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Game\GameRoomResource;
+use App\Http\Resources\Game\GameRoomUserResource;
 use App\Http\Resources\Game\GameRoomVoteResource;
 use App\Http\Resources\Game\GameRoundResource;
 use App\Http\Resources\Game\HostGameRoomResource;
@@ -171,6 +172,15 @@ class GameController extends Controller
         }
 
         return GameRoomVoteResource::make($room);
+    }
+
+    public function getRoomUser(Request $request)
+    {
+        $gameRoomSerial = $request->route('gameRoom');
+        $room = GameRoom::where('serial', $gameRoomSerial)->firstOrFail();
+        $roomUser = $this->gameService->getGameRoomUser($room, $request);
+
+        return GameRoomUserResource::make($roomUser);
     }
 
     public function bet(Request $request)
