@@ -10,10 +10,10 @@
             <div class="d-none d-md-block col-md-2">
                 @include('account.profile.partial.tabs', ['active' => 'profile'])
             </div>
-            <profile 
-                inline-template 
+            <profile
+                inline-template
                 nickname-max-length="{{ config('setting.user_name_max_size') }}"
-                props-nickname="{{ auth()->user()->name }}" 
+                props-nickname="{{ auth()->user()->name }}"
                 props-email="{{ auth()->user()->email }}"
                 props-avatar-url="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
             >
@@ -60,7 +60,7 @@
                                         @method('put')
                                         <div class="form-group">
                                             <h5><label for="name">{{ __('Nickname') }}</label></h5>
-                                            <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                            <input type="text" class="form-control font-size-16 @error('name') is-invalid @enderror"
                                                 autocomplete="off" id="name" minlength="1"
                                                 maxlength="{{ config('setting.user_name_max_size') }}" name="name"
                                                 v-model="nickname">
@@ -182,7 +182,7 @@
                                             src="{{ asset('storage/google-logo.svg') }}" alt="Google logo"></span>
                                     @if (Auth::user()->user_socialite?->google_id)
                                         <b class="text-uppercase">
-                                            {{ __('Connected') }}&nbsp;<i class="fa-solid fa-circle-check text-success"></i> 
+                                            {{ __('Connected') }}&nbsp;<i class="fa-solid fa-circle-check text-success"></i>
                                         </b>
                                         ({{mask_email(Auth::user()->user_socialite->google_email,2,2)}})
                                     @else
