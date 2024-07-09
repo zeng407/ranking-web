@@ -28,15 +28,6 @@
                   <div class="p-lg-2 p-xl-3">
                     @include('ads.rank_ad_sides')
                   </div>
-
-                  <div class="p-lg-2 p-xl-3">
-                    @include('ads.rank_ad_sides')
-                  </div>
-
-                  <div class="p-lg-2 p-xl-3">
-                    @include('ads.rank_ad_sides')
-                  </div>
-
                   @endif
                 </div>
 
@@ -573,9 +564,9 @@
                 </div>
 
                 {{-- right part: ads --}}
-                <div class="d-none d-lg-block col-lg-2 p-lg-2 p-xl-3">
+                <div class="d-none d-lg-block col-lg-2">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
-                    <div class="sticky-top-rank-ad">
+                    <div class="p-lg-2 p-xl-3">
                         @include('ads.rank_ad_sides')
                     </div>
                   @endif

@@ -13,7 +13,7 @@
     </div>
 
     <div class="mt-2" v-if="!loading[LOADING_POSTS]">
-      <table class="table table-bordered table-hover" style="table-layout: fixed" v-if="posts.data.length > 0">
+      <table class="table table-bordered table-hover table-responsive-sm-vertical" style="table-layout: fixed" v-if="posts.data.length > 0">
         <thead class="th-nowrap">
           <tr>
             <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
@@ -23,11 +23,17 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="post in posts.data">
-            <td class="text-break">{{ post.title }}</td>
-            <td class="text-break">{{ post.description }}</td>
-            <td class="text-break">{{ $t('post_policy.'+post.policy) }}</td>
-            <td>
+          <tr v-for="post in posts.data" :key="post.serial">
+            <td class="text-break" :data-label="$t('my_games.table.title')">{{ post.title }}</td>
+            <td class="text-break" :data-label="$t('my_games.table.description')">{{ post.description  }}</td>
+            <td class="text-break" :data-label="$t('my_games.table.publishment')">
+              {{ $t('post_policy.'+post.policy) }}
+              <i v-if="post.policy == 'password'" class="fas fa-lock"></i>
+              <i v-else-if="post.policy == 'private'" class="fas fa-user-lock"></i>
+              <i v-else-if="post.policy == 'public'" class="fas fa-globe"></i>
+
+            </td>
+            <td :data-label="$t('my_games.table.edit')">
               <a :title="$t('my_games.table.edit')" :href="getEditLink(post.serial)"><i class="fa-xl fas fa-edit"></i></a>
             </td>
           </tr>

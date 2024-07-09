@@ -1137,3 +1137,39 @@ $box-shadow2: ();
         white-space: nowrap;
     }
 }
+
+@media (max-width: 576px) { /* Adjust the max-width based on your definition of 'sm' */
+    .table-responsive-sm-vertical {
+      display: block;
+    }
+    .table-responsive-sm-vertical thead{
+        display: none;
+    }
+    .table-responsive-sm-vertical tbody,
+    .table-responsive-sm-vertical th,
+    .table-responsive-sm-vertical td,
+    .table-responsive-sm-vertical tr {
+      display: block;
+    }
+    .table-responsive-sm-vertical tr {
+      margin-bottom: 1rem;
+    }
+    .table-responsive-sm-vertical td {
+      text-align: right;
+      padding-left: 20%;
+      position: relative;
+
+      &:first-child { /* Targeting the first td in each tr */
+        background-color: #9a9191; /* Example background color */
+      }
+    }
+    .table-responsive-sm-vertical td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 0;
+      width: 80%;
+      padding-left: 15px;
+      font-weight: bold;
+      text-align: left;
+    }
+  }
