@@ -377,34 +377,9 @@
           <div class="d-none d-xl-block col-xl-2">
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
             {{-- right part:ads --}}
-            <div class="px-2 mx-auto">
+            <div class="pt-2 px-2 mx-auto">
               {{-- google ads --}}
               @include('ads.home_ad_champion_top')
-
-              {{-- ads --}}
-              <div class="mt-4">
-                @include('ads.home_ad_champion_bottom')
-              </div>
-
-              {{-- ads --}}
-              <div class="mt-4">
-                @include('ads.home_ad_champion_bottom')
-              </div>
-
-              {{-- ads --}}
-              <div class="mt-4">
-                @include('ads.home_ad_champion_bottom')
-              </div>
-
-              {{-- ads --}}
-              <div class="mt-4">
-                @include('ads.home_ad_champion_bottom')
-              </div>
-
-              {{-- ads --}}
-              <div class="mt-4">
-                @include('ads.home_ad_champion_bottom')
-              </div>
 
               {{-- ads --}}
               <div class="mt-4">
