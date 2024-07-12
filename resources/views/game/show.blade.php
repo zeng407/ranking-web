@@ -44,7 +44,7 @@
         {{-- ads --}}
           <div v-if="!isMobileScreen" style="height: 100px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
-                @include('ads.game_ad_pc')
+                @include('ads.game_ad_pc_top')
             </div>
           </div>
             <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
@@ -546,7 +546,7 @@
           </div>
         </div>
 
-        <div v-if="gameSerial && !finishingGame" class="d-flex justify-content-end my-2" id="create-game">
+        <div v-if="game && !finishingGame" class="d-flex justify-content-end my-2" id="create-game">
           <create-game-room
             game-room-route="{{route('game.room.index', '_serial')}}"
             get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
@@ -563,7 +563,7 @@
           <div style="height: 380px; position: absolute;left:0; right:0; z-index:-1"></div>
           <div v-if="!isMobileScreen" id="google-ad2-container">
             <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
-                @include('ads.game_ad_pc_responsive')
+                @include('ads.game_ad_pc_bottom')
             </div>
           </div>
           <div v-if="isMobileScreen" id="google-ad2-container">

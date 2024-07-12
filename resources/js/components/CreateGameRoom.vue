@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="btn btn-secondary" data-toggle="modal" data-target="#createGameRoomModal">
+    <button class="btn btn-secondary create-game-button" data-toggle="modal" @click.prevent="showModal">
       <h5 class="m-0">
         <i class="fa-solid fa-gamepad">多人模式</i>
       </h5>
@@ -171,6 +171,9 @@ export default {
 
   },
   methods: {
+    showModal(){
+      $('#createGameRoomModal').modal('show');
+    },
     getRoom(){
       if(!this.getRoomEndpoint || !this.roomSerial){
         return;

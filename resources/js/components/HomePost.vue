@@ -58,7 +58,7 @@
 export default {
   name: 'home-post',
   mounted() {
-    
+
   },
   props: {
     showGameEndpoint: {
@@ -71,10 +71,6 @@ export default {
     },
     post: {
       type: Object,
-      required: true
-    },
-    initMasonry: {
-      type: Function,
       required: true
     },
     onImageError: {

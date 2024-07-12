@@ -802,7 +802,8 @@ export default {
             .promise();
           let adTopPosition = titleHeight + screenCenterPosition;
           $("#google-ad-container").animate({ top: adTopPosition });
-          let adBottomPosition = -$("#right-player").height() - 30 + screenCenterPosition;
+          let offset = 30 + 36;
+          let adBottomPosition = -$("#right-player").height() - offset + screenCenterPosition;
           $("#google-ad2").animate({ top: adBottomPosition });
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
