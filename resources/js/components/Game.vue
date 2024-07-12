@@ -1368,7 +1368,7 @@ export default {
       } catch (e) {}
     },
     reloadGoogleAds() {
-      $("#google-ad2-container").css("height", "200px").css("position", "relative");
+      $("#google-ad2-container").css("height", "340px").css("position", "relative");
       this.refreshAD = true;
       setTimeout(() => {
         this.refreshAD = false;

@@ -560,7 +560,7 @@
         {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
-          <div style="height: 200px; position: absolute;left:0; right:0; z-index:-1"></div>
+          <div style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
           <div v-if="!isMobileScreen" id="google-ad2-container">
             <div class="row">
               <div class="col-12 col-lg-6">
