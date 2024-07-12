@@ -575,3 +575,10 @@
         </div>
     </rank>
 @endsection
+
+
+@section('footer')
+  <script async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
+    crossorigin="anonymous"></script>
+@endsection

@@ -670,7 +670,7 @@
 .champions-container {
     top:56.45px;
     overflow:auto;
-    max-height:90vh;
+    max-height:95vh;
 }
 
 .return-top-button {
@@ -1173,3 +1173,16 @@ $box-shadow2: ();
       text-align: left;
     }
   }
+
+.create-game-button {
+    border-radius: 15px;
+    background-color: #6767ce;
+    border-color: #6767ce;
+    &:hover,
+    &:focus ,
+    &:active ,
+    &:not(:disabled):not(.disabled):active, &:not(:disabled):not(.disabled).active ,
+    &:not(:disabled):not(.disabled):active:focus, &:not(:disabled):not(.disabled).active:focus{
+        background-color: darken(#6767ce, 10%);
+    }
+}

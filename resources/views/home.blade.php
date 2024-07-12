@@ -116,7 +116,7 @@
             </div>
           </div>
           {{-- main part: posts --}}
-          <div id="main-region" class="col-12 col-lg-9 col-xl-8" v-cloak>
+          <div id="main-region" class="col-12 col-lg-9 col-xl-8 p-1" v-cloak>
             @include('partial.home-carousel')
 
             {{-- champions --}}
@@ -315,12 +315,19 @@
                 </div>
               </div>
 
-              {{-- ads at bottom --}}
+              {{-- ads --}}
               @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index % 5 == 0 && $index>0)
-              <div class="grid-item pt-2 preload-post">
+              <div class="d-none d-sm-block grid-item pt-2 preload-post">
                 <div class="p-4">
-                  <div id="google-ad-1" style="width: 100%">
-                    @include('ads.home_ad_1')
+                  <div class="w-100">
+                    @include('ads.home_ad_1_pc')
+                  </div>
+                </div>
+              </div>
+              <div class="d-block d-sm-none grid-item pt-2 preload-post">
+                <div class="p-4">
+                  <div class="d-flex justify-content-center">
+                    @include('ads.home_ad_1_mobile')
                   </div>
                 </div>
               </div>
@@ -332,11 +339,27 @@
                   :show-game-endpoint="showGameEndpoint"
                   :show-rank-endpoint="showRankEndpoint"
                   :post="post"
-                  :init-masonry="initMasonry"
                   :on-image-error="onImageError"
                   @share="handleChildShare"
                 >
                 </home-post>
+
+                @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
+                <div v-if="index % 5 == 0 && index > 0" class="grid-item pt-2 preload-post">
+                  <div class="p-4">
+                    <div style="width: 100%" class="d-flex justify-content-center">
+                      <google-ads
+                        pusher-id="{{config('services.google_ad.publisher_id')}}"
+                        slot-id="{{config('services.google_ad.home_page_ad_1_slot')}}"
+                        ins-style="display:inline-block;width:300px;height:300px;"
+                        ad-format="rectangle"
+                        >
+                      </google-ads>
+                    </div>
+                  </div>
+                </div>
+                @endif
+
               </template>
             </div>
 
@@ -357,13 +380,6 @@
               </div>
             </div>
 
-            {{-- ads at bottom --}}
-            @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-              <div id="google-ad-1" style="width: 100%">
-                @include('ads.home_ad_1')
-              </div>
-            @endif
-
             {{-- return to top --}}
             <div v-if="showReturnUpButton" class="align-content-center" style="position: fixed; right: 20px; bottom: 20px; z-index:1050;">
               <span class="cursor-pointer" @click="scrollToSorter">
@@ -374,6 +390,7 @@
             </div>
           </div>
 
+          {{-- right part --}}
           <div class="d-none d-xl-block col-xl-2">
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
             {{-- right part:ads --}}
@@ -405,6 +422,9 @@
 @endsection
 
 @section('footer')
+  <script async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
+    crossorigin="anonymous"></script>
   @include('partial.footer')
 @endsection
 

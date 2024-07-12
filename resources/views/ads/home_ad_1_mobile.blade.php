@@ -1,10 +1,9 @@
 <!-- ad_in_home@responsive -->
 <ins class="adsbygoogle"
-    style="display:block"
+    style="display:inline-block;width:300px;height:300px;"
     data-ad-client="{{ config('services.google_ad.publisher_id') }}"
-    data-ad-slot="{{ config('services.google_ad.rank_page_sides') }}"
-    data-ad-format="auto"
-    data-full-width-responsive="true">
+    data-ad-slot="{{ config('services.google_ad.home_page_ad_1_slot') }}"
+    >
 </ins>
 
 @include('ads.script_load_ad')

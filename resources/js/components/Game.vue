@@ -802,7 +802,8 @@ export default {
             .promise();
           let adTopPosition = titleHeight + screenCenterPosition;
           $("#google-ad-container").animate({ top: adTopPosition });
-          let adBottomPosition = -$("#right-player").height() - 30 + screenCenterPosition;
+          let offset = 30 + 36;
+          let adBottomPosition = -$("#right-player").height() - offset + screenCenterPosition;
           $("#google-ad2").animate({ top: adBottomPosition });
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
@@ -913,10 +914,11 @@ export default {
               }, 1200);
             })
             .promise();
-          let adTopPosition = titleHeight + screenCenterPosition + $("#left-player").height() + 30;
+          let offset = 30;
+          let adTopPosition = titleHeight + screenCenterPosition + $("#left-player").height() + offset;
           $("#google-ad-container").animate({ top: adTopPosition });
           let adBottomPosition = screenCenterPosition;
-          $("#google-ad2").animate({ top: adBottomPosition });
+          $("#google-ad2").animate({ top: adBottomPosition - 44 });
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
             sendWinnerData();
@@ -1366,7 +1368,7 @@ export default {
       } catch (e) {}
     },
     reloadGoogleAds() {
-      $("#google-ad2-container").css("height", "360px").css("position", "relative");
+      $("#google-ad2-container").css("height", "340px").css("position", "relative");
       this.refreshAD = true;
       setTimeout(() => {
         this.refreshAD = false;
