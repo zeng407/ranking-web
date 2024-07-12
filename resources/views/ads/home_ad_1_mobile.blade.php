@@ -1,6 +1,3 @@
-<script async
-    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
-    crossorigin="anonymous"></script>
 <!-- ad_in_home@responsive -->
 <ins class="adsbygoogle"
     style="display:inline-block;width:300px;height:300px;"
