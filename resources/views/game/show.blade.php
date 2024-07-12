@@ -560,10 +560,19 @@
         {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
-          <div style="height: 380px; position: absolute;left:0; right:0; z-index:-1"></div>
+          <div style="height: 200px; position: absolute;left:0; right:0; z-index:-1"></div>
           <div v-if="!isMobileScreen" id="google-ad2-container">
-            <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
-                @include('ads.game_ad_pc_bottom')
+            <div class="row">
+              <div class="col-12 col-lg-6">
+                <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
+                    @include('ads.game_ad_pc_bottom')
+                </div>
+              </div>
+              <div class="col-none col-lg-6">
+                <div v-if="!refreshAD && game" class="my-2 text-center">
+                    @include('ads.game_ad_pc_bottom')
+                </div>
+              </div>
             </div>
           </div>
           <div v-if="isMobileScreen" id="google-ad2-container">
@@ -749,4 +758,11 @@
     </div>
   </game>
 
+@endsection
+
+@section('footer')
+<script async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
+    crossorigin="anonymous">
+</script>
 @endsection

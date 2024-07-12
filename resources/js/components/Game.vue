@@ -914,10 +914,11 @@ export default {
               }, 1200);
             })
             .promise();
-          let adTopPosition = titleHeight + screenCenterPosition + $("#left-player").height() + 30;
+          let offset = 30;
+          let adTopPosition = titleHeight + screenCenterPosition + $("#left-player").height() + offset;
           $("#google-ad-container").animate({ top: adTopPosition });
           let adBottomPosition = screenCenterPosition;
-          $("#google-ad2").animate({ top: adBottomPosition });
+          $("#google-ad2").animate({ top: adBottomPosition - 44 });
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
             sendWinnerData();
@@ -1367,7 +1368,7 @@ export default {
       } catch (e) {}
     },
     reloadGoogleAds() {
-      $("#google-ad2-container").css("height", "360px").css("position", "relative");
+      $("#google-ad2-container").css("height", "200px").css("position", "relative");
       this.refreshAD = true;
       setTimeout(() => {
         this.refreshAD = false;
