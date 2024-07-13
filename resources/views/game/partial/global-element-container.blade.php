@@ -25,7 +25,10 @@
 @elseif($rank->element->type === 'image')
     <viewer :options="viewerOptions">
         <img class="mw-100 cursor-pointer"
-          src="{{ $rank->element->getScaledThumbUrl()}}"
+          src="{{ $rank->element->getLowThumbUrl()}}"
+          srcset="{{ $rank->element->getLowThumbUrl() }} 400w,
+                  {{ $rank->element->getMediumThumbUrl() }} 800w"
+          sizes="(max-width: 400px) 400px, 800px"
           alt="{{ $rank->element->title }}">
     </viewer>
 @endif

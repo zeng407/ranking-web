@@ -1421,7 +1421,7 @@ export default {
       if (this.isMobileScreen) {
         return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
       } else {
-        return element.thumb_url;
+        return element.mediumthumb_url ? element.mediumthumb_url : element.thumb_url;
       }
     },
     enableTooltip(){

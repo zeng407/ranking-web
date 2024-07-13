@@ -7,7 +7,7 @@ use App\Models\Element;
 
 class ImageThumbnailService
 {
-    public function makeThumbnail(Element $element, int $maxWidth, int $maxHeight): void
+    public function makeThumbnail(Element $element, int $maxWidth, int $maxHeight, string $column): void
     {
         $url = $element->thumb_url;
         try{
@@ -27,6 +27,6 @@ class ImageThumbnailService
             $maxWidth = round($maxHeight * $ratio);
         }
 
-        ResizeElementImage::dispatch($element, $maxWidth, $maxHeight);
+        ResizeElementImage::dispatch($element, $maxWidth, $maxHeight, $column);
     }
 }

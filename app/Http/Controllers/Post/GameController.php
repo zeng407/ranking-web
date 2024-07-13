@@ -68,7 +68,6 @@ class GameController extends Controller
         $gameResult = $this->getGameResult($request);
         $reports = $this->rankService->getRankReports($post, 10);
         $myChampionHistories = $this->getChampionRankReportHistoryByGameResult($post, $gameResult, 365);
-
         return view('game.rank', [
             'serial' => $post->serial,
             'post' => $post,

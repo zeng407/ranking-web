@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $post->isPublic() ? $post : __('title.access'),
     'ogTitle' => $post->isPublic() ? $post->title : null,
-    'ogImage' => $post->isPublic() ? $element?->getScaledThumbUrl() : null,
+    'ogImage' => $post->isPublic() ? $element?->getLowThumbUrl() : null,
     'ogDescription' => $post->isPublic() ? $post->description : null,
     ])
 

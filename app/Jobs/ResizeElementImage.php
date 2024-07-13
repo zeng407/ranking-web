@@ -19,16 +19,19 @@ class ResizeElementImage implements ShouldQueue
     protected $width;
     protected $height;
 
+    protected $column;
+
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Element $element, $width, $height)
+    public function __construct(Element $element, $width, $height, $column)
     {
         $this->element = $element;
         $this->width = $width;
         $this->height = $height;
+        $this->column = $column;
     }
 
     /**
@@ -46,10 +49,10 @@ class ResizeElementImage implements ShouldQueue
         $image->writeImage($path);
         $mineType = $image->getImageMimeType();
         $file = new \Illuminate\Http\UploadedFile($path, 'image_low_thumbnail'. $extension, $mineType, null, true);
-        $newPath = $this->moveUploadedFile($file,  "low/{$this->width}x{$this->height}");
+        $newPath = $this->moveUploadedFile($file,  "{$this->column}/{$this->width}x{$this->height}");
         $url = \Storage::url($newPath);
         $this->element->update([
-            'lowthumb_url' => $url
+            $this->column => $url
         ]);
         // delete temp file
         unlink($path);

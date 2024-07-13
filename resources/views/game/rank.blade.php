@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $post->title . ' - ' . __('title.rank'),
     'ogTitle' => $post->title . ' - ' . __('title.rank'),
-    'ogImage' => $ogElement?->getScaledThumbUrl(),
+    'ogImage' => $ogElement?->getLowThumbUrl(),
     'ogDescription' => $post->description,
     'embed' => $embed,
     'stickyNav' => 'sticky-top-desktop'
@@ -295,10 +295,7 @@
                                                                 {{ $rank->element->title }}</h2>
                                                             <div
                                                                 class="col-12 align-content-center justify-content-center">
-                                                                @include(
-                                                                    'game.partial.global-element-container',
-                                                                    ['rank' => $rank]
-                                                                )
+                                                                @include('game.partial.global-element-container',['rank' => $rank])
                                                             </div>
                                                         </div>
                                                         <div class="col-12 col-md-6">

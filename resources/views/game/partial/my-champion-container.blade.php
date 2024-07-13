@@ -25,6 +25,9 @@
     <viewer :options="viewerOptions">
         <img class="w-auto mw-100 cursor-pointer my-champion-element"
           src="{{ $gameResult->winner->lowthumb_url ?: $gameResult->winner->thumb_url }}"
+          srcset="{{ $gameResult->winner->lowthumb_url ?: $gameResult->winner->thumb_url }} 400w,
+                  {{ $gameResult->winner->mediumthumb_url ?: $gameResult->winner->thumb_url }} 800w"
+          sizes="(max-width: 400px) 400px, 800px"
           alt="{{ $gameResult->winner->title }}">
     </viewer>
 @endif
