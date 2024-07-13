@@ -19,6 +19,7 @@
             <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
             <th scope="col" style="width: 30%">{{ $t('my_games.table.description') }}</th>
             <th scope="col">{{ $t('my_games.table.publishment') }}</th>
+            <th scope="col">{{ $t('my_games.table.trend') }}</th>
             <th scope="col">{{ $t('my_games.table.edit') }}</th>
           </tr>
         </thead>
@@ -31,7 +32,11 @@
               <i v-if="post.policy == 'password'" class="fas fa-lock"></i>
               <i v-else-if="post.policy == 'private'" class="fas fa-user-lock"></i>
               <i v-else-if="post.policy == 'public'" class="fas fa-globe"></i>
-
+            </td>
+            <td class="text-break" :data-label="$t('my_games.table.trend')">
+              <span class="pr-2">
+                <i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
+              </span>
             </td>
             <td :data-label="$t('my_games.table.edit')">
               <a :title="$t('my_games.table.edit')" :href="getEditLink(post.serial)"><i class="fa-xl fas fa-edit"></i></a>

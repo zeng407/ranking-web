@@ -41,7 +41,7 @@ class PostTrendScheduleExecutor
                 $startDate = today()->toDateString();
                 break;
         }
-
+        // todo create time_range column
         Post::withCount(['games' => function ($query) use ($startDate) {
                 if ($startDate){
                     $query->where('created_at', '>=', $startDate);

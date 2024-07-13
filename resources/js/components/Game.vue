@@ -500,6 +500,7 @@ export default {
     },
     toogleRoomInvitation() {
       this.showRoomInvitation = !this.showRoomInvitation;
+      
     },
     tipMethod(rank) {
       return `勝率:${rank.accuracy}% (${rank.total_correct} / ${rank.total_played})`;
