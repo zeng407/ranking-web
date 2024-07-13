@@ -21,7 +21,7 @@ class ThumbnailExecutor
             ->get();
 
         foreach ($elements as $element) {
-            $service->makeThumbnail($element, 400, 400, 'lowthumb_url');
+            $service->makeThumbnail($element, 400, 400, 'lowthumb_url', 'low');
         }
 
         $elements = Element::where('type', 'image')
@@ -32,7 +32,7 @@ class ThumbnailExecutor
             ->get();
 
         foreach ($elements as $element) {
-            $service->makeThumbnail($element, 800, 800, 'mediumthumb_url');
+            $service->makeThumbnail($element, 800, 800, 'mediumthumb_url', 'medium');
         }
     }
 }
