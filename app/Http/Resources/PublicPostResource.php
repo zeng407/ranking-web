@@ -68,7 +68,7 @@ class PublicPostResource extends JsonResource
             'video_source' => $element->video_source,
             'type' => $element->type,
             'id' => $element->id,
-            'url' => $element->getScaledThumbUrl(),
+            'url' => $element->getLowThumbUrl(),
             'url2' => $element->imgur_image?->link,
             'title' => $element->title,
             'previewable'=> $this->isPreviewable($element)

@@ -30,6 +30,7 @@ class Element extends Model
         'path',
         'source_url',
         'thumb_url',
+        'mediumthumb_url',
         'lowthumb_url',
         'title',
         'type',
@@ -57,9 +58,19 @@ class Element extends Model
         return $this->hasMany(RankReport::class);
     }
 
-    public function getScaledThumbUrl()
+    public function getLowThumbUrl()
     {
         return $this->lowthumb_url ?: $this->thumb_url;
+    }
+
+    public function getMediumThumbUrl()
+    {
+        return $this->mediumthumb_url ?: $this->thumb_url;
+    }
+
+    public function getDefaultThumbUrl()
+    {
+        return $this->thumb_url;
     }
 
 }

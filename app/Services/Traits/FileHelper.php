@@ -53,6 +53,10 @@ trait FileHelper
         $mineType = $image->getImageMimeType();
         if($mineType){
             $extension = '.' . explode('/', $mineType)[1];
+            // x-webp to webp
+            if($extension === '.x-webp'){
+                $extension = '.webp';
+            }
         }else {
             $extension = null;
         }

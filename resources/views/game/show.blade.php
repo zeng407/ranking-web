@@ -1,7 +1,7 @@
 @extends('layouts.app', [
     'title' => $post->isPublic() ? $post : __('title.access'),
     'ogTitle' => $post->isPublic() ? $post->title : null,
-    'ogImage' => $post->isPublic() ? $element?->getScaledThumbUrl() : null,
+    'ogImage' => $post->isPublic() ? $element?->getLowThumbUrl() : null,
     'ogDescription' => $post->isPublic() ? $post->description : null,
     ])
 
@@ -493,7 +493,6 @@
                 <hr>
                 <h2 class="d-flex justify-content-end">
                   <button class="btn btn-sm btn-secondary text-white mr-3"
-                    data-toggle="tooltip" data-placement="top" title="縮小"
                       @click="toogleRoomInvitation">
                       <i class="fa-solid fa-window-minimize"></i>
                   </button>

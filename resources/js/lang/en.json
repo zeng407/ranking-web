@@ -13,6 +13,7 @@
     "my_games.table.title": "Title",
     "my_games.table.description": "Description",
     "my_games.table.publishment": "Publishment",
+    "my_games.table.trend": "Trend",
     "my_games.table.edit": "Edit",
     "my_games.table.delete": "Delete",
     "my_games.table.no_data": "No Data",
@@ -117,7 +118,7 @@
     "element.type.video": "video",
 
     "Search Results": "{keyword} search results",
-    
+
 
 
     "":""

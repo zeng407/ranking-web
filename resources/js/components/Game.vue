@@ -500,6 +500,7 @@ export default {
     },
     toogleRoomInvitation() {
       this.showRoomInvitation = !this.showRoomInvitation;
+      
     },
     tipMethod(rank) {
       return `勝率:${rank.accuracy}% (${rank.total_correct} / ${rank.total_played})`;
@@ -1421,7 +1422,7 @@ export default {
       if (this.isMobileScreen) {
         return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
       } else {
-        return element.thumb_url;
+        return element.mediumthumb_url ? element.mediumthumb_url : element.thumb_url;
       }
     },
     enableTooltip(){

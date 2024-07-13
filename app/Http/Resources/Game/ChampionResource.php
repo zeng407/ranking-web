@@ -35,7 +35,7 @@ class ChampionResource extends JsonResource
             'left' => $left,
             'right' => $right,
             'datetime' => $this->created_at,
-            'thumb_url' => $this->champion->getScaledThumbUrl(),
+            'thumb_url' => $this->champion->getLowThumbUrl(),
             'key' => md5($this->id),
         ];
     }
@@ -45,13 +45,13 @@ class ChampionResource extends JsonResource
         if($id == $this->champion_id) {
             return [
                 'name' => $this->champion_name,
-                'thumb_url' => $this->champion->getScaledThumbUrl(),
+                'thumb_url' => $this->champion->getLowThumbUrl(),
                 'is_winner' => true,
             ];
         }elseif($id == $this->loser_id) {
             return [
                 'name' => $this->loser_name,
-                'thumb_url' => $this->loser?->getScaledThumbUrl(),
+                'thumb_url' => $this->loser?->getLowThumbUrl(),
                 'is_winner' => false,
             ];
         }
