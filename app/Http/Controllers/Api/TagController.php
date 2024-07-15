@@ -31,7 +31,7 @@ class TagController extends Controller
 
     public function hot(Request $request)
     {
-        $tags = CacheService::rememberHotTags();
+        $tags = CacheService::rememberHotTags(30);
 
         return response()->json($tags);
     }

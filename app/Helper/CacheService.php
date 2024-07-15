@@ -42,14 +42,14 @@ class CacheService
         });
     }
 
-    static public function rememberHotTags($refresh = false)
+    static public function rememberHotTags($limit = 10, $refresh = false)
     {
         if ($refresh) {
             Cache::forget('hot_tags');
         }
         $seconds = 60 * 60; // 1 hour
-        return Cache::remember('hot_tags', $seconds, function() {
-            return app(TagService::class)->getHotTags();
+        return Cache::remember('hot_tags', $seconds, function() use($limit) {
+            return app(TagService::class)->getHotTags($limit);
         });
     }
 
