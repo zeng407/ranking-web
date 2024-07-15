@@ -166,8 +166,8 @@ class CacheService
                     return GameRoomUserResource::make($gameUser)->toArray(request());
                 });
             };
-            $top10 = $mapData($gameRoom->users()->orderBy('rank')->limit(10)->get());
-            $bottom10 = $mapData($gameRoom->users()->orderByDesc('rank')->limit(10)->get());
+            $top10 = $mapData($gameRoom->users()->where('rank','>',0)->orderBy('rank')->limit(10)->get());
+            $bottom10 = $mapData($gameRoom->users()->where('rank','>',0)->orderByDesc('rank')->limit(10)->get());
             return [
                 'total_users' => $gameRoom->users()->count(),
                 'top_10' => $top10,
