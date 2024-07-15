@@ -1161,7 +1161,7 @@ $box-shadow2: ();
       position: relative;
 
       &:first-child { /* Targeting the first td in each tr */
-        background-color: #9a9191; /* Example background color */
+        background-color: #bfc0c1; /* Example background color */
       }
     }
     .table-responsive-sm-vertical td::before {
@@ -1186,4 +1186,15 @@ $box-shadow2: ();
     &:not(:disabled):not(.disabled):active:focus, &:not(:disabled):not(.disabled).active:focus{
         background-color: darken(#6767ce, 10%);
     }
+}
+
+.nav-link-hover {
+    &:hover {
+        background-color: lighten(#3490dc, 20%);
+    }
+}
+
+.form-control-disabled {
+    background-color: #e9ecef;
+    opacity: 1;
 }

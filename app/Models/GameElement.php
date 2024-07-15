@@ -25,6 +25,7 @@ class GameElement extends Model
     protected $fillable = [
         'is_eliminated',
         'win_count',
+        'is_ready'
     ];
     public $timestamps = false;
 

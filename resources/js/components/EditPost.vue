@@ -14,9 +14,9 @@
     <div class="row">
 
       <!-- tabs -->
-      <div class="col-12" style="z-index: 0;">
+      <div class="col-12 mt-2" style="z-index: 0;">
         <div class="nav flex-row nav-pills bg-secondary" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-          <a class="nav-link active text-white" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
+          <a class="nav-link active text-white nav-link-hover" id="v-pills-post-info-tab" data-toggle="pill" href="#v-pills-post-info" role="tab"
             aria-controls="v-pills-post-info" aria-selected="true">
             <i v-if="isEditing" class="fa-xl fa-solid fa-triangle-exclamation" style="color:red" v-b-tooltip.hover
               :title="$t('Unsaved')"></i>
@@ -25,15 +25,16 @@
             </span>
             {{ $t('edit_post.tab.info') }}
           </a>
-          <a class="nav-link text-white" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
+          <a class="nav-link text-white nav-link-hover" id="v-pills-elements-tab" data-toggle="pill" href="#v-pills-elements" role="tab"
             aria-controls="v-pills-elements" aria-selected="false">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-photo-video"></i>
             </span>
             {{ $t('edit_post.tab.element') }}
           </a>
-          <a class="nav-link text-white" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
-            aria-controls="v-pills-rank" aria-selected="false">
+          <a class="nav-link text-white nav-link-hover" id="v-pills-rank-tab" data-toggle="pill" href="#v-pills-rank" role="tab"
+            aria-controls="v-pills-rank" aria-selected="false"
+            @click="loadRankIframe">
             <span class="d-inline-block text-center" style="width: 30px">
               <i class="fas fa-trophy"></i>
             </span>
@@ -141,12 +142,12 @@
                 </div>
                 <!-- 標籤 -->
                 <div class="row">
-                  <div class="col-12">
+                  <div class="col-6">
                     <div class="form-group">
                       <label class="col-form-label-lg">
                         {{ $t('Tags') }}
                       </label>
-                      <ValidationProvider v-slot="{ errors }">
+                      <ValidationProvider>
                         <div class="input-group mb-3" v-if="isEditing">
                           <div class="input-group-prepend">
                             <span class="input-group-text" id="hashtag">#</span>
@@ -155,24 +156,28 @@
                             :placeholder="$t('edit_post.info.max_hashtag')" maxlength="15" aria-label="hashtag"
                             aria-describedby="hashtag" v-model="tagInput" @keyup="loadTagsOptions">
                           <datalist id="tagsOptions">
-                            <option v-for="tag in tagsOptions" :value="tag.name">{{ tag.name }}</option>
+                            <option v-for="(tag) in tagsOptions" :value="tag.name" :key="tag.name" >{{ tag.name }}</option>
                           </datalist>
                           <div class="input-group-append">
                             <button class="btn btn-outline-secondary" type="button" id="hashtag" @click="addTag"
                               :disabled="tags.length >= 5">{{ $t('edit_post.tag.enter') }}</button>
                           </div>
                         </div>
-                        <div class="form-group">
-                          <span v-for="tag in tags" class="badge badge-secondary mr-1" style="font-size: larger;">
-                            {{ tag }}
-                            <a v-if="isEditing" class="btn btn-sm btn-light ml-1" @click="removeTag(tag)"
-                              @keydown.enter.prevent>
-                              <i class="fas fa-times"></i>
-                            </a>
-                          </span>
-                          <span v-if="tags.length === 0" class="text-muted">{{ $t('edit_post.info.no_tag') }}</span>
-                        </div>
                       </ValidationProvider>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <span v-for="tag in tags" :key="tag" class="badge badge-secondary mr-1" style="font-size: larger;" >
+                        {{ tag }}
+                        <a v-if="isEditing" class="btn btn-sm btn-light ml-1" @click="removeTag(tag)"
+                          @keydown.enter.prevent>
+                          <i class="fas fa-times"></i>
+                        </a>
+                      </span>
+                      <span v-if="tags.length === 0" class="text-muted">{{ $t('edit_post.info.no_tag') }}</span>
                     </div>
                   </div>
                 </div>
@@ -219,18 +224,30 @@
                   </div>
                 </div>
               </form>
-              <!-- 建立時間 -->
+
               <div class="row" v-if="post">
+                <!-- 建立時間 -->
                 <div class="col-md-3 col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label-lg">{{ $t('edit_post.info.create_time') }}</label>
                     <input class="form-control" disabled :value="post.created_at | date">
                   </div>
                 </div>
+                <!-- 遊戲次數 -->
                 <div class="col-md-3 col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label-lg">{{ $t('edit_post.rank.game_plays') }}</label>
-                    <input class="form-control" disabled :value="post.play_count">
+                    <div class="form-control form-control-disabled">
+                      <span class="pr-2 badge badge-secondary">
+                        {{ $t('my_games.table.played_all') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
+                      </span>
+                      <!-- <span class="pr-2 badge badge-secondary">
+                        {{ $t('my_games.table.played_last_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.last_week_play_count }}
+                      </span> -->
+                      <span class="pr-2 badge badge-secondary">
+                        {{ $t('my_games.table.played_this_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.this_week_play_count }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -644,7 +661,7 @@
                             origin: origin
                           }"></youtube>
                           <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                            v-show="isYoutubeSource(element) && !element.loadedVideo">
+                            v-show="isYoutubeSource(element) && !element.loadedVideo" style="width: 200px;">
                         </template>
 
 
@@ -681,7 +698,7 @@
                     <!-- title -->
                     <td>
                       <textarea class="form-control-plaintext bg-light cursor-pointer p-2 mb-2" v-model="element.title"
-                        :maxlength="config.element_title_size" rows="4" style="resize: none;"
+                        :maxlength="config.element_title_size" rows="4" style="resize: none; width: 200px;"
                         @change="updateElementTitle(element.id, $event)"></textarea>
                     </td>
                     <!-- type -->
@@ -758,7 +775,7 @@
 
           <!-- tab rank -->
           <div class="tab-pane fade" id="v-pills-rank" role="tabpanel" aria-labelledby="v-pills-rank-tab">
-            <iframe :src="gameRankRoute" width="100%" height="800px" frameborder="0"></iframe>
+            <iframe id="rank-iframe" class="mt-2" width="100%" height="800px" frameborder="0"></iframe>
           </div>
         </div>
       </div>
@@ -779,7 +796,6 @@ export default {
     bsCustomFileInput.init();
     this.loadPost();
     this.resetSearch();
-    this.loadTagsOptions();
     this.origin = window.location.origin;
     this.host = window.location.host;
   },
@@ -1246,7 +1262,7 @@ export default {
 
       this.tagInputTimeout = setTimeout(() => {
         const params = {
-          prompt: this.tagInput
+          keyword: this.tagInput
         };
 
         axios.get(this.getTagsOptionsEndpoint, { params: params })
@@ -1516,6 +1532,12 @@ export default {
     },
     getThumbnailUrl(element) {
       return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
+    },
+    loadRankIframe() {
+      const iframe = document.getElementById('rank-iframe');
+      if(iframe.src === '') {
+        iframe.src = this.gameRankRoute; // The URL you want to load
+      }
     }
   }
 }

@@ -53,6 +53,7 @@ class TagService
         }
         $tags = Tag::whereIn('name', $tags)
             ->withCount('posts')
+            ->limit($limit)
             ->get()
             ->mapWithKeys(function ($tag) {
                 return [$tag->name => $tag->posts_count];

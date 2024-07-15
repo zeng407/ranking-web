@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PostAccessPolicy;
+use App\Enums\TrendTimeRange;
 use App\Models\Traits\HasImgurAlbum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -104,6 +105,32 @@ class Post extends Model
     public function isPasswordRequired()
     {
         return $this->post_policy->access_policy === PostAccessPolicy::PASSWORD;
+    }
+
+    public function getAllPlayedCount()
+    {
+        return $this->post_statistics()
+            ->where('time_range', TrendTimeRange::ALL)
+            ->first()
+            ?->play_count ?? 0;
+    }
+
+    public function getLastWeekPlayedCount()
+    {
+        return $this->post_statistics()
+            ->where('time_range', TrendTimeRange::WEEK)
+            ->where('start_date', today()->subWeek()->startOfWeek()->toDateString())
+            ->first()
+            ?->play_count ?? 0;
+    }
+
+    public function getThisWeekPlayedCount()
+    {
+        return $this->post_statistics()
+            ->where('time_range', TrendTimeRange::WEEK)
+            ->where('start_date', today()->startOfWeek()->toDateString())
+            ->first()
+            ?->play_count ?? 0;
     }
 
     /**

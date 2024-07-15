@@ -13,13 +13,13 @@
     </div>
 
     <div class="mt-2" v-if="!loading[LOADING_POSTS]">
-      <table class="table table-bordered table-hover table-responsive-sm-vertical" style="table-layout: fixed" v-if="posts.data.length > 0">
+      <table class="table table-bordered table-hover table-responsive-sm-vertical" v-if="posts.data.length > 0">
         <thead class="th-nowrap">
           <tr>
             <th scope="col" style="width: 40%">{{ $t('my_games.table.title') }}</th>
             <th scope="col" style="width: 30%">{{ $t('my_games.table.description') }}</th>
             <th scope="col">{{ $t('my_games.table.publishment') }}</th>
-            <th scope="col">{{ $t('my_games.table.trend') }}</th>
+            <th scope="col">{{ $t('my_games.table.play_count') }}</th>
             <th scope="col">{{ $t('my_games.table.edit') }}</th>
           </tr>
         </thead>
@@ -33,9 +33,17 @@
               <i v-else-if="post.policy == 'private'" class="fas fa-user-lock"></i>
               <i v-else-if="post.policy == 'public'" class="fas fa-globe"></i>
             </td>
-            <td class="text-break" :data-label="$t('my_games.table.trend')">
-              <span class="pr-2">
-                <i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
+            <td class="text-break" :data-label="$t('my_games.table.play_count')">
+              <span class="pr-2 badge badge-secondary">
+                {{ $t('my_games.table.played_all') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
+              </span>
+              <br>
+              <!-- <span class="pr-2 badge badge-secondary">
+                {{ $t('my_games.table.played_last_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.last_week_play_count }}
+              </span>
+              <br> -->
+              <span class="pr-2 badge badge-secondary">
+                {{ $t('my_games.table.played_this_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.this_week_play_count }}
               </span>
             </td>
             <td :data-label="$t('my_games.table.edit')">
