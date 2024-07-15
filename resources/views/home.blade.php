@@ -23,7 +23,7 @@
       keyword="{{Request::get('k') }}"
       :current-page={{$posts->currentPage()}}
       index-posts-endpoint="{{route('api.public-post.index')}}"
-      index-tags-endpoint="{{route('api.tag.index')}}"
+      index-tags-endpoint="{{route('api.tag.hot')}}"
       show-game-endpoint="{{route('game.show', '_serial')}}"
       show-rank-endpoint="{{route('game.rank', '_serial')}}"
       get-champions-endpoint="{{route('api.champion.index')}}"

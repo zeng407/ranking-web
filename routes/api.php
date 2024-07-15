@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PublicPostController;
 
 /** Tag */
 Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
+Route::get('tags/hot', [TagController::class, 'hot'])->name('api.tag.hot');
 
 /** Carousel */
 Route::get('carousel-items', [HomeCarouselController::class, 'index'])->name('api.carousel.index');

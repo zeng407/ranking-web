@@ -26,6 +26,7 @@ class GameService
     {
         $elements = $game->elements()
             ->wherePivot('is_eliminated', false)
+            ->orderByPivot('is_ready', 'desc')
             ->orderByPivot('win_count')
             ->inRandomOrder()
             ->take($count)
@@ -56,7 +57,9 @@ class GameService
             ->get();
 
         $elements->each(function (Element $element) use ($game) {
-            $game->elements()->attach($element);
+            $game->elements()->attach($element, [
+                'is_ready' => true
+            ]);
         });
 
         return $game;
@@ -140,8 +143,9 @@ class GameService
         try {
             $lock = Locker::lockUpdateGameElement($game);
             $lock->block(5);
+            $isEndOfRound = $round === $ofRound;
 
-            \DB::transaction(function () use ($game, $winnerId, $loserId) {
+            \DB::transaction(function () use ($game, $winnerId, $loserId, $isEndOfRound) {
                 // update winner
                 $gameElement = $game->game_elements()
                     ->where('element_id', $winnerId)
@@ -149,7 +153,8 @@ class GameService
                     ->first();
                 if($gameElement){
                     $gameElement->update([
-                        'win_count' => $gameElement->win_count + 1
+                        'win_count' => $gameElement->win_count + 1,
+                        'is_ready' => false
                     ]);
                     \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $winnerId, 'win_count' => $gameElement->win_count]);
                 }else{
@@ -164,12 +169,21 @@ class GameService
                     ->first();
                 if($gameElement){
                     $gameElement->update([
-                        'is_eliminated' => true
+                        'is_eliminated' => true,
+                        'is_ready' => false
                     ]);
                     \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $loserId, 'is_eliminated' => $gameElement->is_eliminated]);
                 }else{
                     \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $loserId]);
                     throw new \Exception('game element not found');
+                }
+
+                if($isEndOfRound){
+                    $game->game_elements()
+                        ->where('is_eliminated', false)
+                        ->update([
+                            'is_ready' => true
+                        ]);
                 }
             });
 

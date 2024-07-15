@@ -21,6 +21,16 @@ class TagController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'keyword' => 'string|nullable|max:30',
+        ]);
+        $tags = CacheService::rememberTags((string)$request->query('keyword'));
+
+        return response()->json($tags);
+    }
+
+    public function hot(Request $request)
+    {
         $tags = CacheService::rememberHotTags();
 
         return response()->json($tags);

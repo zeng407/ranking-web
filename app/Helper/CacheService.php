@@ -53,6 +53,18 @@ class CacheService
         });
     }
 
+    static public function rememberTags(string $keywork = '', $refresh = false)
+    {
+        $key = 'post_tags_'.$keywork;
+        if ($refresh) {
+            Cache::forget($key);
+        }
+        $seconds = 10 * 60; // 10 minutes
+        return Cache::remember($key, $seconds, function() use ($keywork) {
+            return app(TagService::class)->get($keywork);
+        });
+    }
+
     static public function rememberPosts(Request $request, $sort, $refresh = false)
     {
         $url = $request->getQueryString();
