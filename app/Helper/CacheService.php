@@ -42,14 +42,14 @@ class CacheService
         });
     }
 
-    static public function rememberHotTags($refresh = false)
+    static public function rememberHotTags($limit = 10, $refresh = false)
     {
         if ($refresh) {
             Cache::forget('hot_tags');
         }
         $seconds = 60 * 60; // 1 hour
-        return Cache::remember('hot_tags', $seconds, function() {
-            return app(TagService::class)->getHotTags();
+        return Cache::remember('hot_tags', $seconds, function() use($limit) {
+            return app(TagService::class)->getHotTags($limit);
         });
     }
 
@@ -166,8 +166,8 @@ class CacheService
                     return GameRoomUserResource::make($gameUser)->toArray(request());
                 });
             };
-            $top10 = $mapData($gameRoom->users()->orderBy('rank')->limit(10)->get());
-            $bottom10 = $mapData($gameRoom->users()->orderByDesc('rank')->limit(10)->get());
+            $top10 = $mapData($gameRoom->users()->where('rank','>',0)->orderBy('rank')->limit(10)->get());
+            $bottom10 = $mapData($gameRoom->users()->where('rank','>',0)->orderByDesc('rank')->limit(10)->get());
             return [
                 'total_users' => $gameRoom->users()->count(),
                 'top_10' => $top10,
