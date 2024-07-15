@@ -21,7 +21,7 @@ class PostTrendScheduleExecutor
         CacheService::rememberPostUpdatedTimestamp();
     }
 
-    protected function createHotTrendPost($range)
+    protected function createHotTrendPost(string $range)
     {
         $startDate = null;
         switch ($range) {
@@ -41,7 +41,7 @@ class PostTrendScheduleExecutor
                 $startDate = today()->toDateString();
                 break;
         }
-        // todo create time_range column
+
         Post::withCount(['games' => function ($query) use ($startDate) {
                 if ($startDate){
                     $query->where('created_at', '>=', $startDate);
@@ -49,12 +49,14 @@ class PostTrendScheduleExecutor
             }])
             ->orderBy('games_count', 'desc')
             ->orderBy('posts.id', 'desc')
-            ->eachById(function (Post $post) use ($startDate) {
+            ->eachById(function (Post $post) use ($startDate, $range) {
                 $date = $startDate ?: $post->created_at->toDateString();
                 $post->post_statistics()->updateOrCreate([
-                    'start_date' => $date
+                    'start_date' => $date,
+                    'time_range' => $range
                 ], [
                     'start_date' => $date,
+                    'time_range' => $range,
                     'play_count' => $post->games_count
                 ]);
             });
@@ -62,6 +64,7 @@ class PostTrendScheduleExecutor
         $count = 0;
         Post::join('post_statistics', 'posts.id', '=', 'post_statistics.post_id')
             ->where('post_statistics.start_date', $startDate)
+            ->where('post_statistics.time_range', $range)
             ->orderBy('post_statistics.play_count', 'desc')
             ->orderBy('posts.id', 'desc')
             ->selectRaw('posts.*')

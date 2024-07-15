@@ -13,6 +13,7 @@ class PostStatistic extends Model
     use HasFactory;
 
     protected $fillable = [
+        'time_range',
         'start_date',
         'play_count'
     ];
