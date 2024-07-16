@@ -52,7 +52,7 @@ class SocialiteController extends Controller
         } else {
             $user = $this->socialiteService->handleGoogleCallback();
             \Auth::login($user);
-            return redirect()->route('home');
+            return redirect()->intended();
         }
     }
 
