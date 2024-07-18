@@ -93,7 +93,8 @@ return [
     // Add locales to the list
     'locales' => [
         'en',
-        'zh_TW'
+        'zh_TW',
+        'ja'
     ],
 
     /*

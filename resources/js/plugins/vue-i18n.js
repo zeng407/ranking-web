@@ -4,6 +4,7 @@ Vue.use(VueI18n);
 
 import en from '../lang/en.json';
 import customZh_TW from '../lang/zh-TW.json';
+import ja from '../lang/ja.json';
 import veeValidateZh_TW from "vee-validate/dist/locale/zh_TW.json";
 
 const zh_TW = {
@@ -16,6 +17,7 @@ const i18n = new VueI18n({
     messages: {
         'en': en,
         'zh-TW': zh_TW,
+        'ja': ja
     }
 });
 export {i18n}

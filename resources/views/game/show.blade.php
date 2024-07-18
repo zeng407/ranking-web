@@ -96,18 +96,18 @@
             </div>
             <transition-group name="bet-result-animation" tag="div" class="position-absolute top-50 left-50 translate-50-50 w-100 bg-dark-50 overflow-hidden" style="z-index: 110">
               <div v-if="showFirework" key="bet-success">
-                <h1 class="text-white text-center">預測成功</h1>
+                <h1 class="text-white text-center">@{{$t('game_room.predict_success')}}</h1>
               </div>
             </transition-group>
             <transition-group name="bet-result-animation" tag="div" class="position-absolute top-50 left-50 translate-50-50 w-100 bg-dark-50 overflow-hidden" style="z-index: 110">
               <div v-if="showBetFailed" key="bet-success">
-                <h1 class="text-white text-center">預測失敗</h1>
+                <h1 class="text-white text-center">@{{$t('game_room.predict_fail')}}</h1>
               </div>
             </transition-group>
 
             <div v-if="isGameRoomFinished">
               <div class="d-flex justify-content-center align-content-center mt-4">
-                <h3>投票已結束</h3>
+                <h3>@{{$t('game_room.vote_ends')}}</h3>
               </div>
             </div>
 
@@ -116,8 +116,8 @@
               <h1 id="game-title" class="text-center text-break mt-1">{{$post->title}}</h1>
               <div class="d-none d-sm-flex" style="flex-flow: row wrap">
                 <h3 style="width: 20%">
-                  <span v-if="isBetGameClient && !isVoting">預測誰會勝出？</span>
-                  <span v-if="isBetGameClient && isVoting">等待主持人選擇...</span>
+                  <span v-if="isBetGameClient && !isVoting">@{{$t('game_room.guess_winner')}}</span>
+                  <span v-if="isBetGameClient && isVoting">@{{$t('game_room.waiting_result')}}</span>
                 </h3>
 
                 <h3 class="text-center align-self-center" style="width: 60%">
@@ -238,8 +238,8 @@
                         @{{ game.current_round }} / @{{ game.of_round }}
                     </h5>
                     <h5 v-if="isBetGameClient">
-                      <span v-if="isBetGameClient && !isVoting">預測誰會勝出？</span>
-                      <span v-if="isBetGameClient && isVoting">等待結果中...</span>
+                      <span v-if="isBetGameClient && !isVoting">@{{$t('game_room.guess_winner')}}</span>
+                      <span v-if="isBetGameClient && isVoting">@{{$t('game_room.waiting_result')}}</span>
                     </h5>
                     <h5 class="">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h5>
 
@@ -349,7 +349,7 @@
               {{-- game room --}}
               <div class="p-1 my-1" v-if="isBetGameClient">
                 <input v-show="isEditingNickname" id="newNickname" autocomplete="off" v-model="newNickname" type="text" class="form-control badge-secondary bg-secondary-onfocus font-size-16" maxlength="10">
-                <div class="text-center" v-show="isEditingNickname">(上限10個字元，每小時可更改一次)</div>
+                <div class="text-center" v-show="isEditingNickname">(@{{ $t('game_room.nickname_hint')}})</div>
                 <h4 class="d-flex justify-content-center">
                   <div class="position-relative">
                     <u class="cursor-pointer" v-if="!isEditingNickname" @click="toggleEditNickname">@{{gameRoom.user.name | cut(10)}}</u>
@@ -368,7 +368,7 @@
                   </div>
                 </h4>
                 <div class="d-flex justify-content-between">
-                  <span>積分:</span>
+                  <span>@{{$t('game_room.point')}}:</span>
                   <div>
                     <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
                       <span v-if="gameRoom.user.combo >= 10" class="badge badge-pill badge-combo-10">
@@ -391,7 +391,7 @@
                   </div>
                 </div>
                 <div class="d-flex justify-content-between">
-                  <span>排名 / 人數:</span>
+                  <span>@{{$t('game_room.rank_number')}} / @{{$t('game_room.rank_players')}}:</span>
                   <span v-if="gameRoom.user.rank > 0">
                     <I-Count-Up :end-val="gameRoom.user.rank"></I-Count-Up>
                     <span>/</span>
@@ -400,13 +400,13 @@
                   <span v-if="gameRoom.user.rank == 0">無 / @{{gameBetRanks.total_users}}</span>
                 </div>
                 <div class="d-flex justify-content-between">
-                  <span>勝率:</span>
+                  <span>@{{$t('game_room.win_rate')}}:</span>
                   <span>
                     <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
                   </span>
                 </div>
                 <div class="d-flex justify-content-between">
-                  <span>預測成功 / 次數</span>
+                  <span>@{{$t('game_room.predict_success')}} / @{{$t('game_room.predict_times')}}</span>
                   <span>
                     <I-Count-Up :end-val="gameRoom.user.total_correct"></I-Count-Up>
                     /
@@ -417,7 +417,7 @@
               {{-- rank --}}
               <div class="p-1 my-1">
                 <h3 class="text-center position-relative">
-                  排行榜
+                  @{{ $t('game_room.leaderboard') }}
                   <span v-show="sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
                     <i class="fa-solid fa-arrow-up-wide-short"></i>
                   </span>
@@ -425,11 +425,10 @@
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
                   </span>
                   <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
-                    data-toggle="tooltip" data-placement="left" title="關閉"
+                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
                     id="close-game-room"
                     style="right:0"
                     @click="closeGameRoom">
-
                   <i class="fa-solid fa-xmark"></i>
                   </span>
                 </h3>
@@ -438,10 +437,10 @@
                     <span class="badge badge-pill badge-light mr-1">
                     #
                     </span>
-                    暱稱
+                    @{{$t('game_room.nickname')}}
                   </div>
-                  <span>積分
-                    <i class="fa-solid fa-circle-question" data-toggle="tooltip" data-placement="left" data-html="true" title="預測正確:連勝*10分<br>預測失敗:-10分"></i>
+                  <span>@{{$t('game_room.point')}}
+                    <i class="fa-solid fa-circle-question" data-toggle="tooltip" data-placement="left" data-html="true" :title="$t('game_room.point_description')"></i>
                   </span>
                 </h5>
                 <hr class="my-1 text-white bg-white">
@@ -499,7 +498,7 @@
                 </h2>
                 {{-- join game, invitation --}}
                 <h2 class="position-relative">
-                  邀請朋友加入遊戲
+                  @{{$t('game_room.invite_friends')}}
                 </h2>
                 <div class="row">
                   <div class="col-12">
@@ -510,18 +509,18 @@
                     <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
                   </div>
                   <h3 class="col-12 mt-2">
-                    在線人數：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
+                    @{{ $t('game_room.online_players')}}：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
                   </h3>
                 </div>
               </div>
             </div>
 
-            <div v-if="isBetGameHost" class="d-flex position-absolute mr-2 mb-4" style="right: 0; bottom:0">
+            <div v-if="isBetGameHost" class="d-flex position-absolute mx-2 mb-4" style="right: 0; bottom:0">
               <div v-show="!showRoomInvitation"
                 class="btn btn-outline-dark"
                 @click="toogleRoomInvitation">
                 <h3 class="text-white align-content-center">
-                  在線人數：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
+                  <i class="fa-solid fa-users"></i>&nbsp;<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
                 </h3>
               </div>
               <div>
@@ -529,14 +528,14 @@
                   style="min-width: 45px"
                   class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
                   <h3>
-                    <i class="fa-solid fa-box"></i>&nbsp;黑箱
+                    <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h3>
                 </button>
                 <button v-else
                   style="min-width: 45px"
                   class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
                   <h3>
-                    <i class="fa-solid fa-box-open"></i>&nbsp;黑箱
+                    <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h3>
                 </button>
               </div>
@@ -737,16 +736,16 @@
           <div class="modal-dialog modal-dialog-centered" :class="{'modal-lg': !isMobileScreen }">
             <div class="modal-content ">
               <div class="modal-header">
-                <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">多人投票模式：猜喜好</h5>
+                <h5 class="modal-title align-self-center" id="gameRoomJoinLabel">@{{$t('game_room.join_room_game_mode_preference')}}</h5>
               </div>
               <div class="modal-body">
                 <h3 class="text-center">
-                  精準預測主持人的喜好，獲得積分成為榜首！
+                  @{{$t('game_room.join_room_game_mode_preference_title')}}
                 </h3>
               </div>
               <div class="modal-footer mb-sm-0 mb-4">
                 <button type="submit" class="btn btn-primary btn-block" @click="joinRoom">
-                  <i class="fas fa-play">&nbsp;</i>開始
+                  <i class="fas fa-play">&nbsp;</i>@{{$t('game_room.join_room')}}
                 </button>
               </div>
 

@@ -1,4 +1,5 @@
 {
+    "app.name": "2Pick",
     "rank.win_at_final": "Champion",
     "rank.win_rate": "Winning Rate",
     "rank.no_data": "No data",

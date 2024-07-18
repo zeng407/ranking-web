@@ -96,8 +96,9 @@ Vue.filter('datetime', function (value) {
 Vue.filter('moment', function (value, format) {
     return moment(value).format(format);
 });
-Vue.filter('formNow', function (value, locale = 'zh-tw') {
-    moment.locale(locale || 'en');
+Vue.filter('formNow', function (value) {
+    const locale = document.documentElement.lang || 'en';
+    moment.locale(locale);
     return moment(value).fromNow();
 });
 Vue.filter('cut', function(value, maxLength) {

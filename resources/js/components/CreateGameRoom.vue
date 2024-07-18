@@ -2,7 +2,7 @@
   <div>
     <button class="btn btn-secondary create-game-button" data-toggle="modal" @click.prevent="showModal">
       <h5 class="m-0">
-        <i class="fa-solid fa-gamepad">多人模式</i>
+        <i class="fa-solid fa-gamepad">&nbsp;{{$t('game_room.multiplayer_mode')}}</i>
       </h5>
     </button>
 
@@ -11,8 +11,8 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 v-if="step == 0" class="modal-title" id="createGameRoomModalLabel">選擇遊戲模式</h5>
-            <h5 v-if="step == 1" class="modal-title" id="createGameRoomModalLabel">邀請朋友加入遊戲</h5>
+            <h5 v-if="step == 0" class="modal-title" id="createGameRoomModalLabel">{{$t('game_room.create_game.title')}}</h5>
+            <h5 v-if="step == 1" class="modal-title" id="createGameRoomModalLabel">{{$t('game_room.create_game.invite')}}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -22,29 +22,29 @@
               <div class="col-12 col-md-6 my-2">
                 <button class="btn btn-outline-dark"
                   @click="updateStep(1)" @mouseenter="flipOnhover" @mouseleave="flipOffhover"
-                  data-target="flip-item-1" style="height: 350px; width: 100%;">
+                  data-target="flip-item-1" style="width: 100%;">
                   <h2 >
                     <i id="flip-item-1" class="fa-solid fa-heart"></i>
                   </h2>
-                  <h2>猜喜好</h2>
+                  <h2>{{ $t('game_room.create_game.preference') }}</h2>
                   <hr>
-                  <p>每回合投票時，讓朋友猜測你的喜好，猜對得分，猜錯扣分</p>
+                  <p>{{ $t('game_room.create_game.preference.description') }}</p>
                   <div class="d-flex justify-content-center">
                     <table>
                       <tr>
-                        <th class="text-left pr-1">真愛排行榜</th>
+                        <th class="text-left pr-1">{{ $t('game_room.create_game.preference.leaderboard') }}</th>
                         <th><i class="fa-solid fa-check"></i></th>
                       </tr>
                       <tr>
-                        <th class="text-left">黑箱</th>
+                        <th class="text-left">{{ $t('game_room.create_game.preference.black_box') }}</th>
                         <th><i class="fa-solid fa-check"></i></th>
                       </tr>
                       <tr>
-                        <th class="text-left">積分制</th>
+                        <th class="text-left">{{ $t('game_room.create_game.preference.points') }}</th>
                         <th><i class="fa-solid fa-check"></i></th>
                       </tr>
                       <tr>
-                        <th class="text-left">連擊Combo!</th>
+                        <th class="text-left">{{ $t('game_room.create_game.preference.combo') }}</th>
                         <th><i class="fa-solid fa-check"></i></th>
                       </tr>
                     </table>
@@ -52,51 +52,50 @@
                 </button>
               </div>
               <div class="col-12 col-md-6 my-2">
-                <button class="btn btn-outline-dark disabled position-relative" disabled style="height: 350px;">
+                <button class="btn btn-outline-dark disabled position-relative" disabled >
                   <div class=" h-100 w-100 position-absolute" style="top: 0; left: 0; background: #FFF7;"></div>
                   <h2>
                     <i id="flip-item-2" class="fa-solid fa-users"></i>
                   </h2>
-                  <h2>多數決</h2>
+                  <h2>{{ $t('game_room.create_game.majority_rule') }}</h2>
                   <hr>
-                  <p>每回合投票時，較多票數的一方獲得大眾積分，較少票數的一方獲得獨特積分</p>
+                  <p>{{ $t('game_room.create_game.majority_rule.description') }}</p>
                   <div class="d-flex justify-content-center">
                     <table>
                       <tr>
-                        <th class="text-left pr-1">大眾品味排行榜</th>
+                        <th class="text-left pr-1">{{ $t('game_room.create_game.majority_rule.leaderboard_majority') }}</th>
                         <th><i class="fa-solid fa-check"></i></th>
                       </tr>
                       <tr>
-                        <th class="text-left pr-1">獨特品味排行榜</th>
+                        <th class="text-left pr-1">{{ $t('game_room.create_game.majority_rule.leaderboard_minority') }}</th>
                         <th><i class="fa-solid fa-check"></i></th>
                       </tr>
                       <tr>
-                        <th class="text-left">黑箱</th>
+                        <th class="text-left">{{ $t('game_room.create_game.majority_rule.black_box') }}</th>
                         <i class="fa-solid fa-xmark"></i>
                       </tr>
                       <tr>
-                        <th class="text-left">積分制</th>
+                        <th class="text-left">{{ $t('game_room.create_game.majority_rule.points') }}</th>
                         <th><i class="fa-solid fa-check"></i></th>
                       </tr>
                     </table>
                   </div>
                 </button>
-                <h4 class="position-absolute top-50 left-50 translate-50-50">敬請期待</h4>
+                <h4 class="position-absolute top-50 left-50 translate-50-50">{{ $t('game_room.create_game.coming_soon') }}</h4>
               </div>
             </div>
             <div v-show="step == 1">
               <div class="row">
                 <div class="col-12 text-left mb-1">
                   <button class="btn btn-outline-dark btn-sm" @click="updateStep(0)">
-                    <i class="fa-solid fa-arrow-left"></i>&nbsp;返回
+                    <i class="fa-solid fa-arrow-left"></i>&nbsp;{{ $t('game_room.create_game.back') }}
                   </button>
                 </div>
               </div>
               <div class="row">
                 <div class="col-12">
-                  <h2>你是主持人</h2>
-                  <h4>
-                    請讓朋友<u>掃描</u>或<u>透過連結</u>加入遊戲
+                  <h2>{{$t('game_room.create_game.host')}}</h2>
+                  <h4 v-html="$t('game_room.create_game.invite_description')">
                   </h4>
                   <div class="mb-2">
                     <div class="mb-1">

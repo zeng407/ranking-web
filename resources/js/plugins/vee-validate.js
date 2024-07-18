@@ -3,15 +3,16 @@
 import {ValidationProvider, ValidationObserver, extend, localize, configure} from 'vee-validate';
 import en from 'vee-validate/dist/locale/en.json';
 import zh_TW from 'vee-validate/dist/locale/zh_TW.json';
+import ja from 'vee-validate/dist/locale/ja.json';
 configure({
     defaultMessage: (field, values) => {
       // override the field name.
       values._field_ = i18n.t(`fields.${field}`);
-  
+
       return i18n.t(`validation.${values._rule_}`, values);
     }
 });
-localize({en, zh_TW});
+localize({en, zh_TW, ja});
 
 const getUserLocale = () => {
     const locale = document.documentElement.lang || 'en';
