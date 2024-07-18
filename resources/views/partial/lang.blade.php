@@ -17,8 +17,9 @@
           <i class="fas fa-globe-asia"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownLangButton">
-          <a class="dropdown-item" href="{{'/lang/zh_TW/'. $postFix}}">中文 (Chinese)</a>
-          <a class="dropdown-item" href="{{'/lang/en/'. $postFix}}">English</a>
+          <a class="dropdown-item" href="{{'/lang/zh_TW/'. $postFix}}">{{ __('Chinese') }} (Chinese)</a>
+          <a class="dropdown-item" href="{{'/lang/ja/'. $postFix}}">{{__('Japanese')}} (Japanese)</a>
+          <a class="dropdown-item" href="{{'/lang/en/'. $postFix}}">{{__('English')}} (English)</a>
         </div>
       </li>
     </ul>

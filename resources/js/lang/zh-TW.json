@@ -86,7 +86,7 @@
     "Current URL": "目前網址",
     "Please delete first, then upload the URL": "請先刪除，再上傳網址",
     "Your post has been updated.": "投票已更新",
-    "You have tried too many times. Please try again later.": "你嘗試次數過多，請稍後再試",
+    "You have tried too many times. Please try again later.": "嘗試次數過多，請稍後再試",
 
     "Number of participants": "參賽人數",
     "game.select": "選擇",
@@ -107,8 +107,11 @@
     "game.checkout_result": "正在查看投票結果...",
     "game.password": "請輸入密碼",
     "game.invalid_password": "密碼錯誤",
-    "rank.win_rate": "勝率",
+    "game.bet.combo": "連勝",
 
+    "game_room.invite_friends": "邀請朋友加入遊戲",
+
+    "rank.win_rate": "勝率",
     "rank.no_rank": "尚未有資料",
     "rank.chart.rank": "排名",
     "rank.chart.win_rate": "勝率",
@@ -205,7 +208,7 @@
     "Search Results": "{keyword} 的搜尋結果",
     "Donate": "贊助",
     "You can only change your nickname once per hour":"每小時只能修改一次暱稱",
-    "game.bet.combo": "連勝",
+
     "Download": "下載",
     "Download QR code": "下載QR碼",
     "Open in new tab": "在新分頁開啟",

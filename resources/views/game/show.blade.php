@@ -499,7 +499,7 @@
                 </h2>
                 {{-- join game, invitation --}}
                 <h2 class="position-relative">
-                  邀請朋友加入遊戲
+                  @{{$t('game_room.invite_friends')}}
                 </h2>
                 <div class="row">
                   <div class="col-12">

@@ -82,7 +82,7 @@
     "game.continue_hint": "Continue last round",
     "game.setting": "Setting",
     "game.start": "Start",
-    "game.cancel": "Cancel",
+    "game.cancel": "Home",
     "game.403": "Unable to retrieve data, the author may have closed this vote. Please refresh or choose another vote.",
     "game.pivate_text": "This is your private post, only you can vote.",
     "game_round_final": "Final",
@@ -94,6 +94,8 @@
     "game.checkout_result": "Check the result...",
     "game.password": "Password",
     "game.invalid_password": "Invalid password",
+
+    "game_room.invite_friends": "Invite friends",
 
     "rank.no_rank": "No data",
     "rank.chart.rank": "Rank",

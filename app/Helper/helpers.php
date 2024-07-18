@@ -111,7 +111,7 @@ if (!function_exists('get_page_title')) {
     function get_page_title($object, ?string $base = null)
     {
         if($base === null) {
-            $base = config('app.name', '殘酷二選一');
+            $base = __("app.name");
         }
 
         if ($object instanceof \App\Models\Post) {
@@ -230,11 +230,11 @@ if(!function_exists('random_nickname')){
     function random_nickname()
     {
         // get random adjective from lang file
-        $adjectives = trans()->get('nickname.adjective');
+        $adjectives = trans()->get('nicknames.adjective');
         $adjective = $adjectives[array_rand($adjectives)];
 
         // get random name from lang file
-        $names = trans()->get('nickname.name');
+        $names = trans()->get('nicknames.name');
         $name = $names[array_rand($names)];
 
         return "{$adjective}{$name}";

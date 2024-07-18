@@ -105,9 +105,11 @@
 
                         {{-- Right Side Of Navbar --}}
                         <ul class="navbar-nav ml-auto">
+                            @if(app()->getLocale() == 'zh_TW')
                             <li class="nav-item">
                               <a class="nav-link" href="{{ route('donate') }}">{{ __('Donate') }}</a>
                             </li>
+                            @endif
                             {{-- Authentication Links --}}
                             @guest
                                 <li class="nav-item">

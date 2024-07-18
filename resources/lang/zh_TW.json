@@ -1,5 +1,5 @@
 {
-    "APP": "殘酷二選一",
+    "app.name": "殘酷二選一",
     "Reset Password": "重設密碼",
     "Send Password Reset Link": "寄送重設密碼連結",
     "Forgot Your Password?": "忘記密碼？",
@@ -16,6 +16,7 @@
     "Confirm Password": "再輸入一次密碼",
     "Language": "語言",
     "Chinese": "中文",
+    "Japanese": "日文",
     "English": "英文",
     "My Votes": "我的投票",
     "Home": "首頁",
@@ -29,6 +30,7 @@
     "rank.win_rate": "勝率",
     "rank.no_data": "尚無資料",
     "socialite.failed": "社群登入失敗",
+
     "Comment": "留言",
     "comment.report": "檢舉",
     "comment.leave_comment": "寫下評論",
