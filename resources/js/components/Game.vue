@@ -500,7 +500,7 @@ export default {
     },
     toogleRoomInvitation() {
       this.showRoomInvitation = !this.showRoomInvitation;
-      
+
     },
     tipMethod(rank) {
       return `勝率:${rank.accuracy}% (${rank.total_correct} / ${rank.total_played})`;
@@ -1165,7 +1165,7 @@ export default {
       }
     },
     keepGameCookie(){
-      this.$cookies.set(this.postSerial, this.gameSerial, "30d");
+      this.$cookies.set(this.postSerial, this.gameSerial, "1y");
     },
     resetPlayingStatus() {
       this.isLeftPlaying = false;
