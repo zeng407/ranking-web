@@ -20,7 +20,7 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup .env file
       run: |
         echo "MIX_PUSHER_APP_KEY=${{ secrets.MIX_PUSHER_APP_KEY }}" >> .env
@@ -29,7 +29,7 @@ jobs:
         echo "MIX_PUSHER_APP_CLUSTER=${{ secrets.MIX_PUSHER_APP_CLUSTER }}" >> .env
         echo "PUSHER_SCHEME=${{ secrets.PUSHER_SCHEME }}" >> .env
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
