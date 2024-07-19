@@ -21,6 +21,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Setup .env file
+      run: |
+        echo "MIX_PUSHER_APP_KEY=${{ secrets.MIX_PUSHER_APP_KEY }}" >> .env
+        echo "MIX_PUSHER_HOST=${{ secrets.MIX_PUSHER_HOST }}" >> .env
+        echo "MIX_PUSHER_PORT=${{ secrets.MIX_PUSHER_PORT }}" >> .env
+        echo "MIX_PUSHER_APP_CLUSTER=${{ secrets.MIX_PUSHER_APP_CLUSTER }}" >> .env
+        echo "PUSHER_SCHEME=${{ secrets.PUSHER_SCHEME }}" >> .env
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
