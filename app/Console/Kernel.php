@@ -51,7 +51,7 @@ class Kernel extends ConsoleKernel
             $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily();
         }
 
-        $schedule->command('sitemap:generate')->name('Generate Sitemap')->dailyAt('00:20');
+        $schedule->command('sitemap:generate')->name('Generate Sitemap')->dailyAt('05:20');
 
         if(app()->isLocal()){
             $schedule->command('telescope:prune')->daily();
