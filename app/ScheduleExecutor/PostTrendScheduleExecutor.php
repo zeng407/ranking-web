@@ -18,7 +18,6 @@ class PostTrendScheduleExecutor
         $this->createHotTrendPost(TrendTimeRange::MONTH);
         $this->createHotTrendPost(TrendTimeRange::WEEK);
         $this->createHotTrendPost(TrendTimeRange::TODAY);
-        CacheService::rememberPostUpdatedTimestamp();
     }
 
     protected function createHotTrendPost(string $range)
