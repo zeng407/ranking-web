@@ -72,7 +72,7 @@ class CacheService
         if ($refresh) {
             Cache::forget($cacheName);
         }
-        $seconds = 60 * 5; // 5 minutes
+        $seconds = 60 * 10; // 10 minutes
         logger('cacheName: '.$cacheName . ' url: '.$url);
         $cache = Cache::remember($cacheName, $seconds , function() use ($request, $sort) {
             logger('cache miss');
