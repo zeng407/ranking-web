@@ -109,7 +109,7 @@
                       <label class="col-form-label-lg" for="title">
                         {{ $t('Title') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }">
+                      <ValidationProvider :name="$t('Title')" rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="post.title" required
                           autocomplete="off" :disabled="!isEditing || loading['SAVING_POST']"
                           :maxlength="config.post_title_size">
@@ -126,7 +126,7 @@
                       <label class="col-form-label-lg" for="description">
                         {{ $t('Description') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }">
+                      <ValidationProvider :name="$t('Description')" rules="required" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="post.description" rows="3"
                           style="resize: none" :maxlength="config.post_description_size"
                           aria-describedby="description-help" required :disabled="!isEditing || loading['SAVING_POST']">
@@ -237,15 +237,21 @@
                 <div class="col-md-3 col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label-lg">{{ $t('edit_post.rank.game_plays') }}</label>
-                    <div class="form-control form-control-disabled">
+                    <div class="">
                       <span class="pr-2 badge badge-secondary">
+                        <h6 class="m-1">
                         {{ $t('my_games.table.played_all') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
+                        </h6>
                       </span>
-                      <!-- <span class="pr-2 badge badge-secondary">
-                        {{ $t('my_games.table.played_last_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.last_week_play_count }}
-                      </span> -->
                       <span class="pr-2 badge badge-secondary">
+                        <h6 class="m-1">
+                        {{ $t('my_games.table.played_last_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.last_week_play_count }}
+                        </h6>
+                      </span>
+                      <span class="pr-2 badge badge-secondary">
+                        <h6 class="m-1">
                         {{ $t('my_games.table.played_this_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.this_week_play_count }}
+                        </h6>
                       </span>
                     </div>
                   </div>

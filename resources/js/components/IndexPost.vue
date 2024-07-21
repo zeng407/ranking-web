@@ -34,16 +34,22 @@
               <i v-else-if="post.policy == 'public'" class="fas fa-globe"></i>
             </td>
             <td class="text-break" :data-label="$t('my_games.table.play_count')">
-              <span class="pr-2 badge badge-secondary">
+              <span class="m-1 badge badge-secondary">
+                <h6 class="m-1">
                 {{ $t('my_games.table.played_all') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
+                </h6>
               </span>
               <br>
-              <!-- <span class="pr-2 badge badge-secondary">
+              <span class="m-1 badge badge-secondary">
+                <h6 class="m-1">
                 {{ $t('my_games.table.played_last_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.last_week_play_count }}
+                </h6>
               </span>
-              <br> -->
-              <span class="pr-2 badge badge-secondary">
+              <br>
+              <span class="m-1 badge badge-secondary">
+                <h6 class="m-1">
                 {{ $t('my_games.table.played_this_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.this_week_play_count }}
+                </h6>
               </span>
             </td>
             <td :data-label="$t('my_games.table.edit')">
