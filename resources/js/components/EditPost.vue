@@ -907,7 +907,7 @@ export default {
   methods: {
 
     /** Alert **/
-    showAlert(text, level = 'success', dismissSecs = 5) {
+    showAlert(text, level = 'success', dismissSecs = 10) {
       this.alertText = text;
       this.alertLevel = level;
       this.dismissCountDown = dismissSecs;
