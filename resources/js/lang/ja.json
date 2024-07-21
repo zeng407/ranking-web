@@ -77,6 +77,7 @@
     "edit_post.reset_search": "リセット",
     "edit_post.sort_by_rank": "ランクでソート",
     "edit_post.sort_by_created_time": "作成時間でソート",
+    "edit_post.batch_upload_timeout": "応答時間が長すぎます。ページを更新してください",
 
     "edit.element.upload-image": "画像をアップロード",
     "Current URL": "現在のURL",

@@ -51,7 +51,7 @@ class ElementController extends Controller
         }
 
         $path = $request->input('post_serial');
-        
+
         //rate limit for uploading
         //30MB per minute or 50 files per minute
         try{
@@ -59,7 +59,7 @@ class ElementController extends Controller
         }catch(\Exception $e){
             return api_response(ApiResponseCode::UPLOAD_SIZE_RATE_LIMIT, 422);
         }
-        
+
         $element = $this->elementService->storeUploadedFile($request->file('file'), $path, $post);
         return PostElementResource::make($element);
     }
@@ -161,7 +161,7 @@ class ElementController extends Controller
                 'error_urls' => $errors
             ]);
         }
-        
+
         return PostElementResource::collection($elements);
     }
 
@@ -222,7 +222,7 @@ class ElementController extends Controller
                 $data['video_start_second'] = null;
                 $data['video_end_second'] = null;
             }
-            
+
         }
         unset($data['url']);
         unset($data['path_id']);
@@ -250,7 +250,7 @@ class ElementController extends Controller
         $isImage = strpos($request->file('file')->getMimeType(), 'image') !== false;
 
         $pathId = $this->putFileInfoCache($path, $isImage);
-        
+
         return response()->json([
             'path_id' => $pathId,
             'url' => \Storage::url($path),
@@ -305,7 +305,7 @@ class ElementController extends Controller
     protected function isEmbedString($string)
     {
         $guess = new ElementSourceGuess();
-        $guess->guessYoutubeEmbed($string); 
+        $guess->guessYoutubeEmbed($string);
         return $guess->isYoutubeEmbed;
     }
 

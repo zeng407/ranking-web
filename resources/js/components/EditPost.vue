@@ -1371,11 +1371,18 @@ export default {
         })
         .catch((err) => {
           // console.log(err.response.data);
+          // handle 504
+          if(err.response.status === 504) {
+            this.showAlert(this.$t('edit_post.batch_upload_timeout'), 'danger');
+            this.uploadLoadingStatus('BATCH_UPLOADING', false);
+            return ;
+          }
+
           let errorUrl = '';
-          if (err.response.data.data.error_url) {
+          if (err.response?.data?.data?.error_url) {
             errorUrl = err.response.data.data.error_url + " ";
           }
-          if (err.response.data.data.elements) {
+          if (err.response?.data?.data?.elements) {
             _.forEach(err.response.data.data.elements, (data) => {
               tempRollbackData = tempRollbackData.replace(data.source_url + ',', '')
               tempRollbackData = tempRollbackData.replace(data.source_url, '')
