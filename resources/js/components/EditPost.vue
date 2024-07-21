@@ -328,6 +328,13 @@
             <nav class="navbar navbar-light bg-light pr-0 pl-0 justify-content-end">
               <div class="form-inline mr-auto p-0 col-auto">
                 <h5 class="mr-1">
+                  <span class="badge badge-secondary cursor-pointer" @click="sortByTitle">{{ $t('edit_post.sort_by_title') }}
+                  <i v-if="sorter.sort_by == 'title' && sorter.sort_dir == 'asc'" class="fa-solid fa-sort-down"></i>
+                  <i v-else-if="sorter.sort_by == 'title' && sorter.sort_dir == 'desc'" class="fa-solid fa-sort-up"></i>
+                  <i v-else class="fa-solid fa-sort"></i>
+                  </span>
+                </h5>
+                <h5 class="mr-1">
                   <span class="badge badge-secondary cursor-pointer" @click="sortByRank">{{ $t('edit_post.sort_by_rank') }}
                   <i v-if="sorter.sort_by == 'rank' && sorter.sort_dir == 'asc'" class="fa-solid fa-sort-down"></i>
                   <i v-else-if="sorter.sort_by == 'rank' && sorter.sort_dir == 'desc'" class="fa-solid fa-sort-up"></i>
@@ -734,17 +741,21 @@
                     <td>{{ element.created_at | datetime}}</td>
                     <!-- action -->
                     <td>
-                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
-                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
-                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
-                      </a>
-                      <EditElement v-if="post"
-                        :post-serial="post.serial"
-                        :element-id="String(element.id)"
-                        :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint"
-                        :upload-element-route="uploadElementEndpoint"
-                        @elementUpdated="handleElementUpdated"/>
+                      <span class="m-1">
+                        <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
+                          <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                          <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                        </a>
+                      </span>
+                      <span class="m-1">
+                        <EditElement v-if="post"
+                          :post-serial="post.serial"
+                          :element-id="String(element.id)"
+                          :source-url="element.source_url"
+                          :update-element-route="updateElementEndpoint"
+                          :upload-element-route="uploadElementEndpoint"
+                          @elementUpdated="handleElementUpdated"/>
+                      </span>
                     </td>
                   </tr>
                 </tbody>
@@ -1108,6 +1119,14 @@ export default {
       this.sorter = {
         'sort_by': 'id',
         'sort_dir': 'desc'
+      };
+      this.currentPage = 1;
+      this.loadElements(1);
+    },
+    sortByTitle: function () {
+      this.sorter = {
+        'sort_by': 'title',
+        'sort_dir': (this.sorter.sort_by === 'title' && this.sorter.sort_dir === 'asc') ? 'desc' : 'asc'
       };
       this.currentPage = 1;
       this.loadElements(1);

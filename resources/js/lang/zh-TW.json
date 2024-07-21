@@ -79,6 +79,7 @@
     "edit_post.no_element": "找不到素材",
     "edit_post.reset_search": "清除搜尋",
     "edit_post.sort_by_rank": "按排名排序",
+    "edit_post.sort_by_title": "按標題排序",
     "edit_post.sort_by_created_time": "按建立時間排序",
     "edit_post.batch_upload_timeout": "回應時間過長，請重新整理頁面",
 

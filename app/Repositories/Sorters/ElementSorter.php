@@ -11,6 +11,8 @@ class ElementSorter
 
     const RANK = 'rank';
 
+    const TITLE = 'title';
+
     public static function apply(Builder $query, $sortBy, $dir)
     {
         if ($sortBy === self::ID){
@@ -22,6 +24,8 @@ class ElementSorter
                 ->orderBy('_sort_rank_reports.rank', $dir)
                 ->orderBy('elements.id')
                 ->select('elements.*');
+        }elseif($sortBy === self::TITLE){
+            $query->orderBy('title', $dir);
         }
 
         return $query;

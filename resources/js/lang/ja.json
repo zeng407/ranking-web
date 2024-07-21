@@ -76,6 +76,7 @@
     "edit_post.no_element": "素材なし",
     "edit_post.reset_search": "リセット",
     "edit_post.sort_by_rank": "ランクでソート",
+    "edit_post.sort_by_title": "タイトルでソート",
     "edit_post.sort_by_created_time": "作成時間でソート",
     "edit_post.batch_upload_timeout": "応答時間が長すぎます。ページを更新してください",
 
