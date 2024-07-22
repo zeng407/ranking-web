@@ -18,7 +18,7 @@ class CreateGameResult
     {
         $this->gameService = $gameService;
     }
-    
+
     /**
      * Handle the event.
      *
@@ -29,12 +29,12 @@ class CreateGameResult
     {
         $userGameResult = $this->gameService->createUserGameResult(
             $event->user,
-            $event->anonymousId, 
+            $event->anonymousId,
             $event->gameRound,
             $event->candidates
         );
-        
-        if($event->post->isPublic()) {
+
+        if($event->post->isPublic() && $event->post->is_censored == false) {
             broadcast(new BroadcastNewChampion($userGameResult));
         }
     }
