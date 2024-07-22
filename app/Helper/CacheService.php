@@ -2,12 +2,15 @@
 
 namespace App\Helper;
 
+use App\Enums\PostAccessPolicy;
+use App\Http\Resources\Game\ChampionResource;
 use App\Http\Resources\Game\GameRoomUserResource;
 use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
 use App\Models\GameRoom;
 use App\Models\GameRoomUser;
 use App\Models\User;
+use App\Models\UserGameResult;
 use App\Repositories\Filters\PostFilter;
 use App\Services\HomeCarouselService;
 use App\Services\PostService;
@@ -195,6 +198,28 @@ class CacheService
         $seconds = 30; // 30 seconds
         return Cache::remember('channel_subscription_count'.$channel, $seconds, function() use ($channel) {
             return app(SoketiService::class)->getSubscriptionCount($channel);
+        });
+    }
+
+    static function rememberChampions($refresh = false)
+    {
+        if ($refresh) {
+            Cache::forget('champion');
+        }
+        $seconds = 60 * 10; // 10 minute
+        return Cache::remember('champion', $seconds, function() {
+            $games = UserGameResult::with('game', 'champion', 'loser', 'game.post')
+                ->whereHas('game.post', function ($query) {
+                    $query->where('is_censored', false)
+                        ->whereHas('post_policy', function ($query) {
+                            $query->where('access_policy', PostAccessPolicy::PUBLIC);
+                        });
+                })
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get();
+
+            return ChampionResource::collection($games);
         });
     }
 
