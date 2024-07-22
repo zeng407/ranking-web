@@ -25,6 +25,9 @@ class AddIsCensoredIntoPosts extends Migration
      */
     public function down()
     {
+        if(app()->environment() === 'testing') {
+            return;
+        }
         Schema::table('posts', function (Blueprint $table) {
             $table->dropColumn('is_censored');
         });
