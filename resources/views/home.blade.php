@@ -267,25 +267,36 @@
                     <h2 class="post-title">{{ $post['title'] }}</h2>
                   </div>
                   <div class="row no-gutters">
-                    <div class="col-6">
-                      <div class="post-element-container">
-                        @if($post['element1']['previewable'])
-                          <img src="{{$post['element1']['url']}}" @@error="onImageError('{{$post['element1']['url2']}}', $event)">
-                        @else
-                          <video src="{{$post['element1']['url']}}#t=0.01"></video>
-                        @endif
+                    <div class="row no-gutters m-0 w-100 position-relative">
+                      @if($post['is_censored'])
+                      <image-mask></image-mask>
+                      @endif
+                      <div class="col-6">
+                        <div class="post-element-container">
+                          @if($post['element1']['previewable'])
+                            <img src="{{$post['element1']['url']}}" @@error="onImageError('{{$post['element1']['url2']}}', $event)">
+                          @else
+                            <video src="{{$post['element1']['url']}}#t=0.01"></video>
+                          @endif
+                        </div>
                       </div>
-                      <h3 class="text-center mt-1 p-1 element-title">{{ $post['element1']['title'] }}</h3>
+                      <div class="col-6">
+                        <div class="post-element-container">
+                          @if($post['element2']['previewable'])
+                            <img src="{{$post['element2']['url']}}" @@error="onImageError('{{$post['element2']['url2']}}', $event)">
+                          @else
+                            <video src="{{$post['element2']['url']}}#t=0.01"></video>
+                          @endif
+                        </div>
+                      </div>
                     </div>
-                    <div class="col-6">
-                      <div class="post-element-container">
-                        @if($post['element2']['previewable'])
-                          <img src="{{$post['element2']['url']}}" @@error="onImageError('{{$post['element2']['url2']}}', $event)">
-                        @else
-                          <video src="{{$post['element2']['url']}}#t=0.01"></video>
-                        @endif
+                    <div class="row no-gutters m-0 w-100">
+                      <div class="col-6">
+                        <h5 class="text-center mt-1 p-1 element-title">{{ $post['element1']['title'] }}</h5>
                       </div>
-                      <h5 class="text-center mt-1 p-1">{{ $post['element2']['title'] }}</h5>
+                      <div class="col-6">
+                        <h5 class="text-center mt-1 p-1">{{ $post['element2']['title'] }}</h5>
+                      </div>
                     </div>
                     <div class="card-body pt-0 text-center">
                       <p class="text-break">{{ $post['description'] }}</p>

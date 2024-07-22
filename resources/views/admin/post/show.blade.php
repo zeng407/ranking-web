@@ -66,6 +66,20 @@
                                         value="{{ $post->user->name }} ({{ $post->user->email }})" disabled>
                                 </div>
 
+                                <div class="form-group row">
+                                  <div class="col-12">
+                                    <label>{{ __('瀏覽受限') }}</label>
+                                    <div>
+                                      <label class="btn btn-outline-dark" for="is_censored">是
+                                        <input type="radio" id="is_censored" name="is_censored" value="1" @if ($post->is_censored) checked @endif>
+                                      </label>
+                                      <label class="btn btn-outline-dark" for="is_not_censored">否
+                                        <input type="radio" id="is_not_censored" name="is_censored" value="0" @if (!$post->is_censored) checked @endif>
+                                      </label>
+                                    </div>
+                                  </div>
+                              </div>
+
                                 <div class="form-group">
                                     <button class="form-control btn btn-outline-primary" type="submit">更新</button>
                                 </div>

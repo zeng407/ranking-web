@@ -40,11 +40,12 @@ class PostController extends Controller
             'policy.access_policy' => [
                 'sometimes',
                 'required',
-                Rule::in([PostAccessPolicy::PUBLIC , PostAccessPolicy::PRIVATE ])
+                Rule::in([PostAccessPolicy::PUBLIC , PostAccessPolicy::PRIVATE, PostAccessPolicy::PASSWORD ])
             ],
             'policy.password' => 'sometimes|required',
             'tags' => ['sometimes', 'array', 'between:0,' . config('setting.post_max_tags')],
             'tags.*' => ['sometimes','nullable', 'string', 'max:'.config('setting.tag_name_size')],
+            'is_censored' => ['sometimes', 'boolean']
         ]);
 
         $post = Post::findOrFail($postId);
@@ -56,7 +57,7 @@ class PostController extends Controller
     public function deletePost($postId)
     {
         $post = Post::findOrFail($postId);
-        $post->delete();
+        $this->postService->delete($post);
         return redirect()->route('admin.post.index')->with('success', 'Post deleted successfully!');
     }
 }

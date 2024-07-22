@@ -50,7 +50,10 @@
                         <li class="nav-item dropdown">
                             <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                {{ Auth::user()->name }}
+                                <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
+                                    class="rounded-circle" width="24" height="24" style="object-fit: cover"
+                                    alt="{{ __('Avatar') }}">
+                                <span class="caret"></span>
                             </a>
 
                             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">

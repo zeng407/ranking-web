@@ -12,6 +12,8 @@
     "home.start": "開始投票",
     "home.rank": "排行榜",
     "home.new_champions": "冠軍出爐！",
+    "post.nsfw": "公開場所不宜瀏覽",
+    "post.nsfw.show": "顯示",
 
     "post_policy.private": "私人",
     "post_policy.public": "公開",
@@ -79,7 +81,11 @@
     "edit_post.no_element": "找不到素材",
     "edit_post.reset_search": "清除搜尋",
     "edit_post.sort_by_rank": "按排名排序",
+    "edit_post.sort_by_title": "按標題排序",
     "edit_post.sort_by_created_time": "按建立時間排序",
+    "edit_post.batch_upload_timeout": "回應時間過長，請重新整理頁面",
+
+
     "You will lose all unsaved changes!": "要取消編輯嗎?",
 
     "edit.element.upload-image": "上傳圖片",

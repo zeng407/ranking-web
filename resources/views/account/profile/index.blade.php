@@ -6,7 +6,7 @@
 
 @section('content')
     <div class="container-fluid">
-        <div class="row">
+        <div class="row mt-2">
             <div class="d-none d-md-block col-md-2">
                 @include('account.profile.partial.tabs', ['active' => 'profile'])
             </div>

@@ -12,6 +12,8 @@
     "home.start": "スタート",
     "home.rank": "ランク",
     "home.new_champions": "新しいチャンピオン！",
+    "post.nsfw": "NSFW",
+    "post.nsfw.show": "表示",
 
     "my_games.title": "私の投票",
     "my_games.new": "新しい投票",
@@ -76,7 +78,9 @@
     "edit_post.no_element": "素材なし",
     "edit_post.reset_search": "リセット",
     "edit_post.sort_by_rank": "ランクでソート",
+    "edit_post.sort_by_title": "タイトルでソート",
     "edit_post.sort_by_created_time": "作成時間でソート",
+    "edit_post.batch_upload_timeout": "応答時間が長すぎます。ページを更新してください",
 
     "edit.element.upload-image": "画像をアップロード",
     "Current URL": "現在のURL",

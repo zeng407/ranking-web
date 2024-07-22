@@ -109,7 +109,7 @@
                       <label class="col-form-label-lg" for="title">
                         {{ $t('Title') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }">
+                      <ValidationProvider :name="$t('Title')" rules="required" v-slot="{ errors }">
                         <input type="text" class="form-control" id="title" v-model="post.title" required
                           autocomplete="off" :disabled="!isEditing || loading['SAVING_POST']"
                           :maxlength="config.post_title_size">
@@ -126,7 +126,7 @@
                       <label class="col-form-label-lg" for="description">
                         {{ $t('Description') }}
                       </label>
-                      <ValidationProvider rules="required" v-slot="{ errors }">
+                      <ValidationProvider :name="$t('Description')" rules="required" v-slot="{ errors }">
                         <textarea class="form-control" id="description" v-model="post.description" rows="3"
                           style="resize: none" :maxlength="config.post_description_size"
                           aria-describedby="description-help" required :disabled="!isEditing || loading['SAVING_POST']">
@@ -237,15 +237,21 @@
                 <div class="col-md-3 col-sm-6">
                   <div class="form-group">
                     <label class="col-form-label-lg">{{ $t('edit_post.rank.game_plays') }}</label>
-                    <div class="form-control form-control-disabled">
+                    <div class="">
                       <span class="pr-2 badge badge-secondary">
+                        <h6 class="m-1">
                         {{ $t('my_games.table.played_all') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
+                        </h6>
                       </span>
-                      <!-- <span class="pr-2 badge badge-secondary">
-                        {{ $t('my_games.table.played_last_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.last_week_play_count }}
-                      </span> -->
                       <span class="pr-2 badge badge-secondary">
+                        <h6 class="m-1">
+                        {{ $t('my_games.table.played_last_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.last_week_play_count }}
+                        </h6>
+                      </span>
+                      <span class="pr-2 badge badge-secondary">
+                        <h6 class="m-1">
                         {{ $t('my_games.table.played_this_week') }}&nbsp;<i class="fas fa-play-circle"></i>&nbsp;{{ post.this_week_play_count }}
+                        </h6>
                       </span>
                     </div>
                   </div>
@@ -321,6 +327,13 @@
 
             <nav class="navbar navbar-light bg-light pr-0 pl-0 justify-content-end">
               <div class="form-inline mr-auto p-0 col-auto">
+                <h5 class="mr-1">
+                  <span class="badge badge-secondary cursor-pointer" @click="sortByTitle">{{ $t('edit_post.sort_by_title') }}
+                  <i v-if="sorter.sort_by == 'title' && sorter.sort_dir == 'asc'" class="fa-solid fa-sort-down"></i>
+                  <i v-else-if="sorter.sort_by == 'title' && sorter.sort_dir == 'desc'" class="fa-solid fa-sort-up"></i>
+                  <i v-else class="fa-solid fa-sort"></i>
+                  </span>
+                </h5>
                 <h5 class="mr-1">
                   <span class="badge badge-secondary cursor-pointer" @click="sortByRank">{{ $t('edit_post.sort_by_rank') }}
                   <i v-if="sorter.sort_by == 'rank' && sorter.sort_dir == 'asc'" class="fa-solid fa-sort-down"></i>
@@ -728,17 +741,21 @@
                     <td>{{ element.created_at | datetime}}</td>
                     <!-- action -->
                     <td>
-                      <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
-                        <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
-                        <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
-                      </a>
-                      <EditElement v-if="post"
-                        :post-serial="post.serial"
-                        :element-id="String(element.id)"
-                        :source-url="element.source_url"
-                        :update-element-route="updateElementEndpoint"
-                        :upload-element-route="uploadElementEndpoint"
-                        @elementUpdated="handleElementUpdated"/>
+                      <span class="m-1">
+                        <a class="btn btn-danger fa-pull-right" @click="deleteElement(element)">
+                          <i class="fas fa-trash" v-if="!isDeleting(element)"></i>
+                          <i class="spinner-border spinner-border-sm" v-if="isDeleting(element)"></i>
+                        </a>
+                      </span>
+                      <span class="m-1">
+                        <EditElement v-if="post"
+                          :post-serial="post.serial"
+                          :element-id="String(element.id)"
+                          :source-url="element.source_url"
+                          :update-element-route="updateElementEndpoint"
+                          :upload-element-route="uploadElementEndpoint"
+                          @elementUpdated="handleElementUpdated"/>
+                      </span>
                     </td>
                   </tr>
                 </tbody>
@@ -907,7 +924,7 @@ export default {
   methods: {
 
     /** Alert **/
-    showAlert(text, level = 'success', dismissSecs = 5) {
+    showAlert(text, level = 'success', dismissSecs = 10) {
       this.alertText = text;
       this.alertLevel = level;
       this.dismissCountDown = dismissSecs;
@@ -1102,6 +1119,14 @@ export default {
       this.sorter = {
         'sort_by': 'id',
         'sort_dir': 'desc'
+      };
+      this.currentPage = 1;
+      this.loadElements(1);
+    },
+    sortByTitle: function () {
+      this.sorter = {
+        'sort_by': 'title',
+        'sort_dir': (this.sorter.sort_by === 'title' && this.sorter.sort_dir === 'asc') ? 'desc' : 'asc'
       };
       this.currentPage = 1;
       this.loadElements(1);
@@ -1371,11 +1396,18 @@ export default {
         })
         .catch((err) => {
           // console.log(err.response.data);
+          // handle 504
+          if(err.response.status === 504) {
+            this.showAlert(this.$t('edit_post.batch_upload_timeout'), 'danger');
+            this.uploadLoadingStatus('BATCH_UPLOADING', false);
+            return ;
+          }
+
           let errorUrl = '';
-          if (err.response.data.data.error_url) {
+          if (err.response?.data?.data?.error_url) {
             errorUrl = err.response.data.data.error_url + " ";
           }
-          if (err.response.data.data.elements) {
+          if (err.response?.data?.data?.elements) {
             _.forEach(err.response.data.data.elements, (data) => {
               tempRollbackData = tempRollbackData.replace(data.source_url + ',', '')
               tempRollbackData = tempRollbackData.replace(data.source_url, '')

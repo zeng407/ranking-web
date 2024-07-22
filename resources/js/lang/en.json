@@ -7,6 +7,8 @@
     "home.start": "Start",
     "home.rank": "Rank",
     "home.new_champions": "New Champions!",
+    "post.nsfw": "NSFW",
+    "post.nsfw.show": "show",
 
     "my_games.title": "My Votes",
     "my_games.new": "New vote",
@@ -71,7 +73,11 @@
     "edit_post.no_element": "No material",
     "edit_post.reset_search": "Reset",
     "edit_post.sort_by_rank": "Sort by rank",
+    "edit_post.sort_by_title": "Sort by title",
     "edit_post.sort_by_created_time": "Sort by Created Time",
+    "edit_post.batch_upload_timeout": "Response time is too long, please refresh the page",
+
+
 
     "edit.element.upload-image": "Upload Image",
 
