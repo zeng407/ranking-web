@@ -49,16 +49,26 @@ trait FileHelper
 
     protected function moveUploadedFile(UploadedFile $file, string $directory): string|bool
     {
-        $image = new \Imagick($file->getRealPath());
-        $mineType = $image->getImageMimeType();
-        if($mineType){
-            $extension = '.' . explode('/', $mineType)[1];
-            // x-webp to webp
-            if($extension === '.x-webp'){
-                $extension = '.webp';
+        if($this->isImageFile($file->getMimeType())){
+            try{
+                $image = new \Imagick($file->getRealPath());
+                $mineType = $image->getImageMimeType();
+            }catch (\Exception $exception){
+                report($exception);
+                $mineType = null;
             }
-        }else {
-            $extension = null;
+            if($mineType){
+                $extension = '.' . explode('/', $mineType)[1];
+                // x-webp to webp
+                if($extension === '.x-webp'){
+                    $extension = '.webp';
+                }
+            } else {
+                $extension = null;
+            }
+        }else{
+            $extension = $file->getMimeType();
+            $extension = $extension ? ('.' . explode('/', $extension)[1]) : '';
         }
         $path = $file->storeAs($directory, $this->generateFileName(). $extension);
         Storage::setVisibility($path, 'public');
@@ -99,5 +109,13 @@ trait FileHelper
         }
 
         return $content;
+    }
+
+    protected function isImageFile($mimeType)
+    {
+        if(!$mimeType){
+            return false;
+        }
+        return strpos($mimeType, 'image') !== false;
     }
 }
