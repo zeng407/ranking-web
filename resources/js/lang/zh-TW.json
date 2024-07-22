@@ -12,7 +12,8 @@
     "home.start": "開始投票",
     "home.rank": "排行榜",
     "home.new_champions": "冠軍出爐！",
-    "post.nsfw": "公開場所不宜瀏覽",
+    "post.nsfw": "限制級內容",
+    "post.nsfw.alert": "未滿18歲請勿瀏覽",
     "post.nsfw.show": "顯示",
 
     "post_policy.private": "私人",

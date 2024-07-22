@@ -751,8 +751,13 @@
 .schrollbar-thin::-webkit-scrollbar {
     scrollbar-width: thin;
 }
-.hide-scrollbar::-webkit-scrollbar {
-    display: none;
+.hide-scrollbar {
+    // Hide scrollbar for Chrome, Safari
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    // Hide scrollbar for Firefox
+    scrollbar-width: none;
 }
 .hide-scrollbar-md::-webkit-scrollbar {
     @media (max-width: 768px) {

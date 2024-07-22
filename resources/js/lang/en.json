@@ -8,7 +8,8 @@
     "home.rank": "Rank",
     "home.new_champions": "New Champions!",
     "post.nsfw": "NSFW",
-    "post.nsfw.show": "show",
+    "post.nsfw.alert": "Do not view if you are under 18 years old",
+    "post.nsfw.show": "view",
 
     "my_games.title": "My Votes",
     "my_games.new": "New vote",
