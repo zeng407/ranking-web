@@ -23,15 +23,15 @@ class Kernel extends ConsoleKernel
         $schedule->command('make:post-trend')->hourlyAt(5)->withoutOverlapping(120);
 
         $schedule->call(function(){
-            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'day']));
-            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'week']));
+            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'day', 'page' => 1]));
+            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'week', 'page' => 1]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'week', 'page' => 2]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'week', 'page' => 3]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'week', 'page' => 4]));
-            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'month']));
-            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'year']));
-            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'all']));
-            \Http::get(route('api.public-post.index', ['sort_by' => 'new']));
+            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'month', 'page' => 1]));
+            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'year', 'page' => 1]));
+            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'all', 'page' => 1]));
+            \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 1]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 2]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 3]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 4]));
