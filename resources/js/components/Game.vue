@@ -308,7 +308,6 @@ export default {
       if (this.gameRoomSerial) {
         const channel = "game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial;
         Echo.channel(channel).listen(".GameBet", (data) => {
-          console.log(data);
           this.gameRoomVotes = data;
         });
       }

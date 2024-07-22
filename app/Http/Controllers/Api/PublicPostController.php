@@ -48,6 +48,9 @@ class PublicPostController extends Controller
             ->whereHas('game.post.post_policy', function ($query) {
                 $query->where('access_policy', PostAccessPolicy::PUBLIC);
             })
+            ->whereHas('game.post', function ($query) {
+                $query->where('is_censored', false);
+            })
             ->orderByDesc('id')
             ->cursorPaginate(5);
 
