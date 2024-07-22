@@ -28,6 +28,7 @@ class Post extends Model
         'title',
         'serial',
         'description',
+        'is_censored'
     ];
 
     protected $with = ['post_policy', 'tags', 'elements'];

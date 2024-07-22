@@ -49,6 +49,7 @@ class PublicPostResource extends JsonResource
             'play_count' => $this->games()->count(),
             'elements_count' => $elementsCount,
             'tags' => $this->tags->pluck('name')->toArray(),
+            'is_censored' => $this->is_censored,
         ];
     }
 
