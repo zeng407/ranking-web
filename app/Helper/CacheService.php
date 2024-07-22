@@ -25,60 +25,49 @@ class CacheService
 {
     static public function rememberAnnouncement($data = null, $minutes = 60, $refresh = false)
     {
-        if ($refresh) {
-            Cache::forget('announcement');
-        }
+        $key = 'announcement';
         $seconds = $minutes * 60;
-        return Cache::remember('announcement', $seconds, function() use ($data) {
+
+        return static::remember($key, $seconds, function() use ($data) {
             return $data;
-        });
+        }, $refresh);
     }
 
     static public function rememberUserRole(User $user, $refresh = false)
     {
-        if ($refresh) {
-            Cache::forget('user_role_' . $user->id);
-        }
+        $key = 'user_role_' . $user->id;
         $seconds = 60 * 60;
-        return Cache::remember('user_role_' . $user->id, $seconds, function() use ($user) {
+
+        return static::remember($key, $seconds, function() use ($user) {
             return $user->roles()->pluck('slug')->toArray();
-        });
+        }, $refresh);
     }
 
     static public function rememberHotTags($limit = 10, $refresh = false)
     {
-        if ($refresh) {
-            Cache::forget('hot_tags');
-        }
-        $seconds = 60 * 60; // 1 hour
-        return Cache::remember('hot_tags', $seconds, function() use($limit) {
+        $key = 'hot_tags';
+        $seconds = 60 * 60;
+        return static::remember($key, $seconds, function() use ($limit) {
             return app(TagService::class)->getHotTags($limit);
-        });
+        }, $refresh);
     }
 
     static public function rememberTags(string $keywork = '', $refresh = false)
     {
         $key = 'post_tags_'.$keywork;
-        if ($refresh) {
-            Cache::forget($key);
-        }
         $seconds = 10 * 60; // 10 minutes
-        return Cache::remember($key, $seconds, function() use ($keywork) {
+        return static::remember($key, $seconds, function() use ($keywork) {
             return app(TagService::class)->get($keywork);
-        });
+        }, $refresh);
+
     }
 
     static public function rememberPosts(Request $request, $sort, $refresh = false)
     {
         $url = $request->getQueryString();
         $cacheName = Cache::get('post_update_at').'/'.md5($url);
-        if ($refresh) {
-            Cache::forget($cacheName);
-        }
         $seconds = 60 * 10; // 10 minutes
-        logger('cacheName: '.$cacheName . ' url: '.$url);
-        $cache = Cache::remember($cacheName, $seconds , function() use ($request, $sort) {
-            logger('cache miss');
+        return static::remember($cacheName, $seconds, function() use ($request, $sort) {
             $posts = app(PostService::class)->getList([
                 PostFilter::PUBLIC => true,
                 PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
@@ -92,32 +81,26 @@ class CacheService
                 $posts[$key] = PublicPostResource::make($post)->toArray($request);
             }
             return $posts;
-        });
-
-        return $cache;
+        }, $refresh);
     }
 
 
     static public function rememberPostUpdatedTimestamp($fresh = false)
     {
-        if ($fresh) {
-            Cache::forget('post_update_at');
-        }
+        $key = 'post_update_at';
         $seconds = 60 * 60 ; // 1 hour
-        return Cache::remember('post_update_at', $seconds, function() {
+        return static::remember($key, $seconds, function() {
             return now()->unix().rand(0, 10000);
-        });
+        }, $fresh);
     }
 
     static public function rememberCarousels($refresh = false)
     {
-        if ($refresh) {
-            self::clearCarousels();
-        }
+        $key = 'carousels';
         $seconds = 60 * 60; // 1 hour
-        return Cache::remember('carousels', $seconds, function() {
+        return static::remember($key, $seconds, function() {
             return app(HomeCarouselService::class)->getHomeCarouselItems();
-        });
+        }, $refresh);
     }
 
     static public function clearCarousels()
@@ -155,15 +138,11 @@ class CacheService
         return Cache::has('waiting_job:update_game_bet'.$gameRoom->serial);
     }
 
-
-
     static public function rememberGameBetRank(GameRoom $gameRoom, $refresh = false)
     {
-        if ($refresh) {
-            Cache::forget('game_bet_rank'.$gameRoom->serial);
-        }
+        $key = 'game_bet_rank'.$gameRoom->serial;
         $seconds = 60 ; // 1 minute
-        return Cache::remember('game_bet_rank'.$gameRoom->serial, $seconds, function()use($gameRoom){
+        return static::remember($key, $seconds, function() use ($gameRoom) {
             $mapData = function(Collection $collection){
                 return $collection->map(function($gameUser) {
                     return GameRoomUserResource::make($gameUser)->toArray(request());
@@ -176,7 +155,7 @@ class CacheService
                 'top_10' => $top10,
                 'bottom_10' => $bottom10
             ];
-        });
+        }, $refresh);
     }
 
     static function putUpdateGameUserNameThreashold(GameRoomUser $gameRoomUser)
@@ -192,22 +171,18 @@ class CacheService
 
     static function rememebrChannelSubscriptionCount($channel, $refresh = false)
     {
-        if ($refresh) {
-            Cache::forget('channel_subscription_count'.$channel);
-        }
-        $seconds = 30; // 30 seconds
-        return Cache::remember('channel_subscription_count'.$channel, $seconds, function() use ($channel) {
+        $key = 'channel_subscription_count'.$channel;
+        $seconds = 30;
+        return static::remember($key, $seconds, function() use ($channel) {
             return app(SoketiService::class)->getSubscriptionCount($channel);
-        });
+        }, $refresh);
     }
 
     static function rememberChampions($refresh = false)
     {
-        if ($refresh) {
-            Cache::forget('champion');
-        }
+        $key = 'champion';
         $seconds = 60 * 10; // 10 minute
-        return Cache::remember('champion', $seconds, function() {
+        return static::remember($key, $seconds, function() {
             $games = UserGameResult::with('game', 'champion', 'loser', 'game.post')
                 ->whereHas('game.post', function ($query) {
                     $query->where('is_censored', false)
@@ -220,6 +195,20 @@ class CacheService
                 ->get();
 
             return ChampionResource::collection($games);
+        }, $refresh);
+    }
+
+    static function remember($key, $seconds, callable $callback, $refresh)
+    {
+        if ($refresh) {
+            $data = $callback();
+            Cache::forget($key);
+            return Cache::remember($key, $seconds, function() use ($data) {
+                return $data;
+            });
+        }
+        return Cache::remember($key, $seconds, function() use ($callback) {
+            return $callback();
         });
     }
 
