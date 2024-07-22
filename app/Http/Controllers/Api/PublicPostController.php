@@ -44,17 +44,7 @@ class PublicPostController extends Controller
 
     public function getChampions(Request $request)
     {
-        $games = UserGameResult::with('game', 'champion', 'loser', 'game.post')
-            ->whereHas('game.post', function ($query) {
-                $query->where('is_censored', false)
-                    ->whereHas('post_policy', function ($query) {
-                        $query->where('access_policy', PostAccessPolicy::PUBLIC);
-                    });
-            })
-            ->orderByDesc('id')
-            ->cursorPaginate(5);
-
-        return ChampionResource::collection($games);
+        return CacheService::rememberChampions();
     }
 
     public function getComments(Request $request, Post $post)

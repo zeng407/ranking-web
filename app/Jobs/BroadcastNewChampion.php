@@ -11,7 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Broadcasting\Channel;
 
 
-class BroadcastNewChampion implements ShouldBroadcastNow
+class BroadcastNewChampion implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets;
 
