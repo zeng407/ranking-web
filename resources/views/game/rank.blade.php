@@ -23,16 +23,16 @@
         <div class="container-fuild" v-cloak>
             <div class="row m-0">
                 {{-- left part: ads --}}
-                <div class="d-none d-lg-block col-lg-2">
+                {{-- <div class="d-none d-lg-block col-lg-2">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
-                  <div class="p-lg-2 p-xl-3">
+                  <div class="p-lg-1 p-xl-2">
                     @include('ads.rank_ad_sides')
                   </div>
                   @endif
-                </div>
+                </div> --}}
 
                 {{-- main part --}}
-                <div class="col-12 col-lg-8">
+                <div class="col-12 col-lg-10">
                     @if (!$embed)
                         <div class="row mb-3">
                             <div class="col-10">
@@ -563,7 +563,7 @@
                 {{-- right part: ads --}}
                 <div class="d-none d-lg-block col-lg-2">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
-                    <div class="p-lg-2 p-xl-3">
+                    <div class="p-lg-1 p-xl-2 sticky-top-rank-tab">
                         @include('ads.rank_ad_sides')
                     </div>
                   @endif
