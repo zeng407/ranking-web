@@ -830,6 +830,21 @@
     transform: translateX(-30px);
 }
 
+.slide-in-up-enter-active {
+    animation: slide-in-up 0.2s ease;
+}
+.slide-in-up-leave-active {
+    animation: slide-in-up 0.2s ease reverse;
+}
+@keyframes slide-in-up {
+    0% {
+        transform: translateY(100%);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
 .slide-in-left-enter-active {
     animation: slide-in-left 0.2s ease;
 }
@@ -883,6 +898,13 @@
     }
 }
 
+.sticky-top-home-ad {
+    width: 100%;
+    top: 60px;
+    position: -webkit-sticky;
+    position: sticky;
+    z-index: 999;
+}
 
 .sticky-top-rank-ad {
     width: 100%;

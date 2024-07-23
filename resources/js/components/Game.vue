@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 
 
 const MD_WIDTH_SIZE = 576;
-const MOBILE_HEIGHT = 740;
+const MOBILE_HEIGHT = 700;
 export default {
   beforeMount() {
     this.loadGameSerialFromCookie();
@@ -26,6 +26,7 @@ export default {
     this.enableTooltip();
     this.registerResizeEvent();
     this.resizeElementHeight();
+    this.registerScrollEvent();
   },
   components: {
     ICountUp
@@ -119,6 +120,7 @@ export default {
       isListeningGameBet: false,
       showGameRoomVotes: false,
       sortByTop: true,
+      showCreateRoomButton: false,
     };
   },
   computed: {
@@ -491,7 +493,7 @@ export default {
               this.gameRoom = response.data.data;
               this.gameBetRanks = this.gameRoom.ranks;
             });
-        }, 30 * 1000);
+        }, 5 * 1000);
       }
     },
     isSameUser(rank) {
@@ -802,7 +804,7 @@ export default {
             .promise();
           let adTopPosition = titleHeight + screenCenterPosition;
           $("#google-ad-container").animate({ top: adTopPosition });
-          let offset = 30 + 36;
+          let offset = 30;
           let adBottomPosition = -$("#right-player").height() - offset + screenCenterPosition;
           $("#google-ad2").animate({ top: adBottomPosition });
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
@@ -918,7 +920,8 @@ export default {
           let adTopPosition = titleHeight + screenCenterPosition + $("#left-player").height() + offset;
           $("#google-ad-container").animate({ top: adTopPosition });
           let adBottomPosition = screenCenterPosition;
-          $("#google-ad2").animate({ top: adBottomPosition - 44 });
+          let ad2Offset = 0;
+          $("#google-ad2").animate({ top: adBottomPosition - ad2Offset });
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
             sendWinnerData();
@@ -1447,6 +1450,22 @@ export default {
     },
     registerResizeEvent() {
       window.addEventListener("resize", this.resizeElementHeight);
+    },
+    registerScrollEvent() {
+      window.addEventListener("scroll", () => {
+        if (!this.isMobileScreen) {
+          return;
+        }
+        let ad2Top = $("#google-ad2").offset().top;
+        let offset = 50;
+
+        // if scroll reach the bottom of the ad2
+        if (window.scrollY + window.innerHeight >= ad2Top + offset) {
+          this.showCreateRoomButton = true;
+        }else{
+          this.showCreateRoomButton = false;
+        }
+      });
     },
 
   },

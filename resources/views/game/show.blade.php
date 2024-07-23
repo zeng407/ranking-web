@@ -544,7 +544,7 @@
           </div>
         </div>
 
-        <div v-if="game && gameSerial && !finishingGame" class="d-flex justify-content-end my-2" id="create-game">
+        <div v-if="game && gameSerial && !finishingGame && !isMobileScreen" class="d-flex justify-content-end my-2" id="create-game">
           <create-game-room
             game-room-route="{{route('game.room.index', '_serial')}}"
             get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
@@ -580,6 +580,20 @@
           </div>
         @endif
 
+        <div v-if="game && gameSerial && !finishingGame && isMobileScreen"
+          class="position-fixed"
+          id="create-game-mobile" style="right:10px; bottom:20px"
+          >
+          <transition-group name="slide-in-up">
+            <create-game-room key="create-game-room" v-show="showCreateRoomButton"
+            game-room-route="{{route('game.room.index', '_serial')}}"
+            get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
+            create-game-room-endpoint="{{route('api.game-room.create')}}"
+            :get-game-serial="getGameSerial"
+            :handle-created-room="handleCreatedRoom"
+            ></create-game-room>
+          </transition-group>
+        </div>
 
         <!-- Modal, Game panel -->
         <div class="modal fade" id="gameSettingPanel" data-backdrop="static" data-keyboard="false" tabindex="-1"
@@ -752,7 +766,6 @@
             </div>
           </div>
         </div>
-
     </div>
   </game>
 
