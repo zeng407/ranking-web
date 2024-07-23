@@ -582,15 +582,16 @@
 
         <div v-if="game && gameSerial && !finishingGame && isMobileScreen"
           class="position-fixed"
-          id="create-game-mobile" style="right:10px; bottom:20px"
+          id="create-game-mobile" style="right:10px; bottom:20px; z-index:1050"
+          {{-- z-index:1050 to prevent modal mock in front of modal --}}
           >
           <transition-group name="slide-in-up">
             <create-game-room key="create-game-room" v-show="showCreateRoomButton"
-            game-room-route="{{route('game.room.index', '_serial')}}"
-            get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
-            create-game-room-endpoint="{{route('api.game-room.create')}}"
-            :get-game-serial="getGameSerial"
-            :handle-created-room="handleCreatedRoom"
+              game-room-route="{{route('game.room.index', '_serial')}}"
+              get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
+              create-game-room-endpoint="{{route('api.game-room.create')}}"
+              :get-game-serial="getGameSerial"
+              :handle-created-room="handleCreatedRoom"
             ></create-game-room>
           </transition-group>
         </div>
