@@ -152,7 +152,7 @@
               </div>
 
             </div>
-            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-scroll hide-scrollbar">
+            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-x-scroll hide-scrollbar">
               <transition-group name="list" tag="div" class="row flex-nowrap ml-0">
                 <div class="card champion-card-container shadow col-auto list-item m-2" v-for="championResult in champions" :key="championResult.key" v-cloak>
                   <div class="card-body">
@@ -205,11 +205,11 @@
             <div class="d-flex justify-content-between align-items-center flex-nowrap mt-1">
               <div class="form-inline">
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                  <label class="btn btn-outline-dark">
+                  <label class="btn btn-outline-dark white-space-no-wrap">
                     <input type="radio" v-model="filters.sort_by" value="hot">
                     <i class="fas fa-fire-alt"></i>&nbsp;@{{ $t('Hot') }}
                   </label>
-                  <label class="btn btn-outline-dark mr-2">
+                  <label class="btn btn-outline-dark mr-2 white-space-no-wrap">
                     <input type="radio" v-model="filters.sort_by" value="new">
                     <i class="fas fa-sort-amount-down-alt"></i>&nbsp;@{{ $t('New') }}
                   </label>
@@ -319,7 +319,7 @@
                         <span class="pr-2">
                           <i class="fas fa-play-circle"></i>&nbsp;{{ $post['play_count'] }}
                         </span>
-                        <small class="text-muted">{{ $post['created_at'] }}</small>
+                        <small class="text-muted white-space-no-wrap">{{ $post['created_at'] }}</small>
                       </span>
                     </div>
                   </div>
