@@ -315,7 +315,7 @@
                       <span class="mt-2 card-text float-left">
                         <share-link id="{{$post['serial']}}" url="{{route('game.show',$post['serial'])}}" text="{{__('Share')}}" after-copy-text="{{__('Copied link')}}"></share-link>
                       </span>
-                      <span class="mt-2 card-text float-right">
+                      <span class="mt-2 card-text float-right white-space-no-wrap">
                         <span class="pr-2">
                           <i class="fas fa-play-circle"></i>&nbsp;{{ $post['play_count'] }}
                         </span>

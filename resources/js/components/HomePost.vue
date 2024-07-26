@@ -51,11 +51,11 @@
               {{$t('Copied link')}}
             </b-popover>
           </span>
-          <span class="mt-2 card-text float-right">
+          <span class="mt-2 card-text float-right white-space-no-wrap">
             <span class="pr-2">
               <i class="fas fa-play-circle"></i>&nbsp;{{ post.play_count }}
             </span>
-            <small class="text-muted">{{ post.created_at | datetime }}</small>
+            <small class="text-muted white-space-no-wrap">{{ post.created_at | datetime }}</small>
           </span>
         </div>
       </div>
