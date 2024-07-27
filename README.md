@@ -1,3 +1,6 @@
+![laravel build](https://github.com/zeng407/ranking-web/actions/workflows/laravel.yml/badge.svg)
+![laravel build](https://github.com/zeng407/ranking-web/actions/workflows/node.js.yml/badge.svg)
+
 # Tools
 - [Docker](https://www.docker.com/) - Docker is an open platform for developing, shipping, and running applications. It allows you to package your application and its dependencies into a standardized unit called a container, which can be deployed on any operating system.
 - PHP 8.2
