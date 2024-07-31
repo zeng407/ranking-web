@@ -57,6 +57,10 @@
                                             @if ($post->post_policy->access_policy == \App\Enums\PostAccessPolicy::PRIVATE) selected @endif>
                                             {{ \App\Enums\PostAccessPolicy::trans(\App\Enums\PostAccessPolicy::PRIVATE) }}
                                         </option>
+                                        <option value="{{ \App\Enums\PostAccessPolicy::PASSWORD }}"
+                                            @if ($post->post_policy->access_policy == \App\Enums\PostAccessPolicy::PASSWORD) selected @endif>
+                                            {{ \App\Enums\PostAccessPolicy::trans(\App\Enums\PostAccessPolicy::PASSWORD) }}
+                                        </option>
                                     </select>
                                 </div>
 
