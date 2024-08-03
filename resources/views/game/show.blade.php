@@ -140,9 +140,10 @@
                 <transition name="slide-in-left">
                   <div v-if="animationShowLeftPlayer" class="card game-player left-player" id="left-player">
                     <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
-                      <div v-show="!leftImageLoaded" class="text-center align-content-center" :style="{ height: elementHeight + 'px' }">
-                        <i class="fas fa-3x fa-spinner fa-spin" ></i>
-                      </div>
+                      <img
+                        v-show="!leftImageLoaded"
+                        :src="getLowThumbUrl(le)"
+                        :style="{ height: this.elementHeight + 'px' }">
                       <viewer ref="leftViewer" :options="viewerOptions">
                         <img
                           v-show="leftImageLoaded"
@@ -252,9 +253,10 @@
                 <transition :name="isMobileScreen ? 'slide-in-left' : 'slide-in-right'">
                   <div v-if="animationShowRightPlayer" class="card game-player right-player" id="right-player" :class="{ 'flex-column-reverse': isMobileScreen, 'mb-4': isMobileScreen}">
                     <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
-                      <div v-show="!rightImageLoaded" class="text-center align-content-center" :style="{ height: elementHeight + 'px' }">
-                        <i class="fas fa-3x fa-spinner fa-spin" ></i>
-                      </div>
+                      <img
+                        v-show="!rightImageLoaded"
+                        :src="getLowThumbUrl(re)"
+                        :style="{ height: elementHeight + 'px' }">
                       <viewer ref="rightViewer" :options="viewerOptions">
                         <img
                           v-show="rightImageLoaded"
