@@ -15,6 +15,9 @@ trait FileHelper
         $fileInfo = pathinfo($url);
         $basename = $this->generateFileName();
         if (isset ($fileInfo['extension'])) {
+            // trim query string
+            $fileInfo['extension'] = explode('?', $fileInfo['extension'])[0];
+            
             $basename .= '.' . $fileInfo['extension'];
         }
 
@@ -25,27 +28,6 @@ trait FileHelper
         }
         return new StoragedImage($url, $path, $fileInfo);
     }
-
-    protected function downloadVideo(string $url, string $directory): ?StoragedImage
-    {
-        $content = $this->getContent($url);
-        $fileInfo = pathinfo($url);
-        $basename = $this->generateFileName();
-
-        // check valid extension
-        if (isset ($fileInfo['extension']) && in_array($fileInfo['extension'], ['mp4', 'webm', 'mov', 'avi', 'flv', 'wmv', 'mkv'])) {
-            dump($fileInfo);
-            $basename .= '.' . $fileInfo['extension'];
-        }
-
-        $path = rtrim($directory, '/') . '/' . $basename;
-        $isSuccess = Storage::put($path, $content, 'public');
-        if (!$isSuccess) {
-            return null;
-        }
-        return new StoragedImage($url, $path, $fileInfo);
-    }
-
 
     protected function moveUploadedFile(UploadedFile $file, string $directory): string|bool
     {
