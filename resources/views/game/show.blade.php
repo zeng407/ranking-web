@@ -143,6 +143,7 @@
                       <img
                         v-show="!leftImageLoaded"
                         :src="getLowThumbUrl(le)"
+                        :key="getLowThumbUrl(le)"
                         :style="{ height: this.elementHeight + 'px' }">
                       <viewer ref="leftViewer" :options="viewerOptions">
                         <img
@@ -256,6 +257,7 @@
                       <img
                         v-show="!rightImageLoaded"
                         :src="getLowThumbUrl(re)"
+                        :key="getLowThumbUrl(re)"
                         :style="{ height: elementHeight + 'px' }">
                       <viewer ref="rightViewer" :options="viewerOptions">
                         <img
