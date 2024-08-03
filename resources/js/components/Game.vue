@@ -1427,6 +1427,9 @@ export default {
         return element.mediumthumb_url ? element.mediumthumb_url : element.thumb_url;
       }
     },
+    getLowThumbUrl(element) {
+      return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
+    },
     enableTooltip(){
       Vue.nextTick(() => {
         $(function () {
@@ -1467,7 +1470,6 @@ export default {
         }
       });
     },
-
   },
 };
 </script>
