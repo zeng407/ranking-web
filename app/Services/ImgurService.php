@@ -5,31 +5,37 @@ namespace App\Services;
 use App\Models\ImgurAlbum;
 use App\Models\ImgurImage;
 use Http;
+use Cache;
 
-class ImgurService
+class ImgurService implements InterfaceOauthService
 {
-    protected $client;
 
-    public function __construct()
+    protected function getClient()
     {
-        $this->client = Http::baseUrl('https://api.imgur.com/3/');
+        return Http::baseUrl('https://api.imgur.com/3/');
     }
-    
+
     public function getAccountInfo(string $username)
     {
-        $this->client->withHeaders([
+        $client = $this->getClient();
+        $client->withHeaders([
             'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
         ]);
-        $res = $this->client->get('account/' . $username);
+        $res = $client->get('account/' . $username);
         return json_decode($res->getBody()->getContents(), true);
     }
 
-    public function createAlubm(string $title, string $description)
+    public function createAlbum(string $title, string $description)
     {
-        $this->client->withHeaders([
-            'Authorization' => 'Bearer ' . config('services.imgur.access_token'),
+        $client = $this->getClient();
+        $client->withHeaders([
+            'Authorization' => 'Bearer ' . $this->getAccessToken(),
         ]);
-        $res = $this->client->post('album', [
+        $res = $client->post('album', [
+            'title' => $title,
+            'description' => $description,
+        ]);
+        $res = $client->post('album', [
             'title' => $title,
             'description' => $description,
         ]);
@@ -39,10 +45,11 @@ class ImgurService
 
     public function deleteAlbum(string $albumId)
     {
-        $this->client->withHeaders([
-            'Authorization' => 'Bearer ' . config('services.imgur.access_token'),
+        $client = $this->getClient();
+        $client->withHeaders([
+            'Authorization' => 'Bearer ' . $this->getAccessToken(),
         ]);
-        $res = $this->client->delete('album/' . $albumId);
+        $res = $client->delete('album/' . $albumId);
         $res = json_decode($res->getBody()->getContents(), true);
         if ($res['success']) {
             ImgurAlbum::where('album_id', $albumId)->delete();
@@ -52,10 +59,11 @@ class ImgurService
 
     public function uploadImage(string $imgUrl, ?string $title, ?string $description, string $albumId)
     {
-        $this->client->withHeaders([
-            'Authorization' => 'Bearer ' . config('services.imgur.access_token'),
+        $client = $this->getClient();
+        $client->withHeaders([
+            'Authorization' => 'Bearer ' . $this->getAccessToken(),
         ]);
-        $res = $this->client->post('image', [
+        $res = $client->post('image', [
             'image' => $imgUrl,
             'title' => $title,
             'description' => $description,
@@ -67,10 +75,11 @@ class ImgurService
 
     public function deleteImage(string $imageId)
     {
-        $this->client->withHeaders([
-            'Authorization' => 'Bearer ' . config('services.imgur.access_token'),
+        $client = $this->getClient();
+        $client->withHeaders([
+            'Authorization' => 'Bearer ' . $this->getAccessToken(),
         ]);
-        $res = $this->client->delete('image/' . $imageId);
+        $res = $client->delete('image/' . $imageId);
         $res = json_decode($res->getBody()->getContents(), true);
         if ($res['success']) {
             ImgurImage::where('image_id', $imageId)->delete();
@@ -85,17 +94,18 @@ class ImgurService
         if(isset($matches[1])){
             return $matches[1];
         }
-        
+
         preg_match('/^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)?\/?([a-zA-Z0-9]+)$/i', $url, $matches);
         return $matches[1] ?? null;
     }
 
     public function getGalleryAlbumImages(string $albumId)
     {
-        $this->client->withHeaders([
+        $client = $this->getClient();
+        $client->withHeaders([
             'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
         ]);
-        $res = $this->client->get("gallery/album/$albumId");
+        $res = $client->get("gallery/album/$albumId");
         $res = json_decode($res->getBody()->getContents(), true);
 
         return $res;
@@ -103,10 +113,11 @@ class ImgurService
 
     public function getImage(string $imageId)
     {
-        $this->client->withHeaders([
+        $client = $this->getClient();
+        $client->withHeaders([
             'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
         ]);
-        $res = $this->client->get("image/$imageId");
+        $res = $client->get("image/$imageId");
         $res = json_decode($res->getBody()->getContents(), true);
 
         return $res;
@@ -114,12 +125,42 @@ class ImgurService
 
     public function getAlbumImages(string $albumId)
     {
-        $this->client->withHeaders([
+        $client = $this->getClient();
+        $client->withHeaders([
             'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
         ]);
-        $res = $this->client->get("album/$albumId/images");
+        $res = $client->get("album/$albumId/images");
         $res = json_decode($res->getBody()->getContents(), true);
 
         return $res;
+    }
+
+    public function refreshAccessToken()
+    {
+        $res = Http::asForm()->post('https://api.imgur.com/oauth2/token', [
+            'refresh_token' => $this->getRefreshToken(),
+            'client_id' => config('services.imgur.client_id'),
+            'client_secret' => config('services.imgur.client_secret'),
+            'grant_type' => 'refresh_token',
+        ]);
+        $res = json_decode($res->getBody()->getContents(), true);
+        if (isset($res['access_token'])) {
+            Cache::put('imgur_access_token', $res['access_token'], $res['expires_in'] / 60);
+        }
+        if (isset($res['refresh_token'])) {
+            Cache::put('imgur_refresh_token', $res['refresh_token'], 60 * 24 * 30);
+        }
+
+        return $res;
+    }
+
+    protected function getRefreshToken()
+    {
+        return Cache::get('imgur_refresh_token') ?? config('services.imgur.refresh_token');
+    }
+
+    protected function getAccessToken()
+    {
+        return Cache::get('imgur_access_token') ?? config('services.imgur.access_token');
     }
 }

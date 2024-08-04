@@ -69,7 +69,7 @@
                 <transition-group name="list" tag="div">
                   <div class="card champion-card-container card shadow position-relative mb-1" v-for="championResult in champions" :key="championResult.key">
                     <div class="card-body">
-                      <div class="text-center"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
+                      <div class="text-center"><a target="_blank" class="font-size-xsmall" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
                       <div class="row">
                         <div class="col-6 pr-0">
                           <div class="position-relative">
@@ -191,7 +191,7 @@
                       </div>
                     </div>
                     <div class="row d-flex justify-content-end">
-                      <div class="text-center d-inline-block"><a target="_blank" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
+                      <div class="text-center d-inline-block"><a target="_blank" class="font-size-xsmall" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
                       &nbsp;
                       <p :key="refreshKey" class="d-inline-block font-size-small">@{{humanizeDate(championResult.datetime)}}</p>
                     </div>
@@ -274,7 +274,12 @@
                       <div class="col-6">
                         <div class="post-element-container">
                           @if($post['element1']['previewable'])
-                            <img src="{{$post['element1']['url']}}" @@error="onImageError('{{$post['element1']['url2']}}', $event)">
+                            <flex-image
+                              element-id="{{$post['element1']['id']}}"
+                              thumb-url="{{$post['element1']['url']}}"
+                              imgur-url="{{$post['element1']['url2']}}"
+                              alt="{{$post['element1']['title']}}"
+                            ></flex-image>
                           @else
                             <video src="{{$post['element1']['url']}}#t=0.01"></video>
                           @endif
@@ -283,7 +288,12 @@
                       <div class="col-6">
                         <div class="post-element-container">
                           @if($post['element2']['previewable'])
-                            <img src="{{$post['element2']['url']}}" @@error="onImageError('{{$post['element2']['url2']}}', $event)">
+                            <flex-image
+                              element-id="{{$post['element2']['id']}}"
+                              thumb-url="{{$post['element2']['url']}}"
+                              imgur-url="{{$post['element2']['url2']}}"
+                              alt="{{$post['element2']['title']}}"
+                            ></flex-image>
                           @else
                             <video src="{{$post['element2']['url']}}#t=0.01"></video>
                           @endif

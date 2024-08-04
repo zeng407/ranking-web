@@ -4,6 +4,7 @@ namespace App\Console;
 
 use App\Enums\TrendTimeRange;
 use App\Helper\CacheService;
+use App\ScheduleExecutor\ImgurScheduleExecutor;
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
 use App\ScheduleExecutor\ThumbnailExecutor;
 use Artisan;
@@ -43,12 +44,25 @@ class Kernel extends ConsoleKernel
         })->name('Make Rank Report History')->dailyAt('06:15');
 
         $schedule->call(function(){
+            app(ImgurScheduleExecutor::class)->createAlbum(30);
+        })->name('Upload Imgur Albums')->hourlyAt(10)->withoutOverlapping();
+
+        $schedule->call(function(){
+            app(ImgurScheduleExecutor::class)->createImage(10);
+        })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping();
+
+        $schedule->call(function(){
+            app(ImgurScheduleExecutor::class)->updateRemovedImage(1000);
+        })->name('Update Removed Imgur Images')->hourlyAt(30)->withoutOverlapping();
+
+        $schedule->call(function(){
             app(ThumbnailExecutor::class)->makeElementThumbnails(300);
         })->name('Make Thumbnails')->hourly()->withoutOverlapping();
 
 
         if(config('services.twitch.auto_refresh_token')){
             $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily();
+            $schedule->command('refresh:token imgur')->name('Refresh Twitch Token')->daily();
         }
 
         $schedule->command('sitemap:generate')->name('Generate Sitemap')->dailyAt('05:20');

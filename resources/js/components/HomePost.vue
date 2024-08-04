@@ -9,13 +9,29 @@
           <image-mask v-if="post.is_censored"></image-mask>
           <div class="col-6">
             <div class="post-element-container">
-              <img :key="post.element1.id" v-if="post.element1.previewable" :src="post.element1.url" @error="onImageError(post.element1.url2, $event)">
+              <flex-image
+                v-if="post.element1.previewable"
+                :key="post.element1.id"
+                :image-key="post.element1.id"
+                :element-id="post.element1.id"
+                :thumb-url="post.element1.url"
+                :imgur-url="post.element1.url2"
+                :alt="post.element1.title"
+              ></flex-image>
               <video v-else :src="getVideoPreviewUrl(post.element1.url)"></video>
             </div>
           </div>
           <div class="col-6">
             <div class="post-element-container">
-              <img :key="post.element2.id" v-if="post.element2.previewable" :src="post.element2.url" @error="onImageError(post.element2.url2, $event)">
+              <flex-image
+                v-if="post.element2.previewable"
+                :key="post.element2.id"
+                :image-key="post.element2.id"
+                :element-id="post.element2.id"
+                :thumb-url="post.element2.url"
+                :imgur-url="post.element2.url2"
+                :alt="post.element2.title"
+              ></flex-image>
               <video v-else :src="getVideoPreviewUrl(post.element2.url)"></video>
             </div>
           </div>

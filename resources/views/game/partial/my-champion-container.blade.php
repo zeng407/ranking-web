@@ -23,11 +23,15 @@
     <video width="100%"  loop controls playsinline src="{{ $gameResult->winner->source_url }}" poster="{{ $gameResult->winner->thumb_url }}"></video>
 @elseif($gameResult->winner->type === 'image')
     <viewer :options="viewerOptions">
-        <img class="w-auto mw-100 cursor-pointer my-champion-element"
-          src="{{ $gameResult->winner->lowthumb_url ?: $gameResult->winner->thumb_url }}"
-          srcset="{{ $gameResult->winner->lowthumb_url ?: $gameResult->winner->thumb_url }} 400w,
-                  {{ $gameResult->winner->mediumthumb_url ?: $gameResult->winner->thumb_url }} 800w"
-          sizes="(max-width: 400px) 400px, 800px"
-          alt="{{ $gameResult->winner->title }}">
+        <flex-image
+          class="w-auto mw-100 cursor-pointer my-champion-element"
+          key="{{$gameResult->winner->id}}"
+          image-key="{{$gameResult->winner->id}}"
+          element-id="{{$gameResult->winner->id}}"
+          imgur-url="{{$gameResult->winner->imgur_url}}"
+          thumb-url="{{$gameResult->winner->lowthumb_url ?: $gameResult->winner->thumb_url}}"
+          thumb-url2="{{$gameResult->winner->mediumthumb_url ?: $gameResult->winner->thumb_url}}"
+          alt="{{$gameResult->winner->title}}"
+          ></flex-image>
     </viewer>
 @endif

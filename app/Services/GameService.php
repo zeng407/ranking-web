@@ -79,9 +79,16 @@ class GameService
 
     public function getWinner(Game $game)
     {
-        return optional($game->game_1v1_rounds()
+        $winner = optional($game->game_1v1_rounds()
             ->where('remain_elements', 1)
             ->first())->winner;
+
+        // append data
+        if($winner){
+            $winner->imgur_url = $winner->imgur_image?->link;
+        }
+
+        return $winner;
     }
 
     public function getGameResult(Request $request, Game $game)

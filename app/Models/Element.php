@@ -58,6 +58,11 @@ class Element extends Model
         return $this->hasMany(RankReport::class);
     }
 
+    public function element_issues()
+    {
+        return $this->hasMany(ElementIssue::class);
+    }
+
     public function getLowThumbUrl()
     {
         return $this->lowthumb_url ?: $this->thumb_url;
@@ -71,6 +76,11 @@ class Element extends Model
     public function getDefaultThumbUrl()
     {
         return $this->thumb_url;
+    }
+
+    public function getImgurUrl()
+    {
+        return $this->imgur_image?->link;
     }
 
 }

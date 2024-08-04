@@ -330,8 +330,7 @@
                                                         {{ $rank->element->title }}</h2>
                                                     @if ($rank->rank === 1)
                                                         <div class="col-12 align-content-center justify-content-center">
-                                                            @include(
-                                                                'game.partial.global-element-container',
+                                                            @include('game.partial.global-element-container',
                                                                 ['rank' => $rank]
                                                             )
                                                         </div>

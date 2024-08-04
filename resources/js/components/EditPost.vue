@@ -1342,8 +1342,8 @@ export default {
         return;
       }
 
-      if(element.thumb_url2 !== null) {
-        event.target.src = element.thumb_url2;
+      if(element.imgur_url !== null) {
+        event.target.src = element.imgur_url;
       }
       this.errorImages.push(element.id);
     },

@@ -27,7 +27,7 @@ class ImgurTest extends TestCase
         $service = new ImgurService();
 
         $result = $service->getAccountInfo($username);
-    
+
         $this->assertEquals($expectedResult, $result);
     }
 
@@ -43,8 +43,8 @@ class ImgurTest extends TestCase
 
         $service = new ImgurService();
 
-        $result = $service->createAlubm($title, $description);
-    
+        $result = $service->createAlbum($title, $description);
+
         $this->assertEquals($expectedResult, $result);
     }
 
@@ -86,7 +86,7 @@ class ImgurTest extends TestCase
         $service = new ImgurService();
 
         $result = $service->uploadImage($imgUrl, $title, $description, $albumId);
-    
+
         $this->assertEquals($expectedResult, $result);
     }
 
@@ -110,9 +110,9 @@ class ImgurTest extends TestCase
         $url = Faker\Provider\Image::imageUrl();
         $path = 'any/path';
         $result = (new ImageElementHandler)->storeElement($url, $post);
-        
+
         $this->assertDatabaseHas('elements', ['id' => $result->id]);
-        
+
     }
 
     public function testCreateImageFailUpload()
@@ -127,16 +127,16 @@ class ImgurTest extends TestCase
         $post = $user->posts()->create(['serial' => 'anyserial']);
         $post->imgur_album()->create(['album_id' => 'anyalbumid', 'title' => 'anytitle', 'description' => 'anydescription']);
         $service = app(ElementService::class);
-        
+
         //todo run job for creating imgur album
 
         // $this->expectException(Exception::class);
         // $this->expectExceptionMessage('Failed to upload image');
 
         $url = Faker\Provider\Image::imageUrl();
-        
+
         $element = (new ImageElementHandler)->storeElement($url, $post);
-        
+
         $this->assertNotNull($element);
         $this->assertTrue(\Storage::exists($element->path));
     }

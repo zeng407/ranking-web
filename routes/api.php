@@ -62,3 +62,7 @@ Route::get('game/room/{gameRoom:serial}/user', [GameController::class, 'getRoomU
 Route::post('game/room/{gameRoom:serial}/bet', [GameController::class, 'bet'])->name('api.game-room.bet');
 Route::put('game/room/{gameRoom:serial}/profile', [GameController::class, 'updateGameUser'])->name('api.game-room.update-profile');
 
+/** Image Report */
+Route::post('image/report/removed', [ElementController::class, 'reportRemoved'])->name('api.element.report.removed');
+
+
