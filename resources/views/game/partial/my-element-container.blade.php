@@ -23,11 +23,15 @@
         <video width="100%"  loop controls playsinline src="{{ $rank->loser->source_url }}" poster="{{ $rank->loser->thumb_url }}"></video>
     @elseif($rank->loser->type === 'image')
         <viewer :options="viewerOptions">
-            <img class="w-auto mw-100 cursor-pointer"
-              src="{{ $rank->loser->lowthumb_url ?: $rank->loser->thumb_url }}"
-              srcset="{{ $rank->loser->lowthumb_url ?: $rank->loser->thumb_url }} 400w,
-                  {{ $rank->loser->mediumthumb_url ?: $rank->loser->thumb_url }} 800w"
-              sizes="(max-width: 400px) 400px, 800px"
-              alt="{{ $rank->loser->title }}">
+          <flex-image
+            class="w-auto mw-100 cursor-pointer"
+            key="{{$rank->loser->id}}"
+            image-key="{{$rank->loser->id}}"
+            element-id="{{$rank->loser->id}}"
+            imgur-url="{{$rank->loser->imgur_url}}"
+            thumb-url="{{$rank->loser->lowthumb_url ?: $rank->loser->thumb_url}}"
+            thumb-url2="{{$rank->loser->mediumthumb_url ?: $rank->loser->thumb_url}}"
+            alt="{{$rank->loser->title}}"
+            ></flex-image>
         </viewer>
 @endif

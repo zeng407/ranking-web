@@ -258,6 +258,21 @@ class ElementController extends Controller
         ]);
     }
 
+    public function reportRemoved(Request $request)
+    {
+        $request->validate([
+            'element_id' => 'required|integer',
+        ]);
+
+        if(\Cache::has('imgur_image_removed_' . $request->element_id)){
+            return response()->json();
+        }
+        $this->elementService->reportImgureImageRemoved(Element::findOrFail($request->element_id));
+        \Cache::put('imgur_image_removed_' . $request->element_id, true, now()->addHour());
+
+        return response()->json();
+    }
+
     protected function putFileInfoCache($path, $isImage)
     {
         $pathId = hash('sha256', $path);

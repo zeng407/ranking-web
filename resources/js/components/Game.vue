@@ -1352,6 +1352,7 @@ export default {
       return element.type === "video" && element.video_source === "gfycat";
     },
     onImageError: function (id, replaceUrl, event) {
+      // avoid infinite loop
       if (this.errorImages.includes(id)) {
         return;
       }
@@ -1459,7 +1460,7 @@ export default {
         if (!this.isMobileScreen) {
           return;
         }
-        let ad2Top = $("#google-ad2").offset().top;
+        let ad2Top = $("#google-ad2").offset() ? $("#google-ad2").offset().top : 0;
         let offset = 50;
 
         // if scroll reach the bottom of the ad2

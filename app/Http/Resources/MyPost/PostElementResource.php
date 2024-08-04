@@ -30,7 +30,7 @@ class PostElementResource extends JsonResource
             'thumb_url' => $this->thumb_url,
             'mediumthumb_url' => $this->mediumthumb_url,
             'lowthumb_url' => $this->getLowThumbUrl(),
-            'thumb_url2' => $this->imgur_image?->link,
+            'imgur_url' => $this->imgur_image?->link,
             'title' => $this->title,
             'type' => $this->type,
             'video_source' => $this->video_source,

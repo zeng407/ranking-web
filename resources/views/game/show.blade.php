@@ -140,19 +140,28 @@
                 <transition name="slide-in-left">
                   <div v-if="animationShowLeftPlayer" class="card game-player left-player" id="left-player">
                     <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
-                      <img
+                      <flex-image
+                        :key="le.id"
                         v-show="!leftImageLoaded"
-                        :src="getLowThumbUrl(le)"
-                        :key="getLowThumbUrl(le)"
-                        :style="{ height: this.elementHeight + 'px' }">
+                        :element-id="le.id"
+                        :thumb-url="getLowThumbUrl(le)"
+                        :image-key="le.id"
+                        :imgur-url="le.imgur_url"
+                        :alt="le.title"
+                        :height="elementHeight"
+                      ></flex-image>
                       <viewer ref="leftViewer" :options="viewerOptions">
-                        <img
+                        <flex-image
+                          :key="le.id"
                           v-show="leftImageLoaded"
-                          @load="handleLeftLoaded"
-                          @@error="onImageError(le.id, le.thumb_url2,$event)"
-                          :src="getThumbUrl(le)"
-                          :style="{ height: this.elementHeight + 'px' }"
-                          :key="le.thumb_url">
+                          :handle-loaded="handleLeftLoaded"
+                          :element-id="le.id"
+                          :thumb-url="getThumbUrl(le)"
+                          :image-key="le.id"
+                          :imgur-url="le.imgur_url"
+                          :alt="le.title"
+                          :height="elementHeight"
+                        ></flex-image>
                       </viewer>
                     </div>
                     <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
@@ -254,18 +263,28 @@
                 <transition :name="isMobileScreen ? 'slide-in-left' : 'slide-in-right'">
                   <div v-if="animationShowRightPlayer" class="card game-player right-player" id="right-player" :class="{ 'flex-column-reverse': isMobileScreen, 'mb-4': isMobileScreen}">
                     <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
-                      <img
+                      <flex-image
                         v-show="!rightImageLoaded"
-                        :src="getLowThumbUrl(re)"
-                        :key="getLowThumbUrl(re)"
-                        :style="{ height: elementHeight + 'px' }">
+                        :key="re.id"
+                        :element-id="re.id"
+                        :thumb-url="getLowThumbUrl(re)"
+                        :image-key="re.id"
+                        :imgur-url="re.imgur_url"
+                        :alt="re.title"
+                        :height="elementHeight"
+                      ></flex-image>
                       <viewer ref="rightViewer" :options="viewerOptions">
-                        <img
+                        <flex-image
                           v-show="rightImageLoaded"
-                          @load="handleRightLoaded"
-                          @@error="onImageError(re.id, re.thumb_url2, $event)"
-                          :src="getThumbUrl(re)"
-                          :style="{ height: elementHeight + 'px' }" :key="re.thumb_url">
+                          :key="re.id"
+                          :handle-loaded="handleRightLoaded"
+                          :element-id="re.id"
+                          :thumb-url="getThumbUrl(re)"
+                          :image-key="re.id"
+                          :imgur-url="re.imgur_url"
+                          :alt="re.title"
+                          :height="elementHeight"
+                        ></flex-image>
                       </viewer>
                     </div>
                     <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">

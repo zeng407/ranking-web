@@ -4,8 +4,7 @@
 namespace App\Services;
 
 
-use App\Enums\ElementType;
-use App\Enums\VideoSource;
+use App\Enums\ElementIssueType;
 use App\Models\Element;
 use App\Models\Post;
 use App\Repositories\ElementRepository;
@@ -110,6 +109,16 @@ class ElementService
         $element->delete();
 
         event(new ElementDeleted($element));
+    }
+
+    public function reportImgureImageRemoved(Element $element)
+    {
+        $element->element_issues()->firstOrCreate([
+            'type' => ElementIssueType::IMGUR_IMAGE_REMOVED,
+            'resolved_at' => null,
+        ],[
+            'type' => ElementIssueType::IMGUR_IMAGE_REMOVED,
+        ]);
     }
 
 }

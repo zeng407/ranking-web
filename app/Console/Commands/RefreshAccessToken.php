@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\ImgurService;
 use App\Services\InterfaceOauthService;
 use App\Services\TwitchService;
 use Illuminate\Console\Command;
@@ -24,6 +25,7 @@ class RefreshAccessToken extends Command
 
     protected $services = [
         'twitch' => TwitchService::class,
+        'imgur' => ImgurService::class,
     ];
     /**
      * Create a new command instance.
@@ -47,6 +49,10 @@ class RefreshAccessToken extends Command
             $this->error('Service not found');
             return 1;
         }
+
+        /**
+         * @var  InterfaceOauthService $service
+         */
         $service = app($this->services[$name]);
         if($service instanceof InterfaceOauthService === false) {
             $this->error('Service does not implement InterfaceOauthService');
