@@ -80,7 +80,6 @@ class ImgurScheduleExecutor
                     if (!isset($image['success']) || !$image['success']) {
                         if($this->handle400NoSupportType($image)){
                             $element->imgur_image()->create([
-                                'image_id' => $image['data']['id'],
                                 'imgur_album_id' => $post->imgur_album->id,
                                 'title' => $element->title,
                             ]);
