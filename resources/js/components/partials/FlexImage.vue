@@ -121,6 +121,10 @@ export default {
               this.isImgurUrlFailed = true;
             }else if(response.url === 'https://i.imgur.com/removed.png'){
               this.isImgurUrlFailed = true;
+              if(this.isReported === false){
+                this.reportRemovedImage(this.imgurUrl);
+                this.isReported = true;
+              }
             } else if(response.url == this.imgurUrl && response.ok){
               this.isImgurUrlFailed = false;
             }
@@ -128,12 +132,6 @@ export default {
           .catch(error => {
             this.isImgurUrlFailed = true;
           })
-          .finally(() => {
-            if(this.isImgurUrlFailed && this.isReported === false){
-              this.reportRemovedImage(this.imgurUrl);
-              this.isReported = true;
-            }
-          });
       }
     },
     reportRemovedImage(){
