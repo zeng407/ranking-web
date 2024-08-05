@@ -35,10 +35,6 @@ class ImgurService implements InterfaceOauthService
             'title' => $title,
             'description' => $description,
         ]);
-        $res = $client->post('album', [
-            'title' => $title,
-            'description' => $description,
-        ]);
 
         return json_decode($res->getBody()->getContents(), true);
     }
@@ -70,6 +66,7 @@ class ImgurService implements InterfaceOauthService
             'album' => $albumId,
             'type' => 'URL',
         ]);
+
         return json_decode($res->getBody()->getContents(), true);
     }
 
