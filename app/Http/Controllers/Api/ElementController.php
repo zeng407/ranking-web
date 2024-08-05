@@ -214,6 +214,8 @@ class ElementController extends Controller
                 $url = \Storage::url($fileInfo['path']);
                 $isImage = $fileInfo['is_image'] ?? false;
                 $data['thumb_url'] = $url;
+                $data['mediumthumb_url'] = null;
+                $data['lowthumb_url'] = null;
                 $data['source_url'] = $url;
                 $data['type'] = !$isImage ? ElementType::VIDEO: ElementType::IMAGE;
                 $data['video_source'] = null;
