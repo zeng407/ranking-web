@@ -36,7 +36,7 @@ class Kernel extends ConsoleKernel
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 2]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 3]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 4]));
-        })->name('cachePosts')->everyFiveMinutes()->withoutOverlapping();
+        })->name('cachePosts')->everyFiveMinutes()->withoutOverlapping(120);
 
         $schedule->call(function(){
             Artisan::call('make:rank-report-history all');
@@ -45,19 +45,19 @@ class Kernel extends ConsoleKernel
 
         $schedule->call(function(){
             app(ImgurScheduleExecutor::class)->createAlbum(30);
-        })->name('Upload Imgur Albums')->hourlyAt(10)->withoutOverlapping();
+        })->name('Upload Imgur Albums')->hourlyAt(10)->withoutOverlapping(120);
 
         $schedule->call(function(){
             app(ImgurScheduleExecutor::class)->createImage(10);
-        })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping();
+        })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping(60);
 
         $schedule->call(function(){
             app(ImgurScheduleExecutor::class)->updateRemovedImage(1000);
-        })->name('Update Removed Imgur Images')->hourlyAt(30)->withoutOverlapping();
+        })->name('Update Removed Imgur Images')->hourlyAt(30)->withoutOverlapping(120);
 
         $schedule->call(function(){
             app(ThumbnailExecutor::class)->makeElementThumbnails(300);
-        })->name('Make Thumbnails')->hourly()->withoutOverlapping();
+        })->name('Make Thumbnails')->hourly()->withoutOverlapping(120);
 
 
         if(config('services.twitch.auto_refresh_token')){
