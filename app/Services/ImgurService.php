@@ -134,8 +134,7 @@ class ImgurService implements InterfaceOauthService
 
     public function refreshAccessToken()
     {
-        $client = $this->getClient();
-        $client->withHeaders([
+        $client = Http::withHeaders([
             'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
         ]);
         $res = $client->post('https://api.imgur.com/oauth2/token', [
