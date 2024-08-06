@@ -85,7 +85,7 @@ class ImgurScheduleExecutor
                             ]);
                             return;
                         } else {
-                            \Log::error('Failed to upload image', ['image' => $image]);
+                            \Log::error('Failed to upload image', ['image' => $image, 'element_id' => $element->id]);
                             return false;
                         }
                     }
