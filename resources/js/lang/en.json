@@ -116,7 +116,7 @@
     "game_room.predict_fail": "Prediction Fail",
     "game_room.predict_times": "Times",
     "game_room.vote_ends": "Voting Ended",
-    "game_room.close_game": "Close",
+    "game_room.minimize_game": "Minimize",
     "game_room.nickname": "Nickname",
     "game_room.guess_winner": "Guess who will win?",
     "game_room.waiting_result": "Waiting for result...",

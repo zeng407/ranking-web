@@ -130,7 +130,7 @@
     "game_room.predict_fail": "預測失敗",
     "game_room.predict_times": "次數",
     "game_room.vote_ends": "投票已結束",
-    "game_room.close_game": "關閉",
+    "game_room.minimize_game": "縮小",
     "game_room.nickname": "暱稱",
     "game_room.guess_winner": "預測誰會勝出？",
     "game_room.waiting_result": "等待結果中...",
@@ -156,7 +156,7 @@
     "game_room.create_game.coming_soon": "敬請期待",
     "game_room.create_game.back": "返回",
     "game_room.create_game.host": "你是主持人",
-    "game_room.create_game.invite_description": "讓朋友<u>掃描</u>或<u>透過連結</u>加入遊戲",
+    "game_room.create_game.invite_description": "請讓朋友<u>掃描</u>或<u>透過連結</u>加入遊戲",
 
     "rank.win_rate": "勝率",
     "rank.no_rank": "尚未有資料",

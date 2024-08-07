@@ -95,15 +95,14 @@
               <div class="row">
                 <div class="col-12">
                   <h2>{{$t('game_room.create_game.host')}}</h2>
-                  <h4 v-html="$t('game_room.create_game.invite_description')">
-                  </h4>
                   <div class="mb-2">
                     <div class="mb-1">
                       <canvas id="gamemode1-qrcode"></canvas>
                     </div>
                     <div v-if="gameRoomUrl">
+                      <h4 v-html="$t('game_room.create_game.invite_description')"></h4>
                       <h2 class="break-word">
-                        <a :href="gameRoomUrl" target="_blank">{{ gameRoomUrl }}</a>
+                        <p>{{ gameRoomUrl }}</p>
                       </h2>
                       <a @click="downloadQrcode" class="btn btn-outline-dark btn-sm">
                         <i class="fa-solid fa-download"></i> {{ $t('Download QR code') }}
