@@ -125,7 +125,7 @@
     "game_room.predict_fail": "予測失敗",
     "game_room.predict_times": "回数",
     "game_room.vote_ends": "投票終了",
-    "game_room.close_game": "ゲームを閉じる",
+    "game_room.minimize_game": "最小化",
     "game_room.nickname": "ニックネーム",
     "game_room.guess_winner": "勝者を予測する",
     "game_room.waiting_result": "結果待ち...",

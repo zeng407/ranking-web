@@ -448,11 +448,11 @@
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
                   </span>
                   <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
-                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
+                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.minimize_game')"
                     id="close-game-room"
                     style="right:0"
                     @click="closeGameRoom">
-                  <i class="fa-solid fa-xmark"></i>
+                    <i class="fa-solid fa-window-minimize"></i>
                   </span>
                 </h3>
                 <h5 class="d-flex justify-content-between bet-rank-broad">
