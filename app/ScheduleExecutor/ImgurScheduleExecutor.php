@@ -20,6 +20,9 @@ class ImgurScheduleExecutor
             ->whereHas('imgur_album', function ($query) {
                 $query->whereNull('album_id');
             })
+            ->whereHas('post_policy', function ($query) {
+                $query->where('access_policy', PostAccessPolicy::PUBLIC);
+            })
             ->limit($limit)
             ->get()
             ->each(function (Post $post) use ($service) {
