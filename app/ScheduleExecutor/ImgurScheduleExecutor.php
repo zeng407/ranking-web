@@ -4,6 +4,7 @@
 namespace App\ScheduleExecutor;
 
 use App\Enums\ElementIssueType;
+use App\Enums\PostAccessPolicy;
 use App\Models\Element;
 use App\Models\ElementIssue;
 use App\Models\Post;
@@ -55,6 +56,8 @@ class ImgurScheduleExecutor
             ->whereHas('posts', function($query){
                 $query->whereHas('imgur_album', function($query){
                     $query->whereNotNull('album_id');
+                })->whereHas('post_policy', function ($query) {
+                    $query->where('access_policy', PostAccessPolicy::PUBLIC);
                 });
             })
             ->whereDoesntHave('imgur_image')
