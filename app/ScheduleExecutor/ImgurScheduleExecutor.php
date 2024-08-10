@@ -127,7 +127,9 @@ class ImgurScheduleExecutor
                     return;
                 }
 
-                $imgurImage->delete();
+                $imgurImage->update([
+                    'link' => null,
+                ]);
                 $issue->update(['resolved_at' => now()]);
             });
 
