@@ -7,6 +7,7 @@ use App\Events\GameComplete;
 use App\Events\RefreshGameCandidates;
 use App\Helper\AccessTokenService;
 use App\Helper\CacheService;
+use App\Helper\ClientRequestResolver;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Game\GameRoomResource;
 use App\Http\Resources\Game\GameRoomUserResource;
@@ -25,6 +26,8 @@ use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
+    use ClientRequestResolver;
+
     const END_GAME = 'end_game';
     const PROCESSING = 'processing';
 
@@ -78,7 +81,12 @@ class GameController extends Controller
         /** @see \App\Policies\PostPolicy::newGame() */
         $this->authorize('new-game', [$post, $request->input('password')]);
 
-        $game = $this->gameService->createGame($post, $request->element_count);
+        $game = $this->gameService->createGame(
+            $post,
+            $request->element_count,
+            $this->getClientIp($request),
+            $this->getClientIpContry($request)
+        );
 
         $elements = $this->getNextElements($game);
 

@@ -8,6 +8,7 @@ use App\Helper\CacheService;
 use App\Helper\Locker;
 use App\Helper\SerialGenerator;
 use App\Http\Resources\Game\GameResultResource;
+use App\Jobs\AttachGameElements;
 use App\Models\Element;
 use App\Models\Game;
 use App\Models\Game1V1Round;
@@ -42,25 +43,33 @@ class GameService
         ]);
     }
 
-    public function createGame(Post $post, $elementCount): Game
+    public function createGame(Post $post,int $elementCount, ?string $ip, ?string $ipCountry): Game
     {
         /** @var Game $game */
         $game = $post->games()->create([
             'serial' => Uuid::uuid1()->toString(),
-            'element_count' => $elementCount
+            'element_count' => $elementCount,
+            'ip' => $ip,
+            'ip_country' => $ipCountry
         ]);
 
         // pick random elements
         $elements = $post->elements()
             ->inRandomOrder()
             ->take($game->element_count)
-            ->get();
+            ->get(['elements.id']);
 
-        $elements->each(function (Element $element) use ($game) {
+        // attch first 32 elements
+        $firstElements = $elements->take(32);
+        $firstElements->each(function (Element $element) use ($game) {
             $game->elements()->attach($element, [
                 'is_ready' => true
             ]);
         });
+
+        // attach rest elements
+        $restElements = $elements->diff($firstElements);
+        AttachGameElements::dispatch($restElements, $game)->delay(now()->addSeconds(5));
 
         return $game;
     }
@@ -192,6 +201,9 @@ class GameService
                             'is_ready' => true
                         ]);
                 }
+                $game->update([
+                    'vote_count' => $game->vote_count + 1
+                ]);
             });
 
             logger('lock release', ['game_id' => $game->id]);
