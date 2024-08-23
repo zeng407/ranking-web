@@ -43,7 +43,7 @@ class GameService
         ]);
     }
 
-    public function createGame(Post $post,int $elementCount, ?string $ip, ?string $ipCountry): Game
+    public function createGame(Post $post,int $elementCount, ?string $ip = null, ?string $ipCountry = null): Game
     {
         /** @var Game $game */
         $game = $post->games()->create([
