@@ -22,6 +22,9 @@ class Game extends Model
         'element_count',
         'candidates',
         'completed_at',
+        'ip',
+        'ip_country',
+        'vote_count'
     ];
 
     public function post()

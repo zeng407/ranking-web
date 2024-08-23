@@ -43,7 +43,8 @@ class PostTrendScheduleExecutor
 
         Post::withCount(['games' => function ($query) use ($startDate) {
                 if ($startDate){
-                    $query->where('created_at', '>=', $startDate);
+                    $query->where('created_at', '>=', $startDate)
+                        ->where('vote_count', '>=', 4);
                 }
             }])
             ->orderBy('games_count', 'desc')
