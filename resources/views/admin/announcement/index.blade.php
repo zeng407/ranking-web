@@ -29,7 +29,7 @@
             @if ($announcement && !empty($announcement['content']))
                 <div class="card-body">
                     <h5 class="text-center">
-                      {{$announcement['content']}}
+                      {!! nl2br($announcement['content']) !!}
                     </h5>
                     @if($announcement['image_url'])
                     <div class="text-center">
