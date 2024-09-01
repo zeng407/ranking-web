@@ -29,6 +29,7 @@ class AnnouncementController extends Controller
             'created_at' => now()->toDateTimeString(),
             'keep_minutes' => $minutes,
         ];
+        logger('Announcement created', $data);
         CacheService::rememberAnnouncement($data, $minutes, true);
         return redirect()->route('admin.announcement.index');
     }

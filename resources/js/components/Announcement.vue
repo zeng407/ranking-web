@@ -10,13 +10,10 @@ export default {
       required: true
     }
   },
-  data: function () {
-    return {
-
+  computed: {
+    formattedContent() {
+      return this.announcement.content.replace(/\n/g, '<br>');
     }
-  },
-  watch: {
-
   },
   methods: {
     showAnnouncement() {
@@ -30,7 +27,7 @@ export default {
 
       Swal.fire({
         title: this.$t('Announcement'),
-        text: this.announcement.content,
+        html: this.formattedContent,
         imageUrl: this.announcement.image_url,
         imageWidth: 'auto',
         imageHeight: 200,
@@ -39,6 +36,9 @@ export default {
         allowOutsideClick: true,
         allowEscapeKey: true,
         allowEnterKey: true,
+        customClass: {
+          popup: 'swal-left-align'
+        }
       }).then((result) => {
         if (result.isConfirmed) {
           this.closeAnnouncement();
