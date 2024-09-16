@@ -57,13 +57,14 @@ class ImgurService implements InterfaceOauthService
     {
         $client = $this->getClient();
         $client->withHeaders([
-            'Authorization' => 'Bearer ' . $this->getAccessToken(),
+            // 'Authorization' => 'Bearer ' . $this->getAccessToken(),
+            'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
         ]);
         $res = $client->post('image', [
             'image' => $imgUrl,
             'title' => $title,
             'description' => $description,
-            'album' => $albumId,
+            // 'album' => $albumId,
             'type' => 'URL',
         ]);
 
