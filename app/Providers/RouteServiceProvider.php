@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
 {
+    use \App\Helper\ClientRequestResolver;
+
     /**
      * The path to the "home" route for your application.
      *
@@ -71,7 +73,8 @@ class RouteServiceProvider extends ServiceProvider
     protected function configureRateLimiting()
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+            $ip = $this->getClientIp($request);
+            return Limit::perMinute(60)->by(optional($request->user())->id ?: $ip);
         });
     }
 }
