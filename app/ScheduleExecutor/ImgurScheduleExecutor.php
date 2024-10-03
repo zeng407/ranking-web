@@ -67,6 +67,7 @@ class ImgurScheduleExecutor
             ->where('type', 'image')
             ->whereNotNull('thumb_url')
             ->limit($limit)
+            ->orderBy('id', 'desc')
             ->get()
             ->each(function (Element $element) use ($service) {
                 logger('Create image', ['element_id' => $element->id, 'url' => $element->thumb_url]);
@@ -116,6 +117,7 @@ class ImgurScheduleExecutor
         ElementIssue::with('element.imgur_image')
             ->where('type', ElementIssueType::IMGUR_IMAGE_REMOVED)
             ->whereNull('resolved_at')
+            ->whereRelation('element', 'deleted_at', null)
             ->limit($limit)
             ->get()
             ->each(function (ElementIssue $issue) {
