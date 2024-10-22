@@ -12,7 +12,7 @@
     <div class="row justify-content-center">
       <div class="col-12 text-center my-2">
         <div class="text-left mb-5 font-size-large p-3 m-2 h-100" style="background: #b3a9a978">
-          <h3>本網站由一名大學研究生獨立製作，如果你喜歡這個網站，考慮贊助我讓我能持續改善網站功能</h3>
+          <h3>本網站由一名大學研究生獨立製作，如果你喜歡這個網站，可以考慮贊助我讓我能持續改善網站功能</h3>
           <p>任何想法或建議，歡迎在<a href="https://forms.gle/DfCfZGUjFncHJdN66" target="_blank">Google表單</a>提出</p>
         </div>
       </div>
