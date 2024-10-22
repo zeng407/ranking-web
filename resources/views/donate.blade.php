@@ -10,35 +10,13 @@
     @include('partial.lang', ['langPostfixURL' => url_path_without_locale()])
     <h1 class="text-center mb-4">{{__('Donate')}}</h1>
     <div class="row justify-content-center">
-      <div class="col-12 col-lg-9 text-center my-2">
+      <div class="col-12 text-center my-2">
         <div class="text-left mb-5 font-size-large p-3 m-2 h-100" style="background: #b3a9a978">
-          <h3>如果你喜歡這個網站，你可以考慮贊助我，讓我能持續改善網站功能</h3>
-          <div class="p-2" style="background: rgb(255 246 206);">
-            <p>贊助任意金額皆可獲得以下所有福利</p>
-            <span>序號一組，包含：</span>
-            <ul>
-              <li>
-                <b>30天無廣告權益</b>
-              </li>
-              <li>
-                <b>30天感謝名單曝光</b>
-              </li>
-              <li>
-                <b>30天會員VIP標記</b>
-              </li>
-            </ul>
-          </div>
-
-          <div class="mt-2">
-          <p>註1：請付款時留下可聯絡的email，我會兩天內將序號透過email寄送給你</p>
-          <p>註2：其他對於本站的建議可以寫在備註欄，感謝你的支持</p>
-          <p>註3：透過<a target="_blank" href="https://p.ecpay.com.tw/677F5BF">綠界-贊助功能</a>或者<a target="_blank" href="https://payment.opay.tw/Broadcaster/Donate/EA6A62EF78EB2573D2570E271C1610B7">歐付寶-贊助功能</a>
-            ，可免填基本資料，記得在備註欄留連絡信箱。
-          </p>
-          </div>
+          <h3>本網站由一名大學研究生獨立製作，如果你喜歡這個網站，考慮贊助我讓我能持續改善網站功能</h3>
+          <p>任何想法或建議，歡迎在<a href="https://forms.gle/DfCfZGUjFncHJdN66" target="_blank">Google表單</a>提出</p>
         </div>
       </div>
-      <div class="col-12 col-lg-3">
+      <div class="col-12">
         <div class="text-center p-3 m-2 h-100" style="border:solid 1px #000">
           <div>
             <h2>{{__('Payment')}}</h2>
