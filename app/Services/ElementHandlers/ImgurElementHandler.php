@@ -94,6 +94,9 @@ class ImgurElementHandler implements InterfaceElementHandler
             ]);
 
             $image = $array['image'];
+            if($element->imgur_image) {
+                $element->imgur_image->delete();
+            }
             $element->imgur_image()->create([
                 'image_id' => $image['id'],
                 'imgur_album_id' => null,

@@ -44,6 +44,13 @@ class ImageElementHandler implements InterfaceElementHandler
             return null;
         }
 
+        $originalElement = $post->elements()
+            ->where('source_url', $params['old_source_url'] ?? $sourceUrl)
+            ->first();
+        if($originalElement && $originalElement->thumb_url !== $array['thumb_url'] && $originalElement->imgur_image){
+            $originalElement->imgur_image->delete();
+        }
+
         $element = $post->elements()->updateOrCreate([
             'source_url' => $params['old_source_url'] ?? $sourceUrl,
         ], [
@@ -55,6 +62,7 @@ class ImageElementHandler implements InterfaceElementHandler
             'type' => ElementType::IMAGE,
             'title' => $array['title'],
         ]);
+
         event(new ImageElementCreated($element, $post));
 
         return $element;
