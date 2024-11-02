@@ -27,7 +27,7 @@ class ImgurElementHandler implements InterfaceElementHandler
                 if($galleryId === null) {
                     return null;
                 }
-                
+
                 // if url contains gallery
                 if (strpos($sourceUrl, '/gallery/') !== false) {
                     $image = $this->getImageFromImgurGallery($galleryId) ?? $this->getImageFromImgur($galleryId);
@@ -38,7 +38,7 @@ class ImgurElementHandler implements InterfaceElementHandler
                 } else {
                     $image = $this->getImageFromImgur($galleryId);
                 }
-                
+
                 if($image === null) {
                     return null;
                 }
@@ -49,7 +49,7 @@ class ImgurElementHandler implements InterfaceElementHandler
                 logger("not gallery");
                 return null;
             }
-            
+
             $title = $params['title'] ?? $image['title'];
             $thumb = Storage::url($storageImage->getPath());
 
@@ -87,6 +87,8 @@ class ImgurElementHandler implements InterfaceElementHandler
                 'video_source' => $array['video_source'],
                 'source_url' => $sourceUrl,
                 'thumb_url' => $array['thumb_url'],
+                'mediumthumb_url' => null,
+                'lowthumb_url' => null,
                 'type' => $array['type'],
                 'title' => $array['title'],
             ]);
@@ -117,8 +119,8 @@ class ImgurElementHandler implements InterfaceElementHandler
             $res = $imgurService->getGalleryAlbumImages($galleryId);
             logger("getImageFromImgurGallery");
             logger($res);
-            if(isset($res['success']) && $res['success'] 
-                && isset($res['status']) && $res['status'] === 200 
+            if(isset($res['success']) && $res['success']
+                && isset($res['status']) && $res['status'] === 200
                 && isset($res['data']) && isset($res['data']['images'])) {
                 $images = $res['data']['images'];
                 if(count($images) === 0) {
@@ -144,10 +146,10 @@ class ImgurElementHandler implements InterfaceElementHandler
             $res = $imgurService->getImage($galleryId);
             logger("getImageFromImgur");
             logger($res);
-            if(isset($res['success']) && $res['success'] 
-                && isset($res['status']) && $res['status'] === 200 
+            if(isset($res['success']) && $res['success']
+                && isset($res['status']) && $res['status'] === 200
                 && isset($res['data'])) {
-                
+
                 $image = $res['data'];
                 if(isset($image['link'])) {
                     return $image;
