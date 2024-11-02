@@ -50,6 +50,8 @@ class ImageElementHandler implements InterfaceElementHandler
             'path' => $array['path'],
             'source_url' => $sourceUrl,
             'thumb_url' => $array['thumb_url'],
+            'mediumthumb_url' => null,
+            'lowthumb_url' => null,
             'type' => ElementType::IMAGE,
             'title' => $array['title'],
         ]);
