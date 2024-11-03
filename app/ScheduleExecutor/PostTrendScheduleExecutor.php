@@ -87,7 +87,7 @@ class PostTrendScheduleExecutor
             ->where('post_statistics.time_range', $range)
             ->orderBy('post_statistics.play_count', 'desc')
             ->orderBy('posts.id', 'desc')
-            ->selectRaw('posts.*')
+            ->selectRaw('posts.*, posts.id as post_id')
             ->eachById(function (Post $post) use ($range, $startDate, &$count) {
                 $count++;
                 $post->post_trends()->updateOrCreate([
