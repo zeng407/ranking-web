@@ -106,6 +106,7 @@ class ElementController extends Controller
                 ], [
                     'url' => 'url'
                 ]);
+
                 $urlCount++;
             }
         } catch (\Exception $exception) {
@@ -136,6 +137,11 @@ class ElementController extends Controller
                 $url = $parts[0] ?? "";
                 $title = $parts[1] ?? "";
 
+                if(!$this->checkMediaSize($url)){
+                    $errors[] = $url;
+                    continue;
+                }
+
                 $elementParams = [];
                 if($title){
                     $elementParams['title'] = mb_substr($title,0,config('setting.element_title_size'));
@@ -164,6 +170,7 @@ class ElementController extends Controller
 
         return PostElementResource::collection($elements);
     }
+
 
     public function update(Request $request, Element $element)
     {
@@ -355,5 +362,34 @@ class ElementController extends Controller
             throw new \Exception("Rate limit exceeded");
         }
         \Cache::put($fileLimitKey, $fileLimitValue, now()->addMinutes($timeMinuteLimit));
+    }
+
+    public function checkMediaSize($url)
+    {
+        $maxSizeMb = config('setting.upload_media_file_size_mb');
+        $maxSizeBytes = $maxSizeMb * 1024 * 1024;
+
+        // Fetch headers
+        $headers = get_headers($url, 1);
+
+        if ($headers === false) {
+            return false;
+        }
+
+        // Check content type
+        $contentType = $headers['Content-Type'] ?? '';
+        $isImage = strpos($contentType, 'image/') === 0;
+        $isVideo = strpos($contentType, 'video/') === 0;
+
+        if ($isImage || $isVideo) {
+            // Check file size
+            $contentLength = $headers['Content-Length'] ?? 0;
+            if ($contentLength > $maxSizeBytes) {
+                return false;
+            }
+        }
+
+        return true;
+
     }
 }
