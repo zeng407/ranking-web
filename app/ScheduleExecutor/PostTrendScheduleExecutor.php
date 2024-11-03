@@ -63,8 +63,6 @@ class PostTrendScheduleExecutor
                 }
                 $query->where('vote_count', '>=', 4);
             }])
-            ->orderBy('games_count', 'desc')
-            ->orderBy('posts.id', 'desc')
             ->eachById(function (Post $post) use ($startDate, $range) {
                 $date = $startDate ?: $post->created_at->toDateString();
                 $post->post_statistics()->updateOrCreate([
@@ -88,7 +86,7 @@ class PostTrendScheduleExecutor
             ->orderBy('post_statistics.play_count', 'desc')
             ->orderBy('posts.id', 'desc')
             ->selectRaw('posts.*, posts.id as post_id')
-            ->eachById(function (Post $post) use ($range, $startDate, &$count) {
+            ->each(function (Post $post) use ($range, $startDate, &$count) {
                 $count++;
                 $post->post_trends()->updateOrCreate([
                     'trend_type' => TrendType::HOT,
@@ -100,6 +98,6 @@ class PostTrendScheduleExecutor
                     'position' => $count,
                     'start_date' => $startDate
                 ]);
-            }, 1000, 'post_id');
+            });
     }
 }
