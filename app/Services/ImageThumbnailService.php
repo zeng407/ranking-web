@@ -16,8 +16,13 @@ class ImageThumbnailService
             \Log::error('Error making thumbnail', ['element_id' => $element->id, 'url' => $url, 'error' => $e->getMessage()]);
             return;
         }
-        $originalWidth = $image->getImageWidth();
-        $originalHeight = $image->getImageHeight();
+
+        // Get the page size of the first frame
+        $pageInfo = $image->getImagePage();
+
+        // Extract width and height from the page info
+        $originalWidth = $pageInfo['width'];
+        $originalHeight = $pageInfo['height'];
         $ratio = $originalWidth / $originalHeight;
         $maxRatio = $maxWidth / $maxHeight;
 
