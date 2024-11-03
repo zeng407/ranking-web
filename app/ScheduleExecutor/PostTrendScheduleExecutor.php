@@ -100,6 +100,6 @@ class PostTrendScheduleExecutor
                     'position' => $count,
                     'start_date' => $startDate
                 ]);
-            });
+            }, 1000, ['posts.id']);
     }
 }
