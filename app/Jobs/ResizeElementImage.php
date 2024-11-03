@@ -46,10 +46,9 @@ class ResizeElementImage implements ShouldQueue
     {
         $url = $this->element->thumb_url;
         $image = new \Imagick($url);
-
         if ($image->getImageFormat() === 'GIF') {
             // Handle GIF resizing
-            $image = $this->resizeGif($image);
+            $image = $this->convertGifToJpg($image);
         } else {
             // Handle other image formats
             $image->resizeImage($this->width, $this->height, \Imagick::FILTER_LANCZOS, 1);
@@ -69,14 +68,22 @@ class ResizeElementImage implements ShouldQueue
         unlink($path);
     }
 
-    protected function resizeGif(\Imagick $image)
-    {
-        $image = $image->coalesceImages();
-        foreach ($image as $frame) {
-            $frame->resizeImage($this->width, $this->height, \Imagick::FILTER_LANCZOS, 1);
-        }
-        return $image->deconstructImages();
-    }
+    protected function convertGifToJpg(\Imagick $image)
+{
+    // Coalesce the GIF to ensure all frames are available
+    $image = $image->coalesceImages();
+
+    // Extract the first frame
+    $firstFrame = $image->getImage();
+
+    // Set the format to JPG
+    $firstFrame->setImageFormat('jpg');
+
+    // Resize the image
+    $firstFrame->resizeImage($this->width, $this->height, \Imagick::FILTER_LANCZOS, 1);
+
+    return $firstFrame;
+}
 
     protected function getExtension(\Imagick $image)
     {
@@ -84,7 +91,7 @@ class ResizeElementImage implements ShouldQueue
             if($image->getImageFormat() === 'GIF'){
                 return ".gif";
             }
-            
+
             $mime = $image->getImageMimeType();
             if($mime){
                 $extension = explode('/', $mime)[1];
