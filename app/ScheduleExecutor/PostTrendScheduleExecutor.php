@@ -11,12 +11,28 @@ use App\Models\Post;
 
 class PostTrendScheduleExecutor
 {
-    public function createPostTrends()
+    public function createAllPostTrends()
     {
         $this->createHotTrendPost(TrendTimeRange::ALL);
+    }
+
+    public function createYearPostTrends()
+    {
         $this->createHotTrendPost(TrendTimeRange::YEAR);
+    }
+
+    public function createMonthPostTrends()
+    {
         $this->createHotTrendPost(TrendTimeRange::MONTH);
+    }
+
+    public function createWeekPostTrends()
+    {
         $this->createHotTrendPost(TrendTimeRange::WEEK);
+    }
+
+    public function createTodayPostTrends()
+    {
         $this->createHotTrendPost(TrendTimeRange::TODAY);
     }
 
@@ -43,9 +59,9 @@ class PostTrendScheduleExecutor
 
         Post::withCount(['games' => function ($query) use ($startDate) {
                 if ($startDate){
-                    $query->where('created_at', '>=', $startDate)
-                        ->where('vote_count', '>=', 4);
+                    $query->where('created_at', '>=', $startDate);
                 }
+                $query->where('vote_count', '>=', 4);
             }])
             ->orderBy('games_count', 'desc')
             ->orderBy('posts.id', 'desc')
@@ -63,7 +79,11 @@ class PostTrendScheduleExecutor
 
         $count = 0;
         Post::join('post_statistics', 'posts.id', '=', 'post_statistics.post_id')
-            ->where('post_statistics.start_date', $startDate)
+            ->where(function ($query) use ($startDate) {
+                if($startDate){
+                    $query->where('post_statistics.start_date', $startDate);
+                }
+            })
             ->where('post_statistics.time_range', $range)
             ->orderBy('post_statistics.play_count', 'desc')
             ->orderBy('posts.id', 'desc')

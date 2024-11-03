@@ -21,7 +21,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('make:post-trend')->hourlyAt(5)->withoutOverlapping(120);
+        $schedule->command('make:post-trend all')->hourlyAt(5)->withoutOverlapping(120);
+        $schedule->command('make:post-trend year')->hourlyAt(15)->withoutOverlapping(120);
+        $schedule->command('make:post-trend month')->hourlyAt(25)->withoutOverlapping(120);
+        $schedule->command('make:post-trend week')->hourlyAt(35)->withoutOverlapping(120);
+        $schedule->command('make:post-trend day')->hourlyAt(45)->withoutOverlapping(120);
 
         $schedule->call(function(){
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'day', 'page' => 1]));
