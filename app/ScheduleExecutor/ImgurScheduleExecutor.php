@@ -149,6 +149,11 @@ class ImgurScheduleExecutor
             return true;
         }
 
+        if(isset($res['status']) && $res['status'] == 413){
+            \Log::error('file is over the size limit', ['res' => $res]);;
+            return true;
+        }
+
         return false;
     }
 }
