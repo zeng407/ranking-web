@@ -48,11 +48,11 @@ class Kernel extends ConsoleKernel
         })->name('Make Rank Report History')->dailyAt('06:15');
 
         $schedule->call(function(){
-            app(ImgurScheduleExecutor::class)->createAlbum(30);
+            app(ImgurScheduleExecutor::class)->createAlbum(5);
         })->name('Upload Imgur Albums')->hourlyAt(10)->withoutOverlapping(120);
 
         $schedule->call(function(){
-            app(ImgurScheduleExecutor::class)->createImage(10);
+            app(ImgurScheduleExecutor::class)->createImage(5);
         })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping(60);
 
         $schedule->call(function(){
