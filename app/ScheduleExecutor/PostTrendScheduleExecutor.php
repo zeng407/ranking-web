@@ -7,6 +7,7 @@ namespace App\ScheduleExecutor;
 use App\Enums\TrendTimeRange;
 use App\Enums\TrendType;
 use App\Helper\CacheService;
+use App\Jobs\UpdatePostTrendsPosition;
 use App\Models\Post;
 
 class PostTrendScheduleExecutor
@@ -75,29 +76,6 @@ class PostTrendScheduleExecutor
                 ]);
             });
 
-        $count = 0;
-        Post::join('post_statistics', 'posts.id', '=', 'post_statistics.post_id')
-            ->where(function ($query) use ($startDate) {
-                if($startDate){
-                    $query->where('post_statistics.start_date', $startDate);
-                }
-            })
-            ->where('post_statistics.time_range', $range)
-            ->orderBy('post_statistics.play_count', 'desc')
-            ->orderBy('posts.id', 'desc')
-            ->selectRaw('posts.*, posts.id as post_id')
-            ->each(function (Post $post) use ($range, $startDate, &$count) {
-                $count++;
-                $post->post_trends()->updateOrCreate([
-                    'trend_type' => TrendType::HOT,
-                    'time_range' => $range,
-                    'start_date' => $startDate
-                ], [
-                    'trend_type' => TrendType::HOT,
-                    'time_range' => $range,
-                    'position' => $count,
-                    'start_date' => $startDate
-                ]);
-            });
+        UpdatePostTrendsPosition::dispatch($startDate, $range);
     }
 }
