@@ -1176,13 +1176,18 @@ export default {
     showGameSettingPanel: function () {
       $("#gameSettingPanel").modal("show");
     },
-    showGameResult: function () {
-      const url =
-        this.getRankRoute.replace("_serial", this.postSerial) + "?g=" + this.gameSerial;
+    showGameResult() {
+      const url = this.getRankResultUrl();
       setTimeout(() => {
         this.gameResultUrl = url;
         window.open(url, "_self");
       }, 1000);
+    },
+    getRankResultUrl() {
+      if(this.gameSerial){
+        return this.getRankRoute.replace("_serial", this.postSerial) + "?g=" + this.gameSerial;
+      }
+      return this.getRankRoute.replace("_serial", this.postSerial);
     },
     getYoutubePlayer(element) {
       if (!element) {

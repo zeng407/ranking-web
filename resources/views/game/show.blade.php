@@ -109,6 +109,10 @@
               <div class="d-flex justify-content-center align-content-center mt-4">
                 <h3>@{{$t('game_room.vote_ends')}}</h3>
               </div>
+              <div class="d-flex justify-content-center align-content-center mt-4">
+                <a :href="getRankResultUrl()" >查看排行</a>
+
+              </div>
             </div>
 
             {{-- game heading --}}
