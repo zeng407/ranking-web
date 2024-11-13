@@ -46,10 +46,10 @@ class UpdatePostTrendsPosition implements ShouldQueue, ShouldBeUnique
             ->where('post_statistics.time_range', $this->range)
             ->orderBy('post_statistics.play_count', 'desc')
             ->orderBy('posts.id', 'desc')
-            ->selectRaw('posts.*, posts.id as post_id')
+            ->select('posts.id')
             ->each(function (Post $post) use (&$count) {
-                logger('UpdatePostTrendsPosition job fired postId: ' . $post->id . ' count: ' . $count);
                 $count++;
+                logger('UpdatePostTrendsPosition job fired postId: ' . $post->id . ' count: ' . $count);
                 $post->post_trends()->updateOrCreate([
                     'trend_type' => TrendType::HOT,
                     'time_range' => $this->range,
