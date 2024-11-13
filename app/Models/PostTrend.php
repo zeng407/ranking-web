@@ -25,6 +25,7 @@ class PostTrend extends Model
      * @var string[]
      */
     protected $fillable = [
+        'post_id',
         'trend_type',
         'time_range',
         'position',

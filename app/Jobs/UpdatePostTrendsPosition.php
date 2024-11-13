@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\TrendType;
 use App\Models\Post;
+use App\Models\PostTrend;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,7 +38,8 @@ class UpdatePostTrendsPosition implements ShouldQueue, ShouldBeUnique
     public function handle()
     {
         $count = 0;
-        Post::join('post_statistics', 'posts.id', '=', 'post_statistics.post_id')
+        \DB::table('posts')
+            ->join('post_statistics', 'posts.id', '=', 'post_statistics.post_id')
             ->where(function ($query) {
                 if($this->startDate){
                     $query->where('post_statistics.start_date', $this->startDate);
@@ -47,19 +49,21 @@ class UpdatePostTrendsPosition implements ShouldQueue, ShouldBeUnique
             ->orderBy('post_statistics.play_count', 'desc')
             ->orderBy('posts.id', 'desc')
             ->select('posts.id')
-            ->each(function (Post $post) use (&$count) {
+            ->each(function ($post) use (&$count) {
                 $count++;
                 logger('UpdatePostTrendsPosition job fired postId: ' . $post->id . ' count: ' . $count);
-                $post->post_trends()->updateOrCreate([
-                    'trend_type' => TrendType::HOT,
-                    'time_range' => $this->range,
-                    'start_date' => $this->startDate
-                ], [
-                    'trend_type' => TrendType::HOT,
-                    'time_range' => $this->range,
-                    'position' => $count,
-                    'start_date' => $this->startDate
-                ]);
+                PostTrend::updateOrCreate([
+                        'post_id' => $post->id,
+                        'trend_type' => TrendType::HOT,
+                        'time_range' => $this->range,
+                        'start_date' => $this->startDate
+                    ], [
+                        'post_id' => $post->id,
+                        'trend_type' => TrendType::HOT,
+                        'time_range' => $this->range,
+                        'start_date' => $this->startDate,
+                        'position' => $count,
+                    ]);
             });
     }
 
