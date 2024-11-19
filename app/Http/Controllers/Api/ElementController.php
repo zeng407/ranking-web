@@ -197,20 +197,6 @@ class ElementController extends Controller
             }catch(\Exception $e){
                 return api_response(ApiResponseCode::INVALID_URL, 422);
             }
-
-            // This will update the element whose 'source_url' matches 'old_source_url'.
-            $element = $this->elementService->massStore(
-                $data['url'],
-                $post->serial,
-                $post,
-                 [
-                    'old_source_url' => $element->source_url,
-                    'title' => $element->title
-                ]
-            );
-            if(!$element){
-                return api_response(ApiResponseCode::INVALID_URL, 422);
-            }
         } elseif (isset($data['path_id'])){
             $fileInfo = $this->getFileInfoCache($data['path_id']);
             if($fileInfo == null){
@@ -230,9 +216,24 @@ class ElementController extends Controller
                 $data['video_duration_second'] = null;
                 $data['video_start_second'] = null;
                 $data['video_end_second'] = null;
+                $data['url'] = $url;
             }
 
         }
+        // This will update the element whose 'source_url' matches 'old_source_url'.
+        $element = $this->elementService->massStore(
+            $data['url'],
+            $post->serial,
+            $post,
+             [
+                'old_source_url' => $element->source_url,
+                'title' => $element->title
+            ]
+        );
+        if(!$element){
+            return api_response(ApiResponseCode::INVALID_URL, 422);
+        }
+
         unset($data['url']);
         unset($data['path_id']);
 
