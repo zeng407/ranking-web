@@ -217,6 +217,8 @@ class ElementController extends Controller
                 $data['video_start_second'] = null;
                 $data['video_end_second'] = null;
                 $data['url'] = $url;
+            }else{
+                $data['url'] = $element->source_url;
             }
 
         }
