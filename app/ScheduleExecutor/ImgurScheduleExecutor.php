@@ -72,8 +72,9 @@ class ImgurScheduleExecutor
 
                 foreach($element->posts as $post){
                     $album = $post->imgur_album;
-                    $albumId = $album?->album_id;
-                    $image = $service->uploadImage($element->thumb_url, $element->title, null, $albumId);
+                    $albumId = $album?->id;
+                    $albumSerial = $album?->album_id;
+                    $image = $service->uploadImage($element->thumb_url, $element->title, null, $albumSerial);
 
                     if (!$image) {
                         \Log::error('Failed to upload image', ['element_id' => $element->id]);
