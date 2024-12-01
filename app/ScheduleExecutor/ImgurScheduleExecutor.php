@@ -36,7 +36,7 @@ class ImgurScheduleExecutor
                     ]);
                 }
 
-                if (!$album || !$album['success']) {
+                if (!$album || !isset($album['success']) || !$album['success']) {
                     \Log::error('Failed to create album', ['post_id' => $post->id, 'album' => $album]);
                     return false;
                 }
@@ -57,9 +57,7 @@ class ImgurScheduleExecutor
 
         Element::with('posts')
             ->whereHas('posts', function($query){
-                $query->whereHas('imgur_album', function($query){
-                    $query->whereNotNull('album_id');
-                })->whereHas('post_policy', function ($query) {
+                $query->whereHas('post_policy', function ($query) {
                     $query->where('access_policy', PostAccessPolicy::PUBLIC);
                 });
             })
@@ -74,10 +72,8 @@ class ImgurScheduleExecutor
 
                 foreach($element->posts as $post){
                     $album = $post->imgur_album;
-                    if(!$album || $album->album_id == null){
-                        continue;
-                    }
-                    $image = $service->uploadImage($element->thumb_url, $element->title, null, $album->album_id);
+                    $albumId = $album?->album_id;
+                    $image = $service->uploadImage($element->thumb_url, $element->title, null, $albumId);
 
                     if (!$image) {
                         \Log::error('Failed to upload image', ['element_id' => $element->id]);
@@ -87,7 +83,7 @@ class ImgurScheduleExecutor
                     if (!isset($image['success']) || !$image['success']) {
                         if($this->handle400NoSupportType($image)){
                             $element->imgur_image()->create([
-                                'imgur_album_id' => $post->imgur_album->id,
+                                'imgur_album_id' => $albumId,
                                 'title' => $element->title,
                             ]);
                             return;
@@ -99,7 +95,7 @@ class ImgurScheduleExecutor
 
                     $element->imgur_image()->create([
                         'image_id' => $image['data']['id'],
-                        'imgur_album_id' => $post->imgur_album->id,
+                        'imgur_album_id' => $albumId,
                         'title' => $image['data']['title'],
                         'description' => $image['data']['description'],
                         'delete_hash' => $image['data']['deletehash'],

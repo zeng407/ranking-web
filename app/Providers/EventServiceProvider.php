@@ -45,14 +45,11 @@ class EventServiceProvider extends ServiceProvider
             NotifyVoted::class,
         ],
         PostCreated::class => [
-            //create a job to create imgur album
         ],
         PostDeleted::class => [
             DeletePostRank::class,
-            //create a job to delete imgur album
         ],
         ImageElementCreated::class => [
-            //create a job to upload image to imgur
         ],
         VideoElementCreated::class => [
             MakeVideoThumbnail::class
