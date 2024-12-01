@@ -42,7 +42,7 @@
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- ads --}}
-          <div v-if="!isMobileScreen" style="height: 100px">
+          <div v-if="!isMobileScreen" style="height: 150px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
                 @include('ads.game_ad_pc_top')
             </div>
@@ -585,21 +585,7 @@
         {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
-          <div style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
-          <div v-if="!isMobileScreen" id="google-ad2-container">
-            <div class="row">
-              <div class="col-12 col-lg-6">
-                <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center">
-                    @include('ads.game_ad_pc_bottom')
-                </div>
-              </div>
-              <div class="col-none col-lg-6">
-                <div v-if="!refreshAD && game" class="my-2 text-center">
-                    @include('ads.game_ad_pc_bottom')
-                </div>
-              </div>
-            </div>
-          </div>
+          <div v-if="isMobileScreen" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
           <div v-if="isMobileScreen" id="google-ad2-container">
             <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center position-relative">
               @include('ads.game_ad_mobile_responsive')
