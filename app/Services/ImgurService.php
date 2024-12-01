@@ -53,7 +53,7 @@ class ImgurService implements InterfaceOauthService
         return $res;
     }
 
-    public function uploadImage(string $imgUrl, ?string $title, ?string $description, string $albumId)
+    public function uploadImage(string $imgUrl, ?string $title, ?string $description, ?string $albumId)
     {
         $client = $this->getClient();
         $client->withHeaders([
@@ -64,7 +64,7 @@ class ImgurService implements InterfaceOauthService
             'image' => $imgUrl,
             'title' => $title,
             'description' => $description,
-            // 'album' => $albumId,
+            'album' => $albumId,
             'type' => 'URL',
         ]);
 

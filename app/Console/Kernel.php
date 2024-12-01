@@ -48,7 +48,7 @@ class Kernel extends ConsoleKernel
         })->name('Make Rank Report History')->dailyAt('06:15');
 
         $schedule->call(function(){
-            app(ImgurScheduleExecutor::class)->createAlbum(5);
+            // app(ImgurScheduleExecutor::class)->createAlbum(5);
         })->name('Upload Imgur Albums')->hourlyAt(10)->withoutOverlapping(120);
 
         $schedule->call(function(){
