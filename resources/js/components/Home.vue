@@ -11,7 +11,7 @@ export default {
     this.registerInitSearch();
     this.initSorter();
     this.initGoogleAds();
-    this.initMasonry();
+    // this.initMasonry();
     this.loadTags();
     this.getChampions();
     this.handleNewChampion();
@@ -123,7 +123,7 @@ export default {
         //update posts
         Vue.set(this, 'posts', this.posts);
         Vue.nextTick(() => {
-          this.initMasonry();
+          // this.initMasonry();
         })
       })
     },
@@ -296,7 +296,7 @@ export default {
       //handle event when google-ads is loaded
       window.addEventListener('ad-loaded', () => {
         if (window.adsbygoogle) {
-          this.initMasonry();
+          // this.initMasonry();
         }
       });
     },

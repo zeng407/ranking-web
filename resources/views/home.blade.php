@@ -256,12 +256,10 @@
             </div>
 
               {{-- preload posts --}}
-            <div class="grid">
-              <div class="grid-sizer"></div>
-              <div class="gutter-sizer"></div>
+            <div class="row">
 
               @foreach($posts as $index => $post)
-              <div class="grid-item pt-2 preload-post">
+              <div class="col-md-6 col-12 pt-2 preload-post">
                 <div class="card shadow">
                   <div class="card-header text-center">
                     <h2 class="post-title">{{ $post['title'] }}</h2>
@@ -431,6 +429,7 @@
   <script async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
     crossorigin="anonymous"></script>
+    @include('ads.home_onead_1_pc')
   @include('partial.footer')
 @endsection
 
