@@ -120,7 +120,7 @@
             @include('partial.home-carousel')
 
             {{-- champions --}}
-            <h4 class="d-flex d-lg-none my-1">@{{$t('home.new_champions')}}</h4>
+            <h4 class="d-flex d-lg-none my-1 ml-2">@{{$t('home.new_champions')}}</h4>
             {{-- dummy champion, preserve for champion --}}
             <div v-if="!champions.length && mobileScreen" class="d-flex d-lg-none overflow-hidden">
               <div class="row flex-nowrap ml-0">
@@ -152,7 +152,7 @@
               </div>
 
             </div>
-            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-x-scroll hide-scrollbar">
+            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-x-scroll hide-scrollbar mx-2">
               <transition-group name="list" tag="div" class="row flex-nowrap ml-0">
                 <div class="card champion-card-container shadow col-auto list-item m-2" v-for="championResult in champions" :key="championResult.key" v-cloak>
                   <div class="card-body">
@@ -202,7 +202,7 @@
 
             <hr id="sorter-hr">
             {{-- sorter --}}
-            <div class="d-flex justify-content-between align-items-center flex-nowrap mt-1">
+            <div class="d-flex justify-content-between align-items-center flex-nowrap mt-1 ml-2 mr-2">
               <div class="form-inline">
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
                   <label class="btn btn-outline-dark white-space-no-wrap">
@@ -233,7 +233,7 @@
             </div>
 
             {{-- tags --}}
-            <div class="tag-container mt-2 d-flex d-sm-block overflow-x-scroll-sm hide-scrollbar-sm">
+            <div class="tag-container ml-2 mr-2 mt-2 d-flex d-sm-block overflow-x-scroll-sm hide-scrollbar-sm">
               <h5 v-for="tag in tags" class="d-inline-block text-nowrap mr-1 mb-1">
                 <span>
                 <a class="btn btn-outline-dark btn-sm badge badge-pill badge-secondary"  href="#" @click.prevent="addTag(tag.name)">
@@ -256,7 +256,7 @@
             </div>
 
               {{-- preload posts --}}
-            <div class="row">
+            <div class="row m-0">
 
               @foreach($posts as $index => $post)
               <div class="col-md-6 col-12 pt-2 preload-post">
