@@ -244,7 +244,7 @@
             </div>
 
             {{-- search result --}}
-            <div class="d-flex mt-2" style=" height:25px">
+            <div class="d-flex mt-2 mx-2" style=" height:25px">
               <h5 v-if="filters.keyword" class="mr-2 d-inline-block">
                 <span class="btn btn-outline-dark badge badge-dark" @click="clearKeyword">
                   @{{$t('Search Results',{keyword: filters.keyword})}}<i class="fas fa-times ml-1 cursor-pointer"></i>
@@ -353,7 +353,7 @@
                 </home-post>
 
                 @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-                <div v-if="index % 14 == 0 && index > 0" class="grid-item pt-2 preload-post">
+                <div v-if="index % 14 == 0 && index > 0" class="col-md-6 col-12 pt-2 preload-post">
                   <div class="p-4">
                     <div style="width: 100%" class="d-flex justify-content-center">
                       <google-ads
