@@ -336,21 +336,8 @@
 
               {{-- ads --}}
               @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index % 14 == 0 && $index>0)
-              <div class="d-none d-sm-block grid-item pt-2 preload-post">
-                <div class="p-4">
-                  <div class="w-100">
-                    {{-- @include('ads.home_ad_1_pc') --}}
-                    @include('ads.home_onead_2_pc')
-                  </div>
-                </div>
-              </div>
-              <div class="d-block d-sm-none grid-item pt-2 preload-post">
-                <div class="p-4">
-                  <div class="d-flex justify-content-center">
-                    {{-- @include('ads.home_ad_1_mobile') --}}
-                    @include('ads.home_onead_2_pc')
-                  </div>
-                </div>
+              <div class="col-md-6 col-12 pt-2 preload-post">
+                @include('ads.home_onead_2_pc')
               </div>
               @endif
               @endforeach
