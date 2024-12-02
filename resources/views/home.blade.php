@@ -366,7 +366,7 @@
                 </home-post>
 
                 @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-                <div v-if="index % 5 == 0 && index > 0" class="grid-item pt-2 preload-post">
+                <div v-if="index % 14 == 0 && index > 0" class="grid-item pt-2 preload-post">
                   <div class="p-4">
                     <div style="width: 100%" class="d-flex justify-content-center">
                       <google-ads
