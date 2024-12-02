@@ -1,5 +1,5 @@
 <template>
-  <div class="grid-item pt-2" v-if="post">
+  <div class="col-md-6 col-12 pt-2" v-if="post">
     <div class="card shadow">
       <div class="card-header text-center">
         <h2 class="post-title">{{post.title}}</h2>
