@@ -428,7 +428,7 @@
   <script async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
     crossorigin="anonymous"></script>
-    @include('ads.home_onead_1_pc')
+  @include('ads.home_onead_1_pc')
   @include('partial.footer')
 @endsection
 

@@ -123,7 +123,8 @@ export default {
             pointStyle: 'circle',
             borderColor: 'rgba(152, 204, 253, 0.5)',
             backgroundColor: 'rgba(152, 204, 253, 1)', //blue,
-          },
+          }
+          ,
           {
             label: this.$t('rank.chart.title.rank_history.week'),
             data: weeklyRankData,
@@ -137,12 +138,15 @@ export default {
           responsive: true,
           scales: {
             x: {
-              type: 'time',
+              type: 'timeseries',
               time: {
                 tooltipFormat: 'll',
-                minUnit: 'week',
                 parser: 'YYYY-MM-DD',
-                unit: 'week',
+                unit: 'day',
+              },
+              title: {
+                display: true,
+                text: 'Date'
               },
               ticks: {
                 callback: (value, index, values) => {

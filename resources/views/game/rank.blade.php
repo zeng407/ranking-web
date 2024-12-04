@@ -22,9 +22,7 @@
         {{-- Main --}}
         <div class="container-fuild" v-cloak>
             <div class="row m-0">
-                <div class="col-12 p-4">
-                  @include('ads.rank_onead_1')
-                </div>
+
                 {{-- left part: ads --}}
                 {{-- <div class="d-none d-lg-block col-lg-2">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
@@ -577,6 +575,12 @@
 
 
 @section('footer')
+  <div class="row">
+    <div class="col-12 p-4">
+      @include('ads.rank_onead_1')
+    </div>
+  </div>
+  @include('ads.rank_onead_2')
   <script async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
     crossorigin="anonymous"></script>
