@@ -575,7 +575,7 @@
 
 
 @section('footer')
-  <div class="row">
+  <div class="row m-0">
     <div class="col-12 p-4">
       @include('ads.rank_onead_1')
     </div>
