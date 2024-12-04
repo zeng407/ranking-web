@@ -45,7 +45,7 @@ class Kernel extends ConsoleKernel
         $schedule->call(function(){
             Artisan::call('make:rank-report-history all');
             Artisan::call('make:rank-report-history week');
-        })->name('Make Rank Report History')->dailyAt('06:15');
+        })->name('Make Rank Report History')->dailyAt('06:15')->withoutOverlapping(120);
 
         $schedule->call(function(){
             // app(ImgurScheduleExecutor::class)->createAlbum(5);
@@ -65,14 +65,14 @@ class Kernel extends ConsoleKernel
 
 
         if(config('services.twitch.auto_refresh_token')){
-            $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily();
-            $schedule->command('refresh:token imgur')->name('Refresh Twitch Token')->daily();
+            $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily()->withoutOverlapping(120);;
+            $schedule->command('refresh:token imgur')->name('Refresh Twitch Token')->daily()->withoutOverlapping(120);;
         }
 
-        $schedule->command('sitemap:generate')->name('Generate Sitemap')->dailyAt('05:20');
+        $schedule->command('sitemap:generate')->name('Generate Sitemap')->dailyAt('05:20')->withoutOverlapping(120);;
 
         if(app()->isLocal()){
-            $schedule->command('telescope:prune')->daily();
+            $schedule->command('telescope:prune')->daily()->withoutOverlapping(120);;
         }
 
     }
