@@ -337,6 +337,13 @@
               {{-- ads --}}
               @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index % 14 == 0 && $index>0)
               <div class="col-md-6 col-12 pt-2 preload-post">
+                @include('ads.home_ad_1_pc')
+              </div>
+              @endif
+
+              @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') &&
+               (($index+1) % 6 == 0 || $index == 14) && $index>0)
+              <div class="col-12 p-4 preload-post">
                 @include('ads.home_onead_2_pc')
               </div>
               @endif
@@ -366,6 +373,9 @@
                     </div>
                   </div>
                 </div>
+                {{-- <div v-if="(index+1) % 6 == 0 && index > 0" class="col-12 p-4 preload-post">
+                    @include('ads.home_onead_2_pc_dy')
+                </div> --}}
                 @endif
 
               </template>

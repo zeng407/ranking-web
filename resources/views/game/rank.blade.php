@@ -22,6 +22,9 @@
         {{-- Main --}}
         <div class="container-fuild" v-cloak>
             <div class="row m-0">
+                <div class="col-12 p-4">
+                  @include('ads.rank_onead_1')
+                </div>
                 {{-- left part: ads --}}
                 {{-- <div class="d-none d-lg-block col-lg-2">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))

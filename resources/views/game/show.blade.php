@@ -585,7 +585,15 @@
         {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
-          <div v-if="isMobileScreen" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
+          <div style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
+          <div v-if="!isMobileScreen" id="google-ad2-container">
+            <div class="row">
+              <div class="col-12">
+                @include('ads.game_onead_1_pc')
+              </div>
+            </div>
+          </div>
+          {{-- <div v-if="isMobileScreen" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div> --}}
           <div v-if="isMobileScreen" id="google-ad2-container">
             <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center position-relative">
               @include('ads.game_ad_mobile_responsive')

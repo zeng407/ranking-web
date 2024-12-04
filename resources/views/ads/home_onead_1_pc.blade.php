@@ -1,11 +1,13 @@
-<div id = "oneadMFSDFPTag"></div>
+<div id="oneadMFSDFPTag"></div>
 <script type="text/javascript">
   var custom_call = function (params) {
+    @if(!app()->environment('production'))
     if (params.hasAd) {
       console.log('MFS has AD')
     } else {
       console.log('MFS AD empty')
     }
+    @endif
   }
   var _ONEAD = {};
   _ONEAD.pub = {};
