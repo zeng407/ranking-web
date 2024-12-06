@@ -585,12 +585,11 @@
         {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
-          <div style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
-          <div v-if="!isMobileScreen" id="google-ad2-container">
-            <div class="row">
-              <div class="col-12">
-                @include('ads.game_onead_1_pc')
-              </div>
+          <div id="ad2-reserver" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
+          <div v-if="!isMobileScreen" id="ad2-container-desktop" class="w-100 d-flex justify-content-center position-relative" style="height: 340px;">
+            <div class="w-100 p-4 mb-4" style="background-color:#dee2e6">
+              <button class="close-ad-btn" @click="closeBottomAd">@{{ $t('Advertisement') }}<i class="fa fa-times"></i></button>
+              @include('ads.game_onead_1_pc')
             </div>
           </div>
           {{-- <div v-if="isMobileScreen" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div> --}}
