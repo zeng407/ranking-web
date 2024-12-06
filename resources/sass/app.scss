@@ -1250,3 +1250,15 @@ $box-shadow2: ();
 .swal-left-align .swal2-html-container {
     text-align: left;
 }
+
+.close-ad-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #495057;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    z-index: 1;
+  }

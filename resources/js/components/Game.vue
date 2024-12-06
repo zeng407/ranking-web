@@ -1419,6 +1419,10 @@ export default {
 
       return true;
     },
+    closeBottomAd() {
+      $("#ad2-reserver").remove();
+      $("#ad2-container-desktop").css("height", "0").remove();
+    },
     formatTime(time) {
       // format second to 0h0m0s
       let hour = Math.floor(time / 3600);
