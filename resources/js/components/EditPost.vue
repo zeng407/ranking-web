@@ -1508,10 +1508,7 @@ export default {
       // console.log('clickTwitchPlayButton');
       if(element.video_source === 'twitch_video'){
         let player = this.loadTwitchVideo(index, element);
-        player.addEventListener(Twitch.Embed.VIDEO_READY, () => {
-          embed.getPlayer().play();
-        });
-
+        
         let isPaused = player.isPaused();
         if(isPaused){
           player.play();

@@ -1236,9 +1236,7 @@ export default {
         });
       } else if ((player = this.getTwitchPlayer(element))) {
         if (element.video_source === "twitch_video") {
-          player.addEventListener(Twitch.Embed.VIDEO_READY, () => {
-            embed.getPlayer().play();
-          });
+          
           player.seek(element.video_start_second);
         } else if (element.video_source === "twitch_clip") {
           //

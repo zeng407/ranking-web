@@ -27,6 +27,7 @@ class TwitchService implements InterfaceOauthService
             'Authorization' => 'Bearer ' . Cache::get('twitch_access_token')
         ])->get($url);
         $response = json_decode($response->getBody()->getContents(), true);
+
         return $response['data'][0];
     }
 
@@ -49,7 +50,7 @@ class TwitchService implements InterfaceOauthService
      */
     public function parseVideoId($url): string
     {
-        // try getting video_id format from twitch url 
+        // try getting video_id format from twitch url
         // https://www.twitch.tv/videos/xxxxxxxx
         // https://m.twitch.tv/videos/xxxxxxxx
         preg_match("/^((?:https?:)?\/\/)?((?:www|m)\.)?((?:twitch\.tv))(\/(?:[\w\-]+\?|videos\/)?)([\w\-]+)(\S+)?$/", $url, $matches);
