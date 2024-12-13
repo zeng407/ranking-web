@@ -42,11 +42,11 @@
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- ads --}}
-          <div v-if="!isMobileScreen" style="height: 150px">
+          {{-- <div v-if="!isMobileScreen" style="height: 150px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
                 @include('ads.game_ad_pc_top')
             </div>
-          </div>
+          </div> --}}
             <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
               @include('ads.game_ad_mobile')
@@ -585,11 +585,17 @@
         {{-- ads at bottom --}}
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
-          <div id="ad2-reserver" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div>
-          <div v-if="!isMobileScreen && game" id="ad2-container-desktop" class="w-100 my-2 d-flex justify-content-center position-relative" style="height: 340px;">
-            <div class="w-100 p-4 mb-4" style="background-color:#dee2e6">
-              <button class="close-ad-btn" @click="closeBottomAd">@{{ $t('Advertisement') }}<i class="fa fa-times"></i></button>
-              @include('ads.game_onead_1_pc')
+          <div id="ad2-reserver" style="height: 340px ; position: absolute;left:0; right:0; z-index:-1"></div>
+          <div v-if="!isMobileScreen" id="ad2-container-desktop" class="w-100 my-2 position-relative" style="min-height: 340px">
+            <div class="w-100 border-top border-secondary my-2"></div>
+            <div class="row p-4">
+              <div v-if="!refreshAD && game" id="google-ad" class="my-2 p-4 text-center col-6">
+                  @include('ads.game_ad_pc_top')
+              </div>
+              <div v-show="game" class="w-100 p-4 mb-4 col-6">
+                {{-- <button class="close-ad-btn" @click="closeBottomAd">@{{ $t('Advertisement') }}<i class="fa fa-times"></i></button> --}}
+                @include('ads.game_onead_1_pc')
+              </div>
             </div>
           </div>
           {{-- <div v-if="isMobileScreen" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div> --}}
