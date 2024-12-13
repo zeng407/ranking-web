@@ -590,7 +590,7 @@
             <div class="w-100 border-top border-secondary my-2"></div>
             <div class="row p-4">
               <div v-if="!refreshAD && game" id="google-ad" class="my-2 p-4 text-center col-6">
-                  @include('ads.game_ad_pc_top')
+                @include('ads.game_ad_mobile_responsive')
               </div>
               <div v-show="game" class="w-100 p-4 mb-4 col-6">
                 {{-- <button class="close-ad-btn" @click="closeBottomAd">@{{ $t('Advertisement') }}<i class="fa fa-times"></i></button> --}}
