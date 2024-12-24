@@ -558,6 +558,14 @@
                             </div>
                         </div>
                     </div>
+
+                    @if(!$embed)
+                    <div class="row m-0">
+                      <div class="col-12 p-4">
+                        @include('ads.rank_onead_1')
+                      </div>
+                    </div>
+                    @endif
                 </div>
 
                 {{-- right part: ads --}}
@@ -576,11 +584,6 @@
 
 @section('footer')
   @if(!$embed)
-  <div class="row m-0">
-    <div class="col-12 p-4">
-      @include('ads.rank_onead_1')
-    </div>
-  </div>
   @include('ads.rank_onead_2')
   <script async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"

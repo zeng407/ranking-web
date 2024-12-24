@@ -179,12 +179,14 @@ export default {
 
       this.isSearching = true;
 
-      // remove preload-posts by class
-      document.querySelectorAll('.preload-post').forEach((element) => {
-        element.remove();
-      });
       const params = this.normalizeParams(1);
-      this.sendIndexPostsRequest(params, false);
+      this.sendIndexPostsRequest(params, false)
+      .then(() => {
+        // remove preload-posts by class
+        document.querySelectorAll('.preload-post').forEach((element) => {
+          element.remove();
+        });
+      }).
 
       this.scrollToSorter();
     },
