@@ -12,7 +12,7 @@
     <div class="row justify-content-center">
       <div class="col-12 text-center my-2">
         <div class="text-left mb-5 font-size-large p-3 m-2 h-100" style="background: #b3a9a978">
-          <h3>本網站由一名大學研究生獨立製作，如果你喜歡這個網站，可以考慮贊助我讓我能持續改善網站功能</h3>
+          <h3>本網站由一名二選一愛好者獨立製作，如果你喜歡這個網站，可以考慮贊助我讓我能持續改善網站功能</h3>
           <p>任何想法或建議，歡迎在<a href="https://forms.gle/DfCfZGUjFncHJdN66" target="_blank">Google表單</a>提出</p>
         </div>
       </div>
@@ -34,8 +34,8 @@
               <h5 class="pt-1 text-nowrap">{{__('donate.opay')}} {{__('donate.whatever')}}</h5>
             </a>
           </div>
-          <hr>
-          <div class="text-center mt-2 text-black-50">
+          {{-- <hr> --}}
+          {{-- <div class="text-center mt-2 text-black-50">
             <a target="_blank" href="https://p.opay.tw/bmlRV">
               <img src="https://i.imgur.com/v041xUS.png" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.coffee')}} ($50)</h5>
@@ -61,7 +61,7 @@
               <img src="https://i.imgur.com/pCq7eP4.jpeg" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.server')}} ($200)</h5>
             </a>
-          </div>
+          </div> --}}
         </div>
       </div>
     </div>

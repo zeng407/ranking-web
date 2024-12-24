@@ -775,12 +775,13 @@ export default {
 
       if (this.isMobileScreen) {
         if(this.isBetGameClient){
+          // bet game send data firstly
+          sendWinnerData();
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           $.when(loseAnimate).then(() => {
             this.destroyRightPlayer();
             $('#right-part').css('display', 'none');
             this.leftReady = true;
-            sendWinnerData();
           });
 
         }else{
@@ -813,6 +814,10 @@ export default {
           });
         }
       } else {
+        if(this.isBetGameClient){
+          // bet game send data firstly
+          sendWinnerData();
+        }
         let winAnimate = $("#left-player")
           .animate({ left: "50%" }, 500, () => {
             if (this.isBetGameClient) {
@@ -835,8 +840,9 @@ export default {
         $.when(loseAnimate).then(() => {
           if(this.isBetGameClient){
             this.destroyRightPlayer();
+          }else{
+            sendWinnerData();
           }
-          sendWinnerData();
         });
       }
     },
@@ -1236,7 +1242,7 @@ export default {
         });
       } else if ((player = this.getTwitchPlayer(element))) {
         if (element.video_source === "twitch_video") {
-          
+
           player.seek(element.video_start_second);
         } else if (element.video_source === "twitch_clip") {
           //
