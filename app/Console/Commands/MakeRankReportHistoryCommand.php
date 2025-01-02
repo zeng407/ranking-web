@@ -45,7 +45,7 @@ class MakeRankReportHistoryCommand extends Command
 
         $refresh = $this->option('refresh');
 
-        Post::chunkById(300, function ($posts)use($refresh){
+        Post::setEagerLoads([])->chunkById(300, function ($posts)use($refresh){
             foreach ($posts as $post) {
                 CreateAndUpdateRankHistory::dispatch(
                     $post,

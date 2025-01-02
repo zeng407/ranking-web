@@ -31,8 +31,6 @@ class Post extends Model
         'is_censored'
     ];
 
-    protected $with = ['post_policy', 'tags', 'elements'];
-
     /**
      * relations
      */
@@ -143,4 +141,5 @@ class Post extends Model
             $query->where('access_policy', PostAccessPolicy::PUBLIC);
         });
     }
+
 }

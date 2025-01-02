@@ -45,7 +45,7 @@ class GenerateSitemap extends Command
             })
             ->getSitemap();
 
-        Post::eachById(function (Post $post) use ($sitemap) {
+        Post::setEagerLoads([])->eachById(function (Post $post) use ($sitemap) {
             $sitemap->add(route('game.show', $post))
                 ->add(route('game.rank', $post));
         });

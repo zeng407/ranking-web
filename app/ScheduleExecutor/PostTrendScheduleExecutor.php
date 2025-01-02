@@ -64,6 +64,7 @@ class PostTrendScheduleExecutor
                 }
                 $query->where('vote_count', '>=', 4);
             }])
+            ->setEagerLoads([])
             ->eachById(function (Post $post) use ($startDate, $range) {
                 $date = $startDate ?: $post->created_at->toDateString();
                 $post->post_statistics()->updateOrCreate([

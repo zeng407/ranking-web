@@ -35,7 +35,6 @@ class PublicPostResource extends JsonResource
             $element1 = $elements->pop();
             $element2 = $elements->pop();
         }
-        $elementsCount = $this->elements->count();
 
         return [
             'title' => $this->title,
@@ -47,7 +46,7 @@ class PublicPostResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'play_count' => $this->games()->count(),
-            'elements_count' => $elementsCount,
+            'elements_count' => $this->elements()->count(),
             'tags' => $this->tags->pluck('name')->toArray(),
             'is_censored' => $this->is_censored,
         ];

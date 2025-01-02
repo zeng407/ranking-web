@@ -17,6 +17,13 @@ class RankReportHistoryBuilder
     protected RankReportTimeRange $range;
 
     protected $refresh = false;
+    protected $startAt = null;
+
+    public function setStartAt($startAt): self
+    {
+        $this->startAt = $startAt;
+        return $this;
+    }
 
     public function setRankReport(RankReport $report): self
     {
@@ -207,6 +214,8 @@ class RankReportHistoryBuilder
             ->first();
         if($lastReport) {
             $start = $lastReport->start_date;
+        } else if($this->startAt) {
+            $start = carbon($this->startAt)->toDateString();
         } else {
             $start = carbon($this->report->post->created_at)->toDateString();
         }
