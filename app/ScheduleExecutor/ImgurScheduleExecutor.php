@@ -16,7 +16,7 @@ class ImgurScheduleExecutor
     {
         $service = new ImgurService();
 
-        Post::with('imgur_album')
+        Post::setEagerLoads(['imgur_album'])
             ->whereHas('imgur_album', function ($query) {
                 $query->whereNull('album_id');
             })

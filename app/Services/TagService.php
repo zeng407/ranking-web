@@ -41,7 +41,7 @@ class TagService
             'sort_dir' => 'week',
         ], [
             'per_page' => config('setting.home_post_per_page')
-        ]);
+        ], ['post_policy', 'tags']);
 
         $tags = [];
         foreach ($posts as $post) {

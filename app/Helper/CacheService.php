@@ -76,7 +76,7 @@ class CacheService
                 'sort_by' => $sort,
             ], [
                 'per_page' => config('setting.home_post_per_page')
-            ]);
+            ], ['post_policy', 'tags']);
             foreach($posts as $key => $post ) {
                 $posts[$key] = PublicPostResource::make($post)->toArray($request);
             }

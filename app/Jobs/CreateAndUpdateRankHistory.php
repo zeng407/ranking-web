@@ -43,9 +43,9 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
     public function handle(RankService $rankService)
     {
         logger('CreateAndUpdateRankHistory job fired for post id: ' . $this->post->id);
-        RankReport::with('post')->where('post_id', $this->post->id)->eachById(function ($report) use($rankService){
-            $rankService->createRankReportHistory($report, RankReportTimeRange::ALL, $this->refresh);
-            $rankService->createRankReportHistory($report, RankReportTimeRange::WEEK, $this->refresh);
+        RankReport::setEagerLoads([])->where('post_id', $this->post->id)->eachById(function ($report) use($rankService){
+            $rankService->createRankReportHistory($report, RankReportTimeRange::ALL, $this->refresh, $this->post->created_at);
+            $rankService->createRankReportHistory($report, RankReportTimeRange::WEEK, $this->refresh, $this->post->created_at);
         });
 
         $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);

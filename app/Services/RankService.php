@@ -200,6 +200,7 @@ class RankService
         RankReport::where('post_id', $post->id)
             ->orderByDesc('win_rate')
             ->orderByDesc('final_win_rate')
+            ->setEagerLoads([])
             ->get()
             ->each(function (RankReport $rankReport) use (&$counter) {
                 $counter++;
@@ -207,12 +208,14 @@ class RankService
                     'rank' => $counter
                 ]);
             });
+        \Log::info("end update post [{$post->id}] rank report [{$post->title}]");
     }
 
-    public function createRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $refresh = false)
+    public function createRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $refresh = false, $start = null)
     {
         $builder = new RankReportHistoryBuilder;
         return $builder->setRankReport($rankReport)
+            ->setStartAt($start)
             ->setRange($timeRange)
             ->setRefresh($refresh)
             ->build();

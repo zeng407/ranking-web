@@ -37,8 +37,11 @@ class MyPostController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
+        $post = $user->posts()
+            ->with(['post_policy','tags'])
+            ->paginate();
 
-        return PostResource::collection($user->posts()->paginate());
+        return PostResource::collection($post);
     }
 
     public function show(Post $post)
@@ -75,7 +78,7 @@ class MyPostController extends Controller
         $sort = $this->parseSorter($input, [
             'id' => 'desc'
         ]);
-        $with = [ 
+        $with = [
             'rank_reports' => fn($query) => $query->where('post_id', $post->id)
         ];
 
@@ -133,7 +136,7 @@ class MyPostController extends Controller
         ]);
 
         $data = $this->validatePostPassword($request, $post, $data);
-        
+
         $this->postService->update($post, $data);
         $this->postService->syncTags($post, data_get($data, 'tags', []));
         return PostResource::make($post->refresh());
@@ -173,7 +176,7 @@ class MyPostController extends Controller
     }
 
     protected function parseFilter($input, $preCondition, $only = [])
-    {        
+    {
         if (isset($input['filter'])) {
             $filter = array_filter($input['filter']);
             if (count($only)) {
