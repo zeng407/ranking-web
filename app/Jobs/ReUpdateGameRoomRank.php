@@ -25,6 +25,7 @@ class ReUpdateGameRoomRank implements ShouldQueue
     public function __construct(GameRoom $gameRoom)
     {
         $this->gameRoom = $gameRoom;
+        $this->onQueue('game_room');
     }
 
     /**

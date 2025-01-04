@@ -27,6 +27,7 @@ class UpdateGameRoomRank implements ShouldQueue, ShouldBeUnique
     public function __construct(GameRoom $gameRoom)
     {
         $this->gameRoom = $gameRoom;
+        $this->onQueue('game_room');
     }
 
     /**
