@@ -42,11 +42,11 @@
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- ads --}}
-          {{-- <div v-if="!isMobileScreen" style="height: 150px">
+          <div v-if="!isMobileScreen && gameRoom" style="height: 150px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
                 @include('ads.game_ad_pc_top')
             </div>
-          </div> --}}
+          </div>
             <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
               @include('ads.game_ad_mobile')

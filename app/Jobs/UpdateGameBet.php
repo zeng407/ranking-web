@@ -28,6 +28,7 @@ class UpdateGameBet implements ShouldQueue
     {
         $this->gameRoom = $gameRoom;
         $this->conditions = $conditions;
+        $this->onQueue('game_room');
     }
 
     /**
