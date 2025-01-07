@@ -5,6 +5,7 @@ use Illuminate\Console\Command;
 use Spatie\Sitemap\SitemapGenerator;
 use Spatie\Sitemap\Tags\Url;
 use App\Models\Post;
+use Spatie\Crawler\Crawler;
 
 
 class GenerateSitemap extends Command
@@ -45,10 +46,12 @@ class GenerateSitemap extends Command
             })
             ->getSitemap();
 
-        Post::setEagerLoads([])->eachById(function (Post $post) use ($sitemap) {
-            $sitemap->add(route('game.show', $post))
-                ->add(route('game.rank', $post));
-        });
+        Post::setEagerLoads([])
+            ->where('created_at', '>=', now()->subMonth())
+            ->eachById(function (Post $post) use ($sitemap) {
+                $sitemap->add(route('game.show', $post))
+                    ->add(route('game.rank', $post));
+            });
 
         $sitemap->writeToFile(public_path('sitemap.xml'));
     }
