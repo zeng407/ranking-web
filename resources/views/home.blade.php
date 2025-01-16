@@ -341,7 +341,7 @@
               </div>
               @endif
 
-              @if(config('services.google_ad.enabled') && config('services.google_ad.home_page') &&
+              @if(config('services.onead.enabled') && config('services.onead.home_page') &&
                (($index+1) % 6 == 0 || $index == 14) && $index>0)
               <div class="col-12 p-4 preload-post">
                 @include('ads.home_onead_2_pc')
@@ -373,9 +373,6 @@
                     </div>
                   </div>
                 </div>
-                {{-- <div v-if="(index+1) % 6 == 0 && index > 0" class="col-12 p-4 preload-post">
-                    @include('ads.home_onead_2_pc_dy')
-                </div> --}}
                 @endif
 
               </template>
@@ -428,7 +425,9 @@
   <script async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
     crossorigin="anonymous"></script>
+  @if(config('services.onead.enabled') && config('services.onead.home_page'))
   @include('ads.home_onead_1_pc')
+  @endif
   @include('partial.footer')
 @endsection
 

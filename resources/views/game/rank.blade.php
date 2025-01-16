@@ -560,11 +560,13 @@
                     </div>
 
                     @if(!$embed)
-                    <div class="row m-0">
-                      <div class="col-12 p-4">
-                        @include('ads.rank_onead_1')
-                      </div>
-                    </div>
+                      @if(config('services.onead.enabled') && config('services.onead.rank_page'))
+                        <div class="row m-0">
+                          <div class="col-12 p-4">
+                            @include('ads.rank_onead_1')
+                          </div>
+                        </div>
+                      @endif
                     @endif
                 </div>
 
@@ -584,7 +586,10 @@
 
 @section('footer')
   @if(!$embed)
-  @include('ads.rank_onead_2')
+    @if(config('services.onead.enabled') && config('services.onead.rank_page'))
+    @include('ads.rank_onead_2')
+    @endif
+
   <script async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
     crossorigin="anonymous"></script>
