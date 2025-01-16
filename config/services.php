@@ -60,6 +60,11 @@ return [
         'rank_page_ad_2_slot' => env('GOOGLE_AD_RANK_PAGE_AD_2_SLOT', ''),
         'rank_page_sides' => env('GOOGLE_AD_RANK_PAGE_SIDES_SLOT', ''),
     ],
+    'onead' => [
+        'enabled' => env('ONEAD_ENABLED', false),
+        'home_page' => env('ONEAD_HOME_PAGE', false),
+        'rank_page' => env('ONEAD_RANK_PAGE', false),
+    ],
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
