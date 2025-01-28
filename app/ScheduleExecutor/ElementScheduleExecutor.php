@@ -12,8 +12,7 @@ class ElementScheduleExecutor
 {
     public function removeDeletedFiles($limit = 1000)
     {
-        $elements = Element::where('type', ElementType::IMAGE)
-            ->withTrashed()
+        $elements = Element::withTrashed()
             ->whereNotNull('deleted_at')
             ->whereNotNull('path')
             ->limit($limit)
