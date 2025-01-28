@@ -26,12 +26,6 @@ class ElementScheduleExecutor
                 Storage::delete($element->path);
             }
 
-            $sourcePath = str_replace(Storage::url(''), '', $element->source_url);
-            if (Storage::exists($sourcePath)) {
-                \Log::info('Deleting source file: ' . $sourcePath);
-                Storage::delete($sourcePath);
-            }
-
             $thumbPath = str_replace(Storage::url(''), '', $element->thumb_url);
             if (Storage::exists($thumbPath)) {
                 \Log::info('Deleting thumb file: ' . $thumbPath);
