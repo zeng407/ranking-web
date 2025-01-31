@@ -32,6 +32,18 @@ class GfyElementHandler implements InterfaceElementHandler
         try {
             $array = $this->storeArray($sourceUrl, $post->serial, $params);
 
+            // find old_element and delete files
+            if ($params['old_source_url'] ?? null) {
+                $oldElement = $post->elements()->where('source_url', $params['old_source_url'])->first();
+                if ($oldElement) {
+                    $this->deleteElemntFile($oldElement->path);
+                    $this->deleteElemntFile($oldElement->thumb_url);
+                    $this->deleteElemntFile($oldElement->lowthumb_url);
+                    $this->deleteElemntFile($oldElement->mediumthumb_url);
+                }
+            }
+
+
             $element = $post->elements()->updateOrCreate([
                 'source_url' => $params['old_source_url'] ?? $array['source_url'],
             ], [

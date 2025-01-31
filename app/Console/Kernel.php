@@ -4,6 +4,7 @@ namespace App\Console;
 
 use App\Enums\TrendTimeRange;
 use App\Helper\CacheService;
+use App\ScheduleExecutor\ElementScheduleExecutor;
 use App\ScheduleExecutor\ImgurScheduleExecutor;
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
 use App\ScheduleExecutor\ThumbnailExecutor;
@@ -54,6 +55,10 @@ class Kernel extends ConsoleKernel
         $schedule->call(function(){
             app(ImgurScheduleExecutor::class)->createImage(5);
         })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping(60);
+
+        $schedule->call(function(){
+            app(ElementScheduleExecutor::class)->removeDeletedFiles(1000);
+        })->name('Remove Unused Images')->hourly()->withoutOverlapping(60);
 
         $schedule->call(function(){
             app(ImgurScheduleExecutor::class)->updateRemovedImage(1000);

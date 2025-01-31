@@ -18,6 +18,7 @@ use App\Events\ElementDeleted;
 use App\Events\PostCreated;
 use App\Events\PostDeleted;
 use App\Events\ImageElementCreated;
+use App\Listeners\DeleteElements;
 use App\Models\HomeCarouselItem;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
@@ -48,6 +49,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         PostDeleted::class => [
             DeletePostRank::class,
+            DeleteElements::class
         ],
         ImageElementCreated::class => [
         ],

@@ -17,7 +17,7 @@ trait FileHelper
         if (isset ($fileInfo['extension'])) {
             // trim query string
             $fileInfo['extension'] = explode('?', $fileInfo['extension'])[0];
-            
+
             $basename .= '.' . $fileInfo['extension'];
         }
 
@@ -99,5 +99,15 @@ trait FileHelper
             return false;
         }
         return strpos($mimeType, 'image') !== false;
+    }
+
+    protected function deleteElemntFile($path)
+    {
+        // trim path
+        $path = str_replace(Storage::url(''), '', $path);
+        if (Storage::exists($path)) {
+            Storage::delete($path);
+            \Log::info("Deleted file: {$path}");
+        }
     }
 }

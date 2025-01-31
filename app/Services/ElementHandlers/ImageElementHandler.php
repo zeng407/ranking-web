@@ -31,7 +31,7 @@ class ImageElementHandler implements InterfaceElementHandler
         $localUrl = Storage::url($storageImage->getPath());
 
         return [
-            'title' => $title,
+            'title' => mb_substr($title, 0, config('setting.element_title_size')),
             'thumb_url' => $localUrl,
             'path' => $storageImage->getPath(),
         ];
@@ -49,6 +49,17 @@ class ImageElementHandler implements InterfaceElementHandler
             ->first();
         if($originalElement && $originalElement->thumb_url !== $array['thumb_url'] && $originalElement->imgur_image){
             $originalElement->imgur_image->delete();
+        }
+
+        // find old_element and delete files
+        if ($params['old_source_url'] ?? null) {
+            $oldElement = $post->elements()->where('source_url', $params['old_source_url'])->first();
+            if ($oldElement) {
+                $this->deleteElemntFile($oldElement->path);
+                $this->deleteElemntFile($oldElement->thumb_url);
+                $this->deleteElemntFile($oldElement->lowthumb_url);
+                $this->deleteElemntFile($oldElement->mediumthumb_url);
+            }
         }
 
         $element = $post->elements()->updateOrCreate([
