@@ -31,7 +31,7 @@ class ImageElementHandler implements InterfaceElementHandler
         $localUrl = Storage::url($storageImage->getPath());
 
         return [
-            'title' => $title,
+            'title' => mb_substr($title, 0, config('setting.element_title_size')),
             'thumb_url' => $localUrl,
             'path' => $storageImage->getPath(),
         ];
