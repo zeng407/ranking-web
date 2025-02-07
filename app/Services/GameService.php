@@ -401,21 +401,44 @@ class GameService
                 'lost_at' => now(),
                 'score' => $loseScore
             ]);
+
+        // remove won_at and lost_at are null
+        GameRoomUserBet::where('game_room_id', $gameRoom->id)
+            ->where('current_round', $conditions['current_round'])
+            ->where('of_round', $conditions['of_round'])
+            ->where('remain_elements', $conditions['remain_elements'] + 1)
+            ->whereNull('won_at')
+            ->whereNull('lost_at')
+            ->delete();
     }
 
     public function updateGameRoomUserBetScore(GameRoomUser $gameRoomUser)
     {
-        $totalPlayed = $gameRoomUser->bets()->count();
-        $totalCorrect = $gameRoomUser->bets()->whereNotNull('won_at')->count();
+        $currentPlayed = $gameRoomUser->total_played;
+
+        $bets = $gameRoomUser->bets()
+            ->select(['last_combo','score', 'won_at'])
+            ->orderBy('id')
+            ->limit($currentPlayed + 1)
+            ->get();
+
+        $totalPlayed = 0;
+        $totalCorrect = 0;
+        $score = config('setting.default_bet_score');
+        foreach ($bets as $bet){
+            $totalPlayed++;
+            if($bet->won_at){
+                $totalCorrect++;
+            }
+            $score += $bet->score;
+        }
         $accuracy = $totalPlayed > 0 ? $totalCorrect / $totalPlayed * 100 : 0;
-        $score = $gameRoomUser->bets()->sum('score') + config('setting.default_bet_score');
-        $lastBet = $gameRoomUser->bets()
-            ->latest('id')
-            ->select(['last_combo','won_at'])
-            ->first();
-        $combo = 0;
-        if($lastBet){
-            $combo = $lastBet->won_at ? ($lastBet->last_combo + 1) : 0;
+
+        $lastBet = $bets->last();
+        if($lastBet && $lastBet->won_at){
+            $combo = $lastBet->last_combo + 1;
+        }else{
+            $combo = 0;
         }
 
         $gameRoomUser->update([
