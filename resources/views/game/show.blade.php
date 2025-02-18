@@ -40,7 +40,7 @@
         bet-endpoint="{{route('api.game-room.bet', '_serial')}}"
     >
     <div class="container-fluid hide-scrollbar" v-cloak>
-        @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+        @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- ads --}}
           {{-- <div v-if="!isMobileScreen && isBetGameClient" style="height: 150px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
@@ -583,7 +583,7 @@
 
 
         {{-- ads at bottom --}}
-        @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+        @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
           <div id="ad2-reserver" style="height: 340px ; position: absolute;left:0; right:0; z-index:-1"></div>
           <div v-if="!isMobileScreen" id="ad2-container-desktop" class="w-100 my-2 position-relative" style="min-height: 340px">
