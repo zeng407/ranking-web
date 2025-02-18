@@ -185,7 +185,7 @@
                                     </div>
                                   </div>
 
-                                  @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 4)
+                                  @if (!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 4)
                                     <div id="google-ad-1" class="col-12 p-2 d-sm-none">
                                       @include('ads.rank_ad_1', ['id' => 'google-ad-1'])
                                     </div>
@@ -345,13 +345,14 @@
                                         </div>
                                     @endif
 
-                                    @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 5)
-                                        <div id="google-ad-2" class="col-12 p-4 d-sm-none">
-                                          <div class="m-4 p-2">
-                                            @include('ads.rank_ad_1', ['id' => 'google-ad-2'])
-                                          </div>
+                                    @if (!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.rank_page') && $index == 5)
+                                      <div id="google-ad-2" class="col-12 p-4 d-sm-none">
+                                        <div class="m-4 p-2">
+                                          @include('ads.rank_ad_1', ['id' => 'google-ad-2'])
                                         </div>
+                                      </div>
                                     @endif
+
                                 @endforeach
                             </div>
 
@@ -571,6 +572,7 @@
                 </div>
 
                 {{-- right part: ads --}}
+                @if(!$post->is_censored)
                 <div class="d-none d-lg-block col-lg-2">
                   @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
                     <div class="p-lg-1 p-xl-2 sticky-top-rank-tab">
@@ -578,6 +580,8 @@
                     </div>
                   @endif
                 </div>
+                @endif
+
             </div>
         </div>
     </rank>
@@ -589,9 +593,8 @@
     @if(config('services.onead.enabled') && config('services.onead.rank_page'))
     @include('ads.rank_onead_2')
     @endif
-
-  <script async
-    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
-    crossorigin="anonymous"></script>
-  @endif
+    <script async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
+      crossorigin="anonymous"></script>
+    @endif
 @endsection
