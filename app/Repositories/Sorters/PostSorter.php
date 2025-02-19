@@ -39,16 +39,12 @@ class PostSorter
 
     public static function hot(Builder $query, $timeRange)
     {
-        $orderRaw = PostTrend::whereRaw('post_trends.post_id = posts.id')
-            ->select('position')
-            ->whereRaw('post_trends.post_id = posts.id')
+        $query->join('post_trends', 'post_trends.post_id', '=', 'posts.id')
             ->where('trend_type', TrendType::HOT)
             ->where('time_range', $timeRange)
-            ->orderByDesc('id')
-            ->limit(1);
-
-        $query->orderByRaw(" ifnull( ({$orderRaw->toSql()}) , 999999) ", $orderRaw->getBindings());
-
+            ->orderBy('start_date', 'desc')
+            ->orderBy('position', 'asc')
+            ->select('posts.*');
         return $query;
     }
 
