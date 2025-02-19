@@ -37,6 +37,17 @@ class RankService
             ->first();
     }
 
+    public function getRanksByElementTitle(Post $post, string $title)
+    {
+        return RankReport::where('post_id', $post->id)
+            ->whereHas('element', function ($query) use ($title) {
+                $query->where('title', 'like', '%' . $title . '%');
+            })
+            ->limit(10)
+            ->orderBy('rank')
+            ->get();
+    }
+
     public function getRankPosition(Post $post, Element $element): ?int
     {
         $report = $this->getRankReportByElement($post, $element);

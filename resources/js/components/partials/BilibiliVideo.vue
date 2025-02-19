@@ -1,9 +1,8 @@
 <template>
   <div class="w-100" :class="{'loading-animation': loading}">
-    <div v-if="!previewImage && element" :id="'embed'+element.id" ref="embedDiv" :style="{width: '100%',height: height+'px'}">
-    </div>
+    <div v-if="!previewImage && element" :id="'embed'+element.id" ref="embedDiv" :style="{width: '100%', height: height === 'auto' ? '' : height + 'px'}"></div>
     <div v-else-if="previewImage">
-      <img class="w-100 cursor-pointer" :src="element.thumb_url" @click="loadBilibilVideo(element)" :style="{width: '100%',height: height+'px'}">
+      <img class="w-100 cursor-pointer" :src="element.thumb_url" @click="loadBilibilVideo(element)" :style="{width: '100%', height: height === 'auto' ? '' : height + 'px'}">
     </div>
   </div>
 </template>

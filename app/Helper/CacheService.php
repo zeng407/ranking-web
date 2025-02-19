@@ -66,7 +66,7 @@ class CacheService
     {
         $url = $request->getQueryString();
         $cacheName = Cache::get('post_update_at').'/'.md5($url);
-        $seconds = 60 * 10; // 10 minutes
+        $seconds = 60 * 20; // 20 minutes
         return static::remember($cacheName, $seconds, function() use ($request, $sort) {
             $posts = app(PostService::class)->getList([
                 PostFilter::PUBLIC => true,
