@@ -48,6 +48,8 @@ export default {
       showMyTimeline: false,
       showRankHistory: false,
       sortByTop: true,
+      keyword: '',
+      searchResults: [],
     }
   },
   props: {
@@ -71,6 +73,10 @@ export default {
       type: String,
       required: true
     },
+    searchEndpoint: {
+      type: String,
+      required: true
+    },
     championHistories: {
       type: Object,
       required: true
@@ -84,6 +90,10 @@ export default {
     },
     gameRoomRanks: {
       type: Object|null,
+    },
+    requestHost: {
+      type: String,
+      required: true
     },
   },
   computed: {
@@ -105,6 +115,23 @@ export default {
     },
   },
   methods: {
+    search(){
+      const inputValue = this.keyword.trim();
+      const params = {
+        keyword: inputValue,
+        post_serial: this.postSerial
+      };
+
+      axios.get(this.searchEndpoint, {
+        params: params
+      })
+        .then(response => {
+          this.searchResults = response.data.data;
+
+          // Show the modal
+          $('#searchModal').modal('show');
+        })
+    },
     loadCommnets(page = 1) {
       const urlParams = {
         page: page
@@ -593,6 +620,20 @@ export default {
     changeSortRanks() {
       this.sortByTop = !this.sortByTop;
     },
+    inject_youtube_embed(embedCode, params = {}){
+      const width = params.width || '100%';
+      const height = params.height || '270';
+
+      // Replace width and height
+      embedCode = embedCode.replace(/width="[\d%]+"/, `width="${width}"`);
+      embedCode = embedCode.replace(/height="[\d%]+"/, `height="${height}"`);
+
+      if (params.autoplay === false) {
+        embedCode = embedCode.replace('autoplay=1', 'autoplay=0');
+      }
+
+      return embedCode;
+    }
   }
 }
 </script>

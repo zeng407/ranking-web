@@ -13,12 +13,14 @@
 
 @section('content')
     <Rank inline-template post-serial="{{ $post->serial }}" comment-max-length="{{ config('setting.comment_max_length') }}"
+        search-endpoint="{{ route('api.rank.search') }}"
         index-comment-endpoint="{{ route('api.public-post.comment.index', $post->serial) }}"
         create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"
         report-comment-endpoint="{{ route('api.public-post.comment.report', [$post->serial, '_comment_id']) }}"
         :champion-histories="{{ json_encode($champion_histories) }}" :max-rank="{{ $reports->total() }}"
         :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
-        :game-room-ranks="{{ $gameResult ? json_encode($gameResult->game_room) : 'null' }}">
+        :game-room-ranks="{{ $gameResult ? json_encode($gameResult->game_room) : 'null' }}"
+        request-host="{{request()->getHost()}}">
         {{-- Main --}}
         <div class="container-fuild" v-cloak>
             <div class="row m-0">
@@ -66,9 +68,101 @@
                         <hr>
 
                         <div class="d-flex position-relative">
-                            <h1 class="break-all post-title">{{ $post->title }} - {{ __('Ranking') }}</h1>
+                          <h1 class="break-all post-title">{{ $post->title }} - {{ __('Ranking') }}</h1>
                         </div>
                         <p>{{ $post->description }}</p>
+                        <div class="d-flex position-relative">
+                          <form class="d-flex ml-auto my-2" @submit.prevent="search">
+                            <input class="form-control mr-1" type="search" v-model="keyword" placeholder="{{ __('Search') }}" aria-label="Search">
+                            <button class="btn btn-outline-dark" type="submit"><i class="fas fa-search"></i></button>
+                          </form>
+                        </div>
+                        <!-- Modal -->
+                        <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false" >
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header align-items-baseline">
+                                <h5 class="modal-title" id="searchModalLabel"> @{{$t('Search Results',{keyword: keyword})}}</h5>
+                                <small class="ml-1" v-if="searchResults.length >= 10">(最多顯示10筆)</small>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                <transition name="slide-in-up">
+                                  <div :key="keyword">
+                                    <div v-if="searchResults.length">
+                                      <div v-for="result in searchResults" :key="result.id" class="card mb-2">
+                                        <div class="card-body p-0">
+                                          <div class="card-header rank-header">
+                                            <span class="text-left w-25 rank-number">@{{ result.rank }}</span>
+                                            <h2 class="text-center d-none d-md-block w-50 element-title">
+                                              @{{ result.element.title }}
+                                            </h2>
+                                            <div class="text-right ml-auto w-auto">
+                                                {{__('rank.win_rate')}}:&nbsp;@{{ result.win_rate }}%
+                                            </div>
+                                          </div>
+                                          <div class="card-body text-center rank-card">
+                                            <youtube-player
+                                              v-if="result.element.type === 'video' && result.element.video_source === 'youtube'"
+                                              width="100%"  :ref-id="result.element.id" :video-id="result.element.video_id"
+                                              :controls="true" :autoplay="false" :rel="0"
+                                              origin="{{ request()->getSchemeAndHttpHost() }}">
+                                            </youtube-player>
+
+                                            <youtube-embed v-else-if="result.element.type === 'video' && result.element.video_source === 'youtube_embed'"
+                                              :element="result.element" width="100%" height="auto" :autoplay="false">
+                                            </youtube-embed>
+
+                                            <bilibili-video
+                                              v-else-if="result.element.type === 'video' && result.element.video_source === 'bilibili_video'"
+                                                width="100%" height="400" :element="result.element"
+                                                :autoplay="false" :muted="false" :preview="true">
+                                            </bilibili-video>
+
+                                            <iframe
+                                              v-else-if="result.element.type === 'video' && result.element.video_source === 'twitch_video'"
+                                                :src="'https://player.twitch.tv/?video='+ result.element.video_id +'&parent=' + requestHost + '&autoplay=false'"
+                                                width="100%" allowfullscreen>
+                                            </iframe>
+
+                                            <iframe
+                                              v-else-if="result.element.type === 'video' && result.element.video_source === 'twitch_clip'"
+                                                :src="'https://clips.twitch.tv/embed?clip=' + result.element.video_id + '&parent=' + requestHost + '&autoplay=false'"
+                                                width="100%" allowfullscreen>
+                                            </iframe>
+
+                                            <video v-else-if="result.element.type === 'video'"
+                                              width="100%"  loop controls playsinline :src="result.element.source_url"
+                                              :poster="result.element.thumb_url">
+                                            </video>
+
+                                            <viewer v-else-if="result.element.type === 'image'">
+                                              <flex-image :options="viewerOptions"
+                                                class="w-auto mw-100 cursor-pointer"
+                                                :key="result.element.id"
+                                                :image-key="result.element.id"
+                                                :element-id="result.element.id"
+                                                :imgur-url="result.element.imgur_url"
+                                                :thumb-url="result.element.lowthumb_url || result.element.thumb_url"
+                                                :thumb-url2="result.element.mediumthumb_url || result.element.thumb_url"
+                                                :alt="result.element.title"
+                                                ></flex-image>
+                                            </viewer>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div v-else>
+                                      No results found.
+                                    </div>
+                                  </div>
+                                </transition>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                     @endif
 
                     <b-tabs content-class="mt-3"

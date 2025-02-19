@@ -22,6 +22,7 @@ Route::get('champions', [PublicPostController::class, 'getChampions'])->name('ap
 
 /** Rank */
 Route::get('rank', [RankController::class, 'getRank'])->name('api.rank.index');
+Route::get('rank/search', [RankController::class, 'searchRank'])->name('api.rank.search');
 
 /** Game */
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');

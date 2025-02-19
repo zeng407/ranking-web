@@ -55,6 +55,21 @@ class RankController extends Controller
         return $result;
     }
 
+    public function searchRank(Request $request)
+    {
+        $request->validate([
+            'post_serial' => ['required', 'string', 'max:255'],
+            'keyword' => ['required', 'string', 'max:255'],
+        ]);
+        $post = $this->getPost($request->post_serial);
+        /** @see \App\Policies\PostPolicy::readRank() */
+        $this->authorize('read-rank', $post);
+
+        $result = RankReportResource::collection($this->rankService->getRanksByElementTitle($post, $request->keyword));
+
+        return $result;
+    }
+
     protected function getPost($postSerial)
     {
         return Post::where('serial', $postSerial)->firstOrFail();
