@@ -73,7 +73,7 @@
                         <p>{{ $post->description }}</p>
                         <div class="d-flex position-relative">
                           <form class="d-flex ml-auto my-2" @submit.prevent="search">
-                            <input class="form-control mr-1" type="search" v-model="keyword" placeholder="{{ __('Search') }}" aria-label="Search">
+                            <input class="form-control mr-1 font-size-16" type="search" v-model="keyword" placeholder="{{ __('Search') }}" aria-label="Search">
                             <button class="btn btn-outline-dark" type="submit"><i class="fas fa-search"></i></button>
                           </form>
                         </div>
@@ -96,7 +96,7 @@
                                         <div class="card-body p-0">
                                           <div class="card-header rank-header">
                                             <span class="text-left w-25 rank-number">@{{ result.rank }}</span>
-                                            <h2 class="text-center d-none d-md-block w-50 element-title">
+                                            <h2 class="text-center w-50 element-title">
                                               @{{ result.element.title }}
                                             </h2>
                                             <div class="text-right ml-auto w-auto">
@@ -106,7 +106,7 @@
                                           <div class="card-body text-center rank-card">
                                             <youtube-player
                                               v-if="result.element.type === 'video' && result.element.video_source === 'youtube'"
-                                              width="100%"  :ref-id="result.element.id" :video-id="result.element.video_id"
+                                                width="100%"  :ref-id="result.element.id.toString()" :video-id="result.element.video_id"
                                               :controls="true" :autoplay="false" :rel="0"
                                               origin="{{ request()->getSchemeAndHttpHost() }}">
                                             </youtube-player>
