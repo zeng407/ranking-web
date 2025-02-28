@@ -33,6 +33,7 @@ export default {
   },
   props: {
     postSerial: String,
+    userLastGameSerial: String,
     getRankRoute: String,
     getGameSettingEndpoint: String,
     nextRoundEndpoint: String,

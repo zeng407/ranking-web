@@ -46,6 +46,7 @@ class EventServiceProvider extends ServiceProvider
             NotifyVoted::class,
         ],
         PostCreated::class => [
+            
         ],
         PostDeleted::class => [
             DeletePostRank::class,

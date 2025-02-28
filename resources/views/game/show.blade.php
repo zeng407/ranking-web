@@ -25,6 +25,7 @@
     <game
         inline-template
         post-serial="{{$serial}}"
+        user-last-game-serial="{{$userLastGameSerial}}"
         :require-password="{{json_encode($requiredPassword)}}"
         get-rank-route="{{route('game.rank', '_serial')}}"
         get-game-setting-endpoint="{{route('api.game.setting', $serial)}}"
@@ -38,6 +39,7 @@
         get-room-user-endpoint="{{route('api.game-room.get-user', '_serial')}}"
         update-room-profile-endpoint="{{route('api.game-room.update-profile', '_serial')}}"
         bet-endpoint="{{route('api.game-room.bet', '_serial')}}"
+
     >
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
@@ -86,8 +88,18 @@
 
         {{-- main --}}
         <div class="row">
+          {{-- left part --}}
+          <div :class="{'col-xl-2':gameRoomSerial}">
+
+            @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+            <div class="p-lg-1 p-xl-2">
+                @include('ads.game_ad_sides')
+            </div>
+            @endif
+          </div>
+
           {{-- elements --}}
-          <div :class="{'col-12 col-xl-9':gameRoomSerial , 'col-12': !gameRoomSerial}">
+          <div :class="{'col-xl-7':gameRoomSerial , 'col-12': !gameRoomSerial}">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -119,7 +131,7 @@
             <div v-if="game && !finishingGame">
               <h1 id="game-title" class="text-center text-break mt-1">{{$post->title}}</h1>
               <div class="d-none d-sm-flex" style="flex-flow: row wrap">
-                <h3 style="width: 20%">
+                <h3 class="text-nowrap" style="width: 20%">
                   <span v-if="isBetGameClient && !isVoting">@{{$t('game_room.guess_winner')}}</span>
                   <span v-if="isBetGameClient && isVoting">@{{$t('game_room.waiting_result')}}</span>
                 </h3>
@@ -170,7 +182,7 @@
                     </div>
                     <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
                       <youtube :video-id="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-                        :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0 , origin: origin, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
+                        :player-vars="{ controls: 1, autoplay: !isMobileScreen && !gameRoom, rel: 0 , origin: origin, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
                       </youtube>
                     </div>
                     <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
@@ -190,7 +202,7 @@
                     </div>
                     <div v-else-if="isVideoSource(le) && !isDataLoading" class="d-flex">
                       <video id="left-video-player" v-if="isMobileScreen" width="100%" :height="elementHeight" loop controls playsinline :src="le.source_url" :poster="le.thumb_url"></video>
-                      <video @mouseover="videoHoverIn(le, re, true)" id="left-video-player" v-else width="100%" :height="elementHeight" loop autoplay controls playsinline muted :src="le.source_url" :poster="le.thumb_url"></video>
+                      <video id="left-video-player" v-else width="100%" :height="elementHeight" loop controls playsinline muted :src="le.source_url" :poster="le.thumb_url"></video>
                     </div>
                     <div class="card-body text-center">
                       <div class="my-1 overflow-scroll hide-scrollbar" style="max-height: 35px" v-if="isMobileScreen">
@@ -293,7 +305,7 @@
                     </div>
                     <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
                       <youtube :video-id="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-                        :player-vars="{ controls: 1, autoplay: !isMobileScreen, rel: 0, origin: origin,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
+                        :player-vars="{ controls: 1, autoplay: !isMobileScreen && !gameRoom, rel: 0, origin: origin,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
                       </youtube>
                     </div>
                     <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
@@ -313,7 +325,7 @@
                     </div>
                     <div v-else-if="isVideoSource(re) && !isDataLoading" class="d-flex">
                       <video id="right-video-player" v-if="isMobileScreen" width="100%" :height="elementHeight" loop controls playsinline :src="re.source_url" :poster="re.thumb_url"></video>
-                      <video @mouseover="videoHoverIn(re, le, false)" id="right-video-player" v-else width="100%" :height="elementHeight" loop autoplay controls playsinline muted :src="re.source_url" :poster="re.thumb_url"></video>
+                      <video id="right-video-player" v-else width="100%" :height="elementHeight" loop controls playsinline muted :src="re.source_url" :poster="re.thumb_url"></video>
                     </div>
 
                     <!-- reverse when device size width less md(768px)-->
@@ -585,19 +597,6 @@
         {{-- ads at bottom --}}
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
         {{-- reserve position for ads --}}
-          <div id="ad2-reserver" style="height: 340px ; position: absolute;left:0; right:0; z-index:-1"></div>
-          <div v-if="!isMobileScreen" id="ad2-container-desktop" class="w-100 my-2 position-relative" style="min-height: 340px">
-            <div class="w-100 border-top border-secondary my-2"></div>
-            <div class="row p-4">
-              <div v-if="!refreshAD && game" id="google-ad" class="my-2 p-4 text-center col-6">
-                @include('ads.game_ad_mobile_responsive')
-              </div>
-              <div v-show="game" class="w-100 p-4 mb-4 col-6">
-                {{-- <button class="close-ad-btn" @click="closeBottomAd">@{{ $t('Advertisement') }}<i class="fa fa-times"></i></button> --}}
-                @include('ads.game_onead_1_pc')
-              </div>
-            </div>
-          </div>
           {{-- <div v-if="isMobileScreen" style="height: 340px; position: absolute;left:0; right:0; z-index:-1"></div> --}}
           <div v-if="isMobileScreen" id="google-ad2-container">
             <div v-if="!refreshAD && game" id="google-ad2" class="my-2 text-center position-relative">
@@ -654,7 +653,14 @@
               </div>
               <div class="modal-body">
                 {{-- continue game --}}
-                <div class="alert alert-danger" v-if="game_serial">
+                <div class="alert alert-danger" v-if="userLastGameSerial">
+                  <i class="fas fa-exclamation-triangle"></i>&nbsp;@{{ $t('game.continue_hint') }}
+                  <span class="btn btn-outline-danger" @click="continueGame">
+
+                    <i class="fas fa-play"></i>&nbsp;@{{ $t('game.continue') }}
+                  </span>
+                </div>
+                <div class="alert alert-danger" v-else-if="game_serial">
                   <i class="fas fa-exclamation-triangle"></i>&nbsp;@{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
 

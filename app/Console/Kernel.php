@@ -7,6 +7,7 @@ use App\Helper\CacheService;
 use App\ScheduleExecutor\ElementScheduleExecutor;
 use App\ScheduleExecutor\ImgurScheduleExecutor;
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
+use App\ScheduleExecutor\PublicPostScheduleExecutor;
 use App\ScheduleExecutor\ThumbnailExecutor;
 use Artisan;
 use Illuminate\Console\Scheduling\Schedule;
@@ -22,11 +23,14 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('make:post-trend all')->hourlyAt(5)->withoutOverlapping(120);
-        $schedule->command('make:post-trend year')->hourlyAt(15)->withoutOverlapping(120);
         $schedule->command('make:post-trend month')->hourlyAt(25)->withoutOverlapping(120);
         $schedule->command('make:post-trend week')->hourlyAt(35)->withoutOverlapping(120);
         $schedule->command('make:post-trend day')->hourlyAt(45)->withoutOverlapping(120);
+
+
+        $schedule->call(function(){
+            app(PublicPostScheduleExecutor::class)->updatePublicPosts();
+        })->name('Update Public Posts')->everyMinute()->withoutOverlapping(30);
 
         $schedule->call(function(){
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'day', 'page' => 1]));
@@ -35,13 +39,11 @@ class Kernel extends ConsoleKernel
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'week', 'page' => 3]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'week', 'page' => 4]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'month', 'page' => 1]));
-            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'year', 'page' => 1]));
-            \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'all', 'page' => 1]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 1]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 2]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 3]));
             \Http::get(route('api.public-post.index', ['sort_by' => 'new', 'page' => 4]));
-        })->name('cachePosts')->everyFiveMinutes()->withoutOverlapping(120);
+        })->name('cachePosts')->everyFiveMinutes()->withoutOverlapping(30);
 
         $schedule->call(function(){
             Artisan::call('make:rank-report-history all');

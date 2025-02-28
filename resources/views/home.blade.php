@@ -33,96 +33,17 @@
       {{-- main container --}}
         <div class="row m-0">
           {{-- left part: champions --}}
-          <div class="d-none d-lg-block col-lg-3 col-xl-2 p-0 m-0" v-cloak>
-            <div class="container position-sticky hide-scrollbar champions-container">
+          <div class="d-none d-xl-block col-xl-2" v-cloak>
 
-              {{-- dummy chmpaion --}}
-              <div v-if="!champions.length && !mobileScreen" v-cloak>
-                <h4 class="text-center my-1">@{{$t('home.new_champions')}}</h4>
-                @for ($i = 0; $i < 5; $i++)
-                  <div class="card champion-card-container card shadow position-relative mb-1">
-                    <div class="card-body">
-                      <div style="height: 20px; width: 100%; background: #ddd;"></div>
-                      <div class="row">
-                        <div class="col-6 pr-0">
-                          <div class="position-relative">
-                            <div class="champion-card w-100" style="background: #ddd;"></div>
-                          </div>
-                          <h5 class="text-center font-size-small" style="height: 30px">
-                          </h5>
-                        </div>
-                        <div class="col-6 pl-0">
-                          <div class="position-relative">
-                            <div class="champion-card w-100" style="background: #ddd;"></div>
-                          </div>
-                          <h5 class="text-center font-size-small" style="height: 30px">
-                        </div>
-                      </div>
-                      <div style="height: 20px; width: 100%; background: #ddd;"></div>
-                    </div>
-                  </div>
-                @endfor
-              </div>
-
-              <div v-if="champions.length && !mobileScreen" v-cloak>
-                <h4 class="text-center my-1">@{{$t('home.new_champions')}}</h4>
-                <transition-group name="list" tag="div">
-                  <div class="card champion-card-container card shadow position-relative mb-1" v-for="championResult in champions" :key="championResult.key">
-                    <div class="card-body">
-                      <div class="text-center"><a target="_blank" class="font-size-xsmall" :href="getShowGameUrl(championResult.post_serial)">@{{championResult.post_title}}</a></div>
-                      <div class="row">
-                        <div class="col-6 pr-0">
-                          <div class="position-relative">
-                            <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url + '#t=0.01'"  muted></video>
-                            <img v-else @load="handleCandicateLoaded(championResult.left)" v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.left.is_winner}" :src="championResult.left.thumb_url">
-                            <div class="champion-footer-icons">
-                              <i class="fa-solid fa-x" v-if="!championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
-                              <i class="fa-solid fa-thumbs-up" v-if="championResult.left.is_winner" v-show="!isChampionLoading(championResult.left)"></i>
-                            </div>
-                            <div v-show="isChampionLoading(championResult.left)" class="champion-card">
-                              <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
-                                <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
-                              </div>
-                            </div>
-                          </div>
-                          <h5 class="text-center font-size-small">
-                            @{{championResult.left.name}}
-                          </h5>
-                        </div>
-                        <div class="col-6 pl-0" v-if="championResult.right.name">
-                          <div class="position-relative">
-                            <video  v-if="isEndWith(championResult.right.thumb_url, 'mp4')" @loadeddata="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url + '#t=0.01'"  muted></video>
-                            <img v-else @load="handleCandicateLoaded(championResult.right)" v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100" :class="{'eliminated-image': !championResult.right.is_winner}" :src="championResult.right.thumb_url">
-                            <div class="champion-footer-icons">
-                              <i class="fa-solid fa-x" v-if="!championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
-                              <i class="fa-solid fa-thumbs-up" v-if="championResult.right.is_winner" v-show="!isChampionLoading(championResult.right)"></i>
-                            </div>
-                            <div  v-show="isChampionLoading(championResult.right)" class="champion-card">
-                              <div class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
-                                <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
-                              </div>
-                            </div>
-                          </div>
-                          <h5 class="text-center font-size-small">
-                            @{{championResult.right.name}}
-                          </h5>
-                        </div>
-                      </div>
-                      <p :key="refreshKey" class="text-right font-size-small">@{{humanizeDate(championResult.datetime)}}</p>
-                    </div>
-                  </div>
-                </transition-group>
-              </div>
-            </div>
           </div>
           {{-- main part: posts --}}
-          <div id="main-region" class="col-12 col-lg-9 col-xl-8 p-1" v-cloak>
+          <div id="main-region" class="col-12 col-xl-8 p-1 " v-cloak>
             @include('partial.home-carousel')
 
             {{-- champions --}}
-            <h4 class="d-flex d-lg-none my-1 ml-2">@{{$t('home.new_champions')}}</h4>
+            <h4 class="d-flex my-1 ml-2">@{{$t('home.new_champions')}}</h4>
             {{-- dummy champion, preserve for champion --}}
-            <div v-if="!champions.length && mobileScreen" class="d-flex d-lg-none overflow-hidden">
+            <div v-if="!champions.length" class="d-flex overflow-hidden">
               <div class="row flex-nowrap ml-0">
                   {{-- create a empty card --}}
                   @for ($i = 0; $i < 3; $i++)
@@ -152,7 +73,7 @@
               </div>
 
             </div>
-            <div v-if="champions.length && mobileScreen" class="d-flex d-lg-none overflow-x-scroll hide-scrollbar mx-2">
+            <div v-if="champions.length" class="d-flex overflow-x-scroll hide-scrollbar mx-2">
               <transition-group name="list" tag="div" class="row flex-nowrap ml-0">
                 <div class="card champion-card-container shadow col-auto list-item m-2" v-for="championResult in champions" :key="championResult.key" v-cloak>
                   <div class="card-body">
@@ -221,8 +142,6 @@
                     <i class="fas fa-caret-down"></i>
                   </button>
                   <div class="dropdown-menu">
-                    <span class="dropdown-item" @click="clickTimeRange($event, 'all')" >@{{ $t('All Time') }}</span>
-                    <span class="dropdown-item" @click="clickTimeRange($event, 'year')" >@{{ $t('This Year') }}</span>
                     <span class="dropdown-item" @click="clickTimeRange($event, 'month')" >@{{ $t('This Month') }}</span>
                     <span class="dropdown-item" @click="clickTimeRange($event, 'week')" >@{{ $t('This Week') }}</span>
                     <span class="dropdown-item" @click="clickTimeRange($event, 'day')" >@{{ $t('Today') }}</span>
@@ -409,10 +328,26 @@
           <div class="d-none d-xl-block col-xl-2">
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
             {{-- right part:ads --}}
+            <div class="pt-2 px-2 mx-auto">
+              {{-- google ads --}}
+              @include('ads.home_ad_champion_top')
+            </div>
+
+            <div class="pt-2 px-2 mx-auto">
+              {{-- google ads --}}
+              @include('ads.home_ad_champion_top')
+            </div>
+
+            <div class="pt-2 px-2 mx-auto">
+              {{-- google ads --}}
+              @include('ads.home_ad_champion_top')
+            </div>
+
             <div class="pt-2 px-2 mx-auto sticky-top-home-ad">
               {{-- google ads --}}
               @include('ads.home_ad_champion_top')
             </div>
+
             @endif
           </div>
         </div>

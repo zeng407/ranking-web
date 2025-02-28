@@ -15,18 +15,21 @@ class PostUpdateTimestampSubscriber
     {
         logger('[PostUpdateTimestampSubscriber] onPostCreated', ['post' => $event->getPost()->id]);
         CacheService::rememberPostUpdatedTimestamp(true);
+        CacheService::pullPublicPostFreshCache();
     }
 
     public function onPostDeleted(PostDeleted $event): void
     {
         logger('[PostUpdateTimestampSubscriber] onPostDeleted', ['post' => $event->getPost()->id]);
         CacheService::rememberPostUpdatedTimestamp(true);
+        CacheService::pullPublicPostFreshCache();
     }
 
     public function onPostUpdated(PostUpdated $event): void
     {
         logger('[PostUpdateTimestampSubscriber] onPostUpdated', ['post' => $event->getPost()->id]);
         CacheService::rememberPostUpdatedTimestamp(true);
+        CacheService::pullPublicPostFreshCache();
     }
 
     public function subscribe(Dispatcher $events): void
