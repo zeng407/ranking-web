@@ -25,6 +25,10 @@ class AddUserIdIntoGames extends Migration
      */
     public function down()
     {
+        if(app()->environment() === 'testing') {
+            return;
+        }
+        
         Schema::table('games', function (Blueprint $table) {
             $table->dropForeign(['user_id']);
             $table->dropColumn('user_id');

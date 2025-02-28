@@ -19,7 +19,7 @@ class PublicPostScheduleExecutor
     public function updatePublicPosts()
     {
         if (CacheService::hasPublicPostFreshCache()) {
-            // return;
+            return;
         }
 
         try {
