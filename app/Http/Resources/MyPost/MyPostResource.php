@@ -9,11 +9,11 @@ use App\Models\Post;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class PostResource
+ * Class MyPostResource
  * @package App\Http\Resources
  * @mixin Post
  */
-class PostResource extends JsonResource
+class MyPostResource extends JsonResource
 {
     /**
      * Transform the resource into an array.

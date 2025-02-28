@@ -6,7 +6,7 @@ use App\Enums\PostAccessPolicy;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MyPost\PostElementResource;
 use App\Http\Resources\MyPost\PostRankResource;
-use App\Http\Resources\MyPost\PostResource;
+use App\Http\Resources\MyPost\MyPostResource;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\Filters\ElementFilter;
@@ -41,7 +41,7 @@ class MyPostController extends Controller
             ->with(['post_policy','tags'])
             ->paginate();
 
-        return PostResource::collection($post);
+        return MyPostResource::collection($post);
     }
 
     public function show(Post $post)
@@ -51,7 +51,7 @@ class MyPostController extends Controller
          */
         $this->authorize('edit', $post);
 
-        return PostResource::make($post);
+        return MyPostResource::make($post);
     }
 
     public function elements(Request $request, Post $post)
@@ -139,7 +139,7 @@ class MyPostController extends Controller
 
         $this->postService->update($post, $data);
         $this->postService->syncTags($post, data_get($data, 'tags', []));
-        return PostResource::make($post->refresh());
+        return MyPostResource::make($post->refresh());
     }
 
     public function delete(Request $request, Post $post)

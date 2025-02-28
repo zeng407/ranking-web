@@ -14,7 +14,7 @@ use App\Http\Resources\Game\GameRoomUserResource;
 use App\Http\Resources\Game\GameRoomVoteResource;
 use App\Http\Resources\Game\GameRoundResource;
 use App\Http\Resources\Game\HostGameRoomResource;
-use App\Http\Resources\PublicPostResource;
+use App\Http\Resources\PostResource;
 use App\Jobs\NotifyGameBet;
 use App\Models\Game;
 use App\Models\GameRoom;
@@ -49,7 +49,7 @@ class GameController extends Controller
         /** @see \App\Policies\PostPolicy::publicRead() */
         $this->authorize('public-read', [$post, $request->header('Authorization')]);
 
-        return PublicPostResource::make($post);
+        return PostResource::make($post);
     }
 
     public function nextRound(Game $game)

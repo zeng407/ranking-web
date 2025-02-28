@@ -8,11 +8,6 @@ use App\Models\Post;
 use App\Services\RankService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * Class PublicPostResource
- * @package App\Http\Resources
- * @mixin Post
- */
 class PublicPostResource extends JsonResource
 {
     /**
@@ -23,75 +18,21 @@ class PublicPostResource extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var RankService */
-        $rankService = app(RankService::class);
-        $ranks = collect($rankService->getRankReports($this->resource, 5, 1)->items());
-        if($ranks->count() >= 2) {
-            $ranks = $ranks->shuffle();
-            $element1 = $ranks->pop()->element;
-            $element2 = $ranks->pop()->element;
-        }else{
-            $elements = $this->elements->shuffle()->take(2);
-            $element1 = $elements->pop();
-            $element2 = $elements->pop();
-        }
-
+        $data = $this->data;
         return [
-            'title' => $this->title,
-            'serial' => $this->serial,
-            'is_private' => $this->isPrivate(),
+            'title' => $data['title'],
+            'serial' => $data['serial'],
+            'is_private' => $data['is_private'],
             'description' => $this->description,
-            'element1' => $this->getElement($element1),
-            'element2' => $this->getElement($element2),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'play_count' => $this->games()->count(),
-            'elements_count' => $this->elements()->count(),
-            'tags' => $this->tags->pluck('name')->toArray(),
-            'is_censored' => $this->is_censored,
+            'element1' => $data['element1'],
+            'element2' => $data['element2'],
+            'created_at' => $data['created_at'],
+            'updated_at' => $data['updated_at'],
+            'play_count' => $data['play_count'],
+            'elements_count' => $data['elements_count'],
+            'tags' => $this->tags,
+            'is_censored' => $data['is_censored'],
         ];
     }
 
-    protected function getElement(?Element $element)
-    {
-        if(!$element) return [
-            'video_source' => null,
-            'type' => null,
-            'id' => null,
-            'url' => null,
-            'url2' => null,
-            'title' => null,
-            'previewable'=> false
-        ];
-
-        return [
-            'video_source' => $element->video_source,
-            'type' => $element->type,
-            'id' => $element->id,
-            'url' => $element->getLowThumbUrl(),
-            'url2' => $element->imgur_image?->link,
-            'title' => $element->title,
-            'previewable'=> $this->isPreviewable($element)
-        ];
-    }
-
-    protected function isPreviewable(?Element $element)
-    {
-        if (!$element) {
-            return false;
-        }
-        return $element->type === \App\Enums\ElementType::IMAGE ||
-            $element->video_source === \App\Enums\VideoSource::YOUTUBE ||
-            $element->video_source === \App\Enums\VideoSource::YOUTUBE_EMBED ||
-            $element->video_source === \App\Enums\VideoSource::BILIBILI_VIDEO ||
-            $element->video_source === \App\Enums\VideoSource::TWITCH_VIDEO ||
-            $element->video_source === \App\Enums\VideoSource::TWITCH_CLIP ||
-            ($element->video_source === \App\Enums\VideoSource::URL && $this->isImageType($element->thumb_url));
-    }
-
-    protected function isImageType($url)
-    {
-        // string is end with images type
-        return preg_match('/\.(jpeg|jpg|png|gif|webp)$/', $url);
-    }
 }

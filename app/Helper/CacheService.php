@@ -5,6 +5,7 @@ namespace App\Helper;
 use App\Enums\PostAccessPolicy;
 use App\Http\Resources\Game\ChampionResource;
 use App\Http\Resources\Game\GameRoomUserResource;
+use App\Http\Resources\PostResource;
 use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
 use App\Models\GameRoom;
@@ -12,8 +13,10 @@ use App\Models\GameRoomUser;
 use App\Models\User;
 use App\Models\UserGameResult;
 use App\Repositories\Filters\PostFilter;
+use App\Repositories\PublicPostRepository;
 use App\Services\HomeCarouselService;
 use App\Services\PostService;
+use App\Services\PublicPostService;
 use App\Services\SoketiService;
 use App\Services\TagService;
 use Cache;
@@ -66,18 +69,16 @@ class CacheService
     {
         $url = $request->getQueryString();
         $cacheName = Cache::get('post_update_at').'/'.md5($url);
-        $seconds = 60 * 20; // 20 minutes
+        $seconds = 60 * 5; // 5 minutes
         return static::remember($cacheName, $seconds, function() use ($request, $sort) {
-            $posts = app(PostService::class)->getList([
-                PostFilter::PUBLIC => true,
-                PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
+            $posts = app(PublicPostService::class)->getList([
                 PostFilter::KEYWORD_LIKE => $request->query('k')
             ],[
                 'sort_by' => $sort,
             ], [
                 'per_page' => config('setting.home_post_per_page')
-            ], ['post_policy', 'tags']);
-            foreach($posts as $key => $post ) {
+            ]);
+            foreach($posts as $key => $post) {
                 $posts[$key] = PublicPostResource::make($post)->toArray($request);
             }
             return $posts;
@@ -106,6 +107,21 @@ class CacheService
     static public function clearCarousels()
     {
         Cache::forget('carousels');
+    }
+
+    static public function hasPublicPostFreshCache()
+    {
+        return Cache::has('public_post_fresh');
+    }
+
+    static public function putPublicPostFreshCache()
+    {
+        Cache::put('public_post_fresh', true, 60 * 10);
+    }
+
+    static public function pullPublicPostFreshCache()
+    {
+        return Cache::pull('public_post_fresh');
     }
 
     static public function putJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
