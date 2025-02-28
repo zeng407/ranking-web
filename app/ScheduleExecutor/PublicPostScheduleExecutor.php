@@ -58,7 +58,7 @@ class PublicPostScheduleExecutor
     protected function updateNewPublicPosts()
     {
         PublicPost::getQuery()->update([
-            'new_position' => 9999,
+            'is_dirty' => true,
         ]);
 
         $counter = 0;
@@ -77,15 +77,22 @@ class PublicPostScheduleExecutor
                     'title' => $post->title,
                     'description' => $post->description,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => CacheService::rememberPostResource($post)
+                    'data' => CacheService::rememberPostResource($post),
+                    'is_dirty' => false,
                 ]);
             });
+
+        PublicPost::getQuery()
+            ->where('is_dirty', true)
+            ->update([
+                'new_position' => 9999,
+            ]);
     }
 
     protected function updateTodayPublicPosts()
     {
         PublicPost::getQuery()->update([
-            'day_position' => 9999,
+            'is_dirty' => true,
         ]);
 
         $counter = 0;
@@ -110,15 +117,22 @@ class PublicPostScheduleExecutor
                     'day_position' => $counter,
                     'title' => $post->title,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => CacheService::rememberPostResource($post)
+                    'data' => CacheService::rememberPostResource($post),
+                    'is_dirty' => false,
                 ]);
             });
+
+        PublicPost::getQuery()
+            ->where('is_dirty', true)
+            ->update([
+                'day_position' => 9999,
+            ]);
     }
 
     protected function updateWeekPublicPosts()
     {
         PublicPost::getQuery()->update([
-            'week_position' => 9999,
+            'is_dirty' => true,
         ]);
 
         $counter = 0;
@@ -143,15 +157,22 @@ class PublicPostScheduleExecutor
                     'week_position' => $counter,
                     'title' => $post->title,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => CacheService::rememberPostResource($post)
+                    'data' => CacheService::rememberPostResource($post),
+                    'is_dirty' => false,
                 ]);
             });
+
+        PublicPost::getQuery()
+            ->where('is_dirty', true)
+            ->update([
+                'week_position' => 9999,
+            ]);
     }
 
     protected function updateMonthPublicPosts()
     {
         PublicPost::getQuery()->update([
-            'month_position' => 9999,
+            'is_dirty' => true,
         ]);
 
         $counter = 0;
@@ -176,9 +197,16 @@ class PublicPostScheduleExecutor
                     'month_position' => $counter,
                     'title' => $post->title,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => CacheService::rememberPostResource($post)
+                    'data' => CacheService::rememberPostResource($post),
+                    'is_dirty' => false,
                 ]);
             });
+
+        PublicPost::getQuery()
+            ->where('is_dirty', true)
+            ->update([
+                'month_position' => 9999,
+            ]);
     }
 
     protected function clearPostResourceCache()

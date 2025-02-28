@@ -26,7 +26,8 @@ class PublicPost extends Model
         'title',
         'description',
         'tags',
-        'data'
+        'data',
+        'is_dirty'
     ];
 
     /**
