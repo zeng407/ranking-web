@@ -25,8 +25,32 @@ class PublicPostScheduleExecutor
         try {
             DB::beginTransaction();
             $this->updateNewPublicPosts();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            report($e);
+        }
+
+        try {
+            DB::beginTransaction();
             $this->updateTodayPublicPosts();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            report($e);
+        }
+
+        try {
+            DB::beginTransaction();
             $this->updateWeekPublicPosts();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            report($e);
+        }
+
+        try {
+            DB::beginTransaction();
             $this->updateMonthPublicPosts();
             DB::commit();
             CacheService::putPublicPostFreshCache();
