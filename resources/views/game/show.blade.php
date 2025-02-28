@@ -89,7 +89,7 @@
         {{-- main --}}
         <div class="row">
           {{-- left part --}}
-          <div :class="{'col-xl-2':gameRoomSerial}">
+          <div class="col-xl-2" v-if="isBetGameClient">
 
             @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
             <div class="p-lg-1 p-xl-2">
@@ -99,7 +99,7 @@
           </div>
 
           {{-- elements --}}
-          <div :class="{'col-xl-7':gameRoomSerial , 'col-12': !gameRoomSerial}">
+          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial}">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -182,7 +182,7 @@
                     </div>
                     <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
                       <youtube :video-id="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
-                        :player-vars="{ controls: 1, autoplay: !isMobileScreen && !gameRoom, rel: 0 , origin: origin, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
+                        :player-vars="{ controls: 1, autoplay: !isMobileScreen && !isBetGameClient, rel: 0 , origin: origin, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
                       </youtube>
                     </div>
                     <div v-else-if="isYoutubeEmbedSource(le) && !isDataLoading" class="d-flex">
@@ -305,7 +305,7 @@
                     </div>
                     <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
                       <youtube :video-id="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
-                        :player-vars="{ controls: 1, autoplay: !isMobileScreen && !gameRoom, rel: 0, origin: origin,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
+                        :player-vars="{ controls: 1, autoplay: !isMobileScreen && !isBetGameClient, rel: 0, origin: origin,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
                       </youtube>
                     </div>
                     <div v-else-if="isYoutubeEmbedSource(re) && !isDataLoading" class="d-flex">
@@ -565,14 +565,14 @@
               <div>
                 <button v-if="!showGameRoomVotes"
                   style="min-width: 45px"
-                  class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
+                  class="btn btn-outline-dark m-1" @click="toggleShowGameRoomVotes">
                   <h3>
                     <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h3>
                 </button>
                 <button v-else
                   style="min-width: 45px"
-                  class="btn btn-outline-dark mx-1" @click="toggleShowGameRoomVotes">
+                  class="btn btn-outline-dark m-1" @click="toggleShowGameRoomVotes">
                   <h3>
                     <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h3>

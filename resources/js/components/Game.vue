@@ -279,12 +279,12 @@ export default {
       if(this.showGameRoomVotes){
         this.getRoomVotes();
         if(!this.isListeningGameBet){
-          this.isListeningGameBet = true;
-          this.listenGameBet();
+          this.isListeningGameBet = setInterval(() => {
+            this.getRoomVotes();
+          }, 5 * 1000); // 5 seconds
         }
       }else{
         if(this.isListeningGameBet){
-          Echo.leave("game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial);
           this.isListeningGameBet = false;
         }
       }
@@ -1266,7 +1266,7 @@ export default {
       });
     },
     videoHoverIn(myElement, theirElement, left) {
-      if (this.isMobileScreen) {
+      if (this.isMobileScreen || this.isBetGameClient) {
         return;
       }
       this.mousePosition = left;
