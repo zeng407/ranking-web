@@ -47,10 +47,20 @@ class PublicPostScheduleExecutor
             report($e);
         }
 
+        try {
+            $this->clearPostResourceCache();
+        } catch (\Exception $e) {
+            report($e);
+        }
+
     }
 
     protected function updateNewPublicPosts()
     {
+        PublicPost::getQuery()->update([
+            'new_position' => 9999,
+        ]);
+
         $counter = 0;
         Post::whereRelation('post_policy','access_policy','=',PostAccessPolicy::PUBLIC)
             ->whereHas('elements', null, '>=', config('setting.post_min_element_count'))
@@ -67,13 +77,17 @@ class PublicPostScheduleExecutor
                     'title' => $post->title,
                     'description' => $post->description,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => PostResource::make($post)->toArray(request())
+                    'data' => CacheService::rememberPostResource($post)
                 ]);
             });
     }
 
     protected function updateTodayPublicPosts()
     {
+        PublicPost::getQuery()->update([
+            'day_position' => 9999,
+        ]);
+
         $counter = 0;
         $startDate = today()->toDateString();
         PostTrend::with(['post'])
@@ -96,13 +110,17 @@ class PublicPostScheduleExecutor
                     'day_position' => $counter,
                     'title' => $post->title,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => PostResource::make($post)->toArray(request())
+                    'data' => CacheService::rememberPostResource($post)
                 ]);
             });
     }
 
     protected function updateWeekPublicPosts()
     {
+        PublicPost::getQuery()->update([
+            'week_position' => 9999,
+        ]);
+
         $counter = 0;
         $startDate = today()->startOfWeek()->toDateString();
         PostTrend::with(['post'])
@@ -125,13 +143,17 @@ class PublicPostScheduleExecutor
                     'week_position' => $counter,
                     'title' => $post->title,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => PostResource::make($post)->toArray(request())
+                    'data' => CacheService::rememberPostResource($post)
                 ]);
             });
     }
 
     protected function updateMonthPublicPosts()
     {
+        PublicPost::getQuery()->update([
+            'month_position' => 9999,
+        ]);
+
         $counter = 0;
         $startDate = today()->startOfMonth()->toDateString();
         PostTrend::with(['post'])
@@ -154,8 +176,16 @@ class PublicPostScheduleExecutor
                     'month_position' => $counter,
                     'title' => $post->title,
                     'tags' => $post->tags->pluck('name')->implode(','),
-                    'data' => PostResource::make($post)->toArray(request())
+                    'data' => CacheService::rememberPostResource($post)
                 ]);
+            });
+    }
+
+    protected function clearPostResourceCache()
+    {
+        PublicPost::select('post_id')
+            ->each(function ($publicPost) {
+                CacheService::pullPostResourceByPostId($publicPost->post_id);
             });
     }
 }
