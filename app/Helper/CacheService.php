@@ -10,6 +10,7 @@ use App\Http\Resources\PublicPostResource;
 use App\Models\Game;
 use App\Models\GameRoom;
 use App\Models\GameRoomUser;
+use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
 use App\Repositories\Filters\PostFilter;
@@ -102,6 +103,21 @@ class CacheService
         return static::remember($key, $seconds, function() {
             return app(HomeCarouselService::class)->getHomeCarouselItems();
         }, $refresh);
+    }
+
+    static public function rememberPostResource(Post $post)
+    {
+        $key = 'post_resource_'.$post->id;
+        $seconds = 60 * 60; // 1 hour
+        return static::remember($key, $seconds, function() use ($post) {
+            return PostResource::make($post)->toArray(request());
+        }, false);
+    }
+
+    static public function pullPostResourceByPostId($postId)
+    {
+        $key = 'post_resource_'.$postId;
+        return Cache::pull($key);
     }
 
     static public function clearCarousels()

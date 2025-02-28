@@ -30,7 +30,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->call(function(){
             app(PublicPostScheduleExecutor::class)->updatePublicPosts();
-        })->name('Update Public Posts')->everyMinute()->withoutOverlapping(30);
+        })->name('Update Public Posts')->everyMinute()->withoutOverlapping(60);
 
         $schedule->call(function(){
             \Http::get(route('api.public-post.index', ['sort_by' => 'hot', 'range' => 'day', 'page' => 1]));
