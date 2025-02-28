@@ -328,10 +328,26 @@
           <div class="d-none d-xl-block col-xl-2">
             @if(config('services.google_ad.enabled') && config('services.google_ad.home_page'))
             {{-- right part:ads --}}
+            <div class="pt-2 px-2 mx-auto">
+              {{-- google ads --}}
+              @include('ads.home_ad_champion_top')
+            </div>
+
+            <div class="pt-2 px-2 mx-auto">
+              {{-- google ads --}}
+              @include('ads.home_ad_champion_top')
+            </div>
+
+            <div class="pt-2 px-2 mx-auto">
+              {{-- google ads --}}
+              @include('ads.home_ad_champion_top')
+            </div>
+
             <div class="pt-2 px-2 mx-auto sticky-top-home-ad">
               {{-- google ads --}}
               @include('ads.home_ad_champion_top')
             </div>
+
             @endif
           </div>
         </div>
