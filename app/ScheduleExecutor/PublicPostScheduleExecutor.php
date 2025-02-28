@@ -23,39 +23,27 @@ class PublicPostScheduleExecutor
         }
 
         try {
-            DB::beginTransaction();
             $this->updateNewPublicPosts();
-            DB::commit();
         } catch (\Exception $e) {
-            DB::rollBack();
             report($e);
         }
 
         try {
-            DB::beginTransaction();
             $this->updateTodayPublicPosts();
-            DB::commit();
         } catch (\Exception $e) {
-            DB::rollBack();
             report($e);
         }
 
         try {
-            DB::beginTransaction();
             $this->updateWeekPublicPosts();
-            DB::commit();
         } catch (\Exception $e) {
-            DB::rollBack();
             report($e);
         }
 
         try {
-            DB::beginTransaction();
             $this->updateMonthPublicPosts();
-            DB::commit();
             CacheService::putPublicPostFreshCache();
         } catch (\Exception $e) {
-            DB::rollBack();
             report($e);
         }
 
@@ -63,10 +51,6 @@ class PublicPostScheduleExecutor
 
     protected function updateNewPublicPosts()
     {
-        PublicPost::getQuery()->update([
-            'new_position' => 9999
-        ]);
-
         $counter = 0;
         Post::whereRelation('post_policy','access_policy','=',PostAccessPolicy::PUBLIC)
             ->whereHas('elements', null, '>=', config('setting.post_min_element_count'))
@@ -90,10 +74,6 @@ class PublicPostScheduleExecutor
 
     protected function updateTodayPublicPosts()
     {
-        PublicPost::getQuery()->update([
-            'day_position' => 9999
-        ]);
-
         $counter = 0;
         $startDate = today()->toDateString();
         PostTrend::with(['post'])
@@ -123,10 +103,6 @@ class PublicPostScheduleExecutor
 
     protected function updateWeekPublicPosts()
     {
-        PublicPost::getQuery()->update([
-            'week_position' => 9999
-        ]);
-
         $counter = 0;
         $startDate = today()->startOfWeek()->toDateString();
         PostTrend::with(['post'])
@@ -156,10 +132,6 @@ class PublicPostScheduleExecutor
 
     protected function updateMonthPublicPosts()
     {
-        PublicPost::getQuery()->update([
-            'month_position' => 9999
-        ]);
-
         $counter = 0;
         $startDate = today()->startOfMonth()->toDateString();
         PostTrend::with(['post'])
