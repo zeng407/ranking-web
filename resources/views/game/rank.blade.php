@@ -26,16 +26,16 @@
             <div class="row m-0">
 
                 {{-- left part: ads --}}
-                {{-- <div class="d-none d-lg-block col-lg-2">
-                  @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
+                <div class="d-none d-lg-block col-lg-2">
+                  {{-- @if(config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
                   <div class="p-lg-1 p-xl-2">
                     @include('ads.rank_ad_sides')
                   </div>
-                  @endif
-                </div> --}}
+                  @endif --}}
+                </div>
 
                 {{-- main part --}}
-                <div class="col-12 col-lg-10">
+                <div class="col-12 col-lg-8">
                     @if (!$embed)
                         <div class="row mb-3">
                             <div class="col-10">

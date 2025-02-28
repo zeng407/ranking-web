@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\PostAccessPolicy;
 use App\Helper\CacheService;
+use App\Helper\ClientRequestResolver;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Comment\CommentResource;
 use App\Http\Resources\Game\ChampionResource;
@@ -18,6 +19,8 @@ use App\Models\Comment;
 
 class PublicPostController extends Controller
 {
+    use ClientRequestResolver;
+
     protected $postService;
 
     public function __construct(PostService $postService)
@@ -75,7 +78,7 @@ class PublicPostController extends Controller
                 ->setContent($request->input('content'))
                 ->setUser($request->user())
                 ->setAnonymousId(session()->get('anonymous_id'))
-                ->setIp($request->ip())
+                ->setIp($this->getClientIp($request))
                 ->setLabel(['champions' => $this->postService->getUserLastVotes($post, $request->user(), session()->get('anonymous_id', 'unknown'))])
                 ->setAnonymousMode($request->input('anonymous', false));
             return $this->postService->createComment($commentBuilder);

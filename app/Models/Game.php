@@ -18,6 +18,7 @@ class Game extends Model
      * @var string[]
      */
     protected $fillable = [
+        'user_id',
         'serial',
         'element_count',
         'candidates',

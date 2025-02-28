@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 /**
- * @mixin IdeHelperPost
+ * @mixin IdeHelperPublicPost
  */
 class PublicPost extends Model
 {

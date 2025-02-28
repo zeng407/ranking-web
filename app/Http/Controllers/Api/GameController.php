@@ -84,6 +84,7 @@ class GameController extends Controller
         $game = $this->gameService->createGame(
             $post,
             $request->element_count,
+            $request->user()?->id,
             $this->getClientIp($request),
             $this->getClientIpContry($request)
         );

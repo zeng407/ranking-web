@@ -43,10 +43,11 @@ class GameService
         ]);
     }
 
-    public function createGame(Post $post,int $elementCount, ?string $ip = null, ?string $ipCountry = null): Game
+    public function createGame(Post $post,int $elementCount, ?int $userId = null, ?string $ip = null, ?string $ipCountry = null): Game
     {
         /** @var Game $game */
         $game = $post->games()->create([
+            'user_id' => $userId,
             'serial' => Uuid::uuid1()->toString(),
             'element_count' => $elementCount,
             'ip' => $ip,
@@ -202,7 +203,8 @@ class GameService
                         ]);
                 }
                 $game->update([
-                    'vote_count' => $game->vote_count + 1
+                    'vote_count' => $game->vote_count + 1,
+                    'user_id' => request()->user()?->id
                 ]);
             });
 
@@ -448,5 +450,17 @@ class GameService
             'total_played' => $totalPlayed,
             'total_correct' => $totalCorrect
         ]);
+    }
+
+    public function getUserLastGameSerial(Post $post, ?User $user)
+    {
+        if(!$user){
+            return null;
+        }
+
+        return Game::where('post_id', $post->id)
+            ->where('user_id', $user?->id)
+            ->orderByDesc('id')
+            ->value('serial');
     }
 }
