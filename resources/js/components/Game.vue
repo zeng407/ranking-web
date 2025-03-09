@@ -602,6 +602,7 @@ export default {
       $("#gameSettingPanel").modal("hide");
     },
     continueGame() {
+      let gameSerial = '';
       if(this.userLastGameSerial){
         gameSerial = this.userLastGameSerial;
       }else{
