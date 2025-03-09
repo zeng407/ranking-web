@@ -602,7 +602,11 @@ export default {
       $("#gameSettingPanel").modal("hide");
     },
     continueGame() {
-      const gameSerial = this.$cookies.get(this.postSerial);
+      if(this.userLastGameSerial){
+        gameSerial = this.userLastGameSerial;
+      }else{
+        gameSerial = this.$cookies.get(this.postSerial)
+      }
       if (gameSerial) {
         this.gameSerial = gameSerial;
         this.nextRound(null, false);
