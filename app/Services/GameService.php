@@ -458,9 +458,16 @@ class GameService
             return null;
         }
 
-        return Game::where('post_id', $post->id)
+        $gmae = Game::where('post_id', $post->id)
             ->where('user_id', $user?->id)
             ->orderByDesc('id')
-            ->value('serial');
+            ->select(['completed_at', 'serial'])
+            ->first();
+
+        if($gmae && !$gmae->completed_at){
+            return $gmae->serial;
+        }
+
+        return null;
     }
 }
