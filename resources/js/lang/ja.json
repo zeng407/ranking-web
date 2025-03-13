@@ -82,6 +82,7 @@
     "edit_post.sort_by_title": "タイトルでソート",
     "edit_post.sort_by_created_time": "作成時間順でソート",
     "edit_post.batch_upload_timeout": "応答時間が長すぎます。ページを更新してください",
+    "edit_post.upload_file_count": "Uploaded",
 
     "edit.element.upload-image": "画像をアップロード",
     "Current URL": "現在のURL",

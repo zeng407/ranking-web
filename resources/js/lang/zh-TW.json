@@ -85,6 +85,7 @@
     "edit_post.sort_by_title": "按標題排序",
     "edit_post.sort_by_created_time": "按建立時間排序",
     "edit_post.batch_upload_timeout": "回應時間過長，請重新整理頁面",
+    "edit_post.upload_file_count": "已上傳",
 
 
     "You will lose all unsaved changes!": "要取消編輯嗎?",
