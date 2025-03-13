@@ -284,16 +284,19 @@
                   <label class="custom-file-label" for="image-upload">{{$t('Choose File...')}}</label>
                 </div>
               </div>
+              <div class="col-12">
+                <p class="p-1" v-if="uploadImageProgressText">{{ $t('edit_post.upload_file_count') }}: {{ uploadImageProgressText }}</p>
+              </div>
             </div>
             <!-- upload progress bar -->
-            <div class="progress mb-1" v-for="(progress, name) in uploadingFiles">
+            <div class="progress mb-1" v-for="(object, filename) in uploadingFiles">
               <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0"
-                aria-valuemax="100" :aria-valuenow="progress" :style="{ 'width': progress + '%' , 'background' : progress == -1 ? 'red': ''}">
+                aria-valuemax="100" :aria-valuenow="object.progress" :style="{ 'width': object.progress + '%' , 'background' : object.progress == -1 ? 'red': ''}">
                 <!-- if progress == -1 , add dismiss button -->
-                <span v-if="progress != -1">{{ name }}</span>
-                <span v-if="progress == -1" class="cursor-pointer" @click="cancelUpload(name)">
-                  {{ name }}
-                  <i class="fas fa-times"></i>
+                <span v-if="object.progress != -1">{{ filename }}</span>
+                <span v-if="object.progress == -1" class="cursor-pointer" @click="reUpload(object.file, $event)">
+                  {{ filename }}
+                    <i class="fas fa-redo"></i>
                 </span>
               </div>
             </div>
@@ -903,6 +906,7 @@ export default {
 
       //onImageError
       errorImages: [],
+      uploadImageProgressText: "",
     }
   },
   components: {
@@ -1304,38 +1308,48 @@ export default {
     },
 
     /** Image/Video **/
-    uploadMedias: function (event) {
-      Array.from(event.target.files).forEach(file => {
+    uploadMedias: async function (event) {
+      let counter = 0;
+      this.uploadImageProgressText = counter + "/" + event.target.files.length;
+      for (const file of Array.from(event.target.files)) {
         let form = new FormData();
         form.append('file', file);
         form.append('post_serial', this.post.serial);
-        axios.post(this.createImageElementEndpoint, form, {
+        try {
+          await axios.post(this.createImageElementEndpoint, form, {
           onUploadProgress: progressEvent => {
-            this.updateProgressBarValue(file, progressEvent);
-          }
-        })
-          .then(res => {
-            this.loadElements(1);
-            this.deleteProgressBarValue(file);
-            Swal.fire({
-              position: "top-end",
-              showConfirmButton: false,
-              title: this.$t("Uploaded!"),
-              toast: true,
-              text: this.$t("The file has been uploaded."),
-              icon: "success",
-              timer: 3000
-            });
-          })
-          .catch((err) => {
-            this.showAlert(err.response.data.message || err.response.statusText, 'danger');
-            this.setProgressBarValueFailed(file);
+              this.updateProgressBarValue(file, progressEvent);
+            }
           });
-      });
+          this.loadElements(1);
+          this.deleteProgressBarValue(file);
+          Swal.fire({
+            position: "top-end",
+            showConfirmButton: false,
+            title: this.$t("Uploaded!"),
+            toast: true,
+            text: this.$t("The file has been uploaded."),
+            icon: "success",
+            timer: 3000
+          });
+          counter++;
+          this.uploadImageProgressText = counter + "/" + event.target.files.length;
+        } catch (err) {
+          this.showAlert(err.response.data.message || err.response.statusText, 'danger');
+          this.setProgressBarValueFailed(file);
+        }
+        await new Promise(r => setTimeout(r, 1000));
+      }
       event.target.value = '';
     },
     cancelUpload: function (file) {
-      this.deleteProgressBarValue({ name: file });
+      this.deleteProgressBarValue({ name: file.filename });
+    },
+    reUpload: async function (file, event) {
+      // change this target text to upload...
+      event.target.innerText = this.$t('Upload...');
+      this.deleteProgressBarValue({ name: file.filename });
+      this.uploadMedias({ target: { files: [file] } });
     },
     onImageError: function (element, event) {
       if(this.errorImages.includes(element.id)) {
@@ -1450,7 +1464,7 @@ export default {
 
     updateProgressBarValue: function (file, progressEvent) {
       let filename = file.name;
-      this.$set(this.uploadingFiles, filename, Math.round(progressEvent.loaded / progressEvent.total * 100));
+      this.$set(this.uploadingFiles, filename, {file: file, progress: Math.round(progressEvent.loaded / progressEvent.total * 100)});
     },
     deleteProgressBarValue: function (file) {
       delete this.uploadingFiles[file.name];
@@ -1458,7 +1472,7 @@ export default {
     },
     setProgressBarValueFailed: function (file) {
       let filename = file.name;
-      this.$set(this.uploadingFiles, filename, -1);
+      this.$set(this.uploadingFiles, filename, {file: file, progress: -1});
     },
 
     /** Time **/
@@ -1508,7 +1522,7 @@ export default {
       // console.log('clickTwitchPlayButton');
       if(element.video_source === 'twitch_video'){
         let player = this.loadTwitchVideo(index, element);
-        
+
         let isPaused = player.isPaused();
         if(isPaused){
           player.play();
