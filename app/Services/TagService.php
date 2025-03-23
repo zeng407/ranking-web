@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\PostAccessPolicy;
 use App\Helper\CacheService;
+use App\Models\PublicPost;
 use App\Repositories\Filters\PostFilter;
 use DB;
 use App\Models\Tag;
@@ -33,31 +34,30 @@ class TagService
     public function getHotTags(int $limit = 10)
     {
         // get the hot psots
-        $posts = app(PostService::class)->getList([
-            PostFilter::PUBLIC => true,
-            PostFilter::ELEMENTS_COUNT_GTE => config('setting.post_min_element_count'),
-        ],[
+        $posts = app(PublicPostService::class)->getList(
+            [],[
             'sort_by' => 'hot_week',
             'sort_dir' => 'week',
         ], [
-            'per_page' => config('setting.home_post_per_page')
-        ], ['post_policy', 'tags']);
+            'per_page' => $limit
+        ]);
 
         $tags = [];
         foreach ($posts as $post) {
-            foreach ($post->tags as $tag) {
-                if(!in_array($tag->name, $tags)) {
-                    $tags[] = $tag->name;
+            foreach (json_decode($post->tags,true) as $tag) {
+                if(!in_array($tag, $tags)) {
+                    $tags[] = $tag;
                 }
             }
         }
-        $tags = Tag::whereIn('name', $tags)
-            ->withCount('posts')
-            ->orderBy('posts_count', 'desc')
-            ->limit($limit)
-            ->get()
+        $tags = collect($tags)
             ->mapWithKeys(function ($tag) {
-                return [$tag->name => $tag->posts_count];
+
+                $count = PublicPost::where('tags', 'like', '%' . $tag . '%')
+                    ->orWhere('title', 'like', '%' . $tag . '%')
+                    ->orWhere('description', 'like', '%' . $tag . '%')
+                    ->count();
+                return [$tag => $count];
             });
         return $tags;
     }

@@ -11,8 +11,6 @@ use Illuminate\Database\Eloquent\Builder;
 class PublicPostFilter
 {
     const KEYWORD_LIKE = 'keyword_like';
-    const ELEMENTS_COUNT_GTE = 'elements_count_gte';
-    const PUBLIC = 'public';
 
     public static function apply(Builder $query, array $condition)
     {

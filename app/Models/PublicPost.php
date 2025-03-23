@@ -37,7 +37,6 @@ class PublicPost extends Model
      */
     protected $casts = [
         'data' => 'array',
-        'tags' => 'array'
     ];
 
     public function post()

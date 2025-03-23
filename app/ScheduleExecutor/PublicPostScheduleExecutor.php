@@ -76,7 +76,7 @@ class PublicPostScheduleExecutor
                     'new_position' => $counter,
                     'title' => $post->title,
                     'description' => $post->description,
-                    'tags' => $post->tags->pluck('name')->implode(','),
+                    'tags' => json_encode($post->tags->pluck('name')->toArray(), JSON_UNESCAPED_UNICODE),
                     'data' => CacheService::rememberPostResource($post),
                     'is_dirty' => false,
                 ]);
@@ -116,7 +116,7 @@ class PublicPostScheduleExecutor
                     'post_id' => $post->id,
                     'day_position' => $counter,
                     'title' => $post->title,
-                    'tags' => $post->tags->pluck('name')->implode(','),
+                    'tags' => json_encode($post->tags->pluck('name')->toArray(), JSON_UNESCAPED_UNICODE),
                     'data' => CacheService::rememberPostResource($post),
                     'is_dirty' => false,
                 ]);
@@ -156,7 +156,7 @@ class PublicPostScheduleExecutor
                     'post_id' => $post->id,
                     'week_position' => $counter,
                     'title' => $post->title,
-                    'tags' => $post->tags->pluck('name')->implode(','),
+                    'tags' => json_encode($post->tags->pluck('name')->toArray(), JSON_UNESCAPED_UNICODE),
                     'data' => CacheService::rememberPostResource($post),
                     'is_dirty' => false,
                 ]);
@@ -196,7 +196,7 @@ class PublicPostScheduleExecutor
                     'post_id' => $post->id,
                     'month_position' => $counter,
                     'title' => $post->title,
-                    'tags' => $post->tags->pluck('name')->implode(','),
+                    'tags' => json_encode($post->tags->pluck('name')->toArray(), JSON_UNESCAPED_UNICODE),
                     'data' => CacheService::rememberPostResource($post),
                     'is_dirty' => false,
                 ]);
