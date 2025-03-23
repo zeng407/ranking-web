@@ -19,6 +19,7 @@ class PublicPostResource extends JsonResource
     public function toArray($request)
     {
         $data = $this->data;
+
         return [
             'title' => $data['title'],
             'serial' => $data['serial'],
@@ -30,7 +31,7 @@ class PublicPostResource extends JsonResource
             'updated_at' => $data['updated_at'],
             'play_count' => $data['play_count'],
             'elements_count' => $data['elements_count'],
-            'tags' => $this->tags,
+            'tags' => json_decode($this->tags, true),
             'is_censored' => $data['is_censored'],
         ];
     }
