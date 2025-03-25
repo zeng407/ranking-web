@@ -215,8 +215,7 @@ class CacheService
         $key = 'champion';
         $seconds = 60 * 10; // 10 minute
         return static::remember($key, $seconds, function() {
-            $games = UserGameResult::with('game', 'champion', 'loser', 'game.post')
-                ->whereHas('game.post', function ($query) {
+            $games = UserGameResult::whereHas('game.post', function ($query) {
                     $query->where('is_censored', false)
                         ->whereHas('post_policy', function ($query) {
                             $query->where('access_policy', PostAccessPolicy::PUBLIC);
