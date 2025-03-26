@@ -26,6 +26,7 @@ class UpdateRankReport implements ShouldQueue, ShouldBeUnique
     public function __construct(Post $post)
     {
         $this->post = $post;
+        $this->onQueue('rank_report_history');
     }
 
     /**
