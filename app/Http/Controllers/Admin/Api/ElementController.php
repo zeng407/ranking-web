@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Element;
 use App\Models\Post;
+use App\Services\ElementService;
 
 class ElementController extends Controller
 {
@@ -29,7 +30,7 @@ class ElementController extends Controller
     public function deleteElement($postId, $elementId)
     {
         $element = Element::findOrFail($elementId);
-        $element->delete();
+        app(ElementService::class)->delete($element);
         return response()->json();
     }
 }

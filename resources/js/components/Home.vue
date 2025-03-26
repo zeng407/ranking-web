@@ -186,7 +186,7 @@ export default {
         document.querySelectorAll('.preload-post').forEach((element) => {
           element.remove();
         });
-      }).
+      });
 
       this.scrollToSorter();
     },
