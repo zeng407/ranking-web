@@ -235,7 +235,7 @@ class RankService
     public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange)
     {
         $dates = RankReportHistory::where('post_id', $post->id)
-                ->select(['start_date, id'])
+                ->select(['start_date', 'id'])
                 ->where('time_range', $timeRange)
                 ->where('rank', 0)
                 ->distinct()
