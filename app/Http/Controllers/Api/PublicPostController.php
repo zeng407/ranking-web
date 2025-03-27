@@ -112,7 +112,7 @@ class PublicPostController extends Controller
             'reason' => ['nullable', 'string', 'max:' . config('setting.report_max_length')],
         ]);
 
-        $this->postService->reportComment($comment, $request->input('reason'), $request->user(), $request->ip());
+        $this->postService->reportComment($comment, $request->input('reason'), $request->user(), $this->getClientIp($request));
 
         return response()->json([], 201);
     }
