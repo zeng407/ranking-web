@@ -239,7 +239,7 @@ class RankService
                 ->where('time_range', $timeRange)
                 ->where('rank', 0)
                 ->distinct()
-                ->orderByDesc('start_date')
+                ->orderByDesc('id')
                 ->limit(3)
                 ->get()
                 ->pluck('start_date');
