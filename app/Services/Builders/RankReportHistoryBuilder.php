@@ -74,6 +74,11 @@ class RankReportHistoryBuilder
         $sumLoseCount = $lastRecord ? $lastRecord->round_count - $lastRecord->win_count : 0;
         $sumRounds = $lastRecord->round_count ?? 0;
 
+        // skip if no one played the game in these days
+        if($sumRounds == 0) {
+            return ;
+        }
+
         $lastRecord = $this->getLastRankRecord($start, RankType::CHAMPION);
         $championCount = $lastRecord->win_count ?? 0;
         $gameCompleteCount = $lastRecord->round_count ?? 0;
@@ -138,10 +143,13 @@ class RankReportHistoryBuilder
 
         $rankRecords = $this->getRankRecords($start);
 
-
         $lastChampionRecord = $this->getLastRankRecord($start, RankType::CHAMPION);
         $lastChampionCount = $lastChampionRecord->win_count ?? 0;
         $lastGameCompleteCount = $lastChampionRecord->round_count ?? 0;
+
+        if($lastChampionCount == 0) {
+            return ;
+        }
 
         $lastPKRecord = $this->getLastRankRecord($start, RankType::PK_KING);
         $lastWinCount = $lastPKRecord->win_count ?? 0;
@@ -249,6 +257,7 @@ class RankReportHistoryBuilder
                 $query->where('rank_type', $rankType);
             })
             ->where('record_date', '<', $beforeDate)
+            ->where('record_date', '>=', carbon($beforeDate)->subDays(7)->toDateString())
             ->orderByDesc('record_date')
             ->first();
 
