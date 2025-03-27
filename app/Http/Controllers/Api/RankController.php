@@ -40,11 +40,11 @@ class RankController extends Controller
             if($time == RankReportTimeRange::YEAR){
                 $limit = 10;
             }elseif($time == RankReportTimeRange::WEEK){
-                $limit = 52;
-            }elseif($time == RankReportTimeRange::MONTH){
                 $limit = 12;
+            }elseif($time == RankReportTimeRange::MONTH){
+                $limit = 3;
             }elseif($time == RankReportTimeRange::ALL){
-                $limit = 365;
+                $limit = 90;
             }else{
                 $limit = 100;
             }

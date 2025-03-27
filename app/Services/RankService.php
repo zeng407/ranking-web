@@ -240,7 +240,7 @@ class RankService
                 ->where('rank', 0)
                 ->distinct()
                 ->orderByDesc('start_date')
-                ->limit(30)
+                ->limit(3)
                 ->get()
                 ->pluck('start_date');
 
