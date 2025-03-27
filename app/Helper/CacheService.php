@@ -210,22 +210,36 @@ class CacheService
         }, $refresh);
     }
 
+    static function addChampion(UserGameResult $result)
+    {
+        $key = 'champion_queue';
+        $seconds = 60 * 10; // 10 minute
+        $games = Cache::get($key);
+        if ($games) {
+            $games = collect($games);
+            $games->prepend($result);
+            $games = $games->take(5);
+        } else {
+            $games = collect([$result]);
+        }
+
+        Cache::put($key, $games, $seconds);
+    }
+
     static function rememberChampions($refresh = false)
     {
         $key = 'champion';
         $seconds = 60 * 10; // 10 minute
         return static::remember($key, $seconds, function() {
-            $games = UserGameResult::whereHas('game.post', function ($query) {
-                    $query->where('is_censored', false)
-                        ->whereHas('post_policy', function ($query) {
-                            $query->where('access_policy', PostAccessPolicy::PUBLIC);
-                        });
-                })
-                ->orderByDesc('id')
-                ->limit(5)
-                ->get();
-
-            return ChampionResource::collection($games);
+            $champions = Cache::get('champion_queue');
+            if ($champions) {
+                $champions = collect($champions);
+                $champions = $champions->map(function($gameResult) {
+                    return ChampionResource::make($gameResult)->toArray(request());
+                });
+                return $champions;
+            }
+            return [];
         }, $refresh);
     }
 

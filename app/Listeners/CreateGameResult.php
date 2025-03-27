@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\GameComplete;
+use App\Helper\CacheService;
 use App\Jobs\BroadcastNewChampion;
 use App\Jobs\CacheChampion;
 use App\Services\GameService;
@@ -36,6 +37,7 @@ class CreateGameResult
         );
 
         if($event->post->isPublic() && $event->post->is_censored == false) {
+            CacheService::addChampion($userGameResult);
             CacheChampion::dispatch();
             broadcast(new BroadcastNewChampion($userGameResult));
         }
