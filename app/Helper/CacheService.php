@@ -233,11 +233,7 @@ class CacheService
         return static::remember($key, $seconds, function() {
             $champions = Cache::get('champion_queue');
             if ($champions) {
-                $champions = collect($champions);
-                $champions = $champions->map(function($gameResult) {
-                    return ChampionResource::make($gameResult)->toArray(request());
-                });
-                return $champions;
+                return ChampionResource::collection($champions)->toArray(request());
             }
             return [];
         }, $refresh);
