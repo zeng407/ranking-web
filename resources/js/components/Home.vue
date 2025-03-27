@@ -355,7 +355,7 @@ export default {
     getChampions() {
       axios.get(this.getChampionsEndpoint)
         .then(response => {
-          let champions = response.data.data;
+          let champions = response.data;
           //order by created_at
           champions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           this.champions = champions;
