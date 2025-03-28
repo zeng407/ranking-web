@@ -253,4 +253,20 @@ class CacheService
         });
     }
 
+    static function getRankHistoryJobCache($postId)
+    {
+        return Cache::get('CreateAndUpdateRankHistory:' . $postId);
+    }
+
+    static function putRankHistoryJobCache($postId, $count)
+    {
+        Cache::put('CreateAndUpdateRankHistory:' . $postId, $count, now()->addMinutes(10));
+    }
+
+    static function lockGetRankHistoryJobCache($postId)
+    {
+        return Cache::lock('CreateAndUpdateRankHistory:' . $postId)->get();
+    }
+
+
 }
