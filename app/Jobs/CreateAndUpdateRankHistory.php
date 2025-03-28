@@ -6,6 +6,7 @@ use App\Enums\RankReportTimeRange;
 use App\Models\Post;
 use App\Models\RankReport;
 use App\Services\RankService;
+use Cache;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -40,16 +41,17 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
      *
      * @return void
      */
-    public function handle(RankService $rankService)
+    public function handle()
     {
         logger('CreateAndUpdateRankHistory job fired for post id: ' . $this->post->id);
-        RankReport::setEagerLoads([])->where('post_id', $this->post->id)->eachById(function ($report) use($rankService){
-            $rankService->createRankReportHistory($report, RankReportTimeRange::ALL, $this->refresh, $this->post->created_at);
-            $rankService->createRankReportHistory($report, RankReportTimeRange::WEEK, $this->refresh, $this->post->created_at);
+        $counter = 0;
+        RankReport::setEagerLoads([])->where('post_id', $this->post->id)->eachById(function ($report) use(&$counter){
+            $counter++;
+            Cache::put('CreateAndUpdateRankHistory:' . $this->post->id, $counter, Carbon::now()->addMinutes(10));
+            CreateRankReportHistory::dispatch($report, $this->refresh, $this->post->created_at);
         });
 
-        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
-        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::WEEK);
+        ReorderRankReportHistory::dispatch($this->post)->delay(now()->addSeconds(5));
     }
 
     public function uniqueId()
