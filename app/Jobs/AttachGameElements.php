@@ -42,17 +42,12 @@ class AttachGameElements implements ShouldQueue
     public function handle()
     {
         logger('handle AttachGameElements', ['game' => $this->game]);
-        try{
-            DB::beginTransaction();
-            $this->elements->each(function (Element $element){
+        $this->elements->each(function (Element $element){
+            if (!$this->game->elements()->where('element_id', $element->id)->exists()) {
                 $this->game->elements()->attach($element, [
                     'is_ready' => true
                 ]);
-            });
-            DB::commit();
-        }catch (\Exception $e){
-            DB::rollBack();
-            throw $e;
-        }
+            }
+        });
     }
 }
