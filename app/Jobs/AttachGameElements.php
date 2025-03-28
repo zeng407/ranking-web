@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use DB;
 
 class AttachGameElements implements ShouldQueue
 {
@@ -41,10 +42,18 @@ class AttachGameElements implements ShouldQueue
     public function handle()
     {
         logger('handle AttachGameElements', ['game' => $this->game]);
-        $this->elements->each(function (Element $element){
-            $this->game->elements()->attach($element, [
-                'is_ready' => false
-            ]);
-        });
+        try{
+            DB::beginTransaction();
+            $this->elements->each(function (Element $element){
+                $this->game->elements()->attach($element, [
+                    'is_ready' => true
+                ]);
+            });
+            DB::commit();
+        }catch (\Exception $e){
+            logger('AttachGameElements error', ['error' => $e->getMessage()]);
+            DB::rollBack();
+            return;
+        }
     }
 }
