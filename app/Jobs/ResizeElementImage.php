@@ -44,6 +44,10 @@ class ResizeElementImage implements ShouldQueue
      */
     public function handle()
     {
+        // skip if the image is already resized
+        if ($this->element->{$this->column} && $this->element->{$this->column} !== $this->element->thumb_url) {
+            return;
+        }
         // Download the image from the URL to a temporary file
         $tempFilePath = tempnam(sys_get_temp_dir(), 'image_');
         file_put_contents($tempFilePath, file_get_contents($this->element->thumb_url));
@@ -72,6 +76,7 @@ class ResizeElementImage implements ShouldQueue
 
             // Delete temp file
             unlink($path);
+
         } catch (\Exception $e) {
             // Always delete the temporary file
             if (file_exists($tempFilePath)) {
