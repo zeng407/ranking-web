@@ -43,11 +43,9 @@ class AttachGameElements implements ShouldQueue
     {
         logger('handle AttachGameElements', ['game' => $this->game]);
         $this->elements->each(function (Element $element){
-            if (!$this->game->elements()->where('element_id', $element->id)->exists()) {
-                $this->game->elements()->attach($element, [
-                    'is_ready' => true
-                ]);
-            }
+            $this->game->elements()->attach($element, [
+                'is_ready' => true
+            ]);
         });
     }
 }
