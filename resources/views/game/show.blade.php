@@ -92,7 +92,7 @@
           <div class="col-xl-2" v-if="isBetGameClient">
 
             @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-            <div class="p-lg-1 p-xl-2">
+            <div v-if="!refreshAD" class="p-lg-1 p-xl-2">
                 @include('ads.game_ad_sides')
             </div>
             @endif
