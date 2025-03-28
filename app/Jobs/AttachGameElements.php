@@ -51,9 +51,8 @@ class AttachGameElements implements ShouldQueue
             });
             DB::commit();
         }catch (\Exception $e){
-            logger('AttachGameElements error', ['error' => $e->getMessage()]);
             DB::rollBack();
-            return;
+            throw $e;
         }
     }
 }

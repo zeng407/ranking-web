@@ -161,48 +161,49 @@ class RankService
     public function createRankReports(Post $post)
     {
         \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
-        $counter = 0;
-        Rank::where('post_id', $post->id)
-            ->where('rank_type', RankType::CHAMPION)
+
+
+        $rankRawData = Rank::where('post_id', $post->id)
             ->where('record_date', today())
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
-            ->orderByDesc('win_rate')
-            ->orderByDesc('win_count')
-            ->get()
-            ->each(function (Rank $rank) use (&$counter) {
-                $counter++;
-                RankReport::updateOrCreate([
-                    'post_id' => $rank->post_id,
-                    'element_id' => $rank->element_id
-                ], [
-                    'final_win_position' => $counter,
-                    'final_win_rate' => $rank->win_rate,
-                ]);
-            });
+            ->get();
+
+        $ranks = $rankRawData->where('rank_type', RankType::CHAMPION)
+            ->sortBy([
+                ['win_rate', 'desc'],
+                ['win_count', 'desc'],
+            ]);
+        $counter = 0;
+        foreach ($ranks as $rank) {
+            $counter++;
+            RankReport::updateOrCreate([
+                'post_id' => $rank->post_id,
+                'element_id' => $rank->element_id
+            ], [
+                'final_win_position' => $counter,
+                'final_win_rate' => $rank->win_rate,
+            ]);
+        }
 
         $counter = 0;
-        Rank::where('post_id', $post->id)
-            ->where('rank_type', RankType::PK_KING)
-            ->where('record_date', today())
-            ->whereHas('element', function ($query) {
-                $query->whereNull('deleted_at');
-            })
-            ->orderByDesc('win_rate')
-            ->orderByDesc('win_count')
-            ->get()
-            ->each(function (Rank $rank) use (&$counter) {
-                $counter++;
-                RankReport::updateOrCreate([
-                    'post_id' => $rank->post_id,
-                    'element_id' => $rank->element_id
-                ], [
-                    'win_position' => $counter,
-                    'win_rate' => $rank->win_rate,
-                ]);
-            });
-
+        $ranks = $rankRawData->where('rank_type', RankType::PK_KING)
+            ->sortBy([
+                ['win_rate', 'desc'],
+                ['win_count', 'desc'],
+            ]);
+        foreach ($ranks as $rank) {
+            $counter++;
+            RankReport::updateOrCreate([
+                'post_id' => $rank->post_id,
+                'element_id' => $rank->element_id
+            ], [
+                'win_position' => $counter,
+                'win_rate' => $rank->win_rate,
+            ]);
+        }
+        
         RankReport::where('post_id', $post->id)
             ->whereHas('element', function ($query) {
                 $query->whereNotNull('deleted_at');
