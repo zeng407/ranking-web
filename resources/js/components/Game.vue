@@ -1068,6 +1068,11 @@ export default {
             location.reload();
           });
         }
+      }).finally(() => {
+        if (this.needReloadAD()) {
+            this.reloadGoogleAds();
+          }
+        this.loadGoogleAds();
       });
     },
     vote(winner, loser) {
