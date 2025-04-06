@@ -42,6 +42,7 @@ class PublicPostScheduleExecutor
 
         try {
             $this->updateMonthPublicPosts();
+            $this->removeDirtyPublicPosts();
             CacheService::putPublicPostFreshCache();
         } catch (\Exception $e) {
             report($e);
@@ -87,6 +88,7 @@ class PublicPostScheduleExecutor
             ->update([
                 'new_position' => 9999,
             ]);
+
     }
 
     protected function updateTodayPublicPosts()
@@ -207,6 +209,13 @@ class PublicPostScheduleExecutor
             ->update([
                 'month_position' => 9999,
             ]);
+    }
+
+    protected function removeDirtyPublicPosts()
+    {
+        PublicPost::getQuery()
+            ->where('is_dirty', true)
+            ->delete();
     }
 
     protected function clearPostResourceCache()
