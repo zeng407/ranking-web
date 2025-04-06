@@ -215,7 +215,16 @@ class PublicPostScheduleExecutor
     {
         PublicPost::getQuery()
             ->where('is_dirty', true)
-            ->delete();
+            ->limit(1000)
+            ->get()
+            ->each(function (PublicPost $publicPost) {
+                if(!$publicPost->post->isPublic()) {
+                    $publicPost->delete();
+                }
+                if($publicPost->post->elements()->count() < config('setting.post_min_element_count')) {
+                    $publicPost->delete();
+                }
+            });
     }
 
     protected function clearPostResourceCache()
