@@ -23,4 +23,4 @@ _ONEAD.pub.queryAdCallback = custom_call
 var ONEAD_pubs = ONEAD_pubs || [];
 ONEAD_pubs.push(_ONEAD);
 </script>
-<script type="text/javascript" src = "https://ad-specs.guoshipartners.com/static/js/onead-lib.min.js"></script>
+<script async type="text/javascript" src = "https://ad-specs.guoshipartners.com/static/js/onead-lib.min.js"></script>
