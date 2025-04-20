@@ -180,7 +180,7 @@
                         ></flex-image>
                       </viewer>
                     </div>
-                    <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(le, re, true)">
+                    <div v-if="isYoutubeSource(le) && !isDataLoading" class="d-flex hover-effect" @mouseover="videoHoverIn(le, re, true)" @mouseleave="videoHoverOut(le, re, true)">
                       <youtube :video-id="le.video_id" width="100%" :height="elementHeight" :ref="le.id"
                         :player-vars="{ controls: 1, autoplay: !isMobileScreen && !isBetGameClient, rel: 0 , origin: origin, playlist: le.video_id, start:le.video_start_second, end:le.video_end_second }">
                       </youtube>
@@ -303,7 +303,7 @@
                         ></flex-image>
                       </viewer>
                     </div>
-                    <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex" @mouseover="videoHoverIn(re, le, false)">
+                    <div v-if="isYoutubeSource(re) && !isDataLoading" class="d-flex hover-effect" @mouseover="videoHoverIn(re, le, false)" @mouseleave="videoHoverOut(re, le, false)">
                       <youtube :video-id="re.video_id" width="100%" :height="elementHeight" :ref="re.id"
                         :player-vars="{ controls: 1, autoplay: !isMobileScreen && !isBetGameClient, rel: 0, origin: origin,  playlist: re.video_id, start:re.video_start_second, end:re.video_end_second}">
                       </youtube>
