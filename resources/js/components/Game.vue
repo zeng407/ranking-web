@@ -74,6 +74,7 @@ export default {
       errorImages: [],
       currentRemainElement: false,
       mousePosition: 1, // 1:left , right:0
+      isHoverIn: false,
       showPopover: false,
       refreshAD: false,
       leftImageLoaded: false,
@@ -129,8 +130,8 @@ export default {
       return this.getRankRoute.replace("_serial", this.postSerial);
     },
     gameOnlineUsers() {
-      if(this.gameRoom && (this.gameRoom.online_users-1) > 0){
-        return this.gameRoom.online_users-1 ;
+      if (this.gameRoom && (this.gameRoom.online_users - 1) > 0) {
+        return this.gameRoom.online_users - 1;
       }
       return 0;
     },
@@ -142,73 +143,73 @@ export default {
       return Number.isInteger(Math.log2(this.post.elements_count));
     },
     isBetGameHost() {
-      if(!this.gameRoom){
+      if (!this.gameRoom) {
         return false;
       }
       return !this.gameRoom.user;
     },
     isBetGameClient() {
-      if(!this.gameRoom){
+      if (!this.gameRoom) {
         return false;
       }
       // to boolean
       return !!this.gameRoom.user;
     },
-    leftVotes(){
-      if(!this.gameRoomVotes || this.gameRoomVotes.length === 0){
+    leftVotes() {
+      if (!this.gameRoomVotes || this.gameRoomVotes.length === 0) {
         return 0;
       }
 
-      if(this.gameRoomVotes.remain_elements !== this.game.remain_elements){
+      if (this.gameRoomVotes.remain_elements !== this.game.remain_elements) {
         return 0;
       }
 
-      if(parseInt(this.gameRoomVotes.first_candidate) !== this.le.id || parseInt(this.gameRoomVotes.second_candidate) !== this.re.id){
+      if (parseInt(this.gameRoomVotes.first_candidate) !== this.le.id || parseInt(this.gameRoomVotes.second_candidate) !== this.re.id) {
         return 0;
       }
 
       return this.gameRoomVotes.first_candidate_votes;
     },
-    rightVotes(){
-      if(!this.gameRoomVotes || this.gameRoomVotes.length === 0){
+    rightVotes() {
+      if (!this.gameRoomVotes || this.gameRoomVotes.length === 0) {
         return 0;
       }
 
-      if(this.gameRoomVotes.remain_elements !== this.game.remain_elements){
+      if (this.gameRoomVotes.remain_elements !== this.game.remain_elements) {
         return 0;
       }
 
-      if(parseInt(this.gameRoomVotes.first_candidate) !== this.le.id || parseInt(this.gameRoomVotes.second_candidate) !== this.re.id){
+      if (parseInt(this.gameRoomVotes.first_candidate) !== this.le.id || parseInt(this.gameRoomVotes.second_candidate) !== this.re.id) {
         return 0;
       }
 
       return this.gameRoomVotes.second_candidate_votes;
     },
-    leftVotesPercentage(){
-      if(this.leftVotes === 0 && this.rightVotes === 0){
+    leftVotesPercentage() {
+      if (this.leftVotes === 0 && this.rightVotes === 0) {
         return 0;
       }
 
       return Math.round(this.leftVotes / (this.leftVotes + this.rightVotes) * 100);
     },
-    rightVotesPercentage(){
-      if(this.leftVotes === 0 && this.rightVotes === 0){
+    rightVotesPercentage() {
+      if (this.leftVotes === 0 && this.rightVotes === 0) {
         return 0;
       }
 
       return Math.round(this.rightVotes / (this.leftVotes + this.rightVotes) * 100);
     },
     getSortedRanks() {
-      if(!this.gameBetRanks){
+      if (!this.gameBetRanks) {
         return [];
       }
-      if(this.sortByTop){
+      if (this.sortByTop) {
         return this.gameBetRanks.top_10;
-      }else{
+      } else {
         return this.gameBetRanks.bottom_10;
       }
     },
-    isGameRoomFinished(){
+    isGameRoomFinished() {
       return this.gameRoom && this.gameRoom.is_game_completed
     },
     isFixedGameHeight() {
@@ -217,7 +218,7 @@ export default {
   },
   methods: {
     // game room
-    showGameRoomJoinSetting () {
+    showGameRoomJoinSetting() {
       $("#gameRoomJoin").modal("show");
     },
     joinRoom() {
@@ -227,7 +228,7 @@ export default {
       this.listenGameRoomRefresh();
       this.getGameRoom();
     },
-    closeGameRoom(){
+    closeGameRoom() {
       clearInterval(this.autoRefreshRoomInterval);
       this.leaveGameRoom();
       this.isHostingGameRank = false;
@@ -240,7 +241,7 @@ export default {
       $("#close-game-room").tooltip("dispose");
       this.$bus.$emit("closeGameRoom");
     },
-    changeSortRanks(){
+    changeSortRanks() {
       this.sortByTop = !this.sortByTop;
     },
     loadGameSerialFromCookie() {
@@ -262,7 +263,7 @@ export default {
           }
         });
     },
-    getRoomVotes(){
+    getRoomVotes() {
       const route = this.getRoomVotesEndpoint.replace("_serial", this.gameRoomSerial);
       const prams = {
         params: {
@@ -274,22 +275,22 @@ export default {
           this.gameRoomVotes = res.data.data;
         });
     },
-    toggleShowGameRoomVotes(){
+    toggleShowGameRoomVotes() {
       this.showGameRoomVotes = !this.showGameRoomVotes;
-      if(this.showGameRoomVotes){
+      if (this.showGameRoomVotes) {
         this.getRoomVotes();
-        if(!this.isListeningGameBet){
+        if (!this.isListeningGameBet) {
           this.isListeningGameBet = setInterval(() => {
             this.getRoomVotes();
           }, 5 * 1000); // 5 seconds
         }
-      }else{
-        if(this.isListeningGameBet){
+      } else {
+        if (this.isListeningGameBet) {
           this.isListeningGameBet = false;
         }
       }
     },
-    getGameRoom(){
+    getGameRoom() {
       axios
         .get(this.getRoomEndpoint.replace("_serial", this.gameRoomSerial))
         .then((response) => {
@@ -300,14 +301,14 @@ export default {
           let promise = new Promise((resolve) => {
             resolve();
           })
-          if(response.data.data.current_round){
+          if (response.data.data.current_round) {
             promise = this.handleAnimationAfterNextRound(response.data.data.current_round);
           }
 
           this.enableTooltip();
         });
     },
-    listenGameBet(){
+    listenGameBet() {
       if (this.gameRoomSerial) {
         const channel = "game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial;
         Echo.channel(channel).listen(".GameBet", (data) => {
@@ -325,7 +326,7 @@ export default {
         });
       }
     },
-    listenGameRoomRefresh(){
+    listenGameRoomRefresh() {
       if (this.gameRoomSerial) {
         Echo.channel("game-room." + this.gameRoomSerial).listen(".GameRoomRefresh", (data) => {
           this.handleAnimationAfterNextRound(data.next_round, true)
@@ -335,7 +336,7 @@ export default {
         });
       }
     },
-    listenGameBetRank(){
+    listenGameBetRank() {
       if (this.gameRoomSerial) {
         Echo.channel("game-room." + this.gameRoomSerial).listen(".GameBetRank", (data) => {
           this.gameBetRanks = data;
@@ -351,54 +352,54 @@ export default {
             }
           });
 
-          if(currentUserRank){
+          if (currentUserRank) {
             this.gameRoom.user = currentUserRank;
-          }else{
+          } else {
             this.getRoomUser();
           }
         });
       }
     },
-    getRoomUser(){
+    getRoomUser() {
       axios
         .get(this.getRoomUserEndpoint.replace("_serial", this.gameRoomSerial))
         .then((response) => {
           this.gameRoom.user = response.data.data;
         });
     },
-    leaveGameRoom(){
+    leaveGameRoom() {
       if (this.gameRoomSerial) {
         Echo.leave("game-room." + this.gameRoomSerial);
         Echo.leave("game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial);
       }
     },
-    showBetResult(notifyData){
+    showBetResult(notifyData) {
       return new Promise((resolve) => {
-          if(!this.currentBetRecord){
+        if (!this.currentBetRecord) {
+          resolve();
+          return;
+        }
+        const isBetSuccess = notifyData.winner_id === this.currentBetRecord.winner_id;
+        this.currentBetRecord = null;
+        if (isBetSuccess) {
+          this.showFirework = true;
+          setTimeout(() => {
+            this.showFirework = false;
             resolve();
-            return;
-          }
-          const isBetSuccess = notifyData.winner_id === this.currentBetRecord.winner_id;
-          this.currentBetRecord = null;
-          if(isBetSuccess){
-            this.showFirework = true;
-            setTimeout(() => {
-              this.showFirework = false;
-              resolve();
-            }, 2000);
-          } else {
-            this.showBetFailed = true;
-            setTimeout(() => {
-              this.showBetFailed = false;
-              resolve();
-            }, 2000);
-          }
-        })
+          }, 2000);
+        } else {
+          this.showBetFailed = true;
+          setTimeout(() => {
+            this.showBetFailed = false;
+            resolve();
+          }, 2000);
+        }
+      })
     },
-    showNextBetRound(notifyData){
-      if(notifyData.next_round){
-        this.handleAnimationAfterNextRound(notifyData.next_round,true);
-      }else{
+    showNextBetRound(notifyData) {
+      if (notifyData.next_round) {
+        this.handleAnimationAfterNextRound(notifyData.next_round, true);
+      } else {
         this.gameRoom.is_game_completed = true;
         this.finishingGame = true;
         this.isVoting = false
@@ -414,9 +415,9 @@ export default {
     },
     toggleEditNickname() {
       this.isEditingNickname = !this.isEditingNickname;
-      if(this.isEditingNickname){
+      if (this.isEditingNickname) {
         this.newNickname = this.gameRoom.user.nickname;
-      }else{
+      } else {
         this.newNickname = "";
       }
     },
@@ -429,7 +430,7 @@ export default {
           this.isEditingNickname = false;
           this.gameRoom.user.name = this.newNickname;
           // update rank
-          if(this.gameBetRanks){
+          if (this.gameBetRanks) {
             this.gameBetRanks.top_10.forEach((rank, index) => {
               if (rank.user_id === this.gameRoom.user.user_id) {
                 rank.name = this.newNickname;
@@ -443,13 +444,13 @@ export default {
           }
         })
         .catch((error) => {
-          if(error.response.status === 429){
+          if (error.response.status === 429) {
             Swal.fire({
               icon: "error",
               toast: true,
               text: this.$t("You can only change your nickname once per hour"),
             });
-          }else{
+          } else {
             Swal.fire({
               icon: "error",
               toast: true,
@@ -471,7 +472,7 @@ export default {
         });
       });
 
-      if(!this.isHostingGameRank){
+      if (!this.isHostingGameRank) {
         this.isHostingGameRank = true;
         Echo.channel("game-room." + this.gameRoomSerial)
           .listen(".GameBetRank", (data) => {
@@ -481,7 +482,7 @@ export default {
           });
       }
 
-      if(!this.autoRefreshRoomInterval){
+      if (!this.autoRefreshRoomInterval) {
         this.autoRefreshRoomInterval = setInterval(() => {
           const route = this.getRoomEndpoint.replace("_serial", this.gameRoomSerial);
           const params = {
@@ -603,9 +604,9 @@ export default {
     },
     continueGame() {
       let gameSerial = '';
-      if(this.userLastGameSerial){
+      if (this.userLastGameSerial) {
         gameSerial = this.userLastGameSerial;
-      }else{
+      } else {
         gameSerial = this.$cookies.get(this.postSerial)
       }
       if (gameSerial) {
@@ -638,7 +639,7 @@ export default {
       }
       this.handleAnimationAfterNextRound(data.data, reset);
     },
-    handleAnimationAfterNextRound(game, reset){
+    handleAnimationAfterNextRound(game, reset) {
       return new Promise((resolve, reject) => {
         this.updateGame(game);
         resolve();
@@ -780,7 +781,7 @@ export default {
       this.leftReady = false;
 
       if (this.isMobileScreen) {
-        if(this.isBetGameClient){
+        if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
           let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
@@ -790,7 +791,7 @@ export default {
             this.leftReady = true;
           });
 
-        }else{
+        } else {
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
           // move #left-plyaer to the certical center of screen
           let scrollPosition = window.scrollY;
@@ -820,7 +821,7 @@ export default {
           });
         }
       } else {
-        if(this.isBetGameClient){
+        if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
         }
@@ -844,9 +845,9 @@ export default {
           .promise();
 
         $.when(loseAnimate).then(() => {
-          if(this.isBetGameClient){
+          if (this.isBetGameClient) {
             this.destroyRightPlayer();
-          }else{
+          } else {
             sendWinnerData();
           }
         });
@@ -891,14 +892,14 @@ export default {
 
       this.rightReady = false;
 
-      if(event){
+      if (event) {
         this.bounceThumbUp(event.target.children[0]);
       }
       $("#right-player").css("z-index", "100");
       $("#left-player").css("opacity", 0.5);
 
       if (this.isMobileScreen) {
-        if(this.isBetGameClient){
+        if (this.isBetGameClient) {
           let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
 
           $.when(loseAnimate).then(() => {
@@ -908,7 +909,7 @@ export default {
             sendWinnerData();
           });
 
-        }else{
+        } else {
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
           // move #right-plyaer to the certical center of screen
           let scrollPosition = window.scrollY;
@@ -962,7 +963,7 @@ export default {
           .promise();
 
         $.when(loseAnimate).then(() => {
-          if(this.isBetGameClient){
+          if (this.isBetGameClient) {
             this.destroyLeftPlayer();
           }
           sendWinnerData();
@@ -977,7 +978,7 @@ export default {
       };
     },
     destroyLeftPlayer() {
-        // make left as a dummy image
+      // make left as a dummy image
       this.le = {
         id: this.le.id,
         type: "image",
@@ -1070,8 +1071,8 @@ export default {
         }
       }).finally(() => {
         if (this.needReloadAD()) {
-            this.reloadGoogleAds();
-          }
+          this.reloadGoogleAds();
+        }
         this.loadGoogleAds();
       });
     },
@@ -1120,9 +1121,9 @@ export default {
             }
           }, 10);
         })
-        .finally(() => {});
+        .finally(() => { });
     },
-    handleAnimationAfterVoted(res){
+    handleAnimationAfterVoted(res) {
       let interval = setInterval(() => {
         // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
         if (this.leftReady && this.rightReady) {
@@ -1183,7 +1184,7 @@ export default {
         this.nextRound(res.data);
       }
     },
-    keepGameCookie(){
+    keepGameCookie() {
       this.$cookies.set(this.postSerial, this.gameSerial, "1y");
     },
     resetPlayingStatus() {
@@ -1201,7 +1202,7 @@ export default {
       }, 1000);
     },
     getRankResultUrl() {
-      if(this.gameSerial){
+      if (this.gameSerial) {
         return this.getRankRoute.replace("_serial", this.postSerial) + "?g=" + this.gameSerial;
       }
       return this.getRankRoute.replace("_serial", this.postSerial);
@@ -1275,74 +1276,90 @@ export default {
         }
       });
     },
+    videoHoverOut(myElement, theirElement, left) {
+      if (this.isMobileScreen || this.isBetGameClient) {
+        return;
+      }
+
+      this.isHoverIn = false;
+
+    },
     videoHoverIn(myElement, theirElement, left) {
       if (this.isMobileScreen || this.isBetGameClient) {
         return;
       }
+
+      // Set a flag to track if the mouse is still hovering
       this.mousePosition = left;
+      this.isHoverIn = true;
 
-      const myPlayer = this.getYoutubePlayer(myElement);
-      if (myPlayer) {
-        // window.p1 = myPlayer;
-        myPlayer.playVideo();
-        myPlayer.unMute();
-      }
+      // Delay handling by 500ms
+      setTimeout(() => {
+        // Check if the mouse is still hovering after the delay
+        if (this.mousePosition !== left) {
+          return; // Mouse has moved out, stop further handling
+        }
 
-      const theirPlayer = this.getYoutubePlayer(theirElement);
-      if (theirPlayer) {
-        // window.p2 = theirPlayer;
-        // let retry = 0;
-        theirPlayer.getPlayerState().then((state) => {
-          if (state === -1 || state === 3) {
-            let interval = setInterval(() => {
-              theirPlayer.getPlayerState().then((state) => {
-                // console.log('mouse:' + this.mousePosition + ' left:' + left);
+        if (this.isHoverIn === false) {
+          return; // Mouse has moved out, stop further handling
+        }
 
-                // console.log('retry: '+retry+' | theirPlayer status: '+state);
-                if (state === -1 || state === 3) {
-                  theirPlayer.mute();
-                } else {
-                  clearInterval(interval);
-                  if (this.mousePosition) {
-                    this.videoHoverIn(this.le, this.re, true);
+        const myPlayer = this.getYoutubePlayer(myElement);
+        if (myPlayer) {
+          myPlayer.playVideo();
+          myPlayer.unMute();
+        }
+
+        const theirPlayer = this.getYoutubePlayer(theirElement);
+        if (theirPlayer) {
+          theirPlayer.getPlayerState().then((state) => {
+            if (state === -1 || state === 3) {
+              let interval = setInterval(() => {
+                theirPlayer.getPlayerState().then((state) => {
+                  if (state === -1 || state === 3) {
+                    theirPlayer.mute();
                   } else {
-                    this.videoHoverIn(this.re, this.le, false);
+                    clearInterval(interval);
+                    if (this.mousePosition) {
+                      this.videoHoverIn(this.le, this.re, true);
+                    } else {
+                      this.videoHoverIn(this.re, this.le, false);
+                    }
                   }
-                }
-                // retry++;
-              });
-            }, 100);
-          } else {
-            theirPlayer.pauseVideo();
-            theirPlayer.mute();
-          }
-        });
-      }
+                });
+              }, 100);
+            } else {
+              theirPlayer.pauseVideo();
+              theirPlayer.mute();
+            }
+          });
+        }
 
-      let myVideoPlyaer = null;
-      let theirVideoPlyaer = null;
-      if (left) {
-        myVideoPlyaer = this.getVideoPlayer("left-video-player");
-        theirVideoPlyaer = this.getVideoPlayer("right-video-player");
-      } else {
-        myVideoPlyaer = this.getVideoPlayer("right-video-player");
-        theirVideoPlyaer = this.getVideoPlayer("left-video-player");
-      }
+        let myVideoPlayer = null;
+        let theirVideoPlayer = null;
+        if (left) {
+          myVideoPlayer = this.getVideoPlayer("left-video-player");
+          theirVideoPlayer = this.getVideoPlayer("right-video-player");
+        } else {
+          myVideoPlayer = this.getVideoPlayer("right-video-player");
+          theirVideoPlayer = this.getVideoPlayer("left-video-player");
+        }
 
-      if (myVideoPlyaer) {
-        myVideoPlyaer.play();
-      }
-      if (theirVideoPlyaer) {
-        theirVideoPlyaer.pause();
-      }
+        if (myVideoPlayer) {
+          myVideoPlayer.play();
+        }
+        if (theirVideoPlayer) {
+          theirVideoPlayer.pause();
+        }
 
-      if (left) {
-        this.isLeftPlaying = true;
-        this.isRightPlaying = false;
-      } else {
-        this.isLeftPlaying = false;
-        this.isRightPlaying = true;
-      }
+        if (left) {
+          this.isLeftPlaying = true;
+          this.isRightPlaying = false;
+        } else {
+          this.isLeftPlaying = false;
+          this.isRightPlaying = true;
+        }
+      }, 300);
     },
     isImageSource: function (element) {
       return element.type === "image";
@@ -1387,9 +1404,9 @@ export default {
         if (window.adsbygoogle) {
           try {
             window.adsbygoogle.push({});
-          } catch (e) {}
+          } catch (e) { }
         }
-      } catch (e) {}
+      } catch (e) { }
     },
     reloadGoogleAds() {
       $("#google-ad2-container").css("height", "340px").css("position", "relative");
@@ -1455,7 +1472,7 @@ export default {
     getLowThumbUrl(element) {
       return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
     },
-    enableTooltip(){
+    enableTooltip() {
       Vue.nextTick(() => {
         $(function () {
           $('[data-toggle="tooltip"]').tooltip()
@@ -1490,7 +1507,7 @@ export default {
         // if scroll reach the bottom of the ad2
         if (window.scrollY + window.innerHeight >= ad2Top + offset) {
           this.showCreateRoomButton = true;
-        }else{
+        } else {
           this.showCreateRoomButton = false;
         }
       });
