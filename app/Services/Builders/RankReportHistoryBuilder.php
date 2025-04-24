@@ -147,14 +147,14 @@ class RankReportHistoryBuilder
         $lastChampionCount = $lastChampionRecord->win_count ?? 0;
         $lastGameCompleteCount = $lastChampionRecord->round_count ?? 0;
 
-        if($lastChampionCount == 0) {
-            return ;
-        }
-
         $lastPKRecord = $this->getLastRankRecord($start, RankType::PK_KING);
         $lastWinCount = $lastPKRecord->win_count ?? 0;
         $lastLoseCount = $lastPKRecord ? $lastPKRecord->round_count - $lastPKRecord->win_count : 0;
         $lastRounds = $lastPKRecord->round_count ?? 0;
+
+        if($lastRounds == 0) {
+            return ;
+        }
 
         $timeline = carbon($start);
         $endOfWeek = carbon(today())->endOfWeek();
