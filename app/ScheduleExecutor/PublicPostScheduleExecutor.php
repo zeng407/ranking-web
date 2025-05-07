@@ -218,6 +218,10 @@ class PublicPostScheduleExecutor
             ->limit(1000)
             ->get()
             ->each(function (PublicPost $publicPost) {
+                if(!$publicPost->post) {
+                    $publicPost->delete();
+                }
+
                 if(!$publicPost->post->isPublic()) {
                     $publicPost->delete();
                 }
