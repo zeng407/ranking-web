@@ -4,6 +4,7 @@ namespace App\Services\Builders;
 
 use App\Enums\RankReportTimeRange;
 use App\Enums\RankType;
+use App\Helper\CacheService;
 use App\Models\Element;
 use App\Models\Game1V1Round;
 use App\Models\Post;
@@ -59,7 +60,7 @@ class RankReportHistoryBuilder
 
     protected function buildAll()
     {
-        if($this->refresh) {
+        if ($this->refresh) {
             $this->deleteHistory(RankReportTimeRange::ALL);
         }
 
@@ -75,8 +76,8 @@ class RankReportHistoryBuilder
         $sumRounds = $lastRecord->round_count ?? 0;
 
         // skip if no one played the game in these days
-        if($sumRounds == 0) {
-            return ;
+        if ($sumRounds == 0) {
+            return;
         }
 
         $lastRecord = $this->getLastRankRecord($start, RankType::CHAMPION);
@@ -85,11 +86,11 @@ class RankReportHistoryBuilder
 
         $rankRecords = $this->getRankRecords($start);
         $timeline = carbon($start);
-        while($timeline->lt(today())) {
+        while ($timeline->lt(today())) {
             $rankPKRecord = $rankRecords->where('record_date', carbon($timeline)->toDateString())
                 ->where('rank_type', RankType::PK_KING)
                 ->first();
-            if($rankPKRecord){
+            if ($rankPKRecord) {
                 $sumWinCount = $rankPKRecord->win_count;
                 $sumLoseCount = $rankPKRecord->round_count - $rankPKRecord->win_count;
                 $sumRounds = $rankPKRecord->round_count;
@@ -98,7 +99,7 @@ class RankReportHistoryBuilder
             $rankChampionRecord = $rankRecords->where('record_date', carbon($timeline)->toDateString())
                 ->where('rank_type', RankType::CHAMPION)
                 ->first();
-            if($rankChampionRecord){
+            if ($rankChampionRecord) {
                 $championCount = $rankChampionRecord->win_count;
                 $gameCompleteCount = $rankChampionRecord->round_count;
             }
@@ -106,7 +107,7 @@ class RankReportHistoryBuilder
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
 
-            if($sumWinCount > 0) {
+            if ($sumWinCount > 0) {
                 RankReportHistory::updateOrCreate([
                     'element_id' => $this->report->element_id,
                     'post_id' => $this->report->post_id,
@@ -122,6 +123,12 @@ class RankReportHistoryBuilder
                     'game_complete_count' => $gameCompleteCount,
                     'champion_rate' => $championRate
                 ]);
+
+                CacheService::putRankHistoryNeededUpdateDatesCache(
+                    $this->report->post_id,
+                    RankReportTimeRange::ALL,
+                    $timeline->toDateString()
+                );
             }
 
             $timeline->addDay();
@@ -130,7 +137,7 @@ class RankReportHistoryBuilder
 
     protected function buildWeek()
     {
-        if($this->refresh) {
+        if ($this->refresh) {
             $this->deleteHistory(RankReportTimeRange::WEEK);
         }
 
@@ -158,9 +165,9 @@ class RankReportHistoryBuilder
 
         $timeline = carbon($start);
         $endOfWeek = carbon(today())->endOfWeek();
-        while($timeline->lte($endOfWeek)) {
+        while ($timeline->lte($endOfWeek)) {
             $rankPKRecord = $rankRecords
-                ->where('record_date','<=', carbon($timeline)->endOfWeek()->toDateString())
+                ->where('record_date', '<=', carbon($timeline)->endOfWeek()->toDateString())
                 ->where('rank_type', RankType::PK_KING)
                 ->last();
             $rankChampionRecord = $rankRecords
@@ -176,7 +183,7 @@ class RankReportHistoryBuilder
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
 
-            if($sumWinCount > 0){
+            if ($sumWinCount > 0) {
                 RankReportHistory::updateOrCreate([
                     'element_id' => $this->report->element_id,
                     'post_id' => $this->report->post_id,
@@ -220,9 +227,9 @@ class RankReportHistoryBuilder
             ->where('time_range', $range)
             ->orderByDesc('start_date')
             ->first();
-        if($lastReport) {
+        if ($lastReport) {
             $start = $lastReport->start_date;
-        } else if($this->startAt) {
+        } else if ($this->startAt) {
             $start = carbon($this->startAt)->toDateString();
         } else {
             $start = carbon($this->report->post->created_at)->toDateString();
@@ -253,7 +260,7 @@ class RankReportHistoryBuilder
     {
         $lastRecord = Rank::where('post_id', $this->report->post_id)
             ->where('element_id', $this->report->element_id)
-            ->when($rankType, function($query) use ($rankType){
+            ->when($rankType, function ($query) use ($rankType) {
                 $query->where('rank_type', $rankType);
             })
             ->where('record_date', '<', $beforeDate)

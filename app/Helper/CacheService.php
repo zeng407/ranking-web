@@ -3,6 +3,7 @@
 namespace App\Helper;
 
 use App\Enums\PostAccessPolicy;
+use App\Enums\RankReportTimeRange;
 use App\Http\Resources\Game\ChampionResource;
 use App\Http\Resources\Game\GameRoomUserResource;
 use App\Http\Resources\PostResource;
@@ -32,7 +33,7 @@ class CacheService
         $key = 'announcement';
         $seconds = $minutes * 60;
 
-        return static::remember($key, $seconds, function() use ($data) {
+        return static::remember($key, $seconds, function () use ($data) {
             return $data;
         }, $refresh);
     }
@@ -42,7 +43,7 @@ class CacheService
         $key = 'user_role_' . $user->id;
         $seconds = 60 * 60;
 
-        return static::remember($key, $seconds, function() use ($user) {
+        return static::remember($key, $seconds, function () use ($user) {
             return $user->roles()->pluck('slug')->toArray();
         }, $refresh);
     }
@@ -51,16 +52,16 @@ class CacheService
     {
         $key = 'hot_tags';
         $seconds = 60 * 60;
-        return static::remember($key, $seconds, function() use ($limit) {
+        return static::remember($key, $seconds, function () use ($limit) {
             return app(TagService::class)->getHotTags($limit);
         }, $refresh);
     }
 
     static public function rememberTags(string $keywork = '', $refresh = false)
     {
-        $key = 'post_tags_'.$keywork;
+        $key = 'post_tags_' . $keywork;
         $seconds = 10 * 60; // 10 minutes
-        return static::remember($key, $seconds, function() use ($keywork) {
+        return static::remember($key, $seconds, function () use ($keywork) {
             return app(TagService::class)->get($keywork);
         }, $refresh);
 
@@ -69,17 +70,17 @@ class CacheService
     static public function rememberPosts(Request $request, $sort, $refresh = false)
     {
         $url = $request->getQueryString();
-        $cacheName = Cache::get('post_update_at').'/'.md5($url);
+        $cacheName = Cache::get('post_update_at') . '/' . md5($url);
         $seconds = 60 * 5; // 5 minutes
-        return static::remember($cacheName, $seconds, function() use ($request, $sort) {
+        return static::remember($cacheName, $seconds, function () use ($request, $sort) {
             $posts = app(PublicPostService::class)->getList([
                 PostFilter::KEYWORD_LIKE => $request->query('k')
-            ],[
+            ], [
                 'sort_by' => $sort,
             ], [
                 'per_page' => config('setting.home_post_per_page')
             ]);
-            foreach($posts as $key => $post) {
+            foreach ($posts as $key => $post) {
                 $posts[$key] = PublicPostResource::make($post)->toArray($request);
             }
             return $posts;
@@ -90,9 +91,9 @@ class CacheService
     static public function rememberPostUpdatedTimestamp($fresh = false)
     {
         $key = 'post_update_at';
-        $seconds = 60 * 60 ; // 1 hour
-        return static::remember($key, $seconds, function() {
-            return now()->unix().rand(0, 10000);
+        $seconds = 60 * 60; // 1 hour
+        return static::remember($key, $seconds, function () {
+            return now()->unix() . rand(0, 10000);
         }, $fresh);
     }
 
@@ -100,23 +101,23 @@ class CacheService
     {
         $key = 'carousels';
         $seconds = 60 * 60; // 1 hour
-        return static::remember($key, $seconds, function() {
+        return static::remember($key, $seconds, function () {
             return app(HomeCarouselService::class)->getHomeCarouselItems();
         }, $refresh);
     }
 
     static public function rememberPostResource(Post $post)
     {
-        $key = 'post_resource_'.$post->id;
+        $key = 'post_resource_' . $post->id;
         $seconds = 60 * 60; // 1 hour
-        return static::remember($key, $seconds, function() use ($post) {
+        return static::remember($key, $seconds, function () use ($post) {
             return PostResource::make($post)->toArray(request());
         }, false);
     }
 
     static public function pullPostResourceByPostId($postId)
     {
-        $key = 'post_resource_'.$postId;
+        $key = 'post_resource_' . $postId;
         return Cache::pull($key);
     }
 
@@ -142,46 +143,46 @@ class CacheService
 
     static public function putJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
     {
-        Cache::put('waiting_job:update_game_room_rank'.$gameRoom->serial, true, 60 * 24);
+        Cache::put('waiting_job:update_game_room_rank' . $gameRoom->serial, true, 60 * 24);
     }
 
     static public function pullJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
     {
-        return Cache::pull('waiting_job:update_game_room_rank'.$gameRoom->serial);
+        return Cache::pull('waiting_job:update_game_room_rank' . $gameRoom->serial);
     }
 
     static public function hasJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
     {
-        return Cache::has('waiting_job:update_game_room_rank'.$gameRoom->serial);
+        return Cache::has('waiting_job:update_game_room_rank' . $gameRoom->serial);
     }
 
     static public function pullJobCacheUpdateGameBet(GameRoom $gameRoom)
     {
-        return Cache::pull('waiting_job:update_game_bet'.$gameRoom->serial);
+        return Cache::pull('waiting_job:update_game_bet' . $gameRoom->serial);
     }
 
     static public function putJobCacheUpdateGameBet(GameRoom $gameRoom)
     {
-        Cache::put('waiting_job:update_game_bet'.$gameRoom->serial, true, 60 * 24);
+        Cache::put('waiting_job:update_game_bet' . $gameRoom->serial, true, 60 * 24);
     }
 
     static public function hasJobCacheUpdateGameBet(GameRoom $gameRoom)
     {
-        return Cache::has('waiting_job:update_game_bet'.$gameRoom->serial);
+        return Cache::has('waiting_job:update_game_bet' . $gameRoom->serial);
     }
 
     static public function rememberGameBetRank(GameRoom $gameRoom, $refresh = false)
     {
-        $key = 'game_bet_rank'.$gameRoom->serial;
-        $seconds = 60 ; // 1 minute
-        return static::remember($key, $seconds, function() use ($gameRoom) {
-            $mapData = function(Collection $collection){
-                return $collection->map(function($gameUser) {
+        $key = 'game_bet_rank' . $gameRoom->serial;
+        $seconds = 60; // 1 minute
+        return static::remember($key, $seconds, function () use ($gameRoom) {
+            $mapData = function (Collection $collection) {
+                return $collection->map(function ($gameUser) {
                     return GameRoomUserResource::make($gameUser)->toArray(request());
                 });
             };
-            $top10 = $mapData($gameRoom->users()->where('rank','>',0)->orderBy('rank')->limit(10)->get());
-            $bottom10 = $mapData($gameRoom->users()->where('rank','>',0)->orderByDesc('rank')->limit(10)->get());
+            $top10 = $mapData($gameRoom->users()->where('rank', '>', 0)->orderBy('rank')->limit(10)->get());
+            $bottom10 = $mapData($gameRoom->users()->where('rank', '>', 0)->orderByDesc('rank')->limit(10)->get());
             return [
                 'total_users' => $gameRoom->users()->count(),
                 'top_10' => $top10,
@@ -193,19 +194,19 @@ class CacheService
     static function putUpdateGameUserNameThreashold(GameRoomUser $gameRoomUser)
     {
         $time = 60 * 60; // 1 hour
-        Cache::put('update_game_user_name_threashold'.$gameRoomUser->id, true, $time);
+        Cache::put('update_game_user_name_threashold' . $gameRoomUser->id, true, $time);
     }
 
     static function hasUpdateGameUserNameThreashold(GameRoomUser $gameRoomUser)
     {
-        return Cache::has('update_game_user_name_threashold'.$gameRoomUser->id);
+        return Cache::has('update_game_user_name_threashold' . $gameRoomUser->id);
     }
 
     static function rememebrChannelSubscriptionCount($channel, $refresh = false)
     {
-        $key = 'channel_subscription_count'.$channel;
+        $key = 'channel_subscription_count' . $channel;
         $seconds = 30;
-        return static::remember($key, $seconds, function() use ($channel) {
+        return static::remember($key, $seconds, function () use ($channel) {
             return app(SoketiService::class)->getSubscriptionCount($channel);
         }, $refresh);
     }
@@ -230,7 +231,7 @@ class CacheService
     {
         $key = 'champion';
         $seconds = 60 * 10; // 10 minute
-        return static::remember($key, $seconds, function() {
+        return static::remember($key, $seconds, function () {
             $champions = Cache::get('champion_queue');
             if ($champions) {
                 return ChampionResource::collection($champions)->toArray(request());
@@ -244,11 +245,11 @@ class CacheService
         if ($refresh) {
             $data = $callback();
             Cache::forget($key);
-            return Cache::remember($key, $seconds, function() use ($data) {
+            return Cache::remember($key, $seconds, function () use ($data) {
                 return $data;
             });
         }
-        return Cache::remember($key, $seconds, function() use ($callback) {
+        return Cache::remember($key, $seconds, function () use ($callback) {
             return $callback();
         });
     }
@@ -267,6 +268,20 @@ class CacheService
     {
         return Cache::lock('CreateAndUpdateRankHistory:' . $postId)->get();
     }
+
+    static function putRankHistoryNeededUpdateDatesCache($postId, RankReportTimeRange $timeRange, string $date)
+    {
+        $previous = Cache::pull('RankHistoryNeededUpdateDatesCache:' . $postId);
+        $dates = $previous ? array_merge((array) $previous, (array) $date) : (array) $date;
+        $dates = array_unique($dates);
+        Cache::put('RankHistoryNeededUpdateDatesCache:' . $postId . '_' . $timeRange->value, $dates, now()->addDays(30));
+    }
+
+    static function pullRankHistoryNeededUpdateDatesCache($postId, RankReportTimeRange $timeRange)
+    {
+        return Cache::pull('RankHistoryNeededUpdateDatesCache:' . $postId . '_' . $timeRange->value);
+    }
+
 
 
 }
