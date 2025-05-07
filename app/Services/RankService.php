@@ -237,7 +237,9 @@ class RankService
     public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange)
     {
         $dates = CacheService::pullRankHistoryNeededUpdateDatesCache($post->id, $timeRange);
-
+        if (empty($dates)) {
+            return;
+        }
         foreach ($dates as $date) {
             UpdateRankForReportHistory::dispatch($post->id, $timeRange, $date);
         }
