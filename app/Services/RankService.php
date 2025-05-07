@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Enums\RankReportTimeRange;
 use App\Enums\RankType;
+use App\Helper\CacheService;
 use App\Jobs\UpdateRankForReportHistory;
 use App\Models\Element;
 use App\Models\Game;
@@ -203,7 +204,7 @@ class RankService
                 'win_rate' => $rank->win_rate,
             ]);
         }
-        
+
         RankReport::where('post_id', $post->id)
             ->whereHas('element', function ($query) {
                 $query->whereNotNull('deleted_at');
@@ -235,15 +236,7 @@ class RankService
 
     public function updateRankReportHistoryRank(Post $post, RankReportTimeRange $timeRange)
     {
-        $dates = RankReportHistory::where('post_id', $post->id)
-                ->select(['start_date', 'id'])
-                ->where('time_range', $timeRange)
-                ->where('rank', 0)
-                ->distinct()
-                ->orderByDesc('id')
-                ->limit(3)
-                ->get()
-                ->pluck('start_date');
+        $dates = CacheService::pullRankHistoryNeededUpdateDatesCache($post->id, $timeRange);
 
         foreach ($dates as $date) {
             UpdateRankForReportHistory::dispatch($post->id, $timeRange, $date);
