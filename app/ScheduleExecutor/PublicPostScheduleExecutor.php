@@ -213,8 +213,7 @@ class PublicPostScheduleExecutor
 
     protected function removeDirtyPublicPosts()
     {
-        PublicPost::getQuery()
-            ->where('is_dirty', true)
+        PublicPost::where('is_dirty', true)
             ->limit(1000)
             ->get()
             ->each(function (PublicPost $publicPost) {
