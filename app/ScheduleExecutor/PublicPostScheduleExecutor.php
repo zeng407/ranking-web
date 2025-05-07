@@ -218,7 +218,7 @@ class PublicPostScheduleExecutor
             ->limit(1000)
             ->get()
             ->each(function (PublicPost $publicPost) {
-                if($publicPost->post->deleted_at) {
+                if(!$publicPost->post) {
                     $publicPost->delete();
                 }
 
