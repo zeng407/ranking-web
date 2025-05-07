@@ -219,12 +219,9 @@ class PublicPostScheduleExecutor
             ->each(function (PublicPost $publicPost) {
                 if(!$publicPost->post) {
                     $publicPost->delete();
-                }
-
-                if(!$publicPost->post->isPublic()) {
+                }else if(!$publicPost->post->isPublic()) {
                     $publicPost->delete();
-                }
-                if($publicPost->post->elements()->count() < config('setting.post_min_element_count')) {
+                }else if($publicPost->post->elements()->count() < config('setting.post_min_element_count')) {
                     $publicPost->delete();
                 }
             });
