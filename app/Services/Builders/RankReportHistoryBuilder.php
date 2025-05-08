@@ -66,10 +66,6 @@ class RankReportHistoryBuilder
 
         $start = $this->getLastStartDate(RankReportTimeRange::ALL);
 
-        // 錯誤容忍度，如果有遺漏的資料，最多回補 1 天
-        // fail tolerance, if there are missing data, at most fill in 3 days
-        $start = carbon($start)->subDays(1);
-
         $lastRecord = $this->getLastRankRecord($start, RankType::PK_KING);
         $sumWinCount = $lastRecord->win_count ?? 0;
         $sumLoseCount = $lastRecord ? $lastRecord->round_count - $lastRecord->win_count : 0;
@@ -143,10 +139,6 @@ class RankReportHistoryBuilder
 
         $start = $this->getLastStartDate(RankReportTimeRange::WEEK);
         $start = carbon($start)->startOfWeek();
-
-        // 錯誤容忍度，如果有遺漏的資料，最多回補 1 天
-        // fail tolerance, if there are missing data, at most fill in 3 days
-        // $start = carbon($start)->subDay(1);
 
         $rankRecords = $this->getRankRecords($start);
 

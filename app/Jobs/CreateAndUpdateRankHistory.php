@@ -48,7 +48,7 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
         RankReport::setEagerLoads([])->where('post_id', $this->post->id)->eachById(function ($report) use(&$counter){
             $counter++;
             Cache::put('CreateAndUpdateRankHistory:' . $this->post->id, $counter, Carbon::now()->addMinutes(10));
-            CreateRankReportHistory::dispatch($report, $this->refresh, $this->post->created_at);
+            CreateRankReportHistory::dispatch($report, $this->refresh, today()->toDateTimeString());
         });
 
         ReorderRankReportHistory::dispatch($this->post)->delay(now()->addSeconds(5));
