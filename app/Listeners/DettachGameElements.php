@@ -2,10 +2,12 @@
 
 namespace App\Listeners;
 
+use App\Events\GameComplete;
 use App\Events\GameElementVoted;
 use App\Services\RankService;
+use App\Jobs\DettachGameElements as DettachGameElementsJob;
 
-class UpdateElementRank
+class DettachGameElements
 {
     protected $rankService;
 
@@ -25,10 +27,8 @@ class UpdateElementRank
      * @param  object  $event
      * @return void
      */
-    public function handle(GameElementVoted $event)
+    public function handle(GameComplete $event)
     {
-        $round = $event->gameRound;
-        \App\Jobs\UpdateElementRank::dispatch($event->game->post, $round->winner)->delay(now()->addSeconds(5));
-        \App\Jobs\UpdateElementRank::dispatch($event->game->post, $round->loser)->delay(now()->addSeconds(5));
+        DettachGameElementsJob::dispatch($event->game);
     }
 }

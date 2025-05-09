@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Element;
 use App\Models\Game;
+use App\Models\Post;
 use App\Services\RankService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -16,8 +17,8 @@ use Illuminate\Queue\SerializesModels;
 class UpdateElementRank implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    
-    protected Game $game;
+
+    protected Post $post;
     protected Element $element;
 
     /**
@@ -25,9 +26,9 @@ class UpdateElementRank implements ShouldQueue, ShouldBeUnique
      *
      * @return void
      */
-    public function __construct(Game $game, Element $element)
+    public function __construct(Post $post, Element $element)
     {
-        $this->game = $game;
+        $this->post = $post;
         $this->element = $element;
     }
 
@@ -39,12 +40,12 @@ class UpdateElementRank implements ShouldQueue, ShouldBeUnique
     public function handle(RankService $rankService)
     {
         logger('UpdateElementRank job fired');
-        $rankService->createElementRank($this->game, $this->element);
+        $rankService->createElementRank($this->post, $this->element);
     }
 
 
     public function uniqueId()
     {
-        return $this->game->post->serial . $this->element->id;
+        return $this->post->serial . $this->element->id;
     }
 }
