@@ -9,6 +9,7 @@ use App\Events\VideoElementCreated;
 use App\Listeners\CreateGameResult;
 use App\Listeners\DeleteElementRank;
 use App\Listeners\DeletePostRank;
+use App\Listeners\DettachGameElements;
 use App\Listeners\MakeVideoThumbnail;
 use App\Listeners\NofiyGameRoomRefresh;
 use App\Listeners\NotifyVoted;
@@ -39,14 +40,15 @@ class EventServiceProvider extends ServiceProvider
         ],
         GameComplete::class => [
             CreateGameResult::class,
-            UpdatePostRank::class
+            UpdatePostRank::class,
+            DettachGameElements::class,
         ],
         GameElementVoted::class => [
             UpdateElementRank::class,
             NotifyVoted::class,
         ],
         PostCreated::class => [
-            
+
         ],
         PostDeleted::class => [
             DeletePostRank::class,

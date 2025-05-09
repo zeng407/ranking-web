@@ -91,9 +91,8 @@ class RankService
         return $reports;
     }
 
-    public function createElementRank(Game $game, Element $element)
+    public function createElementRank(Post $post, Element $element)
     {
-        $post = $game->post;
         $completeGameRounds = GameElement::join('games', 'games.id', '=', 'game_elements.game_id')
             ->where('games.post_id', $post->id)
             ->where('game_elements.element_id', $element->id)

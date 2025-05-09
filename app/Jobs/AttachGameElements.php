@@ -42,7 +42,7 @@ class AttachGameElements implements ShouldQueue
     public function handle()
     {
         logger('handle AttachGameElements', ['game' => $this->game]);
-
+        
         // slice elements to 100 and remains
         $elements = $this->elements->slice(0, 100);
         $elements->each(function (Element $element){
