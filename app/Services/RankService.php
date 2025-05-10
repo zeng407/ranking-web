@@ -93,9 +93,12 @@ class RankService
 
     public function createElementRank(Post $post, Element $element)
     {
-        $completeGameRounds = GameElement::join('games', 'games.id', '=', 'game_elements.game_id')
+        $completeGameRounds = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
             ->where('games.post_id', $post->id)
-            ->where('game_elements.element_id', $element->id)
+            ->where(function($subQuery) use ($element) {
+                $subQuery->where('game_1v1_rounds.winner_id', $element->id)
+                    ->orWhere('game_1v1_rounds.loser_id', $element->id);
+            })
             ->whereNotNull('games.completed_at')
             ->count();
 
