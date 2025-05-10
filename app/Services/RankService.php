@@ -9,6 +9,7 @@ use App\Helper\CacheService;
 use App\Jobs\UpdateRankForReportHistory;
 use App\Models\Element;
 use App\Models\Game;
+use App\Models\Game1V1Round;
 use App\Models\GameElement;
 use App\Models\Post;
 use App\Models\Rank;
@@ -93,32 +94,40 @@ class RankService
 
     public function createElementRank(Post $post, Element $element)
     {
-        $completeGameRounds = GameElement::join('games', 'games.id', '=', 'game_elements.game_id')
-            ->where('games.post_id', $post->id)
-            ->where('game_elements.element_id', $element->id)
-            ->whereNotNull('games.completed_at')
-            ->count();
+        // $completeGameRounds = Game::join('game', 'games.id', '=', 'game_elements.game_id')
+        //     ->where('games.post_id', $post->id)
+        //     ->where('game_elements.element_id', $element->id)
+        //     ->whereNotNull('games.completed_at')
+        //     ->count();
 
-        if ($completeGameRounds) {
-            $championCount = Game::where('games.post_id', $post->id)
-                ->whereHas('game_1v1_rounds', function ($query) use ($element) {
-                    $query->where('remain_elements', 1)
-                        ->where('winner_id', $element->id);
-                })
-                ->count();
 
-            if ($championCount) {
-                Rank::updateOrCreate([
-                    'post_id' => $post->id,
-                    'element_id' => $element->id,
-                    'rank_type' => RankType::CHAMPION,
-                    'record_date' => today(),
-                ], [
-                    'win_count' => $championCount,
-                    'round_count' => $completeGameRounds,
-                    'win_rate' => $championCount / $completeGameRounds * 100
-                ]);
-            }
+        $result = DB::table('games')
+            ->join('game_1v1_rounds', 'games.id', '=', 'game_1v1_rounds.id')
+            ->selectRaw('
+            SUM(CASE WHEN winner_id = ? THEN 1 ELSE 0 END) AS win_count,
+            SUM(CASE WHEN loser_id = ? THEN 1 ELSE 0 END) AS lose_count',
+                [$element->id, $element->id]
+            )
+            ->where(function ($query) use ($element) {
+                $query->where('winner_id', $element->id)
+                    ->orWhere('loser_id', $element->id);
+            })
+            ->first();
+
+        $winCount = $result->win_count;
+        $loseCount = $result->lose_count;
+        $completeGameRounds = $winCount + $loseCount;
+        if ($completeGameRounds && $winCount) {
+            Rank::updateOrCreate([
+                'post_id' => $post->id,
+                'element_id' => $element->id,
+                'rank_type' => RankType::CHAMPION,
+                'record_date' => today(),
+            ], [
+                'win_count' => $winCount,
+                'round_count' => $completeGameRounds,
+                'win_rate' => $winCount / $completeGameRounds * 100
+            ]);
         }
 
         $winCount = Game::where('games.post_id', $post->id)
