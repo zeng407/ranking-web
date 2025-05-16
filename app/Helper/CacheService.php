@@ -271,7 +271,7 @@ class CacheService
 
     static function putRankHistoryNeededUpdateDatesCache($postId, RankReportTimeRange $timeRange, string $date)
     {
-        $previous = Cache::pull('RankHistoryNeededUpdateDatesCache:' . $postId);
+        $previous = Cache::pull('RankHistoryNeededUpdateDatesCache:' . $postId . '_' . $timeRange->value);
         $dates = $previous ? array_merge((array) $previous, (array) $date) : (array) $date;
         $dates = array_unique($dates);
         Cache::put('RankHistoryNeededUpdateDatesCache:' . $postId . '_' . $timeRange->value, $dates, now()->addDays(30));
