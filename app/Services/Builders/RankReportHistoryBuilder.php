@@ -255,7 +255,7 @@ class RankReportHistoryBuilder
             ->when($rankType, function ($query) use ($rankType) {
                 $query->where('rank_type', $rankType);
             })
-            ->where('record_date', '<', $beforeDate)
+            ->where('record_date', '<=', $beforeDate)
             ->where('record_date', '>=', carbon($beforeDate)->subDays(7)->toDateString())
             ->orderByDesc('record_date')
             ->first();
