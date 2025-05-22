@@ -138,9 +138,8 @@ class RankReportHistoryBuilder
         }
 
         $start = $this->getLastStartDate(RankReportTimeRange::WEEK);
-        $start = carbon($start)->startOfWeek();
-
-        $rankRecords = $this->getRankRecords($start);
+        
+        $rankRecords = $this->getRankRecords(carbon($start)->startOfWeek());
 
         $lastChampionRecord = $this->getLastRankRecord($start, RankType::CHAMPION);
         $lastChampionCount = $lastChampionRecord->win_count ?? 0;
