@@ -5,6 +5,7 @@ namespace App\Services\Builders;
 use App\Enums\RankReportTimeRange;
 use App\Enums\RankType;
 use App\Helper\CacheService;
+use App\Helper\Locker;
 use App\Models\Element;
 use App\Models\Game1V1Round;
 use App\Models\Post;
@@ -120,11 +121,24 @@ class RankReportHistoryBuilder
                     'champion_rate' => $championRate
                 ]);
 
-                CacheService::putRankHistoryNeededUpdateDatesCache(
-                    $this->report->post_id,
-                    RankReportTimeRange::ALL,
-                    $timeline->toDateString()
-                );
+                try {
+                    $locker = Locker::lockRankHistory($this->report->post_id);
+                    $locker->block(5);
+                    CacheService::putRankHistoryNeededUpdateDatesCache(
+                        $this->report->post_id,
+                        RankReportTimeRange::ALL,
+                        $timeline->toDateString()
+                    );
+                    $locker->release();
+                } catch (\Exception $e) {
+                    logger('lock error', [
+                        'post_id' => $this->report->post_id,
+                        'error' => $e->getMessage(),
+                        'time_range' => RankReportTimeRange::ALL,
+                        'date' => $timeline->toDateString()
+                    ]);
+                    $locker->release();
+                }
             }
 
             $timeline->addDay();
@@ -138,7 +152,7 @@ class RankReportHistoryBuilder
         }
 
         $start = $this->getLastStartDate(RankReportTimeRange::WEEK);
-        
+
         $rankRecords = $this->getRankRecords(carbon($start)->startOfWeek());
 
         $lastChampionRecord = $this->getLastRankRecord($start, RankType::CHAMPION);
@@ -150,8 +164,8 @@ class RankReportHistoryBuilder
         $lastLoseCount = $lastPKRecord ? $lastPKRecord->round_count - $lastPKRecord->win_count : 0;
         $lastRounds = $lastPKRecord->round_count ?? 0;
 
-        if($lastRounds == 0) {
-            return ;
+        if ($lastRounds == 0) {
+            return;
         }
 
         $timeline = carbon($start);
@@ -202,15 +216,9 @@ class RankReportHistoryBuilder
         }
     }
 
-    protected function buildMonth()
-    {
+    protected function buildMonth() {}
 
-    }
-
-    protected function buildYear()
-    {
-
-    }
+    protected function buildYear() {}
 
     protected function getLastStartDate(RankReportTimeRange $range)
     {
@@ -261,5 +269,4 @@ class RankReportHistoryBuilder
 
         return $lastRecord;
     }
-
 }

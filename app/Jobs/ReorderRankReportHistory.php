@@ -13,22 +13,31 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
+
 
 class ReorderRankReportHistory implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected Post $post;
+    protected $nextdelay;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Post $post)
+    public function __construct(Post $post, $delay = 60)
     {
         $this->post = $post;
+        $this->nextdelay = $delay;
         $this->onQueue('rank_report_history');
+    }
+
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping($this->post->serial))->dontRelease()];
     }
 
     /**
@@ -43,10 +52,11 @@ class ReorderRankReportHistory implements ShouldQueue
         if ($count > 0) {
             logger('ReorderRankReportHistory job skipped for post id: ' . $this->post->id, ['count' => $count]);
             // If the count is not zero, it means previous jobs are still running
-            // so we will not proceed with this job
 
             // put the job back to the queue with a delay
-            $this->dispatch($this->post)->delay(now()->addSeconds(60));
+            $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
+            $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::WEEK);
+            $this->dispatch($this->post, $this->nextdelay + 60)->delay(now()->addSeconds($this->nextdelay));
             return;
         }
 
