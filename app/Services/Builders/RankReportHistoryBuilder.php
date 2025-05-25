@@ -71,7 +71,7 @@ class RankReportHistoryBuilder
         $sumWinCount = $lastRecord->win_count ?? 0;
         $sumLoseCount = $lastRecord ? $lastRecord->round_count - $lastRecord->win_count : 0;
         $sumRounds = $lastRecord->round_count ?? 0;
-
+        $start = carbon($lastRecord->record_date)->toDateString();
         // skip if no one played the game in these days
         if ($sumRounds == 0) {
             return;
@@ -103,7 +103,6 @@ class RankReportHistoryBuilder
 
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
-
             if ($sumWinCount > 0) {
                 RankReportHistory::updateOrCreate([
                     'element_id' => $this->report->element_id,
@@ -262,7 +261,7 @@ class RankReportHistoryBuilder
             ->when($rankType, function ($query) use ($rankType) {
                 $query->where('rank_type', $rankType);
             })
-            ->where('record_date', '<=', $beforeDate)
+            ->where('record_date', '<', $beforeDate)
             ->where('record_date', '>=', carbon($beforeDate)->subDays(7)->toDateString())
             ->orderByDesc('record_date')
             ->first();
