@@ -71,7 +71,9 @@ class RankReportHistoryBuilder
         $sumWinCount = $lastRecord->win_count ?? 0;
         $sumLoseCount = $lastRecord ? $lastRecord->round_count - $lastRecord->win_count : 0;
         $sumRounds = $lastRecord->round_count ?? 0;
-        $start = carbon($lastRecord->record_date)->toDateString();
+        if($lastRecord){
+            $start = carbon($lastRecord->record_date)->toDateString();
+        }
         // skip if no one played the game in these days
         if ($sumRounds == 0) {
             return;
