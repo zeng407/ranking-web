@@ -105,7 +105,13 @@ class RankReportHistoryBuilder
 
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
-            if ($sumWinCount > 0) {
+            $existsReport = RankReportHistory::where('element_id', $this->report->element_id)
+                ->where('post_id', $this->report->post_id)
+                ->where('rank_report_id', $this->report->id)
+                ->where('time_range', RankReportTimeRange::ALL)
+                ->where('start_date', $timeline->toDateString())
+                ->exists();
+            if ($sumWinCount > 0 && !$existsReport) {
                 RankReportHistory::updateOrCreate([
                     'element_id' => $this->report->element_id,
                     'post_id' => $this->report->post_id,
