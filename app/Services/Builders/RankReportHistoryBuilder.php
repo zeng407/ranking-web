@@ -71,7 +71,7 @@ class RankReportHistoryBuilder
         $sumWinCount = $lastRecord->win_count ?? 0;
         $sumLoseCount = $lastRecord ? $lastRecord->round_count - $lastRecord->win_count : 0;
         $sumRounds = $lastRecord->round_count ?? 0;
-        if($lastRecord){
+        if ($lastRecord) {
             $start = carbon($lastRecord->record_date)->toDateString();
         }
         // skip if no one played the game in these days
@@ -138,12 +138,7 @@ class RankReportHistoryBuilder
                     );
                     $locker->release();
                 } catch (\Exception $e) {
-                    logger('lock error', [
-                        'post_id' => $this->report->post_id,
-                        'error' => $e->getMessage(),
-                        'time_range' => RankReportTimeRange::ALL,
-                        'date' => $timeline->toDateString()
-                    ]);
+                    report($e);
                     $locker->release();
                 }
             }
@@ -195,7 +190,15 @@ class RankReportHistoryBuilder
             $winRate = $sumRounds > 0 ? $sumWinCount / $sumRounds * 100 : 0;
             $championRate = $gameCompleteCount > 0 ? $championCount / $gameCompleteCount * 100 : 0;
 
-            if ($sumWinCount > 0) {
+            $existsReport = RankReportHistory::where('element_id', $this->report->element_id)
+                ->where('post_id', $this->report->post_id)
+                ->where('rank_report_id', $this->report->id)
+                ->where('time_range', RankReportTimeRange::WEEK)
+                ->where('start_date', $timeline->toDateString())
+                ->exists();
+            $skipExists = $existsReport && $timeline->lt(today()->subDays(2)->startOfWeek());
+
+            if ($sumWinCount > 0 && !$skipExists) {
                 RankReportHistory::updateOrCreate([
                     'element_id' => $this->report->element_id,
                     'post_id' => $this->report->post_id,
@@ -211,6 +214,20 @@ class RankReportHistoryBuilder
                     'game_complete_count' => $gameCompleteCount,
                     'champion_rate' => $championRate
                 ]);
+
+                try {
+                    $locker = Locker::lockRankHistory($this->report->post_id);
+                    $locker->block(5);
+                    CacheService::putRankHistoryNeededUpdateDatesCache(
+                        $this->report->post_id,
+                        RankReportTimeRange::WEEK,
+                        $timeline->toDateString()
+                    );
+                    $locker->release();
+                } catch (\Exception $e) {
+                    report($e);
+                    $locker->release();
+                }
             }
 
             $lastChampionCount = $rankChampionRecord ? $rankChampionRecord->win_count : 0;
@@ -223,9 +240,13 @@ class RankReportHistoryBuilder
         }
     }
 
-    protected function buildMonth() {}
+    protected function buildMonth()
+    {
+    }
 
-    protected function buildYear() {}
+    protected function buildYear()
+    {
+    }
 
     protected function getLastStartDate(RankReportTimeRange $range)
     {
