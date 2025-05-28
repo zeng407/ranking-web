@@ -138,12 +138,7 @@ class RankReportHistoryBuilder
                     );
                     $locker->release();
                 } catch (\Exception $e) {
-                    logger('lock error', [
-                        'post_id' => $this->report->post_id,
-                        'error' => $e->getMessage(),
-                        'time_range' => RankReportTimeRange::ALL,
-                        'date' => $timeline->toDateString()
-                    ]);
+                    report($e);
                     $locker->release();
                 }
             }
@@ -211,6 +206,20 @@ class RankReportHistoryBuilder
                     'game_complete_count' => $gameCompleteCount,
                     'champion_rate' => $championRate
                 ]);
+
+                try {
+                    $locker = Locker::lockRankHistory($this->report->post_id);
+                    $locker->block(5);
+                    CacheService::putRankHistoryNeededUpdateDatesCache(
+                        $this->report->post_id,
+                        RankReportTimeRange::WEEK,
+                        $timeline->toDateString()
+                    );
+                    $locker->release();
+                } catch (\Exception $e) {
+                    report($e);
+                    $locker->release();
+                }
             }
 
             $lastChampionCount = $rankChampionRecord ? $rankChampionRecord->win_count : 0;
