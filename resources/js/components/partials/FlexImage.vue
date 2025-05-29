@@ -1,6 +1,4 @@
-<template>
-  <img ref="flexImage" :src="src" @error="onImageError">
-</template>
+<template><img ref="flexImage" :src="src" @error="onImageError"></template>
 
 <script>
 export default {
@@ -13,13 +11,13 @@ export default {
   },
   computed: {
     src() {
-      if(this.imgurUrl && !this.isImgurUrlFailed){
-        return this.imgurUrl;
-      }else if(this.thumbUrl && !this.isThumbUrlFailed){
+      if (this.imgurUrl && !this.isImgurUrlFailed) {
+        return 'https://proxy.duckduckgo.com/iu/?u=' + encodeURIComponent(this.imgurUrl);
+      } else if (this.thumbUrl && !this.isThumbUrlFailed) {
         return this.thumbUrl;
-      }else if(this.thumbUrl2 && !this.isThumbUrl2Failed){
+      } else if (this.thumbUrl2 && !this.isThumbUrl2Failed) {
         return this.thumbUrl2;
-      }else{
+      } else {
         return '';
       }
     }
@@ -27,7 +25,7 @@ export default {
 
   props: {
     elementId: {
-      type: String|Number,
+      type: String | Number,
       required: true
     },
     thumbUrl: {
@@ -44,14 +42,14 @@ export default {
       type: String,
     },
     height: {
-      type: String|Number,
+      type: String | Number,
     },
     imageKey: {
-      type: String|Number,
+      type: String | Number,
     },
     handleLoaded: {
       type: Function,
-      default: () => {}
+      default: () => { }
     },
     srcSet: {
       type: String,
@@ -74,58 +72,58 @@ export default {
   },
   methods: {
     initImgAttributes() {
-      if(this.height == 'auto'){
+      if (this.height == 'auto') {
         this.$refs.flexImage.style.height = 'auto';
-      }else if(this.height > 0){
+      } else if (this.height > 0) {
         this.$refs.flexImage.style.height = this.height + 'px';
       }
 
-      if(this.customClass){
+      if (this.customClass) {
         this.$refs.flexImage.classList.add(this.customClass);
       }
 
-      if(this.sizes){
+      if (this.sizes) {
         this.$refs.flexImage.setAttribute('sizes', this.sizes);
       }
 
-      if(this.srcSet){
+      if (this.srcSet) {
         this.$refs.flexImage.setAttribute('srcset', this.srcSet);
       }
 
-      if(this.imageKey){
+      if (this.imageKey) {
         this.$refs.flexImage.setAttribute('key', this.imageKey);
       }
 
-      if(this.handleLoaded){
+      if (this.handleLoaded) {
         this.$refs.flexImage.addEventListener('load', this.handleLoaded);
       }
 
-      if(this.alt){
+      if (this.alt) {
         this.$refs.flexImage.setAttribute('alt', this.alt);
       }
     },
     onImageError() {
-      if(this.imgurUrl && !this.isImgurUrlFailed){
+      if (this.imgurUrl && !this.isImgurUrlFailed) {
         this.isImgurUrlFailed = true;
-      }else if(this.thumbUrl && !this.isThumbUrlFailed){
+      } else if (this.thumbUrl && !this.isThumbUrlFailed) {
         this.isThumbUrlFailed = true;
-      }else if(this.thumbUrl2 && !this.isThumbUrl2Failed){
+      } else if (this.thumbUrl2 && !this.isThumbUrl2Failed) {
         this.isThumbUrl2Failed = true;
       }
     },
     checkImgurUrl() {
-      if(this.imgurUrl){
+      if (this.imgurUrl) {
         fetch(this.imgurUrl)
           .then(response => {
             if (!response.ok) {
               this.isImgurUrlFailed = true;
-            }else if(response.url === 'https://i.imgur.com/removed.png'){
+            } else if (response.url === 'https://i.imgur.com/removed.png') {
               this.isImgurUrlFailed = true;
-              if(this.isReported === false){
+              if (this.isReported === false) {
                 this.reportRemovedImage(this.imgurUrl);
                 this.isReported = true;
               }
-            } else if(response.url == this.imgurUrl && response.ok){
+            } else if (response.url == this.imgurUrl && response.ok) {
               this.isImgurUrlFailed = false;
             }
           })
@@ -134,7 +132,7 @@ export default {
           })
       }
     },
-    reportRemovedImage(){
+    reportRemovedImage() {
       axios.post(this.reportUrl, {
         element_id: this.elementId
       })
