@@ -283,16 +283,15 @@ class RankReportHistoryBuilder
         return $gameRecords;
     }
 
-    protected function getLastRankRecord($beforeDate, $rankType = null)
+    protected function getLastRankRecord($afterDate, $rankType = null)
     {
         $lastRecord = Rank::where('post_id', $this->report->post_id)
             ->where('element_id', $this->report->element_id)
             ->when($rankType, function ($query) use ($rankType) {
                 $query->where('rank_type', $rankType);
             })
-            ->where('record_date', '<=', $beforeDate)
-            ->where('record_date', '>=', carbon($beforeDate)->subDays(7)->toDateString())
-            ->orderByDesc('record_date')
+            ->where('record_date', '>=', $afterDate)
+            ->order('record_date')
             ->first();
 
         return $lastRecord;
