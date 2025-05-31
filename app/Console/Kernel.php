@@ -8,6 +8,7 @@ use App\ScheduleExecutor\ElementScheduleExecutor;
 use App\ScheduleExecutor\ImgurScheduleExecutor;
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
 use App\ScheduleExecutor\PublicPostScheduleExecutor;
+use App\ScheduleExecutor\RankReportScheduleExecutor;
 use App\ScheduleExecutor\ThumbnailExecutor;
 use Artisan;
 use Illuminate\Console\Scheduling\Schedule;
@@ -50,6 +51,10 @@ class Kernel extends ConsoleKernel
             Artisan::call('make:rank-report-history all');
             Artisan::call('make:rank-report-history week');
         })->name('Make Rank Report History')->dailyAt('06:15')->withoutOverlapping(120);
+
+        $schedule->call(function(){
+            app(RankReportScheduleExecutor::class)->removeOutdateRankReportHistory();
+        })->name('Remove Outdate Rank Report History')->dailyAt('05:30')->withoutOverlapping(120);
 
         $schedule->call(function(){
             // app(ImgurScheduleExecutor::class)->createAlbum(5);
