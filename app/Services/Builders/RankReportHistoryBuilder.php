@@ -291,7 +291,7 @@ class RankReportHistoryBuilder
                 $query->where('rank_type', $rankType);
             })
             ->where('record_date', '>=', $afterDate)
-            ->order('record_date')
+            ->orderBy('record_date')
             ->first();
 
         return $lastRecord;
