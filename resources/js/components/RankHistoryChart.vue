@@ -81,6 +81,7 @@ export default {
         if(item.rank === 0 || item.win_rate <= 0){
           return false;
         }
+
         return true;
       })
       .map((item, index) => {
@@ -98,12 +99,13 @@ export default {
           }
 
           //  ture if index is 0 2 4
-          if((index % 2 == 0 && index < 5) || item.date == moment().format('YYYY-MM-DD')){
-            return true;
-          }
-          return weeklyRankData.some((item2) => {
-            return item.date === item2.x;
-          });
+          // if((index % 2 == 0 && index < 5) || item.date == moment().format('YYYY-MM-DD')){
+          //   return true;
+          // }
+          // return weeklyRankData.some((item2) => {
+          //   return item.date === item2.x;
+          // });
+          return true;
         })
         .map((item, index) => {
           return {
@@ -176,14 +178,13 @@ export default {
                 },
               },
               afterDataLimits: (axis) => {
-                axis.max = axis.max;
+                axis.max = axis.max+5;
                 axis.min = 1;
               }
             },
           },
           interaction: {
-            intersect: false,
-            mode: 'x',
+            intersect: false
           },
           plugins: {
             title: {
