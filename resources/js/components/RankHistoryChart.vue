@@ -98,14 +98,23 @@ export default {
             return false;
           }
 
+          if(item.date == moment().format('YYYY-MM-DD')){
+            return true;
+          }
+
           //  ture if index is 0 2 4
-          // if((index % 2 == 0 && index < 5) || item.date == moment().format('YYYY-MM-DD')){
-          //   return true;
-          // }
-          // return weeklyRankData.some((item2) => {
-          //   return item.date === item2.x;
-          // });
-          return true;
+          if(index % 2 == 0 && index < 5){
+            return true;
+          }
+
+          if(index % 4 == 0 && index >= 5){
+            return true;
+          }
+
+          return weeklyRankData.some((item2) => {
+            return item.date === item2.x;
+          });
+
         })
         .map((item, index) => {
           return {
