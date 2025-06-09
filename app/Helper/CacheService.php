@@ -264,11 +264,6 @@ class CacheService
         Cache::put('CreateAndUpdateRankHistory:' . $postId, $count, now()->addMinutes(10));
     }
 
-    static function lockGetRankHistoryJobCache($postId)
-    {
-        return Cache::lock('CreateAndUpdateRankHistory:' . $postId)->get();
-    }
-
     static function putRankHistoryNeededUpdateDatesCache($postId, RankReportTimeRange $timeRange, string $date)
     {
         $previous = Cache::pull('RankHistoryNeededUpdateDatesCache:' . $postId . '_' . $timeRange->value);
@@ -280,6 +275,25 @@ class CacheService
     static function pullRankHistoryNeededUpdateDatesCache($postId, RankReportTimeRange $timeRange)
     {
         return Cache::pull('RankHistoryNeededUpdateDatesCache:' . $postId . '_' . $timeRange->value);
+    }
+
+    static function setNeedFreshPostRank(Post $post)
+    {
+        $key = 'need_fresh_post_rank_' . $post->id;
+        $seconds = 3 * 24 * 60 * 60; // 3 days
+        Cache::put($key, true, $seconds);
+    }
+
+    static function getNeedFreshPostRank(Post $post)
+    {
+        $key = 'need_fresh_post_rank_' . $post->id;
+        return Cache::get($key, false);
+    }
+
+    static function clearNeedFreshPostRank(Post $post)
+    {
+        $key = 'need_fresh_post_rank_' . $post->id;
+        Cache::forget($key);
     }
 
 

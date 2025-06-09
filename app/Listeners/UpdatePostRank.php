@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\GameComplete;
+use App\Helper\CacheService;
 use App\Jobs\UpdateRankReport;
 use App\Services\RankService;
 use Illuminate\Bus\Queueable;
@@ -35,5 +36,6 @@ class UpdatePostRank
 
         //delay 10 seconds for the GameVoted event to be fully processed
         UpdateRankReport::dispatch($event->post)->delay(10);
+        CacheService::setNeedFreshPostRank($event->post);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\RankReportTimeRange;
+use App\Helper\CacheService;
 use App\Jobs\CreateAndUpdateRankHistory;
 use App\Models\Post;
 use Illuminate\Console\Command;
@@ -47,6 +48,9 @@ class MakeRankReportHistoryCommand extends Command
 
         Post::setEagerLoads([])->chunkById(300, function ($posts)use($refresh){
             foreach ($posts as $post) {
+                if(!CacheService::getNeedFreshPostRank($post)){
+                    continue;
+                }
                 CreateAndUpdateRankHistory::dispatch(
                     $post,
                     $refresh
