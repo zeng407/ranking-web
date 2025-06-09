@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\RankReportTimeRange;
+use App\Helper\CacheService;
 use App\Models\Post;
 use App\Models\RankReport;
 use App\Services\RankService;
@@ -47,11 +48,12 @@ class CreateAndUpdateRankHistory implements ShouldQueue, ShouldBeUnique
         $counter = 0;
         RankReport::setEagerLoads([])->where('post_id', $this->post->id)->eachById(function ($report) use(&$counter){
             $counter++;
-            Cache::put('CreateAndUpdateRankHistory:' . $this->post->id, $counter, Carbon::now()->addMinutes(10));
+            CacheService::putRankHistoryJobCache($this->post->id, $counter);
             CreateRankReportHistory::dispatch($report, $this->refresh, today()->toDateTimeString());
         });
 
         ReorderRankReportHistory::dispatch($this->post)->delay(now()->addSeconds(5));
+        CacheService::clearNeedFreshPostRank($this->post);
     }
 
     public function uniqueId()
