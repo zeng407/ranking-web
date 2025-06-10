@@ -170,7 +170,7 @@ class RankReportHistoryBuilder
             return;
         }
 
-        $timeline = carbon($start);
+        $timeline = carbon($start)->endOfWeek();
         $endOfWeek = carbon(today())->endOfWeek();
         while ($timeline->lte($endOfWeek)) {
             $rankPKRecord = $rankRecords
