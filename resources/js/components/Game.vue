@@ -286,6 +286,7 @@ export default {
         }
       } else {
         if (this.isListeningGameBet) {
+          clearInterval(this.isListeningGameBet);
           this.isListeningGameBet = false;
         }
       }
