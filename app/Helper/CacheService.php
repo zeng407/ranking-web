@@ -71,7 +71,7 @@ class CacheService
     {
         $url = $request->getQueryString();
         $cacheName = Cache::get('post_update_at') . '/' . md5($url);
-        if($request->$request->query('sort_by', 'hot') === 'hot') {
+        if($request->query('sort_by', 'hot') === 'hot') {
             $seconds = 60 * 60; // 1 hour
         } else {
             $seconds = 60 * 5; // 5 minutes
