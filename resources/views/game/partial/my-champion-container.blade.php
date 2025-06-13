@@ -29,8 +29,8 @@
           image-key="{{$gameResult->winner->id}}"
           element-id="{{$gameResult->winner->id}}"
           imgur-url="{{$gameResult->winner->imgur_url}}"
-          thumb-url="{{$gameResult->winner->lowthumb_url ?: $gameResult->winner->thumb_url}}"
-          thumb-url2="{{$gameResult->winner->mediumthumb_url ?: $gameResult->winner->thumb_url}}"
+          thumb-url="{{$gameResult->winner->thumb_url ?: $gameResult->winner->mediumthumb_url}}"
+          thumb-url2="{{$gameResult->winner->mediumthumb_url ?: $gameResult->winner->lowthumb_url}}"
           alt="{{$gameResult->winner->title}}"
           ></flex-image>
     </viewer>

@@ -30,7 +30,7 @@
         image-key="{{$rank->element->id}}"
         element-id="{{$rank->element->id}}"
         imgur-url="{{$rank->element->getImgurUrl()}}"
-        thumb-url="{{$rank->element->getLowThumbUrl()}}"
+        thumb-url="{{$rank->element->getDefaultThumbUrl()}}"
         thumb-url2="{{$rank->element->getMediumThumbUrl()}}"
         alt="{{$rank->element->title}}"
         ></flex-image>
