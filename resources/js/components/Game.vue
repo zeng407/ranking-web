@@ -1464,10 +1464,10 @@ export default {
       return `${hour}h${minute}m${second}s`;
     },
     getThumbUrl(element) {
+      if (element.thumb_url && element.thumb_url.endsWith('.gif')) {
+        return element.thumb_url;
+      }
       if (this.isMobileScreen) {
-        if (element.source_url && element.source_url.endsWith('.gif')) {
-          return element.source_url;
-        }
         return element.mediumthumb_url ? element.mediumthumb_url : element.lowthumb_url;
       } else {
         return element.thumb_url ? element.thumb_url : element.mediumthumb_url;

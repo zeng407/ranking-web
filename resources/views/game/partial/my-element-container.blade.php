@@ -29,8 +29,8 @@
             image-key="{{$rank->loser->id}}"
             element-id="{{$rank->loser->id}}"
             imgur-url="{{$rank->loser->imgur_url}}"
-            thumb-url="{{$rank->loser->lowthumb_url ?: $rank->loser->thumb_url}}"
-            thumb-url2="{{$rank->loser->mediumthumb_url ?: $rank->loser->thumb_url}}"
+            thumb-url="{{$rank->loser->thumb_url ?: $rank->loser->mediumthumb_url}}"
+            thumb-url2="{{$rank->loser->mediumthumb_url ?: $rank->loser->lowthumb_url}}"
             alt="{{$rank->loser->title}}"
             ></flex-image>
         </viewer>
