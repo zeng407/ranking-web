@@ -286,6 +286,7 @@ export default {
         }
       } else {
         if (this.isListeningGameBet) {
+          clearInterval(this.isListeningGameBet);
           this.isListeningGameBet = false;
         }
       }
@@ -1464,9 +1465,12 @@ export default {
     },
     getThumbUrl(element) {
       if (this.isMobileScreen) {
-        return element.lowthumb_url ? element.lowthumb_url : element.thumb_url;
+        if (element.source_url && element.source_url.endsWith('.gif')) {
+          return element.source_url;
+        }
+        return element.mediumthumb_url ? element.mediumthumb_url : element.lowthumb_url;
       } else {
-        return element.mediumthumb_url ? element.mediumthumb_url : element.thumb_url;
+        return element.thumb_url ? element.thumb_url : element.mediumthumb_url;
       }
     },
     getLowThumbUrl(element) {
