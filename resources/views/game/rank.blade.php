@@ -145,8 +145,8 @@
                                                 :image-key="result.element.id"
                                                 :element-id="result.element.id"
                                                 :imgur-url="result.element.imgur_url"
-                                                :thumb-url="result.element.lowthumb_url || result.element.thumb_url"
-                                                :thumb-url2="result.element.mediumthumb_url || result.element.thumb_url"
+                                                :thumb-url="result.element.thumb_url || result.element.mediumthumb_url"
+                                                :thumb-url2="result.element.mediumthumb_url || result.element.lowthumb_url"
                                                 :alt="result.element.title"
                                                 ></flex-image>
                                             </viewer>
