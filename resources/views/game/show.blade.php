@@ -724,7 +724,7 @@
                     <div class="card-body pt-0 text-center">
                       <h5 class="text-break">{{ $post->description }}</h5>
                       <div v-if="post.tags.length > 0" class="d-flex flex-wrap">
-                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#@{{ tag}}</span>
+                        <span class="badge badge-secondary m-1" v-for="tag in post.tags" style="font-size:medium">#@{{ tag }}</span>
                       </div>
                       <span class="mt-2 card-text d-flex justify-content-end">
                         <span class="pr-2">
