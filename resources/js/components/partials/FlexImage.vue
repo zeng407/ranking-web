@@ -12,7 +12,12 @@ export default {
   computed: {
     src() {
       if (this.imgurUrl && !this.isImgurUrlFailed) {
-        return 'https://proxy.duckduckgo.com/iu/?u=' + encodeURIComponent(this.imgurUrl);
+        // if the host name is imgur, we use the proxy to access the image
+        if (this.imgurUrl.startsWith('https://i.imgur.com/')) {
+          return 'https://proxy.duckduckgo.com/iu/?u=' + encodeURIComponent(this.imgurUrl);
+        }else{
+          return this.imgurUrl;
+        }
       } else if (this.thumbUrl && !this.isThumbUrlFailed) {
         return this.thumbUrl;
       } else if (this.thumbUrl2 && !this.isThumbUrl2Failed) {
