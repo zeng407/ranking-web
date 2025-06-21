@@ -4,6 +4,7 @@ use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\SocialiteController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Post\AdController;
 use App\Http\Controllers\Post\PostController;
 use App\Http\Controllers\Post\GameController;
 
@@ -69,3 +70,5 @@ Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en
 
 /** Game Room */
 Route::get('b/{gameRoom:serial}', [GameController::class, 'joinRoom'])->name('game.room.index');
+
+Route::get('/onead-media', [AdController::class, 'onead_media'])->name('onead.media');

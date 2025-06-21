@@ -19,7 +19,7 @@
           </div>
           <div class="modal-body">
             <div id="remove-onead-ad-container">
-              <div id="div-onead-nd-00"></div>
+              <iframe src="/onead-media" width="100%" height="250" frameborder="0" scrolling="no" style="border:0;display:block;"></iframe>
             </div>
             <div class="text-center mt-3">
               <span v-if="adLoading" class="text-secondary">廣告載入中...</span>
@@ -62,24 +62,23 @@ export default {
         }
       }, 5000);
       this.$nextTick(() => {
-        this.loadAdScript();
-        window.custom_call = (params) => {
-          if (params.hasAd) {
+        // 監聽 iframe 載入與點擊
+        const iframe = this.$el.querySelector('iframe');
+        if (iframe) {
+          iframe.onload = () => {
             this.adLoaded = true;
             this.adLoading = false;
             this.adLoadFailed = false;
             clearTimeout(this.adLoadTimeoutId);
-            const parent = document.getElementById('remove-onead-ad-container');
-            const adDiv = parent ? parent.firstElementChild : null;
-            if (adDiv) {
-              adDiv.addEventListener('click', this.handleAdClick, { once: true });
+            // 嘗試監聽 iframe 內容的點擊（僅同源可行）
+            try {
+              iframe.contentWindow.document.body.addEventListener('click', this.handleAdClick, { once: true });
+            } catch (e) {
+              // 若跨域，則無法直接監聽
+              iframe.contentWindow.addEventListener('click', this.handleAdClick, { once: true });
             }
-          } else {
-            this.adLoadFailed = true;
-            this.adLoading = false;
-            clearTimeout(this.adLoadTimeoutId);
-          }
-        };
+          };
+        }
       });
     },
     closeModal() {
@@ -92,38 +91,14 @@ export default {
       this.showButton = false;
     },
     loadAdScript() {
-      if (this.scriptLoaded) return;
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.innerHTML = `
-        var custom_call = function(params) {
-          if(params.hasAd && typeof window.custom_call === 'function') {
-            window.custom_call(params);
-          }
-        };
-        ONEAD_TEXT = {};
-        ONEAD_TEXT.pub = {};
-        ONEAD_TEXT.pub.uid = "2000374";
-        ONEAD_TEXT.pub.slotobj = document.getElementById("div-onead-nd-00");
-        ONEAD_TEXT.pub.player_mode = "native-drive";
-        ONEAD_TEXT.pub.player_mode_div = "div-onead-ad";
-        ONEAD_TEXT.pub.max_threads = 3;
-        ONEAD_TEXT.pub.position_id = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)? "5" : "0";
-        ONEAD_TEXT.pub.queryAdCallback = custom_call;
-        window.ONEAD_text_pubs = window.ONEAD_text_pubs || [];
-        ONEAD_text_pubs.push(ONEAD_TEXT);
-      `;
-      script.id = 'onead-config-script';
-      document.body.appendChild(script);
-      const adScript = document.createElement('script');
-      adScript.src = 'https://ad-specs.guoshipartners.com/static/js/ad-serv.min.js';
-      adScript.id = 'onead-script';
-      document.body.appendChild(adScript);
-      this.scriptLoaded = true;
+
     },
     handleAdClick() {
-      this.adClicked = true;
-      axios.post('/api/remove-ad-24hr');
+      console.log('Ad clicked');
+      if (!this.adClicked) {
+        this.adClicked = true;
+        axios.post('/api/remove-ad-24hr');
+      }
     }
   }
 };
