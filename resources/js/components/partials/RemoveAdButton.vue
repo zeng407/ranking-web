@@ -18,9 +18,7 @@
             </button>
           </div>
           <div class="modal-body">
-            <div id="remove-onead-ad-container">
-              <iframe src="/onead-media" width="100%" height="250" frameborder="0" scrolling="no" style="border:0;display:block;"></iframe>
-            </div>
+            <iframe src="/onead-media" width="100%" height="250" frameborder="0" scrolling="no" style="border:0;display:block;"></iframe>
             <div class="text-center mt-3">
               <span v-if="adLoading" class="text-secondary">廣告載入中...</span>
               <span v-if="adLoadFailed" class="text-danger">廣告載入失敗，請稍後再試</span>
