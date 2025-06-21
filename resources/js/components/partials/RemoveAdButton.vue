@@ -18,8 +18,8 @@
             </button>
           </div>
           <div class="modal-body">
-            <div id="onead-ad-container">
-              <div id="div-onead-nd-01"></div>
+            <div id="remove-onead-ad-container">
+              <div id="div-onead-nd-00"></div>
             </div>
             <div class="text-center mt-3">
               <span v-if="adLoading" class="text-secondary">廣告載入中...</span>
@@ -69,7 +69,8 @@ export default {
             this.adLoading = false;
             this.adLoadFailed = false;
             clearTimeout(this.adLoadTimeoutId);
-            const adDiv = document.getElementById('div-onead-nd-01');
+            const parent = document.getElementById('remove-onead-ad-container');
+            const adDiv = parent ? parent.firstElementChild : null;
             if (adDiv) {
               adDiv.addEventListener('click', this.handleAdClick, { once: true });
             }
@@ -103,7 +104,7 @@ export default {
         ONEAD_TEXT = {};
         ONEAD_TEXT.pub = {};
         ONEAD_TEXT.pub.uid = "2000374";
-        ONEAD_TEXT.pub.slotobj = document.getElementById("div-onead-nd-01");
+        ONEAD_TEXT.pub.slotobj = document.getElementById("div-onead-nd-00");
         ONEAD_TEXT.pub.player_mode = "native-drive";
         ONEAD_TEXT.pub.player_mode_div = "div-onead-ad";
         ONEAD_TEXT.pub.max_threads = 3;
