@@ -240,3 +240,11 @@ if(!function_exists('random_nickname')){
         return "{$adjective}{$name}";
     }
 }
+
+
+if(!function_exists('is_skip_ad')){
+    function is_skip_ad()
+    {
+        return App\Helper\CacheService::isSkipAds();
+    }
+}

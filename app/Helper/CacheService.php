@@ -64,14 +64,13 @@ class CacheService
         return static::remember($key, $seconds, function () use ($keywork) {
             return app(TagService::class)->get($keywork);
         }, $refresh);
-
     }
 
     static public function rememberPosts(Request $request, $sort, $refresh = false)
     {
         $url = $request->getQueryString();
         $cacheName = Cache::get('post_update_at') . '/' . md5($url);
-        if($request->query('sort_by', 'hot') === 'hot') {
+        if ($request->query('sort_by', 'hot') === 'hot') {
             $seconds = 60 * 60; // 1 hour
         } else {
             $seconds = 60 * 5; // 5 minutes
@@ -300,6 +299,18 @@ class CacheService
         Cache::forget($key);
     }
 
+    static function isSkipAds()
+    {
+        $anonymousId = session()->get('anonymous_id', 'unknown');
+        $key = 'skip_ads_' . $anonymousId;
+        return Cache::has($key);
+    }
 
-
+    static function setSkipAds()
+    {
+        $anonymousId = session()->get('anonymous_id', 'unknown');
+        $key = 'skip_ads_' . $anonymousId;
+        $seconds = 60 * 60 * 24; // 1 day
+        Cache::put($key, true, $seconds);
+    }
 }
