@@ -1,3 +1,4 @@
+@if(!is_skip_ad())
 <div id="div-onead-nd-01"></div>
 <script type="text/javascript">
   var custom_call = function (params) {
@@ -20,3 +21,4 @@
   ONEAD_text_pubs.push(ONEAD_TEXT);
 </script>
 <script src="https://ad-specs.guoshipartners.com/static/js/ad-serv.min.js"></script>
+@endif

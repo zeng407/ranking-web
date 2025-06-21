@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\HomeCarouselController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\TagController;
@@ -66,4 +67,4 @@ Route::put('game/room/{gameRoom:serial}/profile', [GameController::class, 'updat
 /** Image Report */
 Route::post('image/report/removed', [ElementController::class, 'reportRemoved'])->name('api.element.report.removed');
 
-
+Route::post('remove-ad-24hr', [AdController::class, 'removeAd24hr']);

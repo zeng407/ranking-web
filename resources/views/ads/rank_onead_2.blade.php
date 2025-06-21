@@ -1,3 +1,4 @@
+@if(!is_skip_ad())
 <div id = "oneadMFSDFPTag"></div>
 <script type="text/javascript">
   var custom_call = function (params) {
@@ -22,3 +23,4 @@
   ONEAD_pubs.push(_ONEAD);
 </script>
 <script type="text/javascript" src = "https://ad-specs.guoshipartners.com/static/js/onead-lib.min.js"></script>
+@endif
