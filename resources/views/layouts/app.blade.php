@@ -164,7 +164,7 @@
       <announcement :announcement="{{ json_encode(\App\Helper\CacheService::rememberAnnouncement()) }}"></announcement>
       @if (auth()->check() && auth()->user()->isAdmin())
         @if (!is_skip_ad())
-          <remove-ad-button></remove-ad-button>
+          @include('ads.remove-ad')
         @endif
       @endif
     </main>
