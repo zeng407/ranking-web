@@ -72,6 +72,10 @@ return [
         'redirect' => '/auth/google/callback',
     ],
 
+    'ezoic' => [
+        'enabled' => env('EZOIC_ENABLED', false),
+    ],
+
     'twitch' => [
         'auto_refresh_token' => env('TWITCH_AUTO_REFRESH_TOKEN', false),
         'client_id' => env('TWITCH_CLIENT_ID'),
