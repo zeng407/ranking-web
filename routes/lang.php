@@ -20,6 +20,8 @@ use App\Http\Controllers\Post\GameController;
 
 Route::prefix('lang/{locale}')->middleware('locale.prefix')->group(function () {
     Route::get('/', [HomeController::class, 'index']);
+    Route::get('/tos', fn() => view_or("tos.".app()->getLocale(), 'tos.en'));
+    Route::get('/privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en'));
     Route::get('/donate', [HomeController::class, 'donate']);
     Route::get('/login', [LoginController::class, 'showLoginForm']);
     Route::get('/hot', [HomeController::class, 'hot']);
