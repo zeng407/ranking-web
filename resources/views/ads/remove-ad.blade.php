@@ -124,11 +124,11 @@
       content.style.borderRadius = '12px';
       content.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
       content.style.padding = '32px 24px 24px 24px';
-      content.style.width = '400px';
+      content.style.width = 'auto';
       content.style.height = '400px';
       content.style.maxWidth = '95vw';
       content.style.maxHeight = '90vh';
-      content.style.overflow = 'auto';
+      content.style.overflow = 'hidden';
       content.style.position = 'relative';
       // 關閉按鈕
       var closeBtn = document.createElement('button');
