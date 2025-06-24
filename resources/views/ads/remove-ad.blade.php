@@ -9,7 +9,7 @@
       if (params.hasAd) {
         console.log('Ad loaded successfully');
         window._onead_ad_loaded = true;
-        // 動態插入右下角按鈕
+        // 動態插入右下角限時任務按鈕，含倒數30秒
         if (!document.getElementById('remove-ad-24hr-btn-container')) {
           var btnDiv = document.createElement('div');
           btnDiv.id = 'remove-ad-24hr-btn-container';
@@ -17,11 +17,26 @@
           btnDiv.style.right = '20px';
           btnDiv.style.bottom = '80px';
           btnDiv.style.zIndex = '2000';
-          btnDiv.innerHTML =
-            '<button class="btn btn-primary rounded-pill shadow" id="remove-ad-24hr-btn">★限時任務</button>';
+          var seconds = 30;
+          var btn = document.createElement('button');
+          btn.className = 'btn btn-primary rounded-pill shadow';
+          btn.style.minWidth = '120px';
+
+          btn.innerHTML = '<i class="fa-solid fa-circle-question mr-1"></i>' + `限時任務 (${seconds}秒)`;
+          btnDiv.appendChild(btn);
           document.body.appendChild(btnDiv);
-          document.getElementById('remove-ad-24hr-btn').addEventListener('click', function() {
+          var timer = setInterval(function() {
+            seconds--;
+            btn.innerHTML = '<i class="fa-solid fa-circle-question mr-1"></i>' + `限時任務 (${seconds}秒)`;
+            if (seconds <= 0) {
+              clearInterval(timer);
+              btnDiv.remove();
+            }
+          }, 1000);
+          btn.addEventListener('click', function() {
             showRemoveAdBackdrop();
+            clearInterval(timer);
+            btnDiv.remove();
           });
         }
       } else {
