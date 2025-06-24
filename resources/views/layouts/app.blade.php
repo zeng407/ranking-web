@@ -162,11 +162,11 @@
       @include('layouts.flash')
       @yield('content')
       <announcement :announcement="{{ json_encode(\App\Helper\CacheService::rememberAnnouncement()) }}"></announcement>
-      @if (auth()->check() && auth()->user()->isAdmin())
-        @if (!is_skip_ad())
-          @include('ads.remove-ad')
-        @endif
+
+      @if (!is_skip_ad())
+        @include('ads.remove-ad')
       @endif
+
     </main>
   </div>
   @yield('footer')

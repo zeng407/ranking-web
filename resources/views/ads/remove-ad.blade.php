@@ -1,7 +1,9 @@
 @if (!is_skip_ad())
-  <div id="remove-onead-ad-container">
+  <div id="remove-onead-ad-container" style="width: 400px">
+    <div id="div-onead-draft-01"></div>
     <div id="div-onead-nd-01"></div>
   </div>
+
   <script type="text/javascript">
     var custom_call = function(params) {
       if (params.hasAd) {
@@ -107,7 +109,7 @@
       content.style.borderRadius = '12px';
       content.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
       content.style.padding = '32px 24px 24px 24px';
-      content.style.width = '400px';
+      content.style.width = '500px';
       content.style.height = '400px';
       content.style.maxWidth = '95vw';
       content.style.maxHeight = '90vh';
@@ -117,10 +119,7 @@
       var closeBtn = document.createElement('button');
       closeBtn.innerHTML = '✕ 放棄獎勵';
       closeBtn.setAttribute('aria-label', 'Close');
-      closeBtn.setAttribute('class', 'btn btn-outline-secondary');
-      closeBtn.style.position = 'absolute';
-      closeBtn.style.top = '12px';
-      closeBtn.style.right = '16px';
+      closeBtn.setAttribute('class', 'btn btn-outline-secondary d-block ml-auto mb-2');
 
       closeBtn.onclick = function() {
         var adContainer = document.getElementById('remove-onead-ad-container');
@@ -139,6 +138,7 @@
       content.appendChild(closeBtn);
       // 提示文字
       var tip = document.createElement('div');
+      tip.id = 'remove-ad-tip';
       tip.innerText = '點擊廣告完成任務';
       tip.style.textAlign = 'center';
       tip.style.fontWeight = 'bold';
@@ -154,6 +154,15 @@
     ONEAD_TEXT = {};
     ONEAD_TEXT.pub = {};
     ONEAD_TEXT.pub.uid = "2000374";
+    ONEAD_TEXT.pub.slotobj = document.getElementById("div-onead-draft-01");
+    ONEAD_TEXT.pub.player_mode = "text-drive";
+    ONEAD_TEXT.pub.queryAdCallback = custom_call;
+    window.ONEAD_text_pubs = window.ONEAD_text_pubs || [];
+    ONEAD_text_pubs.push(ONEAD_TEXT);
+
+    ONEAD_TEXT = {};
+    ONEAD_TEXT.pub = {};
+    ONEAD_TEXT.pub.uid = "2000374";
     ONEAD_TEXT.pub.slotobj = document.getElementById("div-onead-nd-01");
     ONEAD_TEXT.pub.player_mode = "native-drive";
     ONEAD_TEXT.pub.player_mode_div = "div-onead-ad";
@@ -163,26 +172,49 @@
     window.ONEAD_text_pubs = window.ONEAD_text_pubs || [];
     ONEAD_text_pubs.push(ONEAD_TEXT);
 
-    // 點擊廣告時發送 API，並用新視窗開啟連結
+    // 廣告點擊監聽（支援多種情境）
     document.addEventListener('DOMContentLoaded', function() {
-      var adDivContainer = document.getElementById('remove-onead-ad-container');
-      var adDiv = adDivContainer ? adDivContainer.firstElementChild : null;
-      if (adDiv) {
-        adDiv.addEventListener('click', function(e) {
-          var link = adDiv.querySelector('a');
-          if (link && link.href) {
-            window.open(link.href, '_blank'); // 新視窗開啟廣告連結
+      var adContainer = document.getElementById('remove-onead-ad-container');
+      // 廣告點擊監聽（支援多種情境）
+      if (adContainer) {
+        var clickable = adContainer.querySelectorAll('a, div, iframe');
+        clickable.forEach(function(el) {
+          el.addEventListener('click', function handleAdClick(e) {
+            // 嘗試取得連結
+            var href = el.tagName === 'A' ? el.href : (el.querySelector('a') ? el.querySelector('a').href :
+              null);
+            if (href) {
+              var win = window.open(href, '_blank');
+              e.preventDefault();
+            }
+            window.open(window.location.href, '_blank');
+            // 發送 API
             fetch('/api/remove-ad-24hr', {
               method: 'POST',
               headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
               }
+            }).then(function() {
+              var tipEl = document.getElementById('remove-ad-tip');
+              if (tipEl) tipEl.innerText = '感謝您的支持，重整後生效';
+              // 新增重新整理按鈕，使用 Font Awesome reload icon
+              var reloadBtn = document.createElement('button');
+              reloadBtn.innerHTML = '<i class="fas fa-redo mr-1"></i>重新整理';
+              reloadBtn.className = 'btn btn-outline-secondary btn-sm';
+              reloadBtn.style.display = 'block';
+              reloadBtn.style.margin = '12px auto 0 auto';
+              reloadBtn.onclick = function() {
+                window.location.reload();
+              };
+              if (tipEl && tipEl.parentNode) {
+                tipEl.parentNode.insertBefore(reloadBtn, tipEl.nextSibling);
+              }
             });
-            e.preventDefault();
-          }
-        }, {
-          once: true
+            clickable.forEach(function(c) {
+              c.removeEventListener('click', handleAdClick);
+            });
+          });
         });
       }
     });
