@@ -350,11 +350,6 @@
               @include('ads.home_ad_champion_top')
             </div>
 
-            <div class="pt-2 px-2 mx-auto">
-              {{-- google ads --}}
-              @include('ads.onead_text')
-            </div>
-
             <div class="pt-2 px-2 mx-auto sticky-top-home-ad">
               {{-- google ads --}}
               @include('ads.home_ad_champion_top')
