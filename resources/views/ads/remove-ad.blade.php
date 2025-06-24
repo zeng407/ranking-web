@@ -18,7 +18,7 @@
           btnDiv.style.bottom = '80px';
           btnDiv.style.zIndex = '2000';
           btnDiv.innerHTML =
-            '<button class="btn btn-secondary rounded-pill shadow" id="remove-ad-24hr-btn">移除廣告24hr</button>';
+            '<button class="btn btn-primary rounded-pill shadow" id="remove-ad-24hr-btn">★限時任務</button>';
           document.body.appendChild(btnDiv);
           document.getElementById('remove-ad-24hr-btn').addEventListener('click', function() {
             showRemoveAdBackdrop();
@@ -139,7 +139,7 @@
       // 提示文字
       var tip = document.createElement('div');
       tip.id = 'remove-ad-tip';
-      tip.innerText = '點擊廣告完成任務';
+      tip.innerText = '點擊廣告獲得獎勵「24小時內移除廣告」';
       tip.style.textAlign = 'center';
       tip.style.fontWeight = 'bold';
       tip.style.marginBottom = '18px';
@@ -189,7 +189,16 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
               }
             }).then(function() {
-              this.$cookies.set('_ad_click', 1, '1h');
+              function setCookie(name, value, hours) {
+                let expires = "";
+                if (hours) {
+                  const date = new Date();
+                  date.setTime(date.getTime() + (hours * 60 * 60 * 1000));
+                  expires = "; expires=" + date.toUTCString();
+                }
+                document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+              }
+              setCookie('_ad_click', 1, 1);
             });
 
             clickable.forEach(function(c) {
@@ -203,7 +212,18 @@
   <script src="https://ad-specs.guoshipartners.com/static/js/ad-serv.min.js"></script>
 
   <script>
-    if (this.$cookies.get('_ad_click')) {
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    function removeCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+    if (getCookie('_ad_click')) {
       // 建立提示元素
       const tip = document.createElement('div');
       tip.style.position = 'fixed';
@@ -229,6 +249,7 @@
       const btn = document.createElement('button');
       btn.className = 'btn btn-secondary rounded-pill shadow';
       btn.onclick = function() {
+        removeCookie('_ad_click');
         location.reload();
       };
       const icon = document.createElement('i');
@@ -241,6 +262,7 @@
       tip.appendChild(text);
       tip.appendChild(btn);
       document.body.appendChild(tip);
+
     }
   </script>
 @endif
