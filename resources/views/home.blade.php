@@ -292,16 +292,18 @@
               </home-post>
 
               @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-                <div v-if="index % 14 == 0 && index > 0" class="col-md-6 col-12 pt-2 preload-post">
-                  <div class="p-4">
-                    <div style="width: 100%" class="d-flex justify-content-center">
-                      <google-ads pusher-id="{{ config('services.google_ad.publisher_id') }}"
-                        slot-id="{{ config('services.google_ad.home_page_ad_1_slot') }}"
-                        ins-style="display:inline-block;width:300px;height:300px;" ad-format="rectangle">
-                      </google-ads>
+                @if (!is_skip_ad())
+                  <div v-if="index % 14 == 0 && index > 0" class="col-md-6 col-12 pt-2 preload-post">
+                    <div class="p-4">
+                      <div style="width: 100%" class="d-flex justify-content-center">
+                        <google-ads pusher-id="{{ config('services.google_ad.publisher_id') }}"
+                          slot-id="{{ config('services.google_ad.home_page_ad_1_slot') }}"
+                          ins-style="display:inline-block;width:300px;height:300px;" ad-format="rectangle">
+                        </google-ads>
+                      </div>
                     </div>
                   </div>
-                </div>
+                @endif
               @endif
 
             </template>
