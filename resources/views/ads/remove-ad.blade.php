@@ -1,5 +1,5 @@
 @if (!is_skip_ad())
-  <div id="remove-onead-ad-container">
+  <div id="remove-onead-ad-container" style="width: 400px">
     <div id="div-onead-draft-01"></div>
     <div id="div-onead-nd-01"></div>
   </div>
@@ -109,7 +109,7 @@
       content.style.borderRadius = '12px';
       content.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
       content.style.padding = '32px 24px 24px 24px';
-      content.style.width = '400px';
+      content.style.width = '500px';
       content.style.height = '400px';
       content.style.maxWidth = '95vw';
       content.style.maxHeight = '90vh';
@@ -172,15 +172,16 @@
     window.ONEAD_text_pubs = window.ONEAD_text_pubs || [];
     ONEAD_text_pubs.push(ONEAD_TEXT);
 
-    // 廣告點擊監聽（支援多種情境）
+    // 廣告點擊監聽
     document.addEventListener('DOMContentLoaded', function() {
       var adContainer = document.getElementById('remove-onead-ad-container');
-      // 廣告點擊監聽（支援多種情境）
+
       if (adContainer) {
         var clickable = adContainer.querySelectorAll('a, div, iframe');
         clickable.forEach(function(el) {
           el.addEventListener('click', function handleAdClick(e) {
-            // 發送 API
+            e.preventDefault();
+
             fetch('/api/remove-ad-24hr', {
               method: 'POST',
               headers: {
@@ -188,20 +189,8 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
               }
             }).then(function() {
-              // 嘗試取得連結
-              var href = el.tagName === 'A' ? el.href : (el.querySelector('a') ? el.querySelector('a')
-                .href :
-                null);
-              if (href) {
-                var win = window.open(href, '_blank');
-                e.preventDefault();
-              }else{
-                window.open(window.location.href, '_blank');
-              }
-
               var tipEl = document.getElementById('remove-ad-tip');
               if (tipEl) tipEl.innerText = '感謝您的支持，重整後生效';
-              // 新增重新整理按鈕，使用 Font Awesome reload icon
               var reloadBtn = document.createElement('button');
               reloadBtn.innerHTML = '<i class="fas fa-redo mr-1"></i>重新整理';
               reloadBtn.className = 'btn btn-outline-secondary btn-sm';
@@ -214,7 +203,15 @@
                 tipEl.parentNode.insertBefore(reloadBtn, tipEl.nextSibling);
               }
 
+              // 嘗試取得連結
+              var href = el.tagName === 'A' ? el.href : (el.querySelector('a') ? el.querySelector('a')
+                .href :
+                null);
+              if (href) {
+                window.open(href, '_blank');
+              }
             });
+            
             clickable.forEach(function(c) {
               c.removeEventListener('click', handleAdClick);
             });
