@@ -365,9 +365,6 @@
 @endsection
 
 @section('footer')
-  <script async
-    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
-    crossorigin="anonymous"></script>
   @if (config('services.onead.enabled') && config('services.onead.home_page'))
     @include('ads.home_onead_1_pc')
   @endif
