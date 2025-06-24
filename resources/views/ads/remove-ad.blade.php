@@ -109,7 +109,7 @@
       content.style.borderRadius = '12px';
       content.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
       content.style.padding = '32px 24px 24px 24px';
-      content.style.width = '500px';
+      content.style.width = '400px';
       content.style.height = '400px';
       content.style.maxWidth = '95vw';
       content.style.maxHeight = '90vh';
