@@ -128,8 +128,8 @@
 
                                 <iframe
                                   v-else-if="result.element.type === 'video' && result.element.video_source === 'twitch_video'"
-                                  :src="'https://player.twitch.tv/?video=' + result.element.video_id + '&parent=' +
-                                      requestHost + '&autoplay=false'"
+                                  :src="'https://player.twitch.tv/?video=' + result.element.video_id +
+                                      '&parent=' +requestHost + ' & autoplay = false '"
                                   width="100%" allowfullscreen>
                                 </iframe>
 
@@ -324,7 +324,8 @@
                     <hr class="my-1 text-white bg-white">
                     <transition-group name="list-left" tag="div">
                       <div class="d-flex justify-content-between position-relative align-items-center mx-2"
-                        v-if="getSortedRanks" v-for="(rank,index) in getSortedRanks" :key="rank.user_id + ':' + rank.rank">
+                        v-if="getSortedRanks" v-for="(rank,index) in getSortedRanks"
+                        :key="rank.user_id + ':' + rank.rank">
                         <h6 class="d-flex align-items-center">
                           <i v-if="rank.rank == 1" class="fa-solid fa-trophy mr-1" style="color:gold"></i>
                           <i v-else-if="rank.rank == 2" class="fa-solid fa-trophy mr-1" style="color:silver"></i>
@@ -533,12 +534,14 @@
                     <h5 class="overflow-hidden" v-if="comment.champions.length > 0">
                       <template v-for="champion in comment.champions">
                         <h5 class="badge badge-secondary mr-1 mb-1 rounded-0" :title="champion">
-                          @{{ champion }}</h5>
+                          @{{ champion }}
+                        </h5>
                       </template>
                     </h5>
                     {{-- comment --}}
                     <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">
-                      @{{ comment.content }}</p>
+                      <span>@{{ comment.content }}</span>
+                    </p>
                   </div>
                 </div>
 
