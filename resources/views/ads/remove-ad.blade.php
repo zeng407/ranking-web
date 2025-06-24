@@ -1,5 +1,5 @@
 @if (!is_skip_ad())
-  <div id="remove-onead-ad-container" style="width: 400px">
+  <div id="remove-onead-ad-container">
     <div id="div-onead-draft-01"></div>
     <div id="div-onead-nd-01"></div>
   </div>
