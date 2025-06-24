@@ -1,5 +1,5 @@
 @if (!is_skip_ad())
-  <div id="remove-onead-ad-container" style="width: 400px">
+  <div id="remove-onead-ad-container">
     <div id="div-onead-draft-01"></div>
     <div id="div-onead-nd-01"></div>
   </div>
@@ -109,7 +109,7 @@
       content.style.borderRadius = '12px';
       content.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
       content.style.padding = '32px 24px 24px 24px';
-      content.style.width = '500px';
+      content.style.width = '400px';
       content.style.height = '400px';
       content.style.maxWidth = '95vw';
       content.style.maxHeight = '90vh';
