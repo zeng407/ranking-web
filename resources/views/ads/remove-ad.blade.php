@@ -189,29 +189,9 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
               }
             }).then(function() {
-              var tipEl = document.getElementById('remove-ad-tip');
-              if (tipEl) tipEl.innerText = '感謝您的支持，重整後生效';
-              var reloadBtn = document.createElement('button');
-              reloadBtn.innerHTML = '<i class="fas fa-redo mr-1"></i>重新整理';
-              reloadBtn.className = 'btn btn-outline-secondary btn-sm';
-              reloadBtn.style.display = 'block';
-              reloadBtn.style.margin = '12px auto 0 auto';
-              reloadBtn.onclick = function() {
-                window.location.reload();
-              };
-              if (tipEl && tipEl.parentNode) {
-                tipEl.parentNode.insertBefore(reloadBtn, tipEl.nextSibling);
-              }
-
-              // 嘗試取得連結
-              var href = el.tagName === 'A' ? el.href : (el.querySelector('a') ? el.querySelector('a')
-                .href :
-                null);
-              if (href) {
-                window.open(href, '_blank');
-              }
+              this.$cookies.set('_ad_click', 1, '1h');
             });
-            
+
             clickable.forEach(function(c) {
               c.removeEventListener('click', handleAdClick);
             });
@@ -221,4 +201,46 @@
     });
   </script>
   <script src="https://ad-specs.guoshipartners.com/static/js/ad-serv.min.js"></script>
+
+  <script>
+    if (this.$cookies.get('_ad_click')) {
+      // 建立提示元素
+      const tip = document.createElement('div');
+      tip.style.position = 'fixed';
+      tip.style.left = '50%';
+      tip.style.bottom = '32px';
+      tip.style.transform = 'translateX(-50%)';
+      tip.style.background = 'rgba(0,0,0,0.85)';
+      tip.style.color = '#fff';
+      tip.style.padding = '12px 24px';
+      tip.style.borderRadius = '8px';
+      tip.style.zIndex = 9999;
+      tip.style.fontSize = '16px';
+      tip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+      tip.style.display = 'flex';
+      tip.style.alignItems = 'center';
+      tip.style.gap = '12px';
+
+      // 文字
+      const text = document.createElement('span');
+      text.textContent = '獎勵於重整後生效';
+
+      // 按鈕
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary rounded-pill shadow';
+      btn.onclick = function() {
+        location.reload();
+      };
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-redo';
+      icon.style.marginRight = '6px';
+
+      btn.appendChild(icon);
+      btn.appendChild(document.createTextNode('重新整理'));
+
+      tip.appendChild(text);
+      tip.appendChild(btn);
+      document.body.appendChild(tip);
+    }
+  </script>
 @endif
