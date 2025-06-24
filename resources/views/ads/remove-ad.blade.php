@@ -187,7 +187,6 @@
               var win = window.open(href, '_blank');
               e.preventDefault();
             }
-            window.open(window.location.href, '_blank');
             // 發送 API
             fetch('/api/remove-ad-24hr', {
               method: 'POST',
@@ -210,6 +209,7 @@
               if (tipEl && tipEl.parentNode) {
                 tipEl.parentNode.insertBefore(reloadBtn, tipEl.nextSibling);
               }
+              window.open(window.location.href, '_blank');
             });
             clickable.forEach(function(c) {
               c.removeEventListener('click', handleAdClick);
