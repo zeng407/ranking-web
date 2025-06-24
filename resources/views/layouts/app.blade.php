@@ -30,9 +30,11 @@
 
   {{-- Google ad --}}
   @if (config('services.google_ad.enabled'))
-    <script async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
-      crossorigin="anonymous"></script>
+    @if (!is_skip_ad())
+      <script async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.google_ad.publisher_id') }}"
+        crossorigin="anonymous"></script>
+    @endif
   @endif
 
   {{-- SEO --}}
