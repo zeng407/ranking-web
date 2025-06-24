@@ -18,7 +18,7 @@
           btnDiv.style.bottom = '80px';
           btnDiv.style.zIndex = '2000';
           btnDiv.innerHTML =
-            '<button class="btn btn-secondary rounded-pill shadow" id="remove-ad-24hr-btn">移除廣告24hr</button>';
+            '<button class="btn btn-primary rounded-pill shadow" id="remove-ad-24hr-btn">★限時任務</button>';
           document.body.appendChild(btnDiv);
           document.getElementById('remove-ad-24hr-btn').addEventListener('click', function() {
             showRemoveAdBackdrop();
@@ -139,7 +139,7 @@
       // 提示文字
       var tip = document.createElement('div');
       tip.id = 'remove-ad-tip';
-      tip.innerText = '點擊廣告完成任務';
+      tip.innerText = '點擊廣告獲得獎勵「24小時內移除廣告」';
       tip.style.textAlign = 'center';
       tip.style.fontWeight = 'bold';
       tip.style.marginBottom = '18px';
