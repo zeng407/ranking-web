@@ -180,13 +180,6 @@
         var clickable = adContainer.querySelectorAll('a, div, iframe');
         clickable.forEach(function(el) {
           el.addEventListener('click', function handleAdClick(e) {
-            // 嘗試取得連結
-            var href = el.tagName === 'A' ? el.href : (el.querySelector('a') ? el.querySelector('a').href :
-              null);
-            if (href) {
-              var win = window.open(href, '_blank');
-              e.preventDefault();
-            }
             // 發送 API
             fetch('/api/remove-ad-24hr', {
               method: 'POST',
@@ -195,6 +188,17 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
               }
             }).then(function() {
+              // 嘗試取得連結
+              var href = el.tagName === 'A' ? el.href : (el.querySelector('a') ? el.querySelector('a')
+                .href :
+                null);
+              if (href) {
+                var win = window.open(href, '_blank');
+                e.preventDefault();
+              }else{
+                window.open(window.location.href, '_blank');
+              }
+
               var tipEl = document.getElementById('remove-ad-tip');
               if (tipEl) tipEl.innerText = '感謝您的支持，重整後生效';
               // 新增重新整理按鈕，使用 Font Awesome reload icon
@@ -209,7 +213,7 @@
               if (tipEl && tipEl.parentNode) {
                 tipEl.parentNode.insertBefore(reloadBtn, tipEl.nextSibling);
               }
-              window.open(window.location.href, '_blank');
+
             });
             clickable.forEach(function(c) {
               c.removeEventListener('click', handleAdClick);
