@@ -22,27 +22,29 @@
             <h2>{{__('Payment')}}</h2>
             {{-- <img src="https://payment.opay.tw/Content/themes/WebStyle201404/images/allpay.png"/> --}}
           </div>
-          <div class="text-center mt-2">
+          <div class="row justify-content-center">
+          <div class="col-6 text-center mt-2">
             <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://payment.ecpay.com.tw/Upload/QRCode/202407/QRCode_2ff3f451-50b1-4fe0-81f2-63ea255d817f.png">
               <h5 class="pt-1 text-nowrap">{{__('donate.ecpay')}} {{__('donate.whatever')}}</h5>
             </a>
           </div>
-          <div class="text-center mt-2">
+          <div class="col-6 text-center mt-2">
             <a target="_blank" href="https://qr.opay.tw/HTXLZ">
               <img src="https://payment.opay.tw/Upload/Broadcaster/1967663/QRcode/QRCode_EA6A62EF78EB2573D2570E271C1610B7.png" />
               <h5 class="pt-1 text-nowrap">{{__('donate.opay')}} {{__('donate.whatever')}}</h5>
             </a>
           </div>
-          {{-- <hr> --}}
-          {{-- <div class="text-center mt-2 text-black-50">
-            <a target="_blank" href="https://p.opay.tw/bmlRV">
+          <hr>
+
+          <div class="col-3 text-center mt-2 text-black-50">
+            <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/v041xUS.png" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.coffee')}} ($50)</h5>
             </a>
           </div>
-          <div class="text-center mt-2">
-            <a target="_blank" href="https://p.opay.tw/l5Idq">
+          <div class="col-3 text-center mt-2">
+            <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/n0tEcz8.jpeg" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.catfood')}} ($100)</h5>
             </a>
@@ -50,18 +52,19 @@
               {{__('donate.see_the_cat')}}<i class="fas fa-search"></i>
             </a>
           </div>
-          <div class="text-center mt-2">
-            <a target="_blank" href="https://p.opay.tw/r8DGF">
+          <div class="col-3 text-center mt-2">
+            <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/eMuh010.png" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.lunch')}} ($120)</h5>
             </a>
           </div>
-          <div class="text-center mt-2">
-            <a target="_blank" href="https://p.opay.tw/916Gs">
+          <div class="col-3 text-center mt-2">
+            <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/pCq7eP4.jpeg" height="100px">
-              <h5 class="pt-1 text-nowrap">{{__('donate.server')}} ($200)</h5>
+              <h5 class="pt-1 text-nowrap">{{__('donate.server')}} ($300)</h5>
             </a>
-          </div> --}}
+          </div>
+          </div>
         </div>
       </div>
     </div>
@@ -70,14 +73,9 @@
 <!-- Cat Modal -->
 <div class="modal fade" id="catModal" tabindex="-1" aria-labelledby="catModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
+    <div class="modal-content border-0" style="background: transparent;">
       <div class="modal-body align-self-center">
-        <img src="https://i.imgur.com/unVRUTL.jpeg" class="img-fluid" alt="Cute Cat">
+        <img src="{{asset('storage/cat.png')}}" class="img-fluid" alt="Cute Cat">
       </div>
     </div>
   </div>
