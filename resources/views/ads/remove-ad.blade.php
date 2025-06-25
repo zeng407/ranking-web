@@ -65,7 +65,7 @@
       if (params.hasAd) {
         console.log('Ad loaded successfully');
         window._onead_ad_loaded = true;
-        // 動態插入右下角限時任務按鈕，含倒數30秒
+        // 動態插入右下角限時任務按鈕
         if (!document.getElementById('remove-ad-24hr-btn-container')) {
           var btnDiv = document.createElement('div');
           btnDiv.id = 'remove-ad-24hr-btn-container';
@@ -86,12 +86,21 @@
           var btn = document.createElement('button');
           btn.className = 'btn btn-primary rounded-pill shadow';
           btn.style.minWidth = '120px';
-          btn.innerHTML = '<i class="fa-solid fa-circle-question mr-1"></i>' + `限時任務 (${seconds.toFixed(1)})`;
+
+          // 建立 <i> icon
+          const icon = document.createElement('i');
+          icon.className = 'fa-solid fa-circle-question mr-1';
+
+          // 建立文字節點
+          const text = document.createTextNode(`限時任務 (${seconds.toFixed(1)})`);
+
+          btn.appendChild(icon);
+          btn.appendChild(text);
           btnDiv.appendChild(btn);
           document.body.appendChild(btnDiv);
           var timer = setInterval(function() {
             seconds -= 0.1;
-            btn.innerHTML = '<i class="fa-solid fa-circle-question mr-1"></i>' + `限時任務 (${seconds.toFixed(1)})`;
+            text.textContent = `限時任務 (${seconds.toFixed(1)})`;
             if (seconds <= 0) {
               clearInterval(timer);
               btnDiv.remove();
