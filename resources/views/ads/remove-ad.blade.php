@@ -34,6 +34,7 @@
         tip.style.display = 'flex';
         tip.style.alignItems = 'center';
         tip.style.gap = '12px';
+        tip.style.whiteSpace = 'nowrap';
 
         // 文字
         const text = document.createElement('span');
@@ -208,11 +209,10 @@
       // 將 remove-onead-ad-container 移入 backdrop 內容
       var adContainer = document.getElementById('remove-onead-ad-container');
       if (adContainer) {
-        const adContent = adContainer.cloneNode(true);
-        content.appendChild(adContent);
-        // 刪除原本的 adContainer
-        adContainer.parentNode.removeChild(adContainer);
-        adContent.style.display = 'block';
+        while (adContainer.firstChild) {
+          content.appendChild(adContainer.firstChild);
+        }
+
       }
       backdrop.appendChild(content);
       document.body.appendChild(backdrop);
