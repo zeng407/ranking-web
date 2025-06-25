@@ -5,6 +5,63 @@
   </div>
 
   <script type="text/javascript">
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    function removeCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
+
+    var checkAdClick = function() {
+      if (getCookie('_ad_click')) {
+        // 建立提示元素
+        const tip = document.createElement('div');
+        tip.style.position = 'fixed';
+        tip.style.left = '50%';
+        tip.style.bottom = '32px';
+        tip.style.transform = 'translateX(-50%)';
+        tip.style.background = 'rgba(0,0,0,0.85)';
+        tip.style.color = '#fff';
+        tip.style.padding = '12px 24px';
+        tip.style.borderRadius = '8px';
+        tip.style.zIndex = 9999;
+        tip.style.fontSize = '16px';
+        tip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+        tip.style.display = 'flex';
+        tip.style.alignItems = 'center';
+        tip.style.gap = '12px';
+
+        // 文字
+        const text = document.createElement('span');
+        text.textContent = '獎勵於重整後生效';
+
+        // 按鈕
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary rounded-pill shadow';
+        btn.onclick = function() {
+          removeCookie('_ad_click');
+          location.reload();
+        };
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-redo';
+        icon.style.marginRight = '6px';
+
+        btn.appendChild(icon);
+        btn.appendChild(document.createTextNode('重新整理'));
+
+        tip.appendChild(text);
+        tip.appendChild(btn);
+        document.body.appendChild(tip);
+
+      }
+    }
+    checkAdClick();
+
     var custom_call = function(params) {
       if (params.hasAd) {
         console.log('Ad loaded successfully');
@@ -214,6 +271,7 @@
                 document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
               }
               setCookie('_ad_click', 1, 1);
+              checkAdClick();
             });
 
             clickable.forEach(function(c) {
@@ -225,59 +283,4 @@
     });
   </script>
   <script src="https://ad-specs.guoshipartners.com/static/js/ad-serv.min.js"></script>
-
-  <script>
-    function getCookie(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    }
-
-    function removeCookie(name) {
-      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
-
-    if (getCookie('_ad_click')) {
-      // 建立提示元素
-      const tip = document.createElement('div');
-      tip.style.position = 'fixed';
-      tip.style.left = '50%';
-      tip.style.bottom = '32px';
-      tip.style.transform = 'translateX(-50%)';
-      tip.style.background = 'rgba(0,0,0,0.85)';
-      tip.style.color = '#fff';
-      tip.style.padding = '12px 24px';
-      tip.style.borderRadius = '8px';
-      tip.style.zIndex = 9999;
-      tip.style.fontSize = '16px';
-      tip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-      tip.style.display = 'flex';
-      tip.style.alignItems = 'center';
-      tip.style.gap = '12px';
-
-      // 文字
-      const text = document.createElement('span');
-      text.textContent = '獎勵於重整後生效';
-
-      // 按鈕
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-secondary rounded-pill shadow';
-      btn.onclick = function() {
-        removeCookie('_ad_click');
-        location.reload();
-      };
-      const icon = document.createElement('i');
-      icon.className = 'fas fa-redo';
-      icon.style.marginRight = '6px';
-
-      btn.appendChild(icon);
-      btn.appendChild(document.createTextNode('重新整理'));
-
-      tip.appendChild(text);
-      tip.appendChild(btn);
-      document.body.appendChild(tip);
-
-    }
-  </script>
 @endif
