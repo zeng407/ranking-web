@@ -45,7 +45,7 @@
         btn.className = 'btn btn-secondary rounded-pill shadow';
         btn.onclick = function() {
           removeCookie('_ad_click');
-          location.reload();
+          window.location.assign(window.location.href);
         };
         const icon = document.createElement('i');
         icon.className = 'fas fa-redo';
