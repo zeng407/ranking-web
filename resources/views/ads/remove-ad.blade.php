@@ -75,44 +75,17 @@
           btnDiv.style.bottom = '80px';
           btnDiv.style.zIndex = '2000';
 
-          function getGradientColor(t) {
-            // t: 1(綠) ~ 0(紅)
-            const r = Math.round(227 * (1 - t) + 52 * t);
-            const g = Math.round(52 * (1 - t) + 144 * t);
-            const b = Math.round(47 * (1 - t) + 227 * t);
-            return `rgb(${r},${g},${b})`;
-          }
-
-          var seconds = 60.0; // 倒數60秒
           var btn = document.createElement('button');
           btn.className = 'btn btn-primary rounded-pill shadow';
           btn.style.minWidth = '120px';
 
-          // 建立 <i> icon
-          const icon = document.createElement('i');
-          icon.className = 'fa-solid fa-circle-question mr-1';
-
           // 建立文字節點
-          const text = document.createTextNode(`限時任務 (${seconds.toFixed(1)})`);
-
-          btn.appendChild(icon);
+          const text = document.createTextNode(`移除廣告`);
           btn.appendChild(text);
           btnDiv.appendChild(btn);
           document.body.appendChild(btnDiv);
-          var timer = setInterval(function() {
-            seconds -= 0.1;
-            text.textContent = `限時任務 (${seconds.toFixed(1)})`;
-            if (seconds <= 0) {
-              clearInterval(timer);
-              btnDiv.remove();
-            } else {
-              const t = seconds / 60; // 1 ~ 0
-              btn.style.background = getGradientColor(t);
-            }
-          }, 100);
           btn.addEventListener('click', function() {
             showRemoveAdBackdrop();
-            clearInterval(timer);
             btnDiv.remove();
           });
         }
