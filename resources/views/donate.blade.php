@@ -37,13 +37,13 @@
           </div>
           <hr>
 
-          <div class="col-3 text-center mt-2 text-black-50">
+          <div class="col-12 col-lg-3 text-center mt-2 text-black-50">
             <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/v041xUS.png" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.coffee')}} ($50)</h5>
             </a>
           </div>
-          <div class="col-3 text-center mt-2">
+          <div class="col-12 col-lg-3 text-center mt-2">
             <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/n0tEcz8.jpeg" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.catfood')}} ($100)</h5>
@@ -52,13 +52,13 @@
               {{__('donate.see_the_cat')}}<i class="fas fa-search"></i>
             </a>
           </div>
-          <div class="col-3 text-center mt-2">
+          <div class="col-12 col-lg-3 text-center mt-2">
             <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/eMuh010.png" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.lunch')}} ($120)</h5>
             </a>
           </div>
-          <div class="col-3 text-center mt-2">
+          <div class="col-12 col-lg-3 text-center mt-2">
             <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://i.imgur.com/pCq7eP4.jpeg" height="100px">
               <h5 class="pt-1 text-nowrap">{{__('donate.server')}} ($300)</h5>

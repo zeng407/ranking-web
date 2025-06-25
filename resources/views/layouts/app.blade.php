@@ -165,7 +165,7 @@
       @yield('content')
       <announcement :announcement="{{ json_encode(\App\Helper\CacheService::rememberAnnouncement()) }}"></announcement>
 
-      @if (!is_skip_ad())
+      @if (auth()->check() && !is_skip_ad())
         @include('ads.remove-ad')
       @endif
 
