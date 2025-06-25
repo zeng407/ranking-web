@@ -1,7 +1,7 @@
 @if (!is_skip_ad())
-  <div id="remove-onead-ad-container">
-    <div id="div-onead-draft-01"></div>
+  <div id="remove-onead-ad-container" style="display: none;">
     <div id="div-onead-nd-01"></div>
+    <div id="div-onead-draft-01"></div>
   </div>
 
   <script type="text/javascript">
@@ -15,7 +15,6 @@
     function removeCookie(name) {
       document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     }
-
 
     var checkAdClick = function() {
       if (getCookie('_ad_click')) {
@@ -140,36 +139,6 @@
       }
     }
 
-    // 顯示modal並將 remove-onead-ad-container 移入modal
-    function showRemoveAdModal() {
-      ensureRemoveAdModal();
-      var modalBody = document.getElementById('remove-ad-modal-body');
-      var adContainer = document.getElementById('remove-onead-ad-container');
-      if (modalBody && adContainer) {
-        modalBody.appendChild(adContainer);
-      }
-      var modal = document.getElementById('remove-ad-modal');
-      $('#remove-ad-modal').modal('show');
-      $('#remove-ad-modal').on('hidden.bs.modal', function() {
-        // 1. 讓目前聚焦的元素失焦
-        if (document.activeElement) document.activeElement.blur();
-
-        // 2. 若有 aria-hidden 或 inert，移除
-        var modal = document.getElementById('remove-ad-modal');
-        if (modal) {
-          modal.removeAttribute('aria-hidden');
-          modal.removeAttribute('inert');
-        }
-        var existBtn = document.getElementById('remove-ad-24hr-btn-container');
-        if (existBtn) existBtn.remove();
-        document.body.style.overflow = 'hidden';
-        console.log('Modal closed, ad container moved back to body');
-      });
-      $('#remove-ad-modal').on('show.bs.modal', function() {
-        if (modal) modal.removeAttribute('inert');
-      });
-    }
-
     // 顯示自訂 backdrop，蓋住全畫面並顯示 remove-onead-ad-container 及提示
     function showRemoveAdBackdrop() {
       if (document.getElementById('remove-ad-backdrop')) return;
@@ -193,7 +162,7 @@
       content.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
       content.style.padding = '32px 24px 24px 24px';
       content.style.width = 'auto';
-      content.style.height = '400px';
+      content.style.height = 'auto';
       content.style.maxWidth = '95vw';
       content.style.maxHeight = '90vh';
       content.style.overflow = 'hidden';
@@ -205,8 +174,6 @@
       closeBtn.setAttribute('class', 'btn btn-outline-secondary d-block ml-auto mb-2');
 
       closeBtn.onclick = function() {
-        var adContainer = document.getElementById('remove-onead-ad-container');
-        if (adContainer) document.body.appendChild(adContainer);
         backdrop.remove();
         // 關閉時也移除右下角按鈕
         var btnDiv = document.getElementById('remove-ad-24hr-btn-container');
@@ -219,6 +186,7 @@
         }, 50);
       };
       content.appendChild(closeBtn);
+
       // 提示文字
       var tip = document.createElement('div');
       tip.id = 'remove-ad-tip';
@@ -227,9 +195,16 @@
       tip.style.fontWeight = 'bold';
       tip.style.marginBottom = '18px';
       content.appendChild(tip);
+
       // 將 remove-onead-ad-container 移入 backdrop 內容
       var adContainer = document.getElementById('remove-onead-ad-container');
-      if (adContainer) content.appendChild(adContainer);
+      if (adContainer) {
+        const adContent = adContainer.cloneNode(true);
+        content.appendChild(adContent);
+        // 刪除原本的 adContainer
+        adContainer.parentNode.removeChild(adContainer);
+        adContent.style.display = 'block';
+      }
       backdrop.appendChild(content);
       document.body.appendChild(backdrop);
     }
@@ -293,5 +268,6 @@
       }
     });
   </script>
+  <script src="https://ad-specs.guoshipartners.com/static/js/ad-serv.min.js"></script>
   <script src="https://ad-specs.guoshipartners.com/static/js/ad-serv.min.js"></script>
 @endif
