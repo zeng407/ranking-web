@@ -63,7 +63,7 @@
     checkAdClick();
 
     var custom_call = function(params) {
-      if (params.hasAd) {
+      if (params.hasAd && !getCookie('_ad_click')) {
         console.log('Ad loaded successfully');
         window._onead_ad_loaded = true;
         // 動態插入右下角限時任務按鈕
