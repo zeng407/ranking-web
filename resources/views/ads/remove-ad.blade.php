@@ -137,7 +137,7 @@
               </button>
             </div>
             <div class="modal-body" id="remove-ad-modal-body">
-              <div class="text-center mb-3" style="font-weight:bold;">點擊廣告獲得獎勵</div>
+              <div class="text-center mb-3" style="font-weight:bold;">⬇點擊廣告獲得獎勵⬇</div>
             </div>
           </div>
         </div>
@@ -199,7 +199,7 @@
       // 提示文字
       var tip = document.createElement('div');
       tip.id = 'remove-ad-tip';
-      tip.innerText = '點擊廣告獲得獎勵「24小時內移除廣告」';
+      tip.innerText = '⬇點擊廣告獲得獎勵⬇「移除網頁所有廣告」';
       tip.style.textAlign = 'center';
       tip.style.fontWeight = 'bold';
       tip.style.marginBottom = '18px';
