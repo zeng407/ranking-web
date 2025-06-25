@@ -594,7 +594,8 @@
 
                   {{-- comment --}}
                   <p class="break-all white-space-pre-line overflow-scroll hide-scrollbar" style="max-height: 200px;">
-                    @{{ comment.content }}</p>
+                    <span>@{{ comment.content }}</span>
+                  </p>
                 </div>
                 <hr class="my-1">
               </div>
