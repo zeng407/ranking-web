@@ -19,6 +19,18 @@
     </script>
   @endif
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
+  @if(config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
+  {{-- ads --}}
+    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
+    <script>
+      window.googletag = window.googletag || {cmd: []};
+      googletag.cmd.push(function() {
+        googletag.defineSlot('/23307026516/game_ad_top', [[120, 30], [234, 60], [168, 28], [220, 90], [120, 20], [320, 50], [168, 42], [88, 31], [292, 30], [300, 100], [120, 90], [300, 31], [300, 75], [120, 60], [300, 50], [320, 100]], 'div-gpt-ad-1750909858530-0').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+      });
+    </script>
+  @endif
 @endsection
 
 @section('content')
@@ -42,7 +54,7 @@
 
     >
     <div class="container-fluid hide-scrollbar" v-cloak>
-        @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+        @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
         {{-- ads --}}
           {{-- <div v-if="!isMobileScreen && isBetGameClient" style="height: 150px">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
@@ -51,7 +63,12 @@
           </div> --}}
             <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
-              @include('ads.game_ad_mobile')
+              <!-- /23307026516/game_ad_top -->
+              <div id='div-gpt-ad-1750909858530-0' style='min-width: 88px; min-height: 20px;'>
+                <script>
+                  googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750909858530-0'); });
+                </script>
+              </div>
             </div>
           </div>
         @endif
