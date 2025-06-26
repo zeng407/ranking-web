@@ -25,11 +25,12 @@
     <script data-cfasync="false">
       window.googletag = window.googletag || {cmd: []};
       googletag.cmd.push(function() {
-        googletag.defineSlot('/23307026516/game_ad_top', [[320, 100], [220, 90], [120, 90], [300, 100], [300, 75]], 'div-gpt-ad-1750911147249-0').addService(googletag.pubads());
+        googletag.defineSlot('/23307026516/game_ad_top', [[320, 100], [120, 90], [220, 90], [300, 75], [300, 100], 'fluid'], 'div-gpt-ad-1750913246554-0').addService(googletag.pubads());
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
       });
     </script>
+    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
   @endif
 @endsection
 
@@ -56,9 +57,10 @@
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
         {{-- ads --}}
-          <div id='div-gpt-ad-1750911147249-0' style='min-width: 120px; min-height: 75px;'>
+          <!-- /23307026516/game_ad_top -->
+          <div id='div-gpt-ad-1750913246554-0' style='min-width: 120px; min-height: 75px;'>
             <script>
-              googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750911147249-0'); });
+              googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
             </script>
           </div>
           {{-- <div v-if="!isMobileScreen && isBetGameClient" style="height: 150px">
@@ -68,12 +70,7 @@
           </div> --}}
           <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
-            <!-- /23307026516/game_ad_top -->
-            {{-- <div id='div-gpt-ad-1750911147249-0' style='min-width: 120px; min-height: 75px;'>
-            <script>
-              googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750911147249-0'); });
-            </script>
-            </div> --}}
+               @include('ads.game_ad_mobile')
             </div>
           </div>
         @endif
