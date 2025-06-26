@@ -4,7 +4,8 @@
 ])
 
 @section('header')
-  @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
+  @if (config('services.google_ad.enabled') && config('services.google_ad.home_page') && !is_skip_ad())
+  {{-- Ads --}}
     <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
     <script>
       window.googletag = window.googletag || {
@@ -372,16 +373,18 @@
             <div class="pt-2 px-2 mx-auto sticky-top-home-ad">
               {{-- google ads --}}
               @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-                <div class="pt-2 px-2 mx-auto">
-                  <!-- /23307026516/home_ad_r1 -->
-                  <div id='div-gpt-ad-1750906757581-0' style='min-width: 160px; min-height: 600px;'>
-                    <script>
-                      googletag.cmd.push(function() {
-                        googletag.display('div-gpt-ad-1750906757581-0');
-                      });
-                    </script>
+                @if (!is_skip_ad())
+                  <div class="pt-2 px-2 mx-auto">
+                    <!-- /23307026516/home_ad_r1 -->
+                    <div id='div-gpt-ad-1750906757581-0' style='min-width: 160px; min-height: 600px;'>
+                      <script>
+                        googletag.cmd.push(function() {
+                          googletag.display('div-gpt-ad-1750906757581-0');
+                        });
+                      </script>
+                    </div>
                   </div>
-                </div>
+                @endif
               @endif
             </div>
           @endif
