@@ -62,21 +62,19 @@
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
         {{-- ads --}}
           <!-- /23307026516/game_ad_top -->
-          <div class="text-center" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; min-height: 75px;'>
-            <script>
-              googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
-            </script>
-          </div>
-          {{-- <div v-if="!isMobileScreen && isBetGameClient" style="height: 150px">
-            <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
-                @include('ads.game_ad_pc_top')
+          <div id="google-ad-container" class="overflow-hidden position-relative d-flex justify-content-center">
+            <div class="text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; min-height: 75px; max-width:500px;'>
+              <script>
+                googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
+              </script>
             </div>
-          </div> --}}
-          <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
+          </div>
+
+          {{-- <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
             <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
                @include('ads.game_ad_mobile')
             </div>
-          </div>
+          </div> --}}
         @endif
 
         {{-- creating game loading --}}
