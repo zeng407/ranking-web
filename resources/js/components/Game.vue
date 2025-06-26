@@ -1144,7 +1144,7 @@ export default {
             Promise.all([
               $("#left-player").animate({ left: 300, opacity: 0 }, 150).promise(),
               $("#right-player").animate({ left: 300, opacity: 0 }, 150).promise(),
-              $("#google-ad").animate({ top: 100, opacity: 0 }, 150).promise(),
+              $("#div-gpt-ad-1750913246554-0").animate({ top: 100, opacity: 0 }, 150).promise(),
               $("#google-ad2").animate({ top: 100, opacity: 0 }, 150).promise(),
             ]).then(() => {
               this.animationShowLeftPlayer = false;
@@ -1171,7 +1171,7 @@ export default {
       $("#right-player").css("opacity", "1");
       $("#rounds-session").css("opacity", "1");
       if (this.isMobileScreen) {
-        $("#google-ad").css("opacity", "1");
+        $("#div-gpt-ad-1750913246554-0").css("opacity", "1");
         $("#google-ad2").css("opacity", "1");
       }
     },
