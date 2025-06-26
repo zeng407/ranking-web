@@ -12,20 +12,23 @@
         cmd: []
       };
       googletag.cmd.push(function() {
-        googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0').addService(googletag
+        var slot = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0').addService(googletag
           .pubads());
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
+        setInterval(() => {
+          googletag.pubads().refresh([slot]);
+        }, 30 * 1000); // 30 seconds
       });
 
-      window.googletag = window.googletag || {
-        cmd: []
-      };
       googletag.cmd.push(function() {
-        googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0').addService(
+        var slot = googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0').addService(
           googletag.pubads());
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
+        setInterval(() => {
+          googletag.pubads().refresh([slot]);
+        }, 30 * 1000); // 30 seconds
       });
     </script>
   @endif

@@ -32,9 +32,7 @@
           googletag.pubads().refresh([slot]);
         }, 30 * 1000); // 30 seconds
       });
-
     </script>
-    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
   @endif
 @endsection
 
