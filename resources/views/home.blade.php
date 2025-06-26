@@ -12,7 +12,8 @@
         cmd: []
       };
       googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0').addService(googletag
+        var slot = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0').addService(
+          googletag
           .pubads());
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -22,8 +23,9 @@
       });
 
       googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0').addService(
-          googletag.pubads());
+        var slot = googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0')
+          .addService(
+            googletag.pubads());
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
         setInterval(() => {
@@ -369,10 +371,9 @@
           </div>
         </div>
 
-        {{-- right part --}}
+        {{-- right part:ads --}}
         <div class="d-none d-xl-block col-xl-2">
-          @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-            {{-- right part:ads --}}
+          @if (config('services.google_ad.enabled') && config('services.google_ad.home_page') && !is_skip_ad())
             <div class="pt-2 px-2 mx-auto">
               {{-- google ads --}}
               <!-- /23307026516/home_ad_r1/home_ad_2 -->
@@ -387,20 +388,14 @@
 
             <div class="pt-2 px-2 mx-auto sticky-top-home-ad">
               {{-- google ads --}}
-              @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-                @if (!is_skip_ad())
-                  <div class="pt-2 px-2 mx-auto">
-                    <!-- /23307026516/home_ad_r1 -->
-                    <div id='div-gpt-ad-1750906757581-0' style='min-width: 160px; min-height: 600px;'>
-                      <script>
-                        googletag.cmd.push(function() {
-                          googletag.display('div-gpt-ad-1750906757581-0');
-                        });
-                      </script>
-                    </div>
-                  </div>
-                @endif
-              @endif
+              <!-- /23307026516/home_ad_r1 -->
+              <div id='div-gpt-ad-1750906757581-0' style='min-width: 160px; min-height: 600px;'>
+                <script>
+                  googletag.cmd.push(function() {
+                    googletag.display('div-gpt-ad-1750906757581-0');
+                  });
+                </script>
+              </div>
             </div>
           @endif
         </div>
