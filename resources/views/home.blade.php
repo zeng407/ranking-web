@@ -3,6 +3,23 @@
     'stickyNav' => 'sticky-top',
 ])
 
+@section('header')
+  @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
+    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
+    <script>
+      window.googletag = window.googletag || {
+        cmd: []
+      };
+      googletag.cmd.push(function() {
+        googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0').addService(googletag
+          .pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+      });
+    </script>
+  @endif
+@endsection
+
 @section('search')
   {{-- search --}}
   <form class="form-inline my-2 my-lg-0" action="{{ route('home') }}">
@@ -26,9 +43,19 @@
       {{-- main container --}}
       <div class="row m-0">
         {{-- left part: champions --}}
-        <div class="d-none d-xl-block col-xl-2" v-cloak>
-
+        <div class="d-none d-xl-block col-xl-2">
+          @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
+            <!-- /23307026516/home_ad_r1 -->
+            <div id='div-gpt-ad-1750906757581-0' style='min-width: 160px; min-height: 600px;'>
+              <script>
+                googletag.cmd.push(function() {
+                  googletag.display('div-gpt-ad-1750906757581-0');
+                });
+              </script>
+            </div>
+          @endif
         </div>
+
         {{-- main part: posts --}}
         <div id="main-region" class="col-12 col-xl-8 p-1 " v-cloak>
           @include('partial.home-carousel')
