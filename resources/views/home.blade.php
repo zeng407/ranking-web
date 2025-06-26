@@ -44,16 +44,6 @@
       <div class="row m-0">
         {{-- left part: champions --}}
         <div class="d-none d-xl-block col-xl-2">
-          @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
-            <!-- /23307026516/home_ad_r1 -->
-            <div id='div-gpt-ad-1750906757581-0' style='min-width: 160px; min-height: 600px;'>
-              <script>
-                googletag.cmd.push(function() {
-                  googletag.display('div-gpt-ad-1750906757581-0');
-                });
-              </script>
-            </div>
-          @endif
         </div>
 
         {{-- main part: posts --}}
@@ -297,7 +287,7 @@
               </div>
 
               {{-- ads --}}
-              @if (config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index % 14 == 0 && $index > 0)
+              @if (config('services.google_ad.enabled') && config('services.google_ad.home_page') && $index % 12 == 0 && $index > 0)
                 <div class="col-md-6 col-12 pt-2 preload-post">
                   @include('ads.home_ad_1_pc')
                 </div>
@@ -381,7 +371,18 @@
 
             <div class="pt-2 px-2 mx-auto sticky-top-home-ad">
               {{-- google ads --}}
-              @include('ads.home_ad_champion_top')
+              @if (config('services.google_ad.enabled') && config('services.google_ad.home_page'))
+                <div class="pt-2 px-2 mx-auto">
+                  <!-- /23307026516/home_ad_r1 -->
+                  <div id='div-gpt-ad-1750906757581-0' style='min-width: 160px; min-height: 600px;'>
+                    <script>
+                      googletag.cmd.push(function() {
+                        googletag.display('div-gpt-ad-1750906757581-0');
+                      });
+                    </script>
+                  </div>
+                </div>
+              @endif
             </div>
           @endif
         </div>
