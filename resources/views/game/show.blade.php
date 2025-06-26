@@ -21,8 +21,8 @@
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
   @if(config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
     {{-- ads --}}
-    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
-    <script>
+    <script data-cfasync="false" async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
+    <script data-cfasync="false">
       window.googletag = window.googletag || {cmd: []};
       googletag.cmd.push(function() {
         googletag.defineSlot('/23307026516/game_ad_top', [[320, 100], [220, 90], [120, 90], [300, 100], [300, 75]], 'div-gpt-ad-1750911147249-0').addService(googletag.pubads());
