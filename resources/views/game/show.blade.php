@@ -66,6 +66,7 @@
               <!-- /23307026516/game_ad_top -->
               <div id='div-gpt-ad-1750911147249-0' style='min-width: 120px; min-height: 75px;'>
               <script>
+                window.googletag = window.googletag || {cmd: []};
                 googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750911147249-0'); });
               </script>
               </div>
