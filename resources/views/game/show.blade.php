@@ -26,9 +26,22 @@
       window.googletag = window.googletag || {cmd: []};
       googletag.cmd.push(function() {
         var slot = googletag.defineSlot('/23307026516/game_ad_top', [[320, 100], [120, 90], [220, 90], [300, 75], [300, 100], 'fluid'], 'div-gpt-ad-1750913246554-0').addService(googletag.pubads());
+        googletag.pubads().setCentering(true);
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
         setInterval(() => {
+          googletag.display("div-gpt-ad-1750913246554-0");
+          googletag.pubads().refresh([slot]);
+        }, 30 * 1000); // 30 seconds
+      });
+
+      googletag.cmd.push(function() {
+        var slot = googletag.defineSlot('/23307026516/game_ad_top/game_ad_top_2', [[320, 100], [220, 90], [300, 75], [300, 100], [120, 90], [468, 60]], 'div-gpt-ad-1751199509158-0').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+
+        setInterval(() => {
+          googletag.display("div-gpt-ad-1751199509158-0");
           googletag.pubads().refresh([slot]);
         }, 30 * 1000); // 30 seconds
       });
@@ -59,11 +72,18 @@
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
         {{-- ads --}}
-          <!-- /23307026516/game_ad_top -->
           <div id="google-ad-container" class="overflow-hidden position-relative d-flex justify-content-center">
-            <div class="text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; min-height: 75px; max-width:500px;'>
+            <!-- /23307026516/game_ad_top -->
+            <div class="text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
               <script>
                 googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
+              </script>
+            </div>
+
+            <!-- /23307026516/game_ad_top/game_ad_top_2 -->
+            <div id='div-gpt-ad-1751199509158-0' style='min-width: 120px; height: 100px;'>
+              <script>
+                googletag.cmd.push(function() { googletag.display('div-gpt-ad-1751199509158-0'); });
               </script>
             </div>
           </div>
