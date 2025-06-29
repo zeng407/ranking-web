@@ -13,22 +13,24 @@
       };
       googletag.cmd.push(function() {
         var slot = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0').addService(
-          googletag
-          .pubads());
+          googletag.pubads());
         googletag.pubads().enableSingleRequest();
+        googletag.pubads().collapseEmptyDivs();
         googletag.enableServices();
         setInterval(() => {
+          googletag.display("div-gpt-ad-1750906757581-0");
           googletag.pubads().refresh([slot]);
         }, 30 * 1000); // 30 seconds
       });
 
       googletag.cmd.push(function() {
         var slot = googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0')
-          .addService(
-            googletag.pubads());
+          .addService(googletag.pubads());
         googletag.pubads().enableSingleRequest();
+        googletag.pubads().collapseEmptyDivs();
         googletag.enableServices();
         setInterval(() => {
+          googletag.display("div-gpt-ad-1750917306040-0");
           googletag.pubads().refresh([slot]);
         }, 30 * 1000); // 30 seconds
       });

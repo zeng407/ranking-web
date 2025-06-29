@@ -23,13 +23,13 @@
             {{-- <img src="https://payment.opay.tw/Content/themes/WebStyle201404/images/allpay.png"/> --}}
           </div>
           <div class="row justify-content-center">
-          <div class="col-6 text-center mt-2">
+          <div class="col-12 col-lg-6 text-center mt-2">
             <a target="_blank" href="https://p.ecpay.com.tw/677F5BF">
               <img src="https://payment.ecpay.com.tw/Upload/QRCode/202407/QRCode_2ff3f451-50b1-4fe0-81f2-63ea255d817f.png">
               <h5 class="pt-1 text-nowrap">{{__('donate.ecpay')}} {{__('donate.whatever')}}</h5>
             </a>
           </div>
-          <div class="col-6 text-center mt-2">
+          <div class="col-12 col-lg-6 text-center mt-2">
             <a target="_blank" href="https://qr.opay.tw/HTXLZ">
               <img src="https://payment.opay.tw/Upload/Broadcaster/1967663/QRcode/QRCode_EA6A62EF78EB2573D2570E271C1610B7.png" />
               <h5 class="pt-1 text-nowrap">{{__('donate.opay')}} {{__('donate.whatever')}}</h5>
