@@ -61,6 +61,7 @@
                   </a>
                 </h3>
                 <h5>{{$t('Support formats')}}:</h5>
+
                 <ul>
                   <li>{{$t('Video')}}：https://www.youtube.com/watch?v=xxxxx</li>
                   <li>{{$t('Video')}}：https://www.youtube.com/watch/xxxxx</li>
@@ -68,7 +69,8 @@
                   <li>{{$t('Video')}}：https://www.youtube.com/xxxxxx</li>
                   <li>{{$t('Video')}}：https://youtu.be/xxxxx</li>
                 </ul>
-                <h5>{{ $t('Import clips') }}</h5>
+                <img src="/storage/youtube-link-tutorial.jpg" alt="youtube import" style="width: 100%; object-fit: contain;">
+                <h5 class="my-4">{{ $t('Import clips') }}</h5>
                 <img src="/storage/youtube-embed-tutorial.jpg" alt="youtube import" style="width: 100%; object-fit: contain;">
                 <div class="alert alert-dark">
                   {{ youtubeEmbedSample }}

@@ -383,17 +383,12 @@
                 <div class="col-lg-4 col-md-6" v-if="isVideoSource(element)" :key="element.id + '_' + index+'_'+element.source_url">
                   <!-- youtube source -->
                   <div class="card mb-3" v-if="isYoutubeSource(element)">
-                    <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270"
-                      :ref="element.id" @ready="doPlay(element)" :player-vars="{
-                      controls: 1,
-                      autoplay: 0,
-                      start: element.video_start_second,
-                      end: element.video_end_second,
-                      rel: 0,
-                      origin: origin
-                    }"></youtube>
-                    <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                      v-show="isYoutubeSource(element) && !element.loadedVideo">
+                    <youtube-player v-if="isYoutubeSource(element) && element.loadedVideo" width="100%" height="270" :ref="element.id"
+                      :video-id="element.video_id">
+                    </youtube-player>
+                    <img :src="element.thumb_url" class="card-img-top cursor-pointer" :alt="element.title"
+                      @click="clickYoutubePlayButton(index, element)"
+                      v-show="isYoutubeSource(element) && !element.loadedVideo" >
                     <!-- youtube video editor -->
                     <div class="card-body">
                       <!--title edit-->
@@ -402,7 +397,7 @@
                         @change="updateElementTitle(element.id, $event)"></textarea>
                       <!--play time range-->
                       <div class="row mb-3">
-                        <div class="col-10">
+                        <div class="col-12">
                           <div class="input-group">
                             <div class="input-group-prepend d-lg-none d-xl-block">
                               <span class="input-group-text">{{ $t('edit_post.video_range') }}</span>
@@ -416,12 +411,6 @@
                               :value="toTimeFormat(element.video_end_second)"
                               @change="updateVideoScope(index, element, $event)">
                           </div>
-                        </div>
-                        <!--play button-->
-                        <div class="col-2">
-                          <a class="btn btn-danger fa-pull-right" @click="clickYoutubePlayButton(index, element)">
-                            <i class="fas fa-play-circle"></i>
-                          </a>
                         </div>
                       </div>
                       <div>
@@ -667,17 +656,11 @@
                       <template v-if="isVideoSource(element)">
                         <!-- youtube source -->
                         <template v-if="isYoutubeSource(element)">
-                          <youtube v-if="isYoutubeSource(element) && element.loadedVideo" width="200px" height="100px"
-                            :ref="element.id" @ready="doPlay(element)" :player-vars="{
-                            controls: 1,
-                            autoplay: 0,
-                            start: element.video_start_second,
-                            end: element.video_end_second,
-                            rel: 0,
-                            origin: origin
-                          }"></youtube>
-                          <img :src="element.thumb_url" class="card-img-top" :alt="element.title"
-                            v-show="isYoutubeSource(element) && !element.loadedVideo" style="width: 200px;">
+                          <youtube-player v-if="isYoutubeSource(element) && element.loadedVideo" width="200px" height="100px"
+                          :video-id="element.video_id" :ref="element.id"></youtube-player>
+                          <img :src="element.thumb_url" class="card-img-top cursor-pointer" :alt="element.title"
+                            v-show="isYoutubeSource(element) && !element.loadedVideo" style="width: 200px;"
+                            @click="clickYoutubePlayButton(index, element)">
                         </template>
 
 
@@ -1504,11 +1487,10 @@ export default {
       this.playingVideo = element.id;
       element.loadedVideo = true;
       this.$set(this.elements.data, index, element);
-
-      this.doPlay(element);
     },
     doPlay(element) {
       let player = this.getYoutubePlayer(element);
+
       if (player) {
         window.player = player;
         player.loadVideoById({

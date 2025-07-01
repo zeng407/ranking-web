@@ -390,14 +390,35 @@ class ElementController extends Controller
             return false;
         }
 
-        // Check content type
-        $contentType = $headers['Content-Type'] ?? '';
-        $isImage = strpos($contentType, 'image/') === 0;
-        $isVideo = strpos($contentType, 'video/') === 0;
+        // Check content type - handle both string and array cases
+        $contentTypes = $headers['Content-Type'] ?? '';
+        if (!is_array($contentTypes)) {
+            $contentTypes = [$contentTypes];
+        }
+
+        $isImage = false;
+        $isVideo = false;
+
+        // Loop through all Content-Type values until we find image or video
+        foreach ($contentTypes as $contentType) {
+            if (strpos($contentType, 'image/') === 0) {
+                $isImage = true;
+                break;
+            }
+            if (strpos($contentType, 'video/') === 0) {
+                $isVideo = true;
+                break;
+            }
+        }
 
         if ($isImage || $isVideo) {
-            // Check file size
+            // Check file size - handle both string and array cases
             $contentLength = $headers['Content-Length'] ?? 0;
+            if (is_array($contentLength)) {
+                $contentLength = end($contentLength);
+            }
+            $contentLength = (int) $contentLength;
+
             if ($contentLength > $maxSizeBytes) {
                 return false;
             }
