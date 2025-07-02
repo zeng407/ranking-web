@@ -1398,7 +1398,6 @@ export default {
           this.loadElements(this.currentPage);
         })
         .catch((err) => {
-          // console.log(err.response.data);
           // handle 504
           if(err.response.status === 504) {
             this.showAlert(this.$t('edit_post.batch_upload_timeout'), 'danger');
@@ -1511,7 +1510,6 @@ export default {
       }
     },
     clickTwitchPlayButton(index, element) {
-      // console.log('clickTwitchPlayButton');
       if(element.video_source === 'twitch_video'){
         let player = this.loadTwitchVideo(index, element);
 
@@ -1541,13 +1539,11 @@ export default {
       window.open(this.playGameRoute, '_blank');
     },
     playButtonOnHoverIn() {
-      // console.log('playButtonOnHover');
       if(this.elements.data.length < 2){
         this.showPlayPopover = true;
       }
     },
     playButtonOnHoverOut() {
-      // console.log('playButtonOnHoverOut');
       this.showPlayPopover = false;
     },
     handleElementPageChange: function (page) {
