@@ -63,6 +63,9 @@ return [
     /* Contact Email */
     'contact_email'=> env('CONTACT_EMAIL', 'admin@example.com'),
 
+    /* Feedback Form URL */
+    'feedback_form_url' => env('FEEDBACK_FORM_URL', 'https://forms.gle/DfCfZGUjFncHJdN66'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
