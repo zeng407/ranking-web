@@ -277,7 +277,7 @@
                       </div>
                     </div>
 
-                    @if (
+                    @if (!$embed &&
                         !$post->is_censored &&
                             config('services.google_ad.enabled') &&
                             config('services.google_ad.rank_page') &&
@@ -444,7 +444,7 @@
                   @endif
 
                   @if (
-                      !$post->is_censored &&
+                      !$embed && !$post->is_censored &&
                           config('services.google_ad.enabled') &&
                           config('services.google_ad.rank_page') &&
                           $index == 5)
@@ -661,7 +661,7 @@
         </div>
 
         {{-- right part: ads --}}
-        @if (!$post->is_censored)
+        @if (!$embed && !$post->is_censored)
           <div class="d-none d-lg-block col-lg-2">
             @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page'))
               <div class="p-lg-1 p-xl-2 sticky-top-rank-tab">
