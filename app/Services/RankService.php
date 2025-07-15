@@ -25,6 +25,7 @@ class RankService
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
+            ->orderByRaw('ISNULL(`rank`)')
             ->orderBy('rank')
             ->paginate($limit, ['*'], 'page', $page);
 
