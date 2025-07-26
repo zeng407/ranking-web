@@ -2,17 +2,15 @@
 
 namespace App\Services\ElementHandlers;
 use App\Enums\VideoSource;
-use App\Events\ImageElementCreated;
 use App\Models\Element;
 use App\Models\Post;
 use App\Services\Traits\FileHelper;
 use App\Enums\ElementType;
-use Storage;
 
 class VideoFileElementHandler implements InterfaceElementHandler
 {
     use FileHelper;
-    
+
     public function storeArray(string $sourceUrl, string $serial, $params = []): ?array
     {
         //todo make thumb from video

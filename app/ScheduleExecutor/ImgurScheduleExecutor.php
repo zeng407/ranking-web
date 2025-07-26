@@ -136,17 +136,17 @@ class ImgurScheduleExecutor
     protected function handle400NoSupportType($res)
     {
         if(isset($res['status']) && $res['status'] == 400){
-            \Log::error('Imgur not support this type', ['res' => $res]);;
+            \Log::warning('Imgur not support this type', ['res' => $res]);;
             return true;
         }
 
         if(isset($res['status']) && $res['status'] == 415){
-            \Log::error('Invalid type', ['res' => $res]);;
+            \Log::warning('Invalid type', ['res' => $res]);;
             return true;
         }
 
         if(isset($res['status']) && $res['status'] == 413){
-            \Log::error('file is over the size limit', ['res' => $res]);;
+            \Log::warning('file is over the size limit', ['res' => $res]);;
             return true;
         }
 

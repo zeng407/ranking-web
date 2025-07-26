@@ -57,9 +57,11 @@ class ResizeElementImage implements ShouldQueue
 
             if ($image->getImageFormat() === 'GIF') {
                 // Handle GIF resizing
-                $image = $this->convertGifToJpg($image);
+                $image = $this->convertGifToWebp($image);
             } else {
                 // Handle other image formats
+                $image->setImageFormat('webp'); // Convert to WEBP format
+                $image->setImageCompressionQuality(80);
                 $image->resizeImage($this->width, $this->height, \Imagick::FILTER_LANCZOS, 1);
             }
 
@@ -91,7 +93,7 @@ class ResizeElementImage implements ShouldQueue
         }
     }
 
-    protected function convertGifToJpg(\Imagick $image)
+    protected function convertGifToWebp(\Imagick $image)
     {
         // Coalesce the GIF to ensure all frames are available
         $image = $image->coalesceImages();
@@ -99,8 +101,8 @@ class ResizeElementImage implements ShouldQueue
         // Extract the first frame
         $firstFrame = $image->getImage();
 
-        // Set the format to JPG
-        $firstFrame->setImageFormat('jpg');
+        // Set the format to WEBP
+        $firstFrame->setImageFormat('webp');
 
         // Resize the image
         $firstFrame->resizeImage($this->width, $this->height, \Imagick::FILTER_LANCZOS, 1);
