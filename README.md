@@ -82,7 +82,7 @@ php -r "unlink('composer-setup.php');"
 5. Run `./vendor/bin/sail npm install & npm run dev` to set up static HTML/CSS/JS files.
 6. Start your project at `http://localhost`.
 
-### Minio Configuration
+# Minio Configuration
 
 Visit `localhost:9000` to log in to your Minio account (see [docker-compose.yml](docker-compose.yml)). You need to create a bucket and generate an access key. Then, put the access key and other Minio configurations in your .env file. (See the following example .env)
 
@@ -101,7 +101,7 @@ AWS_ENDPOINT=http://ranking-web-minio-1:9000
 AWS_USE_PATH_STYLE_ENDPOINT=true
 ```
 
-### Register Youtube API
+# Register Youtube API
 - [YouTube Data API v3](https://console.cloud.google.com/apis/library/youtube.googleapis.com?hl=zh-TW&project=plasma-circle-334908)
 
 After registering, put your API key in the .env file:
@@ -111,7 +111,7 @@ YOUTUBE_API_KEY=put_your_api_key_here
 ```
 
 
-## Run Background Workers and Scheduler
+# Run Background Workers and Scheduler
 
 After entering the `sail shell`, run the following scripts to start the queue workers and scheduler in the background:
 
@@ -124,6 +124,12 @@ chmod +x ./start_schedule.sh
 
 This will start all queue workers and the Laravel scheduler as background processes.
 
+When you change the code, you have to restart the workers and scheduler:
+
+```sh
+./start_worker.sh &
+./start_schedule.sh &
+```
 
 # Troubleshooting
 
