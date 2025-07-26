@@ -18,6 +18,7 @@ export default {
     this.handleNewChampion();
     this.autoRefreshChampionsTimestamp();
     window.addEventListener('resize', this.updateMobileScreen);
+    history.scrollRestoration = 'manual'; // Disable automatic scroll restoration
 
   },
   props: {
@@ -268,7 +269,7 @@ export default {
       this.recordLastScrollPosition();
     },
     isScrollAtBottom() {
-      let buffer = 80;
+      let buffer = 200;
       return (window.innerHeight + window.scrollY) >= document.body.offsetHeight - buffer;
     },
     recordLastScrollPosition() {
