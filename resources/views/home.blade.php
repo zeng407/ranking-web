@@ -118,7 +118,7 @@
                         <img v-else @load="handleCandicateLoaded(championResult.left)"
                           v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100"
                           :class="{ 'eliminated-image': !championResult.left.is_winner }"
-                          :src="championResult.left.thumb_url">
+                          :src="championResult.left.thumb_url" loading="lazy">
                         <div class="champion-footer-icons">
                           <i class="fa-solid fa-x" v-if="!championResult.left.is_winner"
                             v-show="!isChampionLoading(championResult.left)"></i>
@@ -144,7 +144,7 @@
                         <img v-else @load="handleCandicateLoaded(championResult.right)"
                           v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100"
                           :class="{ 'eliminated-image': !championResult.right.is_winner }"
-                          :src="championResult.right.thumb_url">
+                          :src="championResult.right.thumb_url" loading="lazy">
                         <div class="champion-footer-icons">
                           <i class="fa-solid fa-x" v-if="!championResult.right.is_winner"
                             v-show="!isChampionLoading(championResult.right)"></i>
@@ -218,9 +218,7 @@
           <div class="d-flex mt-2 mx-2" style=" height:25px">
             <h5 v-if="filters.keyword" class="mr-2 d-inline-block">
               <span class="btn btn-outline-dark badge badge-dark" @click="clearKeyword">
-                @{{ $t('Search Results', {
-    keyword: filters.keyword
-}) }}<i class="fas fa-times ml-1 cursor-pointer"></i>
+                @{{ $t('Search Results', {keyword: filters.keyword}) }}<i class="fas fa-times ml-1 cursor-pointer"></i>
               </span>
             </h5>
             <div class="d-inline-block position-absolute" style="left: 50%; transform: translateX(-50%);">
@@ -247,7 +245,7 @@
                           @if ($post['element1']['previewable'])
                             <flex-image element-id="{{ $post['element1']['id'] }}"
                               thumb-url="{{ $post['element1']['url'] }}" imgur-url="{{ $post['element1']['url2'] }}"
-                              alt="{{ $post['element1']['title'] }}"></flex-image>
+                              alt="{{ $post['element1']['title'] }}" :lazy="true"></flex-image>
                           @else
                             <video src="{{ $post['element1']['url'] }}#t=0.01"></video>
                           @endif
@@ -258,7 +256,7 @@
                           @if ($post['element2']['previewable'])
                             <flex-image element-id="{{ $post['element2']['id'] }}"
                               thumb-url="{{ $post['element2']['url'] }}" imgur-url="{{ $post['element2']['url2'] }}"
-                              alt="{{ $post['element2']['title'] }}"></flex-image>
+                              alt="{{ $post['element2']['title'] }}" :lazy="true"></flex-image>
                           @else
                             <video src="{{ $post['element2']['url'] }}#t=0.01"></video>
                           @endif
@@ -348,7 +346,7 @@
           @if ($posts->count() == 0)
             <div class="text-center">
               <img src="{{ asset('storage/post-not-found-' . app()->getLocale() . '.png') }}" class="img-fluid"
-                alt="{{ __('Not Found') }}">
+                alt="{{ __('Not Found') }}" loading="lazy">
             </div>
           @endif
 

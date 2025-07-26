@@ -1,4 +1,6 @@
-<template><img ref="flexImage" :src="src" @error="onImageError"></template>
+<template>
+  <img ref="flexImage" :src="src" @error="onImageError" :loading="loadingType">
+</template>
 
 <script>
 export default {
@@ -6,16 +8,12 @@ export default {
     this.checkImgurUrl();
     this.initImgAttributes();
   },
-  watch: {
-
-  },
   computed: {
     src() {
       if (this.imgurUrl && !this.isImgurUrlFailed) {
-        // if the host name is imgur, we use the proxy to access the image
         if (this.imgurUrl.startsWith('https://i.imgur.com/')) {
           return 'https://proxy.duckduckgo.com/iu/?u=' + encodeURIComponent(this.imgurUrl);
-        }else{
+        } else {
           return this.imgurUrl;
         }
       } else if (this.thumbUrl && !this.isThumbUrlFailed) {
@@ -25,9 +23,11 @@ export default {
       } else {
         return '';
       }
+    },
+    loadingType() {
+      return this.lazy ? 'lazy' : 'eager';
     }
   },
-
   props: {
     elementId: {
       type: String | Number,
@@ -64,6 +64,10 @@ export default {
     },
     customClass: {
       type: String,
+    },
+    lazy: {
+      type: Boolean,
+      default: false
     },
   },
   data() {
