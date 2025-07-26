@@ -17,6 +17,7 @@
                 :thumb-url="post.element1.url"
                 :imgur-url="post.element1.url2"
                 :alt="post.element1.title"
+                :lazy="true"
               ></flex-image>
               <video v-else :src="getVideoPreviewUrl(post.element1.url)"></video>
             </div>
@@ -31,6 +32,7 @@
                 :thumb-url="post.element2.url"
                 :imgur-url="post.element2.url2"
                 :alt="post.element2.title"
+                :lazy="true"
               ></flex-image>
               <video v-else :src="getVideoPreviewUrl(post.element2.url)"></video>
             </div>

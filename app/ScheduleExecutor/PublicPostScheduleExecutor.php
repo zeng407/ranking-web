@@ -7,12 +7,9 @@ use App\Enums\PostAccessPolicy;
 use App\Enums\TrendTimeRange;
 use App\Enums\TrendType;
 use App\Helper\CacheService;
-use App\Http\Resources\PostResource;
-use App\Jobs\UpdatePostTrendsPosition;
 use App\Models\Post;
 use App\Models\PostTrend;
 use App\Models\PublicPost;
-use DB;
 
 class PublicPostScheduleExecutor
 {
