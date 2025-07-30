@@ -144,9 +144,24 @@ class CacheService
         return Cache::pull('public_post_fresh');
     }
 
+    static public function putUpdatingGameRoomRank(GameRoom $gameRoom)
+    {
+        return Cache::put('processing_job:update_game_room_rank' . $gameRoom->serial, true, 60 * 24);
+    }
+
+    static public function pullUpdatingGameRoomRank(GameRoom $gameRoom)
+    {
+        return Cache::pull('processing_job:update_game_room_rank' . $gameRoom->serial);
+    }
+
+    static public function hasUpdatingGameRoomRank(GameRoom $gameRoom)
+    {
+        return Cache::has('processing_job:update_game_room_rank' . $gameRoom->serial);
+    }
+
     static public function putJobCacheUpdateGameRoomRank(GameRoom $gameRoom)
     {
-        Cache::put('waiting_job:update_game_room_rank' . $gameRoom->serial, true, 60 * 24);
+        return Cache::put('waiting_job:update_game_room_rank' . $gameRoom->serial, true, 60 * 24);
     }
 
     static public function pullJobCacheUpdateGameRoomRank(GameRoom $gameRoom)

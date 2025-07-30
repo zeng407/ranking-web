@@ -11,6 +11,7 @@ export default {
     ICountUp
   },
   mounted() {
+    this.loadGameRoomRanks();
     this.loadCommnets();
     this.initChart();
     this.enableTooltip();
@@ -50,6 +51,7 @@ export default {
       sortByTop: true,
       keyword: '',
       searchResults: [],
+      gameRoomRanks: [],
     }
   },
   props: {
@@ -73,6 +75,11 @@ export default {
       type: String,
       required: true
     },
+    indexGameRoomRankEndpoint: {
+      type: String|null,
+      required: false,
+      default: null
+    },
     searchEndpoint: {
       type: String,
       required: true
@@ -88,8 +95,9 @@ export default {
     gameStatistic: {
       type: Object|null
     },
-    gameRoomRanks: {
-      type: Object|null,
+    gameSerial: {
+      type: String|null,
+      default: null
     },
     requestHost: {
       type: String,
@@ -104,13 +112,13 @@ export default {
       return this.commentInput.trim().length > 0 && this.commentInput.length <= this.commentMaxLength
     },
     getSortedRanks() {
-      if(!this.gameRoomRanks){
+      if(!this.gameRoomRanks || !this.gameRoomRanks.ranks){
         return [];
       }
       if(this.sortByTop){
-        return this.gameRoomRanks.top_10;
+        return this.gameRoomRanks.ranks.top_10;
       }else{
-        return this.gameRoomRanks.bottom_10;
+        return this.gameRoomRanks.ranks.bottom_10;
       }
     },
   },
@@ -131,6 +139,21 @@ export default {
           // Show the modal
           $('#searchModal').modal('show');
         })
+    },
+    loadGameRoomRanks() {
+      if (!this.indexGameRoomRankEndpoint || !this.gameSerial) {
+        return;
+      }
+      const url = this.indexGameRoomRankEndpoint.replace('_game_serial', this.gameSerial);
+      axios.get(url)
+        .then(response => {
+          this.gameRoomRanks = response.data;
+          if(this.gameRoomRanks.rank_updating) {
+            setTimeout(() => {
+              this.loadGameRoomRanks();
+            }, 5000);
+          }
+        });
     },
     loadCommnets(page = 1) {
       const urlParams = {
