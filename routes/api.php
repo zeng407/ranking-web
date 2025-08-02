@@ -29,6 +29,7 @@ Route::get('rank/search', [RankController::class, 'searchRank'])->name('api.rank
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');
 Route::get('post/{post:serial}/access', [GameController::class, 'access'])->name('api.game.access');
 Route::get('game/{game:serial}/next-round', [GameController::class, 'nextRound'])->name('api.game.next-round');
+Route::get('game/{game:serial}/room-rank', [GameController::class, 'roomRank'])->name('api.game.room-rank');
 
 Route::post('game', [GameController::class, 'create'])->name('api.game.create');
 Route::post('game/vote', [GameController::class, 'vote'])->name('api.game.vote');

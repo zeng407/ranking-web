@@ -37,7 +37,9 @@ class UpdateGameRoomRank implements ShouldQueue, ShouldBeUnique
      */
     public function handle(GameService $gameService)
     {
+        // Remove from waiting job
         CacheService::pullJobCacheUpdateGameRoomRank($this->gameRoom);
+
         $this->gameRoom->users()->each(function ($user) use ($gameService) {
             $gameService->updateGameRoomUserBetScore($user);
         });
@@ -50,8 +52,12 @@ class UpdateGameRoomRank implements ShouldQueue, ShouldBeUnique
 
         broadcast(new BroadcastGameBetRank($this->gameRoom));
 
-        if ($this->shouldReDispatch($this->gameRoom)) {
+        // Check waiting job
+        if ($this->shouldReDispatch()) {
             ReUpdateGameRoomRank::dispatch($this->gameRoom)->delay(now()->addSeconds(5));
+        }else{
+            // Remove from processing job
+            CacheService::pullUpdatingGameRoomRank($this->gameRoom);
         }
     }
 
@@ -60,7 +66,7 @@ class UpdateGameRoomRank implements ShouldQueue, ShouldBeUnique
         return $this->gameRoom->serial;
     }
 
-    protected function shouldReDispatch(GameRoom $gameRoom)
+    protected function shouldReDispatch()
     {
         return CacheService::hasJobCacheUpdateGameRoomRank($this->gameRoom);
     }

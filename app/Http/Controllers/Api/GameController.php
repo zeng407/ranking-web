@@ -64,6 +64,14 @@ class GameController extends Controller
         return $data;
     }
 
+    public function roomRank(Request $request, Game $game)
+    {
+        return [
+            'ranks' => CacheService::rememberGameBetRank($game->game_room),
+            'rank_updating' => CacheService::hasUpdatingGameRoomRank($game->game_room),
+        ];
+    }
+
     public function create(Request $request)
     {
         $request->validate([
@@ -146,6 +154,10 @@ class GameController extends Controller
         // retrieve next round
         $elements = $this->getNextElements($game);
 
+        // Add to processing job
+        if($game->game_room){
+            CacheService::putUpdatingGameRoomRank($game->game_room);
+        }
         event(new GameElementVoted($game, $gameRound));
 
         // update rank when game complete

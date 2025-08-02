@@ -56,13 +56,11 @@ class Kernel extends ConsoleKernel
             app(RankReportScheduleExecutor::class)->removeOutdateRankReportHistory();
         })->name('Remove Outdate Rank Report History')->dailyAt('05:30')->withoutOverlapping(120);
 
-        $schedule->call(function(){
-            // app(ImgurScheduleExecutor::class)->createAlbum(5);
-        })->name('Upload Imgur Albums')->hourlyAt(10)->withoutOverlapping(120);
-
-        $schedule->call(function(){
-            app(ImgurScheduleExecutor::class)->createImage(5);
-        })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping(60);
+        if(config('services.imgur.enabled')){
+            $schedule->call(function(){
+                app(ImgurScheduleExecutor::class)->createImage(5);
+            })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping(60);
+        }
 
         $schedule->call(function(){
             app(ElementScheduleExecutor::class)->removeDeletedFiles(1000);

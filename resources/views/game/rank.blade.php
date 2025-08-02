@@ -17,9 +17,10 @@
     index-comment-endpoint="{{ route('api.public-post.comment.index', $post->serial) }}"
     create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"
     report-comment-endpoint="{{ route('api.public-post.comment.report', [$post->serial, '_comment_id']) }}"
+    index-game-room-rank-endpoint="{{ route('api.game.room-rank', '_game_serial') }}"
     :champion-histories="{{ json_encode($champion_histories) }}" :max-rank="{{ $reports->total() }}"
     :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
-    :game-room-ranks="{{ $gameResult ? json_encode($gameResult->game_room) : 'null' }}"
+    game-serial="{{ $gameResult ? $gameResult->game_serial : '' }}"
     request-host="{{ request()->getHost() }}">
     {{-- Main --}}
     <div class="container-fuild" v-cloak>
@@ -84,9 +85,7 @@
               <div class="modal-dialog">
                 <div class="modal-content">
                   <div class="modal-header align-items-baseline">
-                    <h5 class="modal-title" id="searchModalLabel"> @{{ $t('Search Results', {
-    keyword: keyword
-}) }}</h5>
+                    <h5 class="modal-title" id="searchModalLabel"> @{{ $t('Search Results', {keyword: keyword}) }}</h5>
                     <small class="ml-1" v-if="searchResults.length >= 10">(最多顯示10筆)</small>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
@@ -307,6 +306,9 @@
                       @click="changeSortRanks">
                       <i class="fa-solid fa-arrow-down-short-wide"></i>
                     </span>
+                    <div v-show="gameRoomRanks.rank_updating" class="position-absolute p-1" style="right: 0; top: 0; font-size:1rem;">
+                      <i class="fa-solid fa-rotate fa-spin"></i><span class="mr-2">更新排名中...</span>
+                    </div>
                   </h3>
                   <div class="p-1 my-1 game-room-container">
                     <div class="d-flex justify-content-between p-2">
@@ -330,12 +332,9 @@
                           <i v-if="rank.rank == 1" class="fa-solid fa-trophy mr-1" style="color:gold"></i>
                           <i v-else-if="rank.rank == 2" class="fa-solid fa-trophy mr-1" style="color:silver"></i>
                           <i v-else-if="rank.rank == 3" class="fa-solid fa-trophy mr-1" style="color:chocolate"></i>
-                          <i v-else-if="rank.rank == gameRoomRanks.total_users" class="fa-solid fa-poo mr-1"
-                            style="color:gold"></i>
-                          <i v-else-if="rank.rank == gameRoomRanks.total_users -1" class="fa-solid fa-poo mr-1"
-                            style="color:silver"></i>
-                          <i v-else-if="rank.rank == gameRoomRanks.total_users -2" class="fa-solid fa-poo mr-1"
-                            style="color:chocolate"></i>
+                          <i v-else-if="rank.rank == gameRoomRanks.ranks.total_users" class="fa-solid fa-poo mr-1" style="color:gold"></i>
+                          <i v-else-if="rank.rank == gameRoomRanks.ranks.total_users -1" class="fa-solid fa-poo mr-1" style="color:silver"></i>
+                          <i v-else-if="rank.rank == gameRoomRanks.ranks.total_users -2" class="fa-solid fa-poo mr-1" style="color:chocolate"></i>
                           <span v-else-if="rank.rank > 0" class="badge badge-pill badge-light mr-1">
                             @{{ rank.rank }}
                           </span>

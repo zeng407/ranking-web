@@ -115,6 +115,7 @@ class GameService
 
         $gameResult = GameResultResource::collection($rounds)
             ->additional([
+                'game_serial' => $game->serial,
                 'winner' => $winner,
                 'winner_rank' => $rankReport?->rank,
                 'winner_win_rate' => $rankReport?->win_rate,
