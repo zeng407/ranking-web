@@ -166,10 +166,6 @@ class RankReportHistoryBuilder
         $lastLoseCount = $lastPKRecord ? $lastPKRecord->round_count - $lastPKRecord->win_count : 0;
         $lastRounds = $lastPKRecord->round_count ?? 0;
 
-        if ($lastRounds == 0) {
-            return;
-        }
-
         $timeline = carbon($start)->endOfWeek();
         $endOfWeek = carbon(today())->endOfWeek();
         while ($timeline->lte($endOfWeek)) {
