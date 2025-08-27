@@ -11,19 +11,19 @@ Check out the amazing AI-generated wiki for more insights:
 
 # Install with Docker
 
-1. Start all services:
+1. Copy the environment configuration file:
+   ```
+   cp .env.example .env
+   ```
+   > **Recommended:** Edit `.env` and change `DB_PASSWORD` to a secure password before starting the services.
+2. Start all services:
    ```
    docker compose up -d --build
    ```
-2. Enter the Laravel container and install PHP dependencies:
+3. Enter the Laravel container and install PHP dependencies:
    ```
-   docker compose exec laravel.test composer install
+   docker compose exec laravel.test composer install --no-scripts
    ```
-3. Copy the example environment file:
-   ```
-   docker compose exec laravel.test cp .env.example .env
-   ```
-   > **Recommended:** Edit `.env` and change `DB_PASSWORD` to a secure password before starting the application.
 4. Generate the Laravel application key:
    ```
    docker compose exec laravel.test php artisan key:generate --ansi
@@ -34,7 +34,17 @@ Check out the amazing AI-generated wiki for more insights:
    ```
 6. Install frontend dependencies and build assets:
    ```
-   docker compose exec laravel.test npm install && npm run dev
+   docker compose exec laravel.test bash -c "npm install && npm run dev"
+   ```
+
+7. Fix permissions and make sail scripts executable (if needed):
+   ```
+   sudo find . -type d -exec chmod 775 {} \;
+   sudo find . -type f -exec chmod 664 {} \;
+   sudo chown -R $USER:$USER .
+   chmod +x vendor/laravel/sail/bin/sail
+   chmod -R +x vendor/bin/*
+   docker compose exec laravel.test php artisan storage:link
    ```
 
 # Install PHP (Optional)
@@ -140,4 +150,6 @@ When you change the code, you have to restart the workers and scheduler:
 ```
 sudo find . -type d -exec chmod 775 {} \;
 sudo find . -type f -exec chmod 664 {} \;
+# Change ownership to your user (replace $USER with your username if needed)
+sudo chown -R $USER:$USER .
 ```
