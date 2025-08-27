@@ -1,18 +1,36 @@
-# Docs: https://caddyserver.com/docs/caddyfile
+{
+    auto_https off
+}
 
-# WebSocket subdomain for Soketi
-ws.2pick.app {
+# WebSocket subdomain for Soketi - 分離 HTTP 和 HTTPS
+http://ws.2pick.app {
+    reverse_proxy soketi:6001
+    encode zstd gzip
+}
+
+https://ws.2pick.app {
     reverse_proxy soketi:6001
     encode zstd gzip
     tls internal
 }
 
-# Main app domain for Laravel
-2pick.app {
+# Main app domain for Laravel - 分離 HTTP 和 HTTPS
+http://2pick.app {
     root * /var/www/public
     php_fastcgi php-fpm:9000
     file_server
+    encode zstd gzip
+}
 
+https://2pick.app {
+    root * /var/www/public
+    php_fastcgi php-fpm:9000
+    file_server
     encode zstd gzip
     tls internal
+}
+
+# 所有其他存取返回 404
+:80, :443 {
+    respond 404
 }
