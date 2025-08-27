@@ -1,0 +1,35 @@
+[program:laravel-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/artisan queue:work redis --sleep=3 --tries=3
+autostart=true
+autorestart=true
+numprocs=4
+user=laradock
+redirect_stderr=true
+
+[program:laravel-rank-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/artisan queue:work redis --queue=rank_report_history --sleep=3 --tries=3 --timeout=300
+autostart=true
+autorestart=true
+numprocs=2
+user=laradock
+redirect_stderr=true
+
+[program:laravel-worker-imgur]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/artisan queue:work redis --queue=imgur --sleep=3 --tries=3
+autostart=true
+autorestart=true
+numprocs=1
+user=laradock
+redirect_stderr=true
+
+[program:priority-queue]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/artisan queue:work redis --queue=high,low --sleep=3
+autostart=true
+autorestart=true
+numprocs=2
+user=laradock
+redirect_stderr=true

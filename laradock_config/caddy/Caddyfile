@@ -1,0 +1,18 @@
+# Docs: https://caddyserver.com/docs/caddyfile
+
+# WebSocket subdomain for Soketi
+ws.2pick.app {
+    reverse_proxy soketi:6001
+    encode zstd gzip
+    tls internal
+}
+
+# Main app domain for Laravel
+2pick.app {
+    root * /var/www/public
+    php_fastcgi php-fpm:9000
+    file_server
+
+    encode zstd gzip
+    tls internal
+}
