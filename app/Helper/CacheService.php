@@ -232,7 +232,7 @@ class CacheService
     static function addChampion(UserGameResult $result)
     {
         $key = 'champion_queue';
-        $seconds = 60 * 10; // 10 minute
+        $seconds = 3 * 60 * 60; // 3 hour
         $games = Cache::get($key);
         if ($games) {
             $games = collect($games);
