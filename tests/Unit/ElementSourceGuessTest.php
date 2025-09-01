@@ -12,14 +12,21 @@ class ElementSourceGuessTest extends TestCase
 
     public function testGuessImageUrl()
     {
+        $guess = new ElementSourceGuess();
         $sources = [
-            'https://example.com/image.jpg',
+                    'https://example.com/image.jpg'
+        ];
+        foreach ($sources as $source) {
+            $guess->guess($source);
+            $this->assertFalse($guess->isImage);
+        }
+        
+        $sources = [
             'https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg?20240301091138',
             'https://upload.wikimedia.org/wikipedia/commons/7/70/Example.png',
             'https://www.easygifanimator.net/images/samples/eglite.gif',
             'https://i.imgur.com/8nLFCVP.png'
         ];
-        $guess = new ElementSourceGuess();
         foreach ($sources as $source) {
             $guess->guess($source);
             $this->assertTrue($guess->isImage);
@@ -41,7 +48,7 @@ class ElementSourceGuessTest extends TestCase
             'https://imgur.com/gallery/yGhDZJ5',
             'https://imgur.com/t/birds/W7Mod3p'
         ];
-        
+
         $guess = new ElementSourceGuess();
         foreach ($sources as $source) {
             $guess->guess($source);
@@ -174,6 +181,6 @@ class ElementSourceGuessTest extends TestCase
         $this->assertTrue($guess->isTwitch);
     }
 
-    
+
 
 }
