@@ -118,7 +118,7 @@
                         <img v-else @load="handleCandicateLoaded(championResult.left)"
                           v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100"
                           :class="{ 'eliminated-image': !championResult.left.is_winner }"
-                          :src="championResult.left.thumb_url" loading="lazy">
+                          :src="championResult.left.thumb_url">
                         <div class="champion-footer-icons">
                           <i class="fa-solid fa-x" v-if="!championResult.left.is_winner"
                             v-show="!isChampionLoading(championResult.left)"></i>
@@ -144,7 +144,7 @@
                         <img v-else @load="handleCandicateLoaded(championResult.right)"
                           v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100"
                           :class="{ 'eliminated-image': !championResult.right.is_winner }"
-                          :src="championResult.right.thumb_url" loading="lazy">
+                          :src="championResult.right.thumb_url">
                         <div class="champion-footer-icons">
                           <i class="fa-solid fa-x" v-if="!championResult.right.is_winner"
                             v-show="!isChampionLoading(championResult.right)"></i>

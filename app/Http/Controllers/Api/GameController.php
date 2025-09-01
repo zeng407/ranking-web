@@ -66,6 +66,12 @@ class GameController extends Controller
 
     public function roomRank(Request $request, Game $game)
     {
+        if($game->game_room === null){
+            return response()->json([
+                'ranks' => [],
+                'rank_updating' => false
+            ], 200);
+        }
         return [
             'ranks' => CacheService::rememberGameBetRank($game->game_room),
             'rank_updating' => CacheService::hasUpdatingGameRoomRank($game->game_room),

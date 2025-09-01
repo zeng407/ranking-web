@@ -61,7 +61,17 @@ class ElementControllerTest extends TestCase
         $element = $this->createElements($post, 1)[0];
         $this->be($post->user);
 
-        // update image url
+        $urls = [
+            'https://example.com/image.jpg',
+        ];
+        foreach ($urls as $url) {
+            $res = $this->put(route('api.element.update', $element->id), [
+                'post_serial' => $post->serial,
+                'url' => $url,
+            ], ['Accept' => 'application/json']);
+            $res->assertStatus(200);
+        }
+
         $urls = [
             'https://example.com/image.jpg',
             'https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg?20240301091138',
@@ -295,7 +305,7 @@ class ElementControllerTest extends TestCase
                 'url' => $url,
             ], ['Accept' => 'application/json']);
             $res->assertStatus(200);
-            $this->assertDatabaseMissing('elements', ['source_url' => 
+            $this->assertDatabaseMissing('elements', ['source_url' =>
                 '<iframe width="100%" height="270" src="https://www.youtube.com/embed/0SyTa7D62zQ?si=2Zt5VVfMc-bcESVN&amp;clip=UgkxTY_5fbTzqRkYpyjcqQC4nBJ_3FuFkkun&amp;clipt=EJ_9TxiTwFM&autoplay=1&playlist=0SyTa7D62zQ&loop=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>'
             ]);
     }
@@ -322,7 +332,7 @@ class ElementControllerTest extends TestCase
         $element = $this->createElements($post, 1)[0];
         $this->be($post->user);
 
-        
+
         $url = 'https://www.bilibili.com/video/BV1Zy4y1T7Zv';
         $res = $this->put(route('api.element.update', $element->id), [
             'post_serial' => $post->serial,
@@ -358,7 +368,7 @@ class ElementControllerTest extends TestCase
                 ]
             ]),
         ]);
-        
+
         $url = 'https://www.twitch.tv/videos/2133361772';
         $res = $this->put(route('api.element.update', $element->id), [
             'post_serial' => $post->serial,

@@ -22,7 +22,7 @@ trait FileHelper
         }
 
         $path = rtrim($directory, '/') . '/' . $basename;
-        $isSuccess = Storage::put($path, $content, 'public');
+        $isSuccess = Storage::put($path, $content);
         if (!$isSuccess) {
             return null;
         }
@@ -53,7 +53,6 @@ trait FileHelper
             $extension = $extension ? ('.' . explode('/', $extension)[1]) : '';
         }
         $path = $file->storeAs($directory, $this->generateFileName(). $extension);
-        Storage::setVisibility($path, 'public');
         return $path;
     }
 
