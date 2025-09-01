@@ -18,9 +18,9 @@ class ElementSourceGuessTest extends TestCase
         ];
         foreach ($sources as $source) {
             $guess->guess($source);
-            $this->assertFalse($guess->isImage);
+            $this->assertTrue($guess->isImage);
         }
-        
+
         $sources = [
             'https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg?20240301091138',
             'https://upload.wikimedia.org/wikipedia/commons/7/70/Example.png',

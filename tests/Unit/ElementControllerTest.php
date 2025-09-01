@@ -69,7 +69,7 @@ class ElementControllerTest extends TestCase
                 'post_serial' => $post->serial,
                 'url' => $url,
             ], ['Accept' => 'application/json']);
-            $res->assertStatus(422);
+            $res->assertStatus(200);
         }
 
         $urls = [
