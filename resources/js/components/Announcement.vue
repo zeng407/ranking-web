@@ -37,7 +37,7 @@ export default {
         allowEscapeKey: true,
         allowEnterKey: true,
         customClass: {
-          popup: 'swal-left-align'
+          popup: 'swal-center-align'
         }
       }).then((result) => {
         if (result.isConfirmed) {
