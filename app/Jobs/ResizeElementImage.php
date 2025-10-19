@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Element;
 use App\Services\Traits\FileHelper;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -52,24 +53,21 @@ class ResizeElementImage implements ShouldQueue
         $tempFilePath = tempnam(sys_get_temp_dir(), 'image_');
         file_put_contents($tempFilePath, file_get_contents($this->element->thumb_url));
 
-        try {
-            // Check image format before processing
-            $imageInfo = @getimagesize($tempFilePath);
-            if ($imageInfo === false) {
-                \Log::warning("Cannot get image info for element {$this->element->id}");
-                unlink($tempFilePath);
-                return;
-            }
+        // Check if the downloaded file is 0 byte, use source_url directly
+        $fileSize = @filesize($tempFilePath) ?: 0;
+        if ($fileSize === 0 && !empty($this->element->source_url)) {
+            @unlink($tempFilePath);
+            $this->element->update([
+                $this->column => $this->element->source_url
+            ]);
+            \Log::info('Thumbnail is 0 byte, using source_url directly', [
+                'element_id' => $this->element->id,
+                'column' => $this->column,
+            ]);
+            return;
+        }
 
-            $mimeType = $imageInfo['mime'];
-            
-            // Handle AVIF and other unsupported formats with GD library
-            if ($mimeType === 'image/avif' || !$this->isImagickSupported($tempFilePath)) {
-                \Log::info("Using GD library for unsupported format: {$mimeType} for element {$this->element->id}");
-                $this->handleWithGD($tempFilePath, $mimeType);
-                unlink($tempFilePath);
-                return;
-            }
+        try { 
 
             $image = new \Imagick($tempFilePath);
 
@@ -102,6 +100,11 @@ class ResizeElementImage implements ShouldQueue
             if (file_exists($tempFilePath)) {
                 unlink($tempFilePath);
             }
+            \Log::error('Error making thumbnail', [
+                'element_id' => $this->element->id,
+                'url' => $usedUrl ?? $this->element->thumb_url,
+                'error' => $e->getMessage(),
+            ]);
             throw $e;
         } finally {
             // Always delete the temporary file
@@ -155,86 +158,6 @@ class ResizeElementImage implements ShouldQueue
             return true;
         } catch (\Exception $e) {
             return false;
-        }
-    }
-
-    protected function handleWithGD($tempFilePath, $mimeType)
-    {
-        try {
-            // Create image resource from file
-            $image = null;
-            switch ($mimeType) {
-                case 'image/jpeg':
-                    $image = @imagecreatefromjpeg($tempFilePath);
-                    break;
-                case 'image/png':
-                    $image = @imagecreatefrompng($tempFilePath);
-                    break;
-                case 'image/gif':
-                    $image = @imagecreatefromgif($tempFilePath);
-                    break;
-                case 'image/webp':
-                    $image = @imagecreatefromwebp($tempFilePath);
-                    break;
-                case 'image/avif':
-                    // AVIF support requires PHP 8.1+ with GD extension compiled with AVIF support
-                    if (function_exists('imagecreatefromavif')) {
-                        $image = @imagecreatefromavif($tempFilePath);
-                    }
-                    break;
-                default:
-                    $image = @imagecreatefromstring(file_get_contents($tempFilePath));
-                    break;
-            }
-
-            if ($image === false) {
-                \Log::warning("GD cannot process image for element {$this->element->id}, mime: {$mimeType}");
-                return;
-            }
-
-            // Get original dimensions
-            $originalWidth = imagesx($image);
-            $originalHeight = imagesy($image);
-
-            // Calculate new dimensions maintaining aspect ratio
-            $ratio = min($this->width / $originalWidth, $this->height / $originalHeight);
-            $newWidth = (int)($originalWidth * $ratio);
-            $newHeight = (int)($originalHeight * $ratio);
-
-            // Create new image with desired dimensions
-            $newImage = imagecreatetruecolor($newWidth, $newHeight);
-
-            // Preserve transparency
-            imagealphablending($newImage, false);
-            imagesavealpha($newImage, true);
-            $transparent = imagecolorallocatealpha($newImage, 0, 0, 0, 127);
-            imagefill($newImage, 0, 0, $transparent);
-
-            // Resize
-            imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
-
-            // Save as WebP
-            $path = storage_path('app/tmp/' . $this->generateFileName() . '.webp');
-            imagewebp($newImage, $path, 80);
-
-            imagedestroy($image);
-            imagedestroy($newImage);
-
-            // Upload the file
-            $file = new \Illuminate\Http\UploadedFile($path, 'image_thumbnail.webp', 'image/webp', null, true);
-            $newPath = $this->moveUploadedFile($file, "{$this->pathPrefix}/{$this->width}x{$this->height}");
-            $url = \Storage::url($newPath);
-            
-            $this->element->update([
-                $this->column => $url
-            ]);
-
-            // Delete temp file
-            unlink($path);
-
-        } catch (\Exception $e) {
-            \Log::error("GD processing failed for element {$this->element->id}: " . $e->getMessage());
-            throw $e;
         }
     }
 }
