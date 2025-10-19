@@ -100,11 +100,6 @@ class ResizeElementImage implements ShouldQueue
             if (file_exists($tempFilePath)) {
                 unlink($tempFilePath);
             }
-            \Log::error('Error making thumbnail', [
-                'element_id' => $this->element->id,
-                'url' => $usedUrl ?? $this->element->thumb_url,
-                'error' => $e->getMessage(),
-            ]);
             throw $e;
         } finally {
             // Always delete the temporary file
