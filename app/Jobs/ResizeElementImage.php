@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Element;
 use App\Services\Traits\FileHelper;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -52,7 +53,22 @@ class ResizeElementImage implements ShouldQueue
         $tempFilePath = tempnam(sys_get_temp_dir(), 'image_');
         file_put_contents($tempFilePath, file_get_contents($this->element->thumb_url));
 
-        try {
+        // Check if the downloaded file is 0 byte, use source_url directly
+        $fileSize = @filesize($tempFilePath) ?: 0;
+        if ($fileSize === 0 && !empty($this->element->source_url)) {
+            @unlink($tempFilePath);
+            $this->element->update([
+                $this->column => $this->element->source_url
+            ]);
+            \Log::info('Thumbnail is 0 byte, using source_url directly', [
+                'element_id' => $this->element->id,
+                'column' => $this->column,
+            ]);
+            return;
+        }
+
+        try { 
+
             $image = new \Imagick($tempFilePath);
 
             if ($image->getImageFormat() === 'GIF') {
@@ -127,5 +143,16 @@ class ResizeElementImage implements ShouldQueue
         }
 
         return "";
+    }
+
+    protected function isImagickSupported($filePath)
+    {
+        try {
+            $test = new \Imagick($filePath);
+            $test->destroy();
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }
