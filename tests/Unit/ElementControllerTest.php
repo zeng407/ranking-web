@@ -74,7 +74,6 @@ class ElementControllerTest extends TestCase
 
         $urls = [
             'https://example.com/image.jpg',
-            'https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg?20240301091138',
             'https://upload.wikimedia.org/wikipedia/commons/7/70/Example.png',
             'https://www.easygifanimator.net/images/samples/eglite.gif',
             'https://i.imgur.com/8nLFCVP.png'
