@@ -6,7 +6,7 @@
       </div>
       <div class="row no-gutters">
         <div class="row no-gutters m-0 w-100 position-relative">
-          <image-mask v-if="post.is_censored"></image-mask>
+          <image-mask v-if="post.is_censored" :key="'image-mask-' + post.serial"></image-mask>
           <div class="col-6">
             <div class="post-element-container">
               <flex-image
