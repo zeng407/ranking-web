@@ -238,7 +238,7 @@
                   <div class="row no-gutters">
                     <div class="row no-gutters m-0 w-100 position-relative">
                       @if ($post['is_censored'])
-                        <image-mask></image-mask>
+                        <image-mask key="image-mask-{{ $post['serial'] }}"></image-mask>
                       @endif
                       <div class="col-6">
                         <div class="post-element-container">

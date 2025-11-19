@@ -13,6 +13,7 @@ use App\Models\PublicPost;
 
 class PublicPostScheduleExecutor
 {
+    const POST_BATCH_SIZE = 2000;
     public function updatePublicPosts()
     {
         if (CacheService::hasPublicPostFreshCache()) {
@@ -63,7 +64,7 @@ class PublicPostScheduleExecutor
         Post::whereRelation('post_policy','access_policy','=',PostAccessPolicy::PUBLIC)
             ->whereHas('elements', null, '>=', config('setting.post_min_element_count'))
             ->orderBy('id', 'desc')
-            ->limit(1000)
+            ->limit(self::POST_BATCH_SIZE)
             ->get()
             ->each(function ($post) use (&$counter) {
                 $counter++;
@@ -104,7 +105,7 @@ class PublicPostScheduleExecutor
             ->where('time_range', TrendTimeRange::TODAY)
             ->where('start_date', $startDate)
             ->orderBy('position')
-            ->limit(1000)
+            ->limit(self::POST_BATCH_SIZE)
             ->get()
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
@@ -145,7 +146,7 @@ class PublicPostScheduleExecutor
             ->where('time_range', TrendTimeRange::WEEK)
             ->where('start_date', $startDate)
             ->orderBy('position')
-            ->limit(1000)
+            ->limit(self::POST_BATCH_SIZE)
             ->get()
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
@@ -186,7 +187,7 @@ class PublicPostScheduleExecutor
             ->where('time_range', TrendTimeRange::MONTH)
             ->where('start_date', $startDate)
             ->orderBy('position')
-            ->limit(1000)
+            ->limit(self::POST_BATCH_SIZE)
             ->get()
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
@@ -214,7 +215,7 @@ class PublicPostScheduleExecutor
     protected function removeDirtyPublicPosts()
     {
         PublicPost::where('is_dirty', true)
-            ->limit(1000)
+            ->limit(self::POST_BATCH_SIZE)
             ->get()
             ->each(function (PublicPost $publicPost) {
                 if(!$publicPost->post) {
