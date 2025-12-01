@@ -47,13 +47,18 @@ class CreateRankReportHistory implements ShouldQueue, ShouldBeUnique
             $locker = Locker::lockRankJob($this->rankReport->post_id);
             $locker->block(5);
             $count = CacheService::getRankHistoryJobCache($this->rankReport->post_id);
+            $count = is_numeric($count) ? (int) $count : 0;
             // logger('lockRankJob', ['post_id' => $this->rankReport->post_id, 'count' => $count]);
-            $count--;
+            if ($count > 0) {
+                $count--;
+            }
             CacheService::putRankHistoryJobCache($this->rankReport->post_id, $count);
-            $locker->release();
         }catch (\Exception $e){
             logger('lock error', ['post_id' => $this->rankReport->post_id, 'error' => $e->getMessage()]);
-            $locker->release();
+        } finally {
+            if (isset($locker)) {
+                $locker->release();
+            }
         }
 
     }
