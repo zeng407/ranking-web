@@ -283,6 +283,15 @@
                   <input type="file" accept="image/*,video/*,audio/*" class="custom-file-input" id="image-upload" multiple @change="uploadMedias">
                   <label class="custom-file-label" for="image-upload">{{$t('Choose File...')}}</label>
                 </div>
+                <div class="border rounded text-center py-4 px-3 drag-upload"
+                  :class="{ 'drag-upload--active': isDraggingFiles }"
+                  @dragover.prevent="onDragOver"
+                  @dragenter.prevent="onDragOver"
+                  @dragleave.prevent="onDragLeave"
+                  @drop.prevent="onFileDrop">
+                  <i class="fa-solid fa-cloud-arrow-up fa-2x mb-2"></i>
+                  <p class="mb-0">{{ $t('edit_post.drag_hint') || '拖曳檔案到此處以上傳' }}</p>
+                </div>
               </div>
               <div class="col-12">
                 <p class="p-1" v-if="uploadImageProgressText">{{ $t('edit_post.upload_file_count') }}: {{ uploadImageProgressText }}</p>
@@ -896,6 +905,7 @@ export default {
       //onImageError
       errorImages: [],
       uploadImageProgressText: "",
+      isDraggingFiles: false,
     }
   },
   components: {
@@ -1297,10 +1307,15 @@ export default {
     },
 
     /** Image/Video **/
-    uploadMedias: async function (event) {
+    uploadMedias: async function (event, providedFiles = null) {
+      const fileList = providedFiles ? Array.from(providedFiles) : Array.from(event?.target?.files || []);
+      if (!fileList.length) {
+        return;
+      }
+
       let counter = 0;
-      this.uploadImageProgressText = counter + "/" + event.target.files.length;
-      for (const file of Array.from(event.target.files)) {
+      this.uploadImageProgressText = counter + "/" + fileList.length;
+      for (const file of fileList) {
         let form = new FormData();
         form.append('file', file);
         form.append('post_serial', this.post.serial);
@@ -1322,14 +1337,17 @@ export default {
             timer: 3000
           });
           counter++;
-          this.uploadImageProgressText = counter + "/" + event.target.files.length;
+          this.uploadImageProgressText = counter + "/" + fileList.length;
         } catch (err) {
           this.showAlert(err.response.data.message || err.response.statusText, 'danger');
           this.setProgressBarValueFailed(file);
         }
         await new Promise(r => setTimeout(r, 1000));
       }
-      event.target.value = '';
+      if (event && event.target) {
+        event.target.value = '';
+      }
+      this.isDraggingFiles = false;
     },
     cancelUpload: function (file) {
       this.deleteProgressBarValue({ name: file.filename });
@@ -1338,7 +1356,20 @@ export default {
       // change this target text to upload...
       event.target.innerText = this.$t('Upload...');
       this.deleteProgressBarValue({ name: file.filename });
-      this.uploadMedias({ target: { files: [file] } });
+      this.uploadMedias(null, [file]);
+    },
+    onDragOver: function () {
+      this.isDraggingFiles = true;
+    },
+    onDragLeave: function () {
+      this.isDraggingFiles = false;
+    },
+    onFileDrop: function (event) {
+      this.isDraggingFiles = false;
+      const files = event.dataTransfer?.files;
+      if (files && files.length) {
+        this.uploadMedias(null, files);
+      }
     },
     onImageError: function (element, event) {
       if(this.errorImages.includes(element.id)) {

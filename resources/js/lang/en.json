@@ -44,6 +44,7 @@
     "edit_post.info.head": "The Vote Information",
     "edit_post.info.start": "Start",
     "edit_post.info.edit": "Edit",
+    "edit_post.drag_hint": "Drag files here, or click to upload",
     "edit_post.info.delete": "Delete the vote",
     "edit_post.info.save": "Save",
     "edit_post.info.create_time": "Created time",
