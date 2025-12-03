@@ -166,65 +166,80 @@ class RankService
     {
         \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
 
+        DB::transaction(function () use ($post) {
+            $baseRankQuery = Rank::query()
+                ->select(['post_id', 'element_id', 'rank_type', 'win_rate', 'win_count'])
+                ->where('post_id', $post->id)
+                ->where('record_date', today())
+                ->whereHas('element', function ($query) {
+                    $query->whereNull('deleted_at');
+                });
 
-        $rankRawData = Rank::where('post_id', $post->id)
-            ->where('record_date', today())
-            ->whereHas('element', function ($query) {
-                $query->whereNull('deleted_at');
-            })
-            ->get();
+            $rankReports = RankReport::where('post_id', $post->id)
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('element_id');
 
-        $ranks = $rankRawData->where('rank_type', RankType::CHAMPION)
-            ->sortBy([
-                ['win_rate', 'desc'],
-                ['win_count', 'desc'],
-            ]);
-        $counter = 0;
-        foreach ($ranks as $rank) {
-            $counter++;
-            RankReport::updateOrCreate([
-                'post_id' => $rank->post_id,
-                'element_id' => $rank->element_id
-            ], [
-                'final_win_position' => $counter,
-                'final_win_rate' => $rank->win_rate,
-            ]);
-        }
+            $championRanks = (clone $baseRankQuery)
+                ->where('rank_type', RankType::CHAMPION)
+                ->orderByDesc('win_rate')
+                ->orderByDesc('win_count')
+                ->get();
+            $this->applyRankUpdates($championRanks, $rankReports, 'final_win_position', 'final_win_rate');
 
-        $counter = 0;
-        $ranks = $rankRawData->where('rank_type', RankType::PK_KING)
-            ->sortBy([
-                ['win_rate', 'desc'],
-                ['win_count', 'desc'],
-            ]);
-        foreach ($ranks as $rank) {
-            $counter++;
-            RankReport::updateOrCreate([
-                'post_id' => $rank->post_id,
-                'element_id' => $rank->element_id
-            ], [
-                'win_position' => $counter,
-                'win_rate' => $rank->win_rate,
-            ]);
-        }
+            $pkRanks = (clone $baseRankQuery)
+                ->where('rank_type', RankType::PK_KING)
+                ->orderByDesc('win_rate')
+                ->orderByDesc('win_count')
+                ->get();
+            $this->applyRankUpdates($pkRanks, $rankReports, 'win_position', 'win_rate');
 
-        RankReport::where('post_id', $post->id)
-            ->whereHas('element', function ($query) {
-                $query->whereNotNull('deleted_at');
-            })->delete();
-        $counter = 0;
-        RankReport::where('post_id', $post->id)
-            ->orderByDesc('win_rate')
-            ->orderByDesc('final_win_rate')
-            ->setEagerLoads([])
-            ->get()
-            ->each(function (RankReport $rankReport) use (&$counter) {
-                $counter++;
-                $rankReport->update([
-                    'rank' => $counter
-                ]);
-            });
+            RankReport::where('post_id', $post->id)
+                ->whereHas('element', function ($query) {
+                    $query->whereNotNull('deleted_at');
+                })
+                ->delete();
+
+            $orderedIds = RankReport::where('post_id', $post->id)
+                ->orderByDesc('win_rate')
+                ->orderByDesc('final_win_rate')
+                ->pluck('id');
+
+            if ($orderedIds->isNotEmpty()) {
+                $caseSql = 'CASE id';
+                foreach ($orderedIds as $index => $id) {
+                    $rank = $index + 1;
+                    $caseSql .= " WHEN {$id} THEN {$rank}";
+                }
+                $caseSql .= ' END';
+
+                DB::table('rank_reports')
+                    ->whereIn('id', $orderedIds)
+                    ->update(['rank' => DB::raw($caseSql)]);
+            }
+        });
         \Log::info("end update post [{$post->id}] rank report [{$post->title}]");
+    }
+
+    private function applyRankUpdates($ranks, $rankReports, string $positionField, string $rateField): void
+    {
+        $counter = 0;
+        foreach ($ranks as $rank) {
+            $counter++;
+            $report = $rankReports->get($rank->element_id);
+
+            if (!$report) {
+                $report = new RankReport([
+                    'post_id' => $rank->post_id,
+                    'element_id' => $rank->element_id,
+                ]);
+                $rankReports->put($rank->element_id, $report);
+            }
+
+            $report->setAttribute($positionField, $counter);
+            $report->setAttribute($rateField, $rank->win_rate);
+            $report->save();
+        }
     }
 
     public function createRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $refresh = false, $start = null)
