@@ -65,6 +65,7 @@
     "edit_post.at_least_element_number_hint": "ホームページに表示させるには、最低限8つの素材をアップロードする必要があります。",
     "edit_post.upload_image": "画像をアップロード",
     "edit_post.upload_media": "画像＆ビデオをアップロード",
+    "edit_post.drag_hint": "ファイルをここにドラッグするか、クリックしてアップロードしてください",
     "edit_post.upload_video": "ビデオをアップロード",
     "edit_post.upload_batch": "画像＆ビデオをアップロード",
     "edit_post.add_video_button": "追加",
