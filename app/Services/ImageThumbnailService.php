@@ -10,7 +10,7 @@ class ImageThumbnailService
     public function makeThumbnail(Element $element, int $maxWidth, int $maxHeight, string $column, string $pathPrefix): void
     {
         $url = $element->thumb_url;
-        
+
         // Check if the URL returns 0 byte
         try {
             $response = \Illuminate\Support\Facades\Http::timeout(10)->head($url);
@@ -23,7 +23,7 @@ class ImageThumbnailService
                         'column' => $column,
                         'source_url' => $element->source_url
                     ]);
-                    
+
                     // Update the column to source_url
                     if (!empty($element->source_url)) {
                         $element->update([$column => $element->source_url]);
@@ -34,11 +34,16 @@ class ImageThumbnailService
         } catch (\Exception $e) {
             // If HEAD request fails, continue to try Imagick
         }
-        
+
         try{
             $image = new \Imagick($url);
         }catch (\Exception $e){
             \Log::error('Error making thumbnail', ['element_id' => $element->id, 'url' => $url, 'error' => $e->getMessage()]);
+
+            if (!empty($element->source_url) && $element->{$column} !== $element->source_url) {
+                $element->update([$column => $element->source_url]);
+            }
+
             return;
         }
 
