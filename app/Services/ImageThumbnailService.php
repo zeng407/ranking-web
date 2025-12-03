@@ -2,6 +2,7 @@
 
 
 namespace App\Services;
+
 use App\Jobs\ResizeElementImage;
 use App\Models\Element;
 
@@ -50,7 +51,13 @@ class ImageThumbnailService
             file_put_contents($tempFile, $response->body());
             $image = new \Imagick($tempFile);
         } catch (\Exception $e) {
-            \Log::error('Error making thumbnail', ['element_id' => $element->id, 'url' => $url, 'error' => $e->getMessage()]);
+            \Log::error('Error making thumbnail', [
+                'element_id' => $element->id,
+                'url' => $url,
+                'column' => $column,
+                'source_url' => $element->source_url,
+                'error' => $e->getMessage()
+            ]);
 
             if (!empty($element->source_url) && $element->{$column} !== $element->source_url) {
                 $element->update([$column => $element->source_url]);

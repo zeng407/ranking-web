@@ -15,7 +15,7 @@ class ThumbnailExecutor
         // find elements that need to be resized
         $elements = Element::where('type', 'image')
             ->whereNull('lowthumb_url')
-            ->select('id', 'thumb_url')
+            ->select('id', 'thumb_url', 'source_url')
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
@@ -26,7 +26,7 @@ class ThumbnailExecutor
 
         $elements = Element::where('type', 'image')
             ->whereNull('mediumthumb_url')
-            ->select('id', 'thumb_url')
+            ->select('id', 'thumb_url', 'source_url')
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
