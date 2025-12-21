@@ -43,7 +43,7 @@ class GameService
         ]);
     }
 
-    public function createGame(Post $post, int $elementCount, ?int $userId = null, ?string $ip = null, ?string $ipCountry = null): Game
+    public function createGame(Post $post,int $elementCount, ?int $userId = null, ?string $ip = null, ?string $ipCountry = null): Game
     {
         /** @var Game $game */
         $game = $post->games()->create([
@@ -94,7 +94,7 @@ class GameService
             ->first())->winner;
 
         // append data
-        if ($winner) {
+        if($winner){
             $winner->imgur_url = $winner->imgur_image?->link;
         }
 
@@ -158,62 +158,65 @@ class GameService
         ];
         logger('saving game : ' . $game->id, $data);
 
-        $userId = request()->user()?->id;
-
         try {
             $lock = Locker::lockUpdateGameElement($game);
             $lock->block(5);
             $isEndOfRound = $round === $ofRound;
 
-            \DB::transaction(function () use ($game, $winnerId, $loserId, $isEndOfRound, $userId) {
-
-                // update() 會回傳受影響的行數 (int)
-                $winnerUpdated = $game->game_elements()
+            \DB::transaction(function () use ($game, $winnerId, $loserId, $isEndOfRound) {
+                // update winner
+                $gameElement = $game->game_elements()
                     ->where('element_id', $winnerId)
                     ->where('is_eliminated', false)
-                    ->increment('win_count', 1, ['is_ready' => false]);
-
-                if ($winnerUpdated === 0) {
-                    // 如果沒有更新到任何資料，代表找不到該元素
-                    throw new \Exception("Game element (Winner: $winnerId) not found or eliminated.");
+                    ->first();
+                if($gameElement){
+                    $gameElement->update([
+                        'win_count' => $gameElement->win_count + 1,
+                        'is_ready' => false
+                    ]);
+                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $winnerId, 'win_count' => $gameElement->win_count]);
+                }else{
+                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $winnerId]);
+                    throw new \Exception('game element not found');
                 }
 
-                $loserUpdated = $game->game_elements()
+                // update loser
+                $gameElement = $game->game_elements()
                     ->where('element_id', $loserId)
                     ->where('is_eliminated', false)
-                    ->update([
+                    ->first();
+                if($gameElement){
+                    $gameElement->update([
                         'is_eliminated' => true,
                         'is_ready' => false
                     ]);
-
-                if ($loserUpdated === 0) {
-                    throw new \Exception("Game element (Loser: $loserId) not found or eliminated.");
+                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $loserId, 'is_eliminated' => $gameElement->is_eliminated]);
+                }else{
+                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $loserId]);
+                    throw new \Exception('game element not found');
                 }
 
-                if ($isEndOfRound) {
+                if($isEndOfRound){
                     $game->game_elements()
                         ->where('is_eliminated', false)
-                        ->update(['is_ready' => true]);
+                        ->update([
+                            'is_ready' => true
+                        ]);
                 }
-
                 $game->update([
-                    'vote_count' => \DB::raw('vote_count + 1'),
-                    'user_id' => $userId
+                    'vote_count' => $game->vote_count + 1,
+                    'user_id' => request()->user()?->id
                 ]);
-            }); // Transaction Commit 結束
+            });
 
+            logger('lock release', ['game_id' => $game->id]);
             $lock->release();
         } catch (\Exception $e) {
-            // 發生錯誤時釋放鎖
+            \Log::error('game update failed', ['game_id' => $game->id, 'winner_id' => $winnerId, 'loser_id' => $loserId]);
+            report($e);
             $lock->release();
-            \Log::error('Game update failed', [
-                'game_id' => $game->id,
-                'winner_id' => $winnerId,
-                'error' => $e->getMessage()
-            ]);
             throw $e;
         }
-
         return $game->game_1v1_rounds()->create($data);
     }
 
@@ -279,17 +282,17 @@ class GameService
         $user = $request->user();
         $anonymousId = $request->session()->get('anonymous_id', 'unknown');
         $gameRoomUser = $gameRoom->users()
-            ->where(function ($query) use ($user, $anonymousId) {
-                if ($user) {
+            ->where(function($query)use($user, $anonymousId){
+                if($user){
                     $query->where('user_id', $user->id)
                         ->orWhere('anonymous_id', $anonymousId);
-                } else {
+                }else{
                     $query->where('anonymous_id', $anonymousId);
                 }
             })
             ->first();
 
-        if (!$gameRoomUser) {
+        if(!$gameRoomUser){
             $gameRoomUser = $gameRoom->users()->create([
                 'user_id' => $user?->id,
                 'anonymous_id' => $anonymousId,
@@ -300,7 +303,7 @@ class GameService
                 'total_played' => 0,
                 'total_correct' => 0,
             ]);
-        } else {
+        }else{
             $gameRoomUser->update([
                 'user_id' => $user?->id
             ]);
@@ -331,7 +334,7 @@ class GameService
             'current_round' => $data['current_round'],
             'of_round' => $data['of_round'],
             'remain_elements' => $data['remain_elements'],
-        ], [
+        ],[
             'game_room_id' => $gameRoom->id,
             'game_room_user_id' => $gameRoomUser->id,
             'current_round' => $data['current_round'],
@@ -351,9 +354,9 @@ class GameService
 
     public function getCurrentElements(Game $game)
     {
-        if ($game->completed_at) {
+        if($game->completed_at){
             $elements = [];
-        } else {
+        }else{
             $elementsId = explode(',', $game->candidates);
             $unsortElements = $game->elements()
                 ->whereIn('elements.id', $elementsId)
@@ -367,7 +370,7 @@ class GameService
         return $elements;
     }
 
-    public function createGameRoom(Game $game): \App\Models\GameRoom
+    public function createGameRoom(Game $game) : \App\Models\GameRoom
     {
         return $game->game_room()->firstOrCreate([], [
             'serial' => SerialGenerator::genGameRoomSerial()
@@ -417,7 +420,7 @@ class GameService
         $currentPlayed = $gameRoomUser->total_played;
 
         $bets = $gameRoomUser->bets()
-            ->select(['last_combo', 'score', 'won_at'])
+            ->select(['last_combo','score', 'won_at'])
             ->orderBy('id')
             ->limit($currentPlayed + 1)
             ->get();
@@ -425,9 +428,9 @@ class GameService
         $totalPlayed = 0;
         $totalCorrect = 0;
         $score = config('setting.default_bet_score');
-        foreach ($bets as $bet) {
+        foreach ($bets as $bet){
             $totalPlayed++;
-            if ($bet->won_at) {
+            if($bet->won_at){
                 $totalCorrect++;
             }
             $score += $bet->score;
@@ -435,9 +438,9 @@ class GameService
         $accuracy = $totalPlayed > 0 ? $totalCorrect / $totalPlayed * 100 : 0;
 
         $lastBet = $bets->last();
-        if ($lastBet && $lastBet->won_at) {
+        if($lastBet && $lastBet->won_at){
             $combo = $lastBet->last_combo + 1;
-        } else {
+        }else{
             $combo = 0;
         }
 
@@ -452,7 +455,7 @@ class GameService
 
     public function getUserLastGameSerial(Post $post, ?User $user)
     {
-        if (!$user) {
+        if(!$user){
             return null;
         }
 
@@ -462,7 +465,7 @@ class GameService
             ->select(['completed_at', 'serial'])
             ->first();
 
-        if ($gmae && !$gmae->completed_at) {
+        if($gmae && !$gmae->completed_at){
             return $gmae->serial;
         }
 

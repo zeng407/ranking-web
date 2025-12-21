@@ -42,19 +42,23 @@ class AttachGameElements implements ShouldQueue
     public function handle()
     {
         logger('handle AttachGameElements', ['game' => $this->game]);
-        
-        // slice elements to 100 and remains
-        $elements = $this->elements->slice(0, 100);
-        $elements->each(function (Element $element){
-            $this->game->elements()->attach($element, [
-                'is_ready' => true
-            ]);
-        });
 
-        // remaining elements
-        $this->elements = $this->elements->slice(100);
-        $this->elements->chunk(100)->each(function ($chunkedElements){
-            AttachGameElements::dispatch($chunkedElements, $this->game);
-        });
+        $batchElements = $this->elements->slice(0, 100);
+
+        $syncData = $batchElements->mapWithKeys(function ($element) {
+            return [$element->id => ['is_ready' => true]];
+        })->all();
+
+        if (!empty($syncData)) {
+            $this->game->elements()->attach($syncData);
+        }
+
+        $remainingElements = $this->elements->slice(100);
+
+        if ($remainingElements->isNotEmpty()) {
+            $remainingElements->chunk(100)->each(function ($chunkedElements){
+                AttachGameElements::dispatch($chunkedElements, $this->game);
+            });
+        }
     }
 }
