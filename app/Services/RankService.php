@@ -177,6 +177,7 @@ class RankService
 
             $rankReports = RankReport::where('post_id', $post->id)
                 ->whereNull('deleted_at')
+                ->lockForUpdate() // prevent concurrent jobs from touching same rows
                 ->get()
                 ->keyBy('element_id');
 
