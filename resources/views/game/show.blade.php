@@ -67,7 +67,8 @@
         get-room-user-endpoint="{{route('api.game-room.get-user', '_serial')}}"
         update-room-profile-endpoint="{{route('api.game-room.update-profile', '_serial')}}"
         bet-endpoint="{{route('api.game-room.bet', '_serial')}}"
-
+        get-game-elements-endpoint="{{route('api.game.elements', '_serial')}}"
+        batch-vote-endpoint="{{route('api.game.batch-vote', '_serial')}}"
     >
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
@@ -177,14 +178,45 @@
                 </h3>
 
                 <h3 class="text-center align-self-center" style="width: 60%">
-                  <span v-if="currentRemainElement <= 2">@{{ $t('game_round_final') }}</span>
-                  <span v-else-if="currentRemainElement <= 4">@{{ $t('game_round_semifinal') }}</span>
-                  <span v-else-if="currentRemainElement <= 8">@{{ $t('game_round_quarterfinal') }}</span>
-                  <span v-else-if="currentRemainElement <= 1024">@{{ $t('game_round_of', {round:currentRemainElement}) }}</span>
-                  @{{ game.current_round }} / @{{ game.of_round }}
+                  <span v-if="roundTitleCount <= 2">@{{ $t('game_round_final') }}</span>
+                  <span v-else-if="roundTitleCount <= 4">@{{ $t('game_round_semifinal') }}</span>
+                  <span v-else-if="roundTitleCount <= 8">@{{ $t('game_round_quarterfinal') }}</span>
+                  <span v-else-if="roundTitleCount <= 1024">@{{ $t('game_round_of', {round: roundTitleCount}) }}</span>
+
+                    @{{ game.current_round }} / @{{ game.of_round }}
+
                 </h3>
 
-                <h3 class="text-right align-self-center" style="width: 20%">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h3>
+                <h3 class="d-flex justify-content-end text-right align-self-center" style="width: 20%">
+
+                  {{-- <div class="badge badge-pill badge-light px-2 py-1 mb-1 shadow-sm d-flex align-items-center"
+                    style="font-size: 0.85rem; border: 1px solid #dee2e6;"
+                    title="Current Match / Total Matches in Round">
+                    <i class="fas fa-fist-raised text-primary mr-1" style="width: 20px; text-align: center;"></i>
+                    <span class="font-weight-bold text-dark">@{{ game.current_round }}</span>
+                    <span class="mx-1 text-muted small">/</span>
+                    <span class="text-muted small">@{{ game.of_round }}</span>
+                  </div> --}}
+
+                  <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center"
+                    style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
+                    :title="$t('game.remaining.hint', {total: game.total_elements, remaining: game.remain_elements})">
+
+                    <div class="d-flex align-items-center text-secondary mr-1" style="opacity: 0.6;">
+                      <i class="fas fa-chess-pawn mr-1" style="width: 20px; text-align: center;"></i>
+                      <span class="font-weight-bold">@{{ game.total_elements }}</span>
+                    </div>
+
+                    <div class="mx-2 bg-secondary" style="width: 1px; height: 12px; opacity: 0.2;"></div>
+
+                    <div class="d-flex align-items-center">
+                      <span class="text-muted small mr-1 d-none d-sm-inline">@{{ $t('game.remaining') }}</span>
+                      <span class="text-muted small" style="font-size: 0.95rem;">
+                          @{{ game.remain_elements }}
+                      </span>
+                    </div>
+                  </div>
+                </h3>
               </div>
             </div>
 
@@ -298,17 +330,38 @@
                 <div v-if="animationShowRoundSession" id="rounds-session" class="col-12 d-sm-none">
                   <div class="d-flex d-sm-none justify-content-between" style="flex-flow: row wrap">
                     <h5 class="m-0">
-                      <span v-if="currentRemainElement <= 2">@{{ $t('game_round_final') }}</span>
-                      <span v-else-if="currentRemainElement <= 4">@{{ $t('game_round_semifinal') }}</span>
-                      <span v-else-if="currentRemainElement <= 8">@{{ $t('game_round_quarterfinal') }}</span>
-                      <span v-else-if="currentRemainElement <= 1024">@{{ $t('game_round_of', {round:currentRemainElement}) }}</span>
+                      <span v-if="roundTitleCount <= 2">@{{ $t('game_round_final') }}</span>
+                      <span v-else-if="roundTitleCount <= 4">@{{ $t('game_round_semifinal') }}</span>
+                      <span v-else-if="roundTitleCount <= 8">@{{ $t('game_round_quarterfinal') }}</span>
+                      <span v-else-if="roundTitleCount <= 1024">@{{ $t('game_round_of', {round: roundTitleCount}) }}</span>
+
                         @{{ game.current_round }} / @{{ game.of_round }}
                     </h5>
                     <h5 v-if="isBetGameClient">
                       <span v-if="isBetGameClient && !isVoting">@{{$t('game_room.guess_winner')}}</span>
                       <span v-if="isBetGameClient && isVoting">@{{$t('game_room.waiting_result')}}</span>
                     </h5>
-                    <h5 class="">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h5>
+
+                    <h5 class="">
+                      <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center"
+                        style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
+                        :title="$t('game.remaining.hint', {total: game.total_elements, remaining: game.remain_elements})">
+
+                        <div class="d-flex align-items-center text-secondary mr-1" style="opacity: 0.6;">
+                          <i class="fas fa-chess-pawn mr-1" style="width: 20px; text-align: center;"></i>
+                          <span class="font-weight-bold">@{{ game.total_elements }}</span>
+                        </div>
+
+                        <div class="mx-2 bg-secondary" style="width: 1px; height: 12px; opacity: 0.2;"></div>
+
+                        <div class="d-flex align-items-center">
+                          <span class="text-muted small mr-1 d-none d-sm-inline">@{{ $t('game.remaining') }}</span>
+                          <span class="text-muted small" style="font-size: 0.95rem;">
+                              @{{ game.remain_elements }}
+                          </span>
+                        </div>
+                      </div>
+                    </h5>
 
                   </div>
                 </div>
@@ -504,11 +557,11 @@
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
                   </span>
                   <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
-                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.minimize_game')"
+                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
                     id="close-game-room"
                     style="right:0"
                     @click="closeGameRoom">
-                    <i class="fa-solid fa-window-minimize"></i>
+                    <i class="fa-solid fa-xmark"></i>
                   </span>
                 </h3>
                 <h5 class="d-flex justify-content-between bet-rank-broad">
@@ -839,6 +892,19 @@
             </div>
           </div>
         </div>
+
+        <transition name="fade">
+          <div v-if="isCloudSaving"
+              class="d-flex align-items-center bg-white shadow-sm px-3 py-2 rounded-pill"
+              style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; border: 1px solid #e9ecef;">
+
+              <i class="fas fa-cloud-upload-alt text-primary mr-2 fa-fade"></i>
+
+              <span class="text-secondary small font-weight-bold">
+                  @{{ $t('game.saving_progress') }}
+              </span>
+          </div>
+        </transition>
     </div>
   </game>
 

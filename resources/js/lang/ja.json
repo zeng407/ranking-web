@@ -112,6 +112,9 @@
     "game.password": "パスワード",
     "game.invalid_password": "無効なパスワード",
     "game.bet.combo": "連勝",
+    "game.remaining": "残り",
+    "game.remaining.hint": "総参加数: {total}，残り: {remaining}",
+    "game.saving_progress": "投票進行状況を保存中...",
 
     "game_room.invite_friends": "友達を招待",
     "game_room.online_players": "オンラインプレイヤー",
@@ -128,6 +131,7 @@
     "game_room.predict_times": "回数",
     "game_room.vote_ends": "投票終了",
     "game_room.minimize_game": "最小化",
+    "game_room.close_game": "マルチプレイヤーモードを閉じる",
     "game_room.nickname": "ニックネーム",
     "game_room.guess_winner": "勝者を予測する",
     "game_room.waiting_result": "結果待ち...",

@@ -31,8 +31,10 @@ Route::get('post/{post:serial}/access', [GameController::class, 'access'])->name
 Route::get('game/{game:serial}/next-round', [GameController::class, 'nextRound'])->name('api.game.next-round');
 Route::get('game/{game:serial}/room-rank', [GameController::class, 'roomRank'])->name('api.game.room-rank');
 
+Route::get('game/{game:serial}/elements', [GameController::class, 'getGameElements'])->name('api.game.elements');
 Route::post('game', [GameController::class, 'create'])->name('api.game.create');
 Route::post('game/vote', [GameController::class, 'vote'])->name('api.game.vote');
+Route::post('game/batch-vote', [GameController::class, 'batchVote'])->name('api.game.batch-vote');
 
 /** Comment */
 Route::get('post/{post:serial}/comments', [PublicPostController::class, 'getComments'])->name('api.public-post.comment.index');
