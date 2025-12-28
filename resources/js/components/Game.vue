@@ -128,10 +128,10 @@ export default {
       sortByTop: true,
       showCreateRoomButton: false,
 
-      // [New] Client Side Mode Data
       isClientMode: false,
       localElements: [], // 儲存所有參賽者物件 { ...element, local_win_count: 0, local_eliminated: false }
       localVotes: [], // 儲存投票紀錄 [{winner_id, loser_id}, ...]
+      existingElementIds: new Set(), // 已存在的元素 ID 集合 (用來避免重複加入)
       clientState: {
           currentRound: 1,
           matchesPlayedInRound: 0,
@@ -139,33 +139,31 @@ export default {
           roundStartRemain: 0 // 這一輪開始時有多少人
       },
 
-      // [New] Cloud Save 相關變數
+      // Cloud Save 相關變數
       batchVoteInterval: 10, // 每 10 票存一次 (參數可設定)
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
-      existingElementIds: new Set(), // 已存在的元素 ID 集合 (用來避免重複加入)
     };
   },
   computed: {
-    // [Modified] UI 顯示：目前場次 (改讀 game)
+    // UI 顯示：目前場次 (改讀 game)
     displayCurrentRound() {
         return (this.game && this.game.current_round) ? this.game.current_round : 1;
     },
 
-    // [Modified] UI 顯示：本輪總場次 (改讀 game)
+    // UI 顯示：本輪總場次 (改讀 game)
     displayTotalRound() {
         return (this.game && this.game.of_round) ? this.game.of_round : 1;
     },
 
-    // [New] UI 顯示：總參賽人數 (灰階旗標)
+    // UI 顯示：總參賽人數 (灰階旗標)
     displayTotalElements() {
         // 優先使用設定值，若無則回退到 game 物件
         return this.elementsCount || (this.game ? this.game.total_elements : 0);
     },
 
-    // [Modified] UI 顯示：剩餘人數 (改讀 game)
+    // UI 顯示：剩餘人數 (改讀 game)
     displayRemainElements() {
-        // 不再自己算 localElements，直接用 game 裡的 snapshot
         return (this.game && this.game.remain_elements) ? this.game.remain_elements : 0;
     },
 
@@ -644,12 +642,10 @@ export default {
       this.invalidPasswordWhenLoad = false;
     },
 
-    // [Modified] createGame
     createGame() {
-      // [New Logic] 建立新遊戲前/後，直接刪除該主題的舊存檔
+      // 建立新遊戲前/後，直接刪除該主題的舊存檔
       const key = `gamestate_${this.postSerial}`;
       localStorage.removeItem(key);
-      console.log(`Creating new game. Cleared storage for: ${key}`);
 
       const data = {
         post_serial: this.postSerial,
@@ -665,7 +661,6 @@ export default {
           if (this.isHostingGameRank) {
               // --- 多人模式 (Server Mode) ---
               this.isClientMode = false;
-              // 直接向後端請求第一回合資料
               this.nextRound(null);
           } else {
               // --- 單人模式 (Client Mode) ---
@@ -673,7 +668,6 @@ export default {
           }
         })
         .catch((error) => {
-           // ... Error handling ...
            if (error.response && error.response.status === 422) {
               Swal.fire({
                 icon: "error",
@@ -690,12 +684,12 @@ export default {
       $("#gameSettingPanel").modal("hide");
     },
 
-    // [Modified] 初始化前端遊戲
+    // 初始化前端遊戲
     initClientSideGame() {
       this.isClientMode = true;
       this.localVotes = [];
       this.localElements = [];
-      this.existingElementIds.clear(); // 清空 ID 紀錄
+      this.existingElementIds.clear();
 
       const url = this.getGameElementsEndpoint.replace("_serial", this.gameSerial);
       const initialLimit = 32;
@@ -719,10 +713,9 @@ export default {
             this.updateStageConfig();
             this.saveToLocalStorage();
 
-            // 3. 開始遊戲
             this.nextLocalRound();
 
-            // 4. [New] 啟動背景抓取剩餘資料
+            // 啟動背景抓取剩餘資料
               if (this.localElements.length < this.elementsCount) {
                 setTimeout(() => {
                   this.fetchRemainingElements();
@@ -734,15 +727,14 @@ export default {
         });
     },
 
-    // [Modified] 過濾並處理新資料
-    // [Modified] 過濾並處理新資料
+    // 過濾並處理新資料
     processNewElements(newElements) {
         if (!newElements || newElements.length === 0) return 0;
 
         let addedCount = 0;
 
         newElements.forEach(e => {
-            // [Check] 檢查 ID 是否已存在
+            // 檢查 ID 是否已存在
             if (!this.existingElementIds.has(e.id)) {
 
                 // 加入 Set
@@ -761,18 +753,18 @@ export default {
             }
         });
 
-        return addedCount; // 回傳實際加入了幾筆 (用來判斷效率)
+        return addedCount;
     },
 
     fetchRemainingElements(retryCount = 0) {
-      // 1. 檢查目標達成：數量已足夠
+      // 檢查目標達成：數量已足夠
       if (this.localElements.length >= this.elementsCount) {
           console.log("All elements loaded successfully.");
           return;
       }
 
-      // 2. 安全閥
-      if (retryCount > 10) { // 減少重試次數，因為我們現在是大批請求
+      // 安全閥
+      if (retryCount > 10) {
           console.warn("Max retries reached. Stopping background fetch.");
           return;
       }
@@ -795,21 +787,11 @@ export default {
 
                   this.saveToLocalStorage();
 
-                  // 解除 Loading 狀態 (如果剛好卡住)
-                  if (this.waitingForData && this.localElements.length >= 2) {
-                      this.waitingForData = false;
-                      this.nextLocalRound();
-                  }
-
-                  // [Recursive] 檢查是否還沒抓滿
-                  // 雖然我們請求了全部，但如果後端有分頁限制 (例如最多只給 100)，
-                  // 我們可能還需要再抓一次。如果已經滿了，第一行的檢查會擋掉。
                   if (this.localElements.length < this.elementsCount) {
                       setTimeout(() => {
-                          // 如果這次完全沒抓到新資料 (actuallyAdded === 0)，增加 retry
                           const nextRetry = actuallyAdded === 0 ? retryCount + 1 : 0;
                           this.fetchRemainingElements(nextRetry);
-                      }, 30000); // 稍微休息一下再試
+                      }, 30000);
                   }
               } else {
                   console.warn("Backend returned no data.");
@@ -823,7 +805,7 @@ export default {
           });
     },
 
-    // [Modified] 儲存狀態
+    // 儲存狀態
     saveToLocalStorage() {
         if (!this.gameSerial) return;
 
@@ -843,11 +825,10 @@ export default {
         localStorage.setItem(key, JSON.stringify(stateToSave));
     },
 
-    // [Modified] 讀取狀態
+    // 讀取狀態
     loadFromLocalStorage() {
       if (this.isHostingGameRank) return false;
 
-      // [Change] Key 改用 postSerial
       const key = `gamestate_${this.postSerial}`;
       const savedData = localStorage.getItem(key);
 
@@ -899,12 +880,11 @@ export default {
 
     // 清除 LocalStorage
     clearLocalStorage() {
-        // [Change] Key 改用 postSerial
         const key = `gamestate_${this.postSerial}`;
         localStorage.removeItem(key);
     },
 
-    // [New] 移植後端的 NextRound 計算邏輯
+    // 移植後端的 NextRound 計算邏輯
     calculateNextRoundNumber(remain) {
         let powerOf2 = Math.pow(2, Math.floor(Math.log2(remain)));
         if (remain === powerOf2) {
@@ -913,7 +893,7 @@ export default {
         return remain - powerOf2;
     },
 
-    // [Modified] updateStageConfig
+    // 更新階段設定
     updateStageConfig() {
         let baseCount = 0;
 
@@ -928,16 +908,13 @@ export default {
 
         // 2. 計算目標場次 (ofRound)
         if (this.clientState.stage === 1) {
-            // 對應 PHP: if ($lastRound === null) { ... ceil($game->element_count / 2) }
             this.clientState.targetMatches = Math.ceil(baseCount / 2);
         } else {
-            // 對應 PHP: else { calculateNextRoundNumber(...) }
-            // 無論是 Stage 2, 3, 4... 通通套用這個公式
             this.clientState.targetMatches = this.calculateNextRoundNumber(baseCount);
         }
     },
 
-    // [Modified] 繼續遊戲 (增加 LocalStorage 檢查)
+    // 繼續遊戲 (增加 LocalStorage 檢查)
     continueGame() {
 
       let gameSerial = '';
@@ -950,12 +927,10 @@ export default {
       if (gameSerial) {
         this.gameSerial = gameSerial;
 
-        // [New] 優先嘗試從 LocalStorage 讀取進度
+        // 優先嘗試從 LocalStorage 讀取進度
         if (this.loadFromLocalStorage()) {
           if (this.localElements.length < this.elementsCount) {
             console.log(`Continue Game: Elements incomplete (${this.localElements.length}/${this.elementsCount}). Resuming background fetch...`);
-
-            // 呼叫原本寫好的背景抓取邏輯
             this.fetchRemainingElements();
           }
         } else {
@@ -976,9 +951,9 @@ export default {
       }, 3000);
     },
 
-    // [Modified] nextRound 修正 Null Error
+    // nextRound 修正 Null Error
     nextRound(data, reset = true) {
-      // 1. 如果是 Client Mode，且資料不完整 (null 或 data.data 為 null)，直接呼叫本地邏輯
+      // 1. 如果是 Client Mode，直接呼叫本地邏輯
       if (!this.isHostingGameRank && this.isClientMode && (data == null || (data && !data.data))) {
           console.log("Client Mode: Proceeding to next local round.");
           this.nextLocalRound();
@@ -1109,6 +1084,7 @@ export default {
           this.handleNextRoundError(game, error || { response: { status: 500 }});})
         .finally(() => {
           this.isDataLoading = false;
+          console.log("Data loading flag set to false in finally.");
           this.isVoting = false;
           $("#google-ad-container").css("top", "0");
           if (this.isMobileScreen) {
@@ -1121,10 +1097,10 @@ export default {
           this.loadGoogleAds();
         });
     },
-    // [Modified] 更新遊戲數據 (核心同步樞紐)
+    // 更新遊戲數據 (核心同步樞紐)
     updateGame(game) {
-      console.log("isClientMode:", this.isClientMode);
-      console.log("Received game data:", game);
+      // console.log("isClientMode:", this.isClientMode);
+      // console.log("Received game data:", game);
       // Server Mode
       if (!this.isClientMode) {
           const matchIdx = (game.current_round || 1) - 1;
@@ -1143,7 +1119,7 @@ export default {
           this.clientState.matchesInStage = matchIdx;
           this.clientState.targetMatches = game.of_round || 1;
           this.clientState.stageStartCount = game.stage_start_count;
-          console.log("Updated clientState from server:", this.clientState);
+          // console.log("Updated clientState from server:", this.clientState);
           this.saveToLocalStorage();
       }
 
@@ -1161,8 +1137,8 @@ export default {
       }
       this.le = this.game.elements[0];
       this.re = this.game.elements[1];
-      console.log("Left Element:", this.le);
-      console.log("Right Element:", this.re);
+      // console.log("Left Element:", this.le);
+      // console.log("Right Element:", this.re);
     },
     handleNextRoundError(data, error) {
       if (error.response.status === 429) {
@@ -1249,6 +1225,8 @@ export default {
         if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
+
+          // 移除觀眾視角的投票動畫
           // let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
           // $.when(loseAnimate).then(() => {
           //   this.destroyRightPlayer();
@@ -1368,8 +1346,9 @@ export default {
         if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
-          // let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
 
+          // 移除觀眾視角的投票動畫
+          // let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
           // $.when(loseAnimate).then(() => {
           //   this.destroyLeftPlayer();
           //   $('#left-part').css('display', 'none');
@@ -1413,8 +1392,7 @@ export default {
         if (this.isBetGameClient) {
            // bet game send data firstly
           sendWinnerData();
-        }
-        else{
+        } else {
           let winAnimate = $("#right-player")
             .animate({ left: "-50%" }, 500, () => {
               if (this.isBetGameClient) {
@@ -1552,7 +1530,6 @@ export default {
       });
     },
 
-    // 請確保 vote 方法有正確分流：
     vote(winner, loser) {
       if (!this.isClientMode || this.isHostingGameRank) {
         const data = { game_serial: this.gameSerial, winner_id: winner.id, loser_id: loser.id };
@@ -1562,7 +1539,6 @@ export default {
       }
     },
 
-    // [Modified] 處理投票 (加入存檔邏輯)
     handleClientVote(winner, loser) {
       const winnerObj = this.localElements.find(e => e.id === winner.id);
       const loserObj = this.localElements.find(e => e.id === loser.id);
@@ -1579,10 +1555,10 @@ export default {
           this.localVotes.push({ winner_id: winner.id, loser_id: loser.id });
           this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
 
-          // [New] 狀態改變後立即存檔
+          // 狀態改變後立即存檔
           this.saveToLocalStorage();
 
-          // [New] 檢查是否需要觸發雲端備份 (滿 10 票 且 目前沒在存)
+          // 檢查是否需要觸發雲端備份
           if (this.unsentVotes.length >= this.batchVoteInterval && !this.isCloudSaving) {
               this.sendPartialBatchVotes();
           }
@@ -1602,42 +1578,30 @@ export default {
       if (this.unsentVotes.length === 0) return;
 
       this.isCloudSaving = true;
-
-      // 複製一份要傳送的資料，避免在傳送過程中又有新投票進來導致競態條件
       const votesToSend = [...this.unsentVotes];
-
-      // 樂觀更新：先清空陣列，如果失敗再補回去 (或者鎖住，但在遊戲中不建議鎖住 UI)
-      // 這裡採取：傳送當下的 snapshot
 
       const data = {
           game_serial: this.gameSerial,
           votes: votesToSend
       };
 
-      // 使用原本的 batchVoteEndpoint，後端邏輯通用
       axios.post(this.batchVoteEndpoint, data)
-          .then(res => {
-              // 成功：從 unsentVotes 中移除已經發送的那些
-              // 注意：不能直接 this.unsentVotes = []，因為傳送期間使用者可能又投了幾票
-              // 我們只移除 `votesToSend` 裡面的數量
-              this.unsentVotes.splice(0, votesToSend.length);
+        .then(res => {
+            this.unsentVotes.splice(0, votesToSend.length);
+            this.saveToLocalStorage();
 
-              // 更新 LocalStorage (確保 unsentVotes 變空這件事被記住)
-              this.saveToLocalStorage();
-
-              // 為了讓 UI Icon 顯示久一點，延遲關閉 (可選)
-              setTimeout(() => {
-                  this.isCloudSaving = false;
-              }, 1000);
-          })
-          .catch(err => {
-              console.error("Cloud save failed", err);
-              // 失敗：不做任何事，資料保留在 unsentVotes，等待下一次觸發或結束時發送
-              this.isCloudSaving = false;
-          });
+            // 延長動畫時間至 2 秒
+            setTimeout(() => {
+                this.isCloudSaving = false;
+            }, 2000);
+        })
+        .catch(err => {
+            console.error("Cloud save failed", err);
+            this.isCloudSaving = false;
+        });
     },
 
-    // [Modified] Batch send votes (Clear local storage after sync)
+    // Batch send votes (Clear local storage after sync)
     sendBatchVotes() {
       this.isDataLoading = true;
 
@@ -1660,9 +1624,6 @@ export default {
           .catch(err => {
               console.error("Batch vote failed", err);
 
-              // [Important] Do NOT clear storage on failure
-              // Allows the user to retry if the connection failed
-
               this.isDataLoading = false;
 
               Swal.fire({
@@ -1675,7 +1636,7 @@ export default {
 
     sendVote(data) {
 
-      // [New] 1. 在送出前，更新本地 localElements 的狀態
+      // 1. 在送出前，更新本地 localElements 的狀態
       // 這是為了確保本地端的 "淘汰名單" 與 Server 端同步
       const winnerObj = this.localElements.find(e => e.id === data.winner_id);
       const loserObj = this.localElements.find(e => e.id === data.loser_id);
@@ -1686,10 +1647,8 @@ export default {
           winnerObj.local_played++;
           loserObj.local_played++;
 
-          // [Key] ★★★ 將輸家標記為已淘汰 ★★★
           loserObj.local_eliminated = true;
 
-          // (選用) 更新準備狀態，雖然 Server Mode 主要依賴後端分派
           winnerObj.local_is_ready = false;
           loserObj.local_is_ready = false;
       }
@@ -1701,7 +1660,6 @@ export default {
       axios
         .post(this.voteGameEndpoint, data)
         .then((res) => {
-          console.log("Vote response:", res);
           this.handleAnimationAfterVoted(res);
         })
         .catch((error) => {
@@ -1724,7 +1682,7 @@ export default {
             if (this.leftReady && this.rightReady) {
               this.resetPlayerPosition();
               console.log("Vote failed, resetting state.");
-              
+
               this.resetPlayingStatus();
               clearInterval(interval);
               setTimeout(() => {
@@ -1741,7 +1699,7 @@ export default {
       let interval = setInterval(() => {
         // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
         if (this.leftReady && this.rightReady) {
-          // [Modified] 判斷最後一局的邏輯調整
+          // 判斷最後一局的邏輯調整
           let isFinalRound = false;
           if (this.isClientMode) {
               const activeCount = this.localElements.filter(e => !e.local_eliminated).length;
@@ -1774,7 +1732,6 @@ export default {
               this.animationShowRoundSession = false;
               this.isDataLoading = true;
 
-              // [Modified] Client Mode 分流
               if (this.isClientMode && isFinalRound) {
                    this.sendBatchVotes();
               } else {
@@ -1783,7 +1740,6 @@ export default {
             });
           } else {
             this.isDataLoading = true;
-            // [Modified] Client Mode 分流
             if (this.isClientMode && isFinalRound) {
                  this.sendBatchVotes();
             } else {
@@ -1861,7 +1817,7 @@ export default {
       }
 
       if (element.twitchPlayer === undefined) {
-        element.twitchPlayer = new Twitch.Embed("twitch-video-" + element.id, {
+        element.twitchPlayer =  Twitch.Embed("twitch-video-" + element.id, {
           width: "100%",
           height: this.elementHeight,
           video: element.video_id,

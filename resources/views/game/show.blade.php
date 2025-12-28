@@ -140,7 +140,8 @@
           </div>
 
           {{-- elements --}}
-          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient && !runInBackGameRoom, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial || runInBackGameRoom}">
+          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient && !runInBackGameRoom, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial || runInBackGameRoom}"
+            style="min-height: 800px">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -894,7 +895,7 @@
           </div>
         </div>
 
-        <transition name="fade">
+        {{-- <transition name="fade">
           <div v-if="isCloudSaving"
               class="d-flex align-items-center bg-white shadow-sm px-3 py-2 rounded-pill"
               style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; border: 1px solid #e9ecef;">
@@ -905,7 +906,7 @@
                   @{{ $t('game.saving_progress') }}
               </span>
           </div>
-        </transition>
+        </transition> --}}
     </div>
   </game>
 

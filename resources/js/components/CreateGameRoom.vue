@@ -289,7 +289,7 @@ export default {
 </script>
 
 <style scoped>
-/* [New] 綠燈呼吸效果 */
+/* 綠燈呼吸效果 */
 .animate-flicker {
     animation: flicker 1.5s infinite alternate;
 }
