@@ -140,7 +140,7 @@
           </div>
 
           {{-- elements --}}
-          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial}">
+          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient && !runInBackGameRoom, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial || runInBackGameRoom}">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -463,7 +463,7 @@
 
 
           {{-- game room --}}
-          <div v-if="gameRoom" id="game-room"
+          <div v-if="gameRoom && !runInBackGameRoom" id="game-room"
             class="col-12 col-xl-3 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
             <div class="game-room-container">
               {{-- game room --}}
@@ -545,6 +545,13 @@
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
                   </span>
                   <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
+                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.minimize_game')"
+                    id="minimize-game-room"
+                    style="right:20px"
+                    @click="minimizeGameRoom">
+                    <i class="fa-solid fa-minus"></i>
+                  </span>
+                  <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
                     data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
                     id="close-game-room"
                     style="right:0"
@@ -617,9 +624,9 @@
                   </button>
                 </h2>
                 {{-- join game, invitation --}}
-                <h2 class="position-relative">
+                <h3 class="position-relative">
                   @{{$t('game_room.invite_friends')}}
-                </h2>
+                </h3>
                 <div class="row">
                   <div class="col-12">
                     <canvas id="qrcode"></canvas>
@@ -628,9 +635,9 @@
                     </h5>
                     <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
                   </div>
-                  <h3 class="col-12 mt-2">
+                  <h4 class="col-12 mt-2">
                     @{{ $t('game_room.online_players')}}：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
-                  </h3>
+                  </h4>
                 </div>
               </div>
             </div>
@@ -639,24 +646,24 @@
               <div v-show="!showRoomInvitation"
                 class="btn btn-outline-dark"
                 @click="toogleRoomInvitation">
-                <h3 class="text-white align-content-center">
+                <h5 class="text-white align-content-center">
                   <i class="fa-solid fa-users"></i>&nbsp;<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
-                </h3>
+                </h5>
               </div>
               <div>
                 <button v-if="!showGameRoomVotes"
                   style="min-width: 45px"
                   class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
-                  <h3>
+                  <h5>
                     <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
-                  </h3>
+                  </h5>
                 </button>
                 <button v-else
                   style="min-width: 45px"
                   class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
-                  <h3>
+                  <h5>
                     <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
-                  </h3>
+                  </h5>
                 </button>
               </div>
             </div>
@@ -671,6 +678,9 @@
             create-game-room-endpoint="{{route('api.game-room.create')}}"
             :get-game-serial="getGameSerial"
             :handle-created-room="handleCreatedRoom"
+            :get-current-candidates="getCurrentCandidates"
+            :has-active-room="runInBackGameRoom"
+            :online-users="gameOnlineUsers"
           ></create-game-room>
         </div>
 
@@ -698,6 +708,9 @@
               create-game-room-endpoint="{{route('api.game-room.create')}}"
               :get-game-serial="getGameSerial"
               :handle-created-room="handleCreatedRoom"
+              :get-current-candidates="getCurrentCandidates"
+              :has-active-room="runInBackGameRoom"
+              :online-users="gameOnlineUsers"
             ></create-game-room>
           </transition-group>
         </div>

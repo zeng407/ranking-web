@@ -226,9 +226,10 @@ class GameController extends Controller
         $request->validate([
             'game_serial' => 'required',
             // 驗證 votes 是一個陣列，且 key 為回合數 (雖然 Service 會重新計算順序，但驗證結構很重要)
-            'votes' => 'required|array|max:1023',
+            'votes' => 'array|max:1023',
             'votes.*.winner_id' => 'required|integer|different:votes.*.loser_id',
             'votes.*.loser_id' => 'required|integer',
+            'current_candidates' => 'nullable|array|size:2'
         ]);
 
         /** @var Game $game */
@@ -243,17 +244,19 @@ class GameController extends Controller
 
             // [New] 收集所有變動過的 Element IDs
             $votes = $request->input('votes');
-            $elementIds = collect($votes)
-                ->flatMap(function ($vote) {
-                    return [$vote['winner_id'], $vote['loser_id']];
-                })
-                ->unique()
-                ->values()
-                ->toArray();
+            if ($request->has('votes')) {
+                $elementIds = collect($votes)
+                    ->flatMap(function ($vote) {
+                        return [$vote['winner_id'], $vote['loser_id']];
+                    })
+                    ->unique()
+                    ->values()
+                    ->toArray();
 
-            // [New] 發送 Queue Job 進行排名計算
-            if (!empty($elementIds)) {
-                UpdateBatchElementRanks::dispatch($game->post, $elementIds);
+                // [New] 發送 Queue Job 進行排名計算
+                if (!empty($elementIds)) {
+                    UpdateBatchElementRanks::dispatch($game->post, $elementIds);
+                }
             }
 
         } catch (\Exception $e) {
@@ -262,12 +265,12 @@ class GameController extends Controller
         }
 
         // 取得下一組元素 (如果是批次到底，這裡應該會回傳空或最後結果)
-        $elements = $this->getNextElements($game);
+
 
         // 如果有遊戲房間，通知房間更新 (雖然批次通常是單人快速過關，但保留邏輯)
-        // if ($game->game_room) {
-        //     CacheService::putUpdatingGameRoomRank($game->game_room);
-        // }
+        if ($game->game_room) {
+            CacheService::putUpdatingGameRoomRank($game->game_room);
+        }
 
         // 批次處理完畢，觸發一次最後的 Voted 事件 (或者你可以選擇不觸發中間過程)
         // if ($lastGameRound) {
@@ -283,9 +286,10 @@ class GameController extends Controller
             event(new GameComplete($request->user(), $anonymousId, $lastGameRound, $candidates));
         }
 
+        $elements = $this->gameService->getCurrentElements($game);
         return response()->json([
             'status' => $this->getStatus($game),
-            'data' => $elements
+            'data' => GameRoundResource::make($game, $elements)
         ]);
     }
 
@@ -362,9 +366,21 @@ class GameController extends Controller
     {
         $request->validate([
             'game_serial' => 'required',
+            'current_candidates' => 'nullable|array|size:2',
+            'current_candidates.*' => 'integer'
         ]);
         $game = $this->getGame($request->input('game_serial'));
         $room = $this->gameService->createGameRoom($game);
+
+        if ($request->has('current_candidates')
+            && $game->elements()->whereIn('element_id', $request->current_candidates)->count() == 2) {
+            $candidates = $request->current_candidates;
+            $leftId = $candidates[0];
+            $rightId = $candidates[1];
+            logger("set candidates on room creation", ['candidates' => $candidates]);
+            $this->gameService->setCandidates($game, "{$leftId},{$rightId}");
+        }
+
         return HostGameRoomResource::make($room);
     }
 
