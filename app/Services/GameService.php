@@ -689,9 +689,6 @@ class GameService
 
         // remove won_at and lost_at that not match
         GameRoomUserBet::where('game_room_id', $gameRoom->id)
-            ->where('current_round', $conditions['current_round'])
-            ->where('of_round', $conditions['of_round'])
-            ->where('remain_elements', $conditions['remain_elements'] + 1)
             ->where('won_at', null)
             ->where('lost_at', null)
             ->delete();

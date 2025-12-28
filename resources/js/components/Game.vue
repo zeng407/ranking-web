@@ -1723,7 +1723,8 @@ export default {
           let interval = setInterval(() => {
             if (this.leftReady && this.rightReady) {
               this.resetPlayerPosition();
-              // this.scrollToLastPosition();
+              console.log("Vote failed, resetting state.");
+              
               this.resetPlayingStatus();
               clearInterval(interval);
               setTimeout(() => {
