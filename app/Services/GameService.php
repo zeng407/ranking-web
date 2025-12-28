@@ -451,29 +451,13 @@ class GameService
                     // 場次 +1
                     $matchIndex++;
 
-                    // 檢查是否超過本輪總場次 (換輪邏輯)
-                    // 注意：這裡的判斷要在寫入 DB 之前，但因為我們已經先 increment 了 matchIndex，
-                    // 所以如果 matchIndex > matchesInStage，代表這張票屬於「下一輪的第一場」
                     if ($matchIndex > $matchesInStage) {
                         // 進入下一輪
                         $stage++;
                         $matchIndex = 1; // 重置為第 1 場
 
-                        // 重新計算新的一輪需要打幾場
-                        // 注意：這時的 $remain 已經扣掉剛剛那一票的淘汰者了，這是正確的
-                        // 但邏輯上，$remain 在這行之前已經是「上一輪結束後的人數」了 (因為上一輪打完時 remain 就已經扣完了)
-                        // 等等，這裡有一個邊界問題：
-                        // 假設 Stage 1 要打 23 場。
-                        // 當 loop 第 23 次時：matchIndex=23, matchesInStage=23. 不會進 if。寫入 DB (23/23).
-                        // 當 loop 第 24 次時：matchIndex=24. 24 > 23. 進 if。
-                        // 此時 remain 已經是 (45 - 23 - 1) ? 不，是持續遞減的。
-
                         // 重新計算 matchesInStage
                         $matchesInStage = $this->calculateMatchesForStage($stage, $remain + 1);
-                        // 為什麼要 +1？因為 $remain 在上面已經減掉了這場的 loser，
-                        // 但 calculateMatchesForStage 需要的是「這一輪開始前的人數」。
-                        // 而這一輪開始前的人數 = 上一輪結束後的人數。
-                        // 上一輪結束後的人數 = (這場之前的 remain) = $remain + 1。
                     }
 
                     $isEndOfRound = ($matchIndex === $matchesInStage);

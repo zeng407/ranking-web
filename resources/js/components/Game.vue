@@ -146,14 +146,40 @@ export default {
     };
   },
   computed: {
-    roundTitleCount() {
-        // 優先使用 Client Mode 的精準計數 (11)
-        if (this.isClientMode && this.clientState && this.clientState.stageStartCount) {
-            return this.clientState.stageStartCount;
-        }
-        // 後端模式 fallback
-        return this.currentRemainElement;
+    // [Modified] UI 顯示：目前場次 (改讀 game)
+    displayCurrentRound() {
+        return (this.game && this.game.current_round) ? this.game.current_round : 1;
     },
+
+    // [Modified] UI 顯示：本輪總場次 (改讀 game)
+    displayTotalRound() {
+        return (this.game && this.game.of_round) ? this.game.of_round : 1;
+    },
+
+    // [New] UI 顯示：總參賽人數 (灰階旗標)
+    displayTotalElements() {
+        // 優先使用設定值，若無則回退到 game 物件
+        return this.elementsCount || (this.game ? this.game.total_elements : 0);
+    },
+
+    // [Modified] UI 顯示：剩餘人數 (改讀 game)
+    displayRemainElements() {
+        // 不再自己算 localElements，直接用 game 裡的 snapshot
+        return (this.game && this.game.remain_elements) ? this.game.remain_elements : 0;
+    },
+
+    roundTitleCount() {
+        // 優先讀取我們剛剛塞進去的 stage_start_count
+        if (this.game && this.game.stage_start_count) {
+            return this.game.stage_start_count;
+        }
+        // Fallback
+        if (this.clientState && this.clientState.stageStartCount) {
+             return this.clientState.stageStartCount;
+        }
+        return this.displayRemainElements;
+    },
+    
     gameRankUrl: function () {
       return this.getRankRoute.replace("_serial", this.postSerial);
     },
@@ -713,8 +739,6 @@ export default {
         return addedCount; // 回傳實際加入了幾筆 (用來判斷效率)
     },
 
-    // [New] 背景抓取剩餘資料
-    // [Modified] 背景抓取剩餘資料 (一次梭哈版)
     fetchRemainingElements(retryCount = 0) {
       // 1. 檢查目標達成：數量已足夠
       if (this.localElements.length >= this.elementsCount) {
@@ -857,67 +881,37 @@ export default {
         const key = `gamestate_${this.gameSerial}`;
         localStorage.removeItem(key);
     },
+    // [New] 移植後端的 NextRound 計算邏輯
+    calculateNextRoundNumber(remain) {
+        let powerOf2 = Math.pow(2, Math.floor(Math.log2(remain)));
+        if (remain === powerOf2) {
+            powerOf2 = powerOf2 / 2;
+        }
+        return remain - powerOf2;
+    },
 
-    // [Modified] 計算當前 Stage 的目標場次
+    // [Modified] updateStageConfig
     updateStageConfig() {
-        // [Fix] 決定計算基準人數
         let baseCount = 0;
 
+        // 1. 決定基準人數
         if (this.clientState.stage === 1) {
-            // Stage 1 特殊處理：因為使用了延遲載入，localElements 可能還沒抓完
-            // 所以必須強制使用 "設定的總人數" (820) 來計算
+            // Stage 1 使用總設定人數
             baseCount = this.elementsCount;
         } else {
-            // Stage 2 以後：資料肯定抓完了，使用實際存活人數
+            // Stage 2+ 使用存活人數
             baseCount = this.localElements.filter(e => !e.local_eliminated).length;
         }
 
-        // ------------------------------------------------
-        // 以下邏輯將 activeCount 替換為 baseCount
-        // ------------------------------------------------
-
+        // 2. 計算目標場次 (ofRound)
         if (this.clientState.stage === 1) {
-            // Stage 1: 全面對戰 (820人 -> 410場)
+            // 對應 PHP: if ($lastRound === null) { ... ceil($game->element_count / 2) }
             this.clientState.targetMatches = Math.ceil(baseCount / 2);
+        } else {
+            // 對應 PHP: else { calculateNextRoundNumber(...) }
+            // 無論是 Stage 2, 3, 4... 通通套用這個公式
+            this.clientState.targetMatches = this.calculateNextRoundNumber(baseCount);
         }
-        else if (this.clientState.stage === 2) {
-            // Stage 2: 修正至 2^n
-            const target = Math.pow(2, Math.floor(Math.log2(baseCount)));
-            let diff = baseCount - target;
-
-            if (diff === 0) diff = Math.floor(baseCount / 2);
-
-            this.clientState.targetMatches = diff;
-        }
-        else {
-            // Stage 3+: 標準對戰
-            this.clientState.targetMatches = Math.ceil(baseCount / 2);
-        }
-
-        // 注意：這裡不重置 matchIndex，因為可能是在讀取存檔後呼叫
-        // 只有在 nextLocalRound 換輪時才會手動重置 matchIndex
-    },
-
-    // [New] 核心賽制計算：根據輪次與人數，計算該輪需要打幾場
-    calculateMatchesForStage(stage, remainingCount) {
-        // 第一輪：強制淘汰一半 (例如 300 -> 150場)
-        if (stage === 1) {
-            return Math.floor(remainingCount / 2);
-        }
-
-        // 第二輪：修正至 2^n
-        if (stage === 2) {
-            // 找最接近且小於等於 remainingCount 的 2 的次方 (例如 150 -> 128)
-            const powerOf2 = Math.pow(2, Math.floor(Math.log2(remainingCount)));
-            const diff = remainingCount - powerOf2;
-
-            // 如果有零頭 (150-128=22)，這輪只打 22 場
-            // 如果剛好是 128，diff=0，則回歸正常淘汰一半
-            return diff > 0 ? diff : Math.floor(remainingCount / 2);
-        }
-
-        // 第三輪以後：標準單淘汰 (128 -> 64場)
-        return Math.floor(remainingCount / 2);
     },
 
     // [Modified] 繼續遊戲 (增加 LocalStorage 檢查)
@@ -993,7 +987,6 @@ export default {
       this.handleAnimationAfterNextRound(data.data, reset);
     },
 
-    // [Modified] 本地計算下一場對戰 (加入存檔邏輯)
     nextLocalRound() {
         let activeElements = this.localElements.filter(e => !e.local_eliminated);
 
@@ -1003,23 +996,17 @@ export default {
         }
 
         let needTransition = false;
-        // ... (中間的 Stage Transition 邏輯保持不變) ...
-        if (this.clientState.stage === 2) {
-            if (this.clientState.matchIndex >= this.clientState.targetMatches) {
-                needTransition = true;
-            }
-        } else {
-            const readyCount = activeElements.filter(e => e.local_is_ready).length;
-            if (readyCount === 0) {
-                needTransition = true;
-            }
+
+        if (this.clientState.matchesInStage >= this.clientState.targetMatches) {
+            needTransition = true;
         }
 
         if (needTransition) {
             this.clientState.stage++;
 
-            // [New] 進入新的一輪，更新 "本輪起始人數"
+            //進入新的一輪，更新 "本輪起始人數"
             this.clientState.stageStartCount = activeElements.length;
+            this.clientState.matchesInStage = 0;
 
             this.localElements.forEach(e => {
                 if (!e.local_eliminated) {
@@ -1027,10 +1014,7 @@ export default {
                 }
             });
             this.updateStageConfig();
-
-            // [New] Stage 切換後存檔
             this.saveToLocalStorage();
-
             this.nextLocalRound();
             return;
         }
@@ -1070,10 +1054,9 @@ export default {
         const mockGameData = {
             current_round: currentMatchInStage,
             of_round: this.clientState.targetMatches,
-
             remain_elements: realRemainCount,
             total_elements: this.elementsCount,
-
+            stage_start_count: this.clientState.stageStartCount,
             elements: [el1, el2]
         };
 
@@ -1126,8 +1109,19 @@ export default {
           this.loadGoogleAds();
         });
     },
+    // [Modified] 更新遊戲數據 (核心同步樞紐)
     updateGame(game) {
+      // Server Mode
+      if (!this.isClientMode) {
+          // 計算 current_match_index (0-based)
+          const matchIdx = (game.current_round || 1) - 1;
+
+          game.stage_start_count = game.remain_elements + matchIdx;
+      }
+
+      // 更新主要遊戲物件 (這一刻，UI 才會跟著變動)
       this.game = game;
+
       if (this.game.current_round == 1 || this.currentRemainElement == false) {
         this.currentRemainElement = this.game.remain_elements;
       }
@@ -1225,12 +1219,12 @@ export default {
         if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
-          let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
-          $.when(loseAnimate).then(() => {
-            this.destroyRightPlayer();
-            $('#right-part').css('display', 'none');
-            this.leftReady = true;
-          });
+          // let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
+          // $.when(loseAnimate).then(() => {
+          //   this.destroyRightPlayer();
+          //   $('#right-part').css('display', 'none');
+          //   this.leftReady = true;
+          // });
 
         } else {
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
@@ -1265,33 +1259,34 @@ export default {
         if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
-        }
-        let winAnimate = $("#left-player")
-          .animate({ left: "50%" }, 500, () => {
-            if (this.isBetGameClient) {
-              this.leftReady = true;
-            } else {
-              $("#left-player")
-                .delay(500)
-                .animate({ top: "-2000" }, 500, () => {
-                  this.leftReady = true;
-                });
-            }
-          })
-          .promise();
-        let loseAnimate = $("#right-player")
-          .animate({ left: "2000" }, 500, () => {
-            $("#right-player").css("opacity", "0");
-          })
-          .promise();
+        }else{
+          let winAnimate = $("#left-player")
+            .animate({ left: "50%" }, 500, () => {
+              if (this.isBetGameClient) {
+                this.leftReady = true;
+              } else {
+                $("#left-player")
+                  .delay(500)
+                  .animate({ top: "-2000" }, 500, () => {
+                    this.leftReady = true;
+                  });
+              }
+            })
+            .promise();
+          let loseAnimate = $("#right-player")
+            .animate({ left: "2000" }, 500, () => {
+              $("#right-player").css("opacity", "0");
+            })
+            .promise();
 
-        $.when(loseAnimate).then(() => {
-          if (this.isBetGameClient) {
-            this.destroyRightPlayer();
-          } else {
-            sendWinnerData();
-          }
-        });
+          $.when(loseAnimate).then(() => {
+            if (this.isBetGameClient) {
+              this.destroyRightPlayer();
+            } else {
+              sendWinnerData();
+            }
+          });
+        }
       }
     },
     rightPlay() {
@@ -1341,14 +1336,17 @@ export default {
 
       if (this.isMobileScreen) {
         if (this.isBetGameClient) {
-          let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
+          // bet game send data firstly
+          sendWinnerData();
+          // let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
 
-          $.when(loseAnimate).then(() => {
-            this.destroyLeftPlayer();
-            $('#left-part').css('display', 'none');
-            this.rightReady = true;
-            sendWinnerData();
-          });
+          // $.when(loseAnimate).then(() => {
+          //   this.destroyLeftPlayer();
+          //   $('#left-part').css('display', 'none');
+          //   this.rightReady = true;
+          //   sendWinnerData();
+          // });
+
 
         } else {
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
@@ -1382,33 +1380,39 @@ export default {
           });
         }
       } else {
-        let winAnimate = $("#right-player")
-          .animate({ left: "-50%" }, 500, () => {
-            if (this.isBetGameClient) {
-              this.rightReady = true;
-            } else {
-              $("#right-player")
-                .delay(500)
-                .animate({ top: "-2000" }, 500, () => {
-                  $("#right-player").hide();
-                  this.rightReady = true;
-                });
-            }
-          })
-          .promise();
-
-        let loseAnimate = $("#left-player")
-          .animate({ left: "-2000" }, 500, () => {
-            $("#left-player").css("opacity", "0");
-          })
-          .promise();
-
-        $.when(loseAnimate).then(() => {
-          if (this.isBetGameClient) {
-            this.destroyLeftPlayer();
-          }
+        if (this.isBetGameClient) {
+           // bet game send data firstly
           sendWinnerData();
-        });
+        }
+        else{
+          let winAnimate = $("#right-player")
+            .animate({ left: "-50%" }, 500, () => {
+              if (this.isBetGameClient) {
+                this.rightReady = true;
+              } else {
+                $("#right-player")
+                  .delay(500)
+                  .animate({ top: "-2000" }, 500, () => {
+                    $("#right-player").hide();
+                    this.rightReady = true;
+                  });
+              }
+            })
+            .promise();
+
+          let loseAnimate = $("#left-player")
+            .animate({ left: "-2000" }, 500, () => {
+              $("#left-player").css("opacity", "0");
+            })
+            .promise();
+
+          $.when(loseAnimate).then(() => {
+            if (this.isBetGameClient) {
+              this.destroyLeftPlayer();
+            }
+            sendWinnerData();
+          });
+        }
       }
     },
     destroyRightPlayer() {
@@ -1544,10 +1548,6 @@ export default {
 
           this.localVotes.push({ winner_id: winner.id, loser_id: loser.id });
           this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
-
-          if (this.clientState.matchesInStage >= this.clientState.targetMatches) {
-              this.clientState.matchesInStage = 0;
-          }
 
           // [New] 狀態改變後立即存檔
           this.saveToLocalStorage();

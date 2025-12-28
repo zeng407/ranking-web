@@ -182,29 +182,18 @@
                   <span v-else-if="roundTitleCount <= 4">@{{ $t('game_round_semifinal') }}</span>
                   <span v-else-if="roundTitleCount <= 8">@{{ $t('game_round_quarterfinal') }}</span>
                   <span v-else-if="roundTitleCount <= 1024">@{{ $t('game_round_of', {round: roundTitleCount}) }}</span>
-
-                    @{{ game.current_round }} / @{{ game.of_round }}
-
+                  @{{ displayCurrentRound }}&nbsp;/&nbsp;@{{ displayTotalRound }}
                 </h3>
 
                 <h3 class="d-flex justify-content-end text-right align-self-center" style="width: 20%">
 
-                  {{-- <div class="badge badge-pill badge-light px-2 py-1 mb-1 shadow-sm d-flex align-items-center"
-                    style="font-size: 0.85rem; border: 1px solid #dee2e6;"
-                    title="Current Match / Total Matches in Round">
-                    <i class="fas fa-fist-raised text-primary mr-1" style="width: 20px; text-align: center;"></i>
-                    <span class="font-weight-bold text-dark">@{{ game.current_round }}</span>
-                    <span class="mx-1 text-muted small">/</span>
-                    <span class="text-muted small">@{{ game.of_round }}</span>
-                  </div> --}}
-
                   <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center"
                     style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
-                    :title="$t('game.remaining.hint', {total: game.total_elements, remaining: game.remain_elements})">
+                    :title="$t('game.remaining.hint', {total: displayTotalElements, remaining: displayRemainElements})">
 
                     <div class="d-flex align-items-center text-secondary mr-1" style="opacity: 0.6;">
                       <i class="fas fa-chess-pawn mr-1" style="width: 20px; text-align: center;"></i>
-                      <span class="font-weight-bold">@{{ game.total_elements }}</span>
+                      <span class="font-weight-bold">@{{ displayTotalElements }}</span>
                     </div>
 
                     <div class="mx-2 bg-secondary" style="width: 1px; height: 12px; opacity: 0.2;"></div>
@@ -212,7 +201,7 @@
                     <div class="d-flex align-items-center">
                       <span class="text-muted small mr-1 d-none d-sm-inline">@{{ $t('game.remaining') }}</span>
                       <span class="text-muted small" style="font-size: 0.95rem;">
-                          @{{ game.remain_elements }}
+                          @{{ displayRemainElements }}
                       </span>
                     </div>
                   </div>
@@ -334,8 +323,7 @@
                       <span v-else-if="roundTitleCount <= 4">@{{ $t('game_round_semifinal') }}</span>
                       <span v-else-if="roundTitleCount <= 8">@{{ $t('game_round_quarterfinal') }}</span>
                       <span v-else-if="roundTitleCount <= 1024">@{{ $t('game_round_of', {round: roundTitleCount}) }}</span>
-
-                        @{{ game.current_round }} / @{{ game.of_round }}
+                        @{{ displayCurrentRound }}&nbsp;/&nbsp;@{{ displayTotalRound }}
                     </h5>
                     <h5 v-if="isBetGameClient">
                       <span v-if="isBetGameClient && !isVoting">@{{$t('game_room.guess_winner')}}</span>
@@ -345,11 +333,11 @@
                     <h5 class="">
                       <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center"
                         style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
-                        :title="$t('game.remaining.hint', {total: game.total_elements, remaining: game.remain_elements})">
+                        :title="$t('game.remaining.hint', {total: displayTotalElements, remaining: displayRemainElements})">
 
                         <div class="d-flex align-items-center text-secondary mr-1" style="opacity: 0.6;">
                           <i class="fas fa-chess-pawn mr-1" style="width: 20px; text-align: center;"></i>
-                          <span class="font-weight-bold">@{{ game.total_elements }}</span>
+                          <span class="font-weight-bold">@{{ displayTotalElements }}</span>
                         </div>
 
                         <div class="mx-2 bg-secondary" style="width: 1px; height: 12px; opacity: 0.2;"></div>
@@ -357,7 +345,7 @@
                         <div class="d-flex align-items-center">
                           <span class="text-muted small mr-1 d-none d-sm-inline">@{{ $t('game.remaining') }}</span>
                           <span class="text-muted small" style="font-size: 0.95rem;">
-                              @{{ game.remain_elements }}
+                              @{{ displayRemainElements }}
                           </span>
                         </div>
                       </div>
@@ -658,14 +646,14 @@
               <div>
                 <button v-if="!showGameRoomVotes"
                   style="min-width: 45px"
-                  class="btn btn-outline-dark m-1" @click="toggleShowGameRoomVotes">
+                  class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
                   <h3>
                     <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h3>
                 </button>
                 <button v-else
                   style="min-width: 45px"
-                  class="btn btn-outline-dark m-1" @click="toggleShowGameRoomVotes">
+                  class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
                   <h3>
                     <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h3>
