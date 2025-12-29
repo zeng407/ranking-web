@@ -111,8 +111,10 @@
         </div>
 
         {{-- finishing game loading --}}
-        <div v-show="finishingGame && !isBetGameClient">
-          <div class="d-flex justify-content-center align-items-center flex-column" style="height: 100vh">
+        <div v-show="finishingGame && !isBetGameClient"
+             style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: rgba(255, 255, 255, 0.95);">
+
+          <div class="d-flex justify-content-center align-items-center flex-column w-100 h-100">
             <img src="{{ asset('storage/logo.png') }}" class="updown-animation" alt="logo" style="width: 50px; height: 50px;">
             <div v-if="gameResultUrl === ''">
               @{{ $t('game.finishing') }}
