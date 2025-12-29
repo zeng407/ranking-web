@@ -301,7 +301,6 @@ export default {
       this.gameRoom = null;
       this.gameRoomSerial = null;
       this.autoRefreshRoomInterval = null;
-      this.isClientMode = true;
       this.runInBackGameRoom = false;
     },
     changeSortRanks() {
@@ -700,12 +699,10 @@ export default {
         .then(res => {
             this.processNewElements(res.data.data);
 
-            const total = this.elementsCount;
-
             this.clientState = {
                 stage: 1,
                 matchIndex: 0,
-                stageStartCount: total,
+                stageStartCount: this.elementsCount,
                 matchesInStage: 0,
                 targetMatches: 0
             };
@@ -914,9 +911,21 @@ export default {
         }
     },
 
-    // 繼續遊戲 (增加 LocalStorage 檢查)
+    // [Modified] 繼續遊戲
     continueGame() {
+      // 1. 多人模式檢查 (Server Mode)
+      if (this.isHostingGameRank) {
+        if (this.gameSerial) {
+            this.isClientMode = false;
+            this.nextRound(null);
+        } else {
+            console.warn("Room mode: Game serial not found yet.");
+        }
+        $("#gameSettingPanel").modal("hide");
+        return;
+      }
 
+      // 2. 取得 Game Serial
       let gameSerial = '';
       if (this.userLastGameSerial) {
         gameSerial = this.userLastGameSerial;
@@ -927,14 +936,28 @@ export default {
       if (gameSerial) {
         this.gameSerial = gameSerial;
 
-        // 優先嘗試從 LocalStorage 讀取進度
+        // 3. 嘗試讀取本地存檔
         if (this.loadFromLocalStorage()) {
-          if (this.localElements.length < this.elementsCount) {
-            console.log(`Continue Game: Elements incomplete (${this.localElements.length}/${this.elementsCount}). Resuming background fetch...`);
-            this.fetchRemainingElements();
+          // [New Check] ★★★ 舊資料相容檢查 ★★★
+          // 如果讀取成功，但發現 elementsCount 是空的 (代表是舊系統的存檔)
+          if (!this.elementsCount) {
+              console.log("Legacy save detected (missing elementsCount). Switching to Server Mode for migration.");
+
+              // 1. 強制切換為 Server Mode
+              this.isClientMode = false;
+
+              // 2. 向後端請求最新狀態 (後端回傳後，updateGame 會自動補齊 elementsCount)
+              this.nextRound(null);
+
+          }
+          // [Existing Check] 資料完整性檢查
+          // 只有在 elementsCount 存在時才檢查這個
+          else if (this.localElements.length < this.elementsCount) {
+              console.log(`Continue Game: Elements incomplete (${this.localElements.length}/${this.elementsCount}). Resuming background fetch...`);
+              this.fetchRemainingElements();
           }
         } else {
-             // 讀取失敗（可能是 Server Mode 舊資料），走後端流程
+             // 讀取失敗，走後端流程
              this.nextRound(null, false);
         }
       }
@@ -955,7 +978,6 @@ export default {
     nextRound(data, reset = true) {
       // 1. 如果是 Client Mode，直接呼叫本地邏輯
       if (!this.isHostingGameRank && this.isClientMode && (data == null || (data && !data.data))) {
-          console.log("Client Mode: Proceeding to next local round.");
           this.nextLocalRound();
           return;
       }
@@ -1084,7 +1106,6 @@ export default {
           this.handleNextRoundError(game, error || { response: { status: 500 }});})
         .finally(() => {
           this.isDataLoading = false;
-          console.log("Data loading flag set to false in finally.");
           this.isVoting = false;
           $("#google-ad-container").css("top", "0");
           if (this.isMobileScreen) {
@@ -1609,11 +1630,6 @@ export default {
           game_serial: this.gameSerial,
           votes: this.unsentVotes
       };
-
-      if (this.element_count > 0 && this.element_count === this.localElements.length) {
-          this.handleSendVote({ data: { status: 'end_game' } });
-          return;
-      }
 
       axios.post(this.batchVoteEndpoint, data)
           .then(res => {
