@@ -103,6 +103,9 @@
     "game.checkout_result": "Check the result...",
     "game.password": "Password",
     "game.invalid_password": "Invalid password",
+    "game.remaining": "Left",
+    "game.remaining.hint": "Total Candidates: {total}, Remaining: {remaining}",
+    "game.saving_progress": "Saving voting progress...",
 
     "game_room.invite_friends": "Invite friends",
     "game_room.online_players": "Online players",
@@ -119,6 +122,7 @@
     "game_room.predict_times": "Times",
     "game_room.vote_ends": "Voting Ended",
     "game_room.minimize_game": "Minimize",
+    "game_room.close_game": "Close Multiplayer Mode",
     "game_room.nickname": "Nickname",
     "game_room.guess_winner": "Guess who will win?",
     "game_room.waiting_result": "Waiting for result...",

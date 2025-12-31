@@ -117,6 +117,9 @@
     "game.password": "請輸入密碼",
     "game.invalid_password": "密碼錯誤",
     "game.bet.combo": "連勝",
+    "game.remaining": "剩餘",
+    "game.remaining.hint": "總參賽數: {total}，剩餘: {remaining}",
+    "game.saving_progress": "儲存投票進度中...",
 
     "game_room.invite_friends": "邀請朋友加入遊戲",
     "game_room.online_players": "在線人數",
@@ -133,6 +136,7 @@
     "game_room.predict_times": "次數",
     "game_room.vote_ends": "投票已結束",
     "game_room.minimize_game": "縮小",
+    "game_room.close_game": "關閉多人模式",
     "game_room.nickname": "暱稱",
     "game_room.guess_winner": "預測誰會勝出？",
     "game_room.waiting_result": "等待結果中...",

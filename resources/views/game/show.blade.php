@@ -67,7 +67,8 @@
         get-room-user-endpoint="{{route('api.game-room.get-user', '_serial')}}"
         update-room-profile-endpoint="{{route('api.game-room.update-profile', '_serial')}}"
         bet-endpoint="{{route('api.game-room.bet', '_serial')}}"
-
+        get-game-elements-endpoint="{{route('api.game.elements', '_serial')}}"
+        batch-vote-endpoint="{{route('api.game.batch-vote', '_serial')}}"
     >
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
@@ -110,8 +111,10 @@
         </div>
 
         {{-- finishing game loading --}}
-        <div v-show="finishingGame && !isBetGameClient">
-          <div class="d-flex justify-content-center align-items-center flex-column" style="height: 100vh">
+        <div v-show="finishingGame && !isBetGameClient"
+             style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: rgba(255, 255, 255, 0.95);">
+
+          <div class="d-flex justify-content-center align-items-center flex-column w-100 h-100">
             <img src="{{ asset('storage/logo.png') }}" class="updown-animation" alt="logo" style="width: 50px; height: 50px;">
             <div v-if="gameResultUrl === ''">
               @{{ $t('game.finishing') }}
@@ -139,7 +142,8 @@
           </div>
 
           {{-- elements --}}
-          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial}">
+          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient && !runInBackGameRoom, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial || runInBackGameRoom}"
+            style="min-height: 800px">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -177,14 +181,34 @@
                 </h3>
 
                 <h3 class="text-center align-self-center" style="width: 60%">
-                  <span v-if="currentRemainElement <= 2">@{{ $t('game_round_final') }}</span>
-                  <span v-else-if="currentRemainElement <= 4">@{{ $t('game_round_semifinal') }}</span>
-                  <span v-else-if="currentRemainElement <= 8">@{{ $t('game_round_quarterfinal') }}</span>
-                  <span v-else-if="currentRemainElement <= 1024">@{{ $t('game_round_of', {round:currentRemainElement}) }}</span>
-                  @{{ game.current_round }} / @{{ game.of_round }}
+                  <span v-if="roundTitleCount <= 2">@{{ $t('game_round_final') }}</span>
+                  <span v-else-if="roundTitleCount <= 4">@{{ $t('game_round_semifinal') }}</span>
+                  <span v-else-if="roundTitleCount <= 8">@{{ $t('game_round_quarterfinal') }}</span>
+                  <span v-else-if="roundTitleCount <= 1024">@{{ $t('game_round_of', {round: roundTitleCount}) }}</span>
+                  @{{ displayCurrentRound }}&nbsp;/&nbsp;@{{ displayTotalRound }}
                 </h3>
 
-                <h3 class="text-right align-self-center" style="width: 20%">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h3>
+                <h3 class="d-flex justify-content-end text-right align-self-center" style="width: 20%">
+
+                  <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center"
+                    style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
+                    :title="$t('game.remaining.hint', {total: displayTotalElements, remaining: displayRemainElements})">
+
+                    <div class="d-flex align-items-center text-secondary mr-1" style="opacity: 0.6;">
+                      <i class="fas fa-chess-pawn mr-1" style="width: 20px; text-align: center;"></i>
+                      <span class="font-weight-bold">@{{ displayTotalElements }}</span>
+                    </div>
+
+                    <div class="mx-2 bg-secondary" style="width: 1px; height: 12px; opacity: 0.2;"></div>
+
+                    <div class="d-flex align-items-center">
+                      <span class="text-muted small mr-1 d-none d-sm-inline">@{{ $t('game.remaining') }}</span>
+                      <span class="text-muted small" style="font-size: 0.95rem;">
+                          @{{ displayRemainElements }}
+                      </span>
+                    </div>
+                  </div>
+                </h3>
               </div>
             </div>
 
@@ -298,17 +322,37 @@
                 <div v-if="animationShowRoundSession" id="rounds-session" class="col-12 d-sm-none">
                   <div class="d-flex d-sm-none justify-content-between" style="flex-flow: row wrap">
                     <h5 class="m-0">
-                      <span v-if="currentRemainElement <= 2">@{{ $t('game_round_final') }}</span>
-                      <span v-else-if="currentRemainElement <= 4">@{{ $t('game_round_semifinal') }}</span>
-                      <span v-else-if="currentRemainElement <= 8">@{{ $t('game_round_quarterfinal') }}</span>
-                      <span v-else-if="currentRemainElement <= 1024">@{{ $t('game_round_of', {round:currentRemainElement}) }}</span>
-                        @{{ game.current_round }} / @{{ game.of_round }}
+                      <span v-if="roundTitleCount <= 2">@{{ $t('game_round_final') }}</span>
+                      <span v-else-if="roundTitleCount <= 4">@{{ $t('game_round_semifinal') }}</span>
+                      <span v-else-if="roundTitleCount <= 8">@{{ $t('game_round_quarterfinal') }}</span>
+                      <span v-else-if="roundTitleCount <= 1024">@{{ $t('game_round_of', {round: roundTitleCount}) }}</span>
+                        @{{ displayCurrentRound }}&nbsp;/&nbsp;@{{ displayTotalRound }}
                     </h5>
                     <h5 v-if="isBetGameClient">
                       <span v-if="isBetGameClient && !isVoting">@{{$t('game_room.guess_winner')}}</span>
                       <span v-if="isBetGameClient && isVoting">@{{$t('game_room.waiting_result')}}</span>
                     </h5>
-                    <h5 class="">(@{{ game.remain_elements }} /@{{ game.total_elements }})</h5>
+
+                    <h5 class="">
+                      <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center"
+                        style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
+                        :title="$t('game.remaining.hint', {total: displayTotalElements, remaining: displayRemainElements})">
+
+                        <div class="d-flex align-items-center text-secondary mr-1" style="opacity: 0.6;">
+                          <i class="fas fa-chess-pawn mr-1" style="width: 20px; text-align: center;"></i>
+                          <span class="font-weight-bold">@{{ displayTotalElements }}</span>
+                        </div>
+
+                        <div class="mx-2 bg-secondary" style="width: 1px; height: 12px; opacity: 0.2;"></div>
+
+                        <div class="d-flex align-items-center">
+                          <span class="text-muted small mr-1 d-none d-sm-inline">@{{ $t('game.remaining') }}</span>
+                          <span class="text-muted small" style="font-size: 0.95rem;">
+                              @{{ displayRemainElements }}
+                          </span>
+                        </div>
+                      </div>
+                    </h5>
 
                   </div>
                 </div>
@@ -422,7 +466,7 @@
 
 
           {{-- game room --}}
-          <div v-if="gameRoom" id="game-room"
+          <div v-if="gameRoom && !runInBackGameRoom" id="game-room"
             class="col-12 col-xl-3 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
             <div class="game-room-container">
               {{-- game room --}}
@@ -505,10 +549,17 @@
                   </span>
                   <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
                     data-toggle="tooltip" data-placement="left" :title="$t('game_room.minimize_game')"
+                    id="minimize-game-room"
+                    style="right:20px"
+                    @click="minimizeGameRoom">
+                    <i class="fa-solid fa-minus"></i>
+                  </span>
+                  <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
+                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
                     id="close-game-room"
                     style="right:0"
                     @click="closeGameRoom">
-                    <i class="fa-solid fa-window-minimize"></i>
+                    <i class="fa-solid fa-xmark"></i>
                   </span>
                 </h3>
                 <h5 class="d-flex justify-content-between bet-rank-broad">
@@ -576,9 +627,9 @@
                   </button>
                 </h2>
                 {{-- join game, invitation --}}
-                <h2 class="position-relative">
+                <h3 class="position-relative">
                   @{{$t('game_room.invite_friends')}}
-                </h2>
+                </h3>
                 <div class="row">
                   <div class="col-12">
                     <canvas id="qrcode"></canvas>
@@ -587,9 +638,9 @@
                     </h5>
                     <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
                   </div>
-                  <h3 class="col-12 mt-2">
+                  <h4 class="col-12 mt-2">
                     @{{ $t('game_room.online_players')}}：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
-                  </h3>
+                  </h4>
                 </div>
               </div>
             </div>
@@ -598,24 +649,24 @@
               <div v-show="!showRoomInvitation"
                 class="btn btn-outline-dark"
                 @click="toogleRoomInvitation">
-                <h3 class="text-white align-content-center">
+                <h5 class="text-white align-content-center">
                   <i class="fa-solid fa-users"></i>&nbsp;<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
-                </h3>
+                </h5>
               </div>
               <div>
                 <button v-if="!showGameRoomVotes"
                   style="min-width: 45px"
-                  class="btn btn-outline-dark m-1" @click="toggleShowGameRoomVotes">
-                  <h3>
+                  class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
+                  <h5>
                     <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
-                  </h3>
+                  </h5>
                 </button>
                 <button v-else
                   style="min-width: 45px"
-                  class="btn btn-outline-dark m-1" @click="toggleShowGameRoomVotes">
-                  <h3>
+                  class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
+                  <h5>
                     <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
-                  </h3>
+                  </h5>
                 </button>
               </div>
             </div>
@@ -630,6 +681,9 @@
             create-game-room-endpoint="{{route('api.game-room.create')}}"
             :get-game-serial="getGameSerial"
             :handle-created-room="handleCreatedRoom"
+            :get-current-candidates="getCurrentCandidates"
+            :has-active-room="runInBackGameRoom"
+            :online-users="gameOnlineUsers"
           ></create-game-room>
         </div>
 
@@ -657,6 +711,9 @@
               create-game-room-endpoint="{{route('api.game-room.create')}}"
               :get-game-serial="getGameSerial"
               :handle-created-room="handleCreatedRoom"
+              :get-current-candidates="getCurrentCandidates"
+              :has-active-room="runInBackGameRoom"
+              :online-users="gameOnlineUsers"
             ></create-game-room>
           </transition-group>
         </div>
@@ -839,6 +896,19 @@
             </div>
           </div>
         </div>
+
+        {{-- <transition name="fade">
+          <div v-if="isCloudSaving"
+              class="d-flex align-items-center bg-white shadow-sm px-3 py-2 rounded-pill"
+              style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; border: 1px solid #e9ecef;">
+
+              <i class="fas fa-cloud-upload-alt text-primary mr-2 fa-fade"></i>
+
+              <span class="text-secondary small font-weight-bold">
+                  @{{ $t('game.saving_progress') }}
+              </span>
+          </div>
+        </transition> --}}
     </div>
   </game>
 

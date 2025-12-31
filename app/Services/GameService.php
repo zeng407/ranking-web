@@ -19,6 +19,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Ramsey\Uuid\Uuid;
 
 class GameService
@@ -220,6 +221,287 @@ class GameService
         return $game->game_1v1_rounds()->create($data);
     }
 
+    /**
+     * 核心演算法：根據現在是第幾輪，計算這一輪該打幾場 (淘汰幾人)
+     * 規則：
+     * R1: 強制淘汰一半 (68 -> 34)
+     * R2: 修正為 2^n (34 -> 32, 需淘汰 2 人)
+     * R3+: 淘汰一半 (32 -> 16)
+     */
+    private function calculateMatchesForRound(int $round, int $remainElements): int
+    {
+        // 第一輪：永遠淘汰一半
+        if ($round === 1) {
+            return (int) floor($remainElements / 2);
+        }
+
+        // 第二輪：檢查是否為 2^n，如果是多出來的就要淘汰
+        if ($round === 2) {
+            // 找出最接近且小於等於 remain 的 2 的次方數 (例如 34 -> 32)
+            $powerOf2 = 1;
+            while (($powerOf2 * 2) <= $remainElements) {
+                $powerOf2 *= 2;
+            }
+
+            $diff = $remainElements - $powerOf2;
+
+            // 如果有零頭 (例如 34-32=2)，這一輪就只打這幾場修正賽
+            if ($diff > 0) {
+                return $diff;
+            }
+
+            // 如果剛好是 2^n (例如 32)，那就正常淘汰一半
+            return (int) floor($remainElements / 2);
+        }
+
+        // 第三輪以後：都是淘汰一半
+        return (int) floor($remainElements / 2);
+    }
+
+    /**
+     * 獲取遊戲參賽元素清單
+     *
+     * @param Game $game
+     * @param int $limit
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getGameElements(Game $game, int $limit)
+    {
+        return $game->elements()
+            // 預加載圖片關聯，避免 N+1 (參考 getWinner 的用法)
+            ->with('imgur_image')
+            // 撈取 Pivot 表上的遊戲狀態
+            ->withPivot(['win_count', 'is_eliminated', 'is_ready'])
+            // 排序邏輯：未淘汰的優先，然後按勝場數排序 (可依需求調整)
+            ->orderByPivot('is_eliminated', 'asc') // 活著的在前面
+            ->orderByPivot('win_count', 'asc')
+            ->take($limit)
+            ->get();
+    }
+
+    /**
+     * 驗證批次投票 (更新版邏輯)
+     */
+    private function validateBatchVotes(Game $game, array $votes)
+    {
+        // ... (前面的 ID 檢查、重複淘汰檢查 保持不變) ...
+        $winnerIds = collect($votes)->pluck('winner_id');
+        $loserIds = collect($votes)->pluck('loser_id');
+        $allIds = $winnerIds->merge($loserIds)->unique();
+
+        // 1. 基本檢查
+        $count = $game->elements()->whereIn('elements.id', $allIds)->count();
+        if ($count !== $allIds->count()) {
+            throw ValidationException::withMessages(['votes' => 'Invalid elements.']);
+        }
+
+        $alreadyEliminated = $game->elements()
+            ->wherePivot('is_eliminated', true)
+            ->pluck('elements.id')->toArray();
+        $batchEliminated = [];
+
+        // 2. 模擬賽制狀態
+        // 從 DB 取得「目前的狀態」作為起點
+        $lastRound = $game->game_1v1_rounds()->latest('id')->first();
+
+        if ($lastRound) {
+            $simRound = $lastRound->current_round;
+            $simRemain = $lastRound->remain_elements;
+
+            // 這裡很關鍵：要算一下這一輪「已經」打了幾場，加上這次 batch 的第一張票會不會溢出
+            // 取得 DB 中這一輪已經產生的場次數量 (例如 R1 應打 34 場，DB 已有 30 場)
+            $matchesPlayedInCurrentRound = $game->game_1v1_rounds()
+                ->where('current_round', $simRound)
+                ->count();
+
+            // 計算這一輪「總共」該有幾場 (使用新邏輯)
+            $matchesNeededForCurrentRound = $lastRound->of_round;
+        } else {
+            // 遊戲剛開始
+            $simRound = 1;
+            $simRemain = $game->element_count;
+            $matchesPlayedInCurrentRound = 0;
+            // 計算 R1 該打幾場 (68 -> 34)
+            $matchesNeededForCurrentRound = $this->calculateMatchesForRound(1, $simRemain);
+        }
+
+        ksort($votes); // 確保按順序模擬
+
+        foreach ($votes as $index => $vote) {
+            $winnerId = $vote['winner_id'];
+            $loserId = $vote['loser_id'];
+
+            if (in_array($winnerId, $alreadyEliminated) || in_array($winnerId, $batchEliminated)) {
+                throw ValidationException::withMessages(["votes.{$index}" => "Winner {$winnerId} eliminated."]);
+            }
+            if (in_array($loserId, $alreadyEliminated) || in_array($loserId, $batchEliminated)) {
+                throw ValidationException::withMessages(["votes.{$index}" => "Loser {$loserId} eliminated."]);
+            }
+            $batchEliminated[] = $loserId;
+
+            // --- 模擬推進邏輯 ---
+            $matchesPlayedInCurrentRound++;
+
+            // 檢查是否超過當前輪次上限
+            if ($matchesPlayedInCurrentRound > $matchesNeededForCurrentRound) {
+                // 進入下一輪
+                $simRound++;
+
+                // 更新剩餘人數 (上一輪打了 matchesNeeded 場，所以淘汰了這麼多人)
+                // 例如 68人，R1 打了 34 場，剩 34 人
+                // 注意：這裡是用上一輪的「總目標」來扣，而不是用 batch 跑的次數
+                $simRemain = $simRemain - $matchesNeededForCurrentRound;
+
+                // 重置計數器 (這一票是新的一輪的第一場)
+                $matchesPlayedInCurrentRound = 1;
+
+                // 計算新的一輪需要打幾場 (使用新邏輯: 34 -> 2)
+                $matchesNeededForCurrentRound = $this->calculateMatchesForRound($simRound, $simRemain);
+            }
+        }
+    }
+
+    /**
+     * 計算特定階段 (Stage) 應有的總場次 (of_round)
+     * Stage 1: 強制淘汰一半 (ceil)
+     * Stage 2: 修正至 2^n
+     * Stage 3+: 標準淘汰一半 (floor)
+     */
+    private function calculateMatchesForStage(int $stage, int $remainElements): int
+    {
+        // Stage 1: 強制淘汰一半 (例如 45人 -> 23場, 300人 -> 150場)
+        if ($stage === 1) {
+            return (int) ceil($remainElements / 2);
+        }
+
+        // Stage 2: 修正輪 (修正至最接近的 2^n)
+        if ($stage === 2) {
+            // 找出最接近且小於等於 remain 的 2 的次方 (例如 150 -> 128)
+            $powerOf2 = 1;
+            while (($powerOf2 * 2) <= $remainElements) {
+                $powerOf2 *= 2;
+            }
+
+            $diff = $remainElements - $powerOf2;
+
+            // 如果有零頭 (例如 150-128=22)，這一輪就只打 22 場
+            if ($diff > 0) {
+                return $diff;
+            }
+
+            // 如果剛好是 2^n，那就正常淘汰一半
+            return (int) floor($remainElements / 2);
+        }
+
+        // Stage 3+: 標準淘汰 (例如 128 -> 64場)
+        return (int) floor($remainElements / 2);
+    }
+
+    /**
+     * @return Game1V1Round|null
+     */
+    public function batchUpdateGameRounds(Game $game, array $votes)
+    {
+        $this->validateBatchVotes($game, $votes);
+
+        ksort($votes);
+        $lock = Locker::lockUpdateGameElement($game);
+        $lock->block(10);
+
+        try {
+            $lastCreatedRound = null;
+            $lastRound = $game->game_1v1_rounds()->latest('id')->first();
+
+            // 1. 判斷目前的 Stage (第幾輪)
+            // 透過計算資料庫中有多少次 "current_round = 1" 來得知目前是第幾階段
+            $stageCount = $game->game_1v1_rounds()->where('current_round', 1)->count();
+
+            // 2. 初始化狀態變數
+            if ($lastRound === null) {
+                // 遊戲剛開始
+                $stage = 1;
+                $remain = $game->element_count;
+                $matchIndex = 0; // 下一場是 1
+                $matchesInStage = $this->calculateMatchesForStage($stage, $remain);
+            } else {
+                $remain = $lastRound->remain_elements;
+
+                // 判斷上一筆紀錄是否為該輪的最後一場
+                if ($lastRound->current_round >= $lastRound->of_round) {
+                    // 上一輪已結束，準備進入下一輪
+                    $stage = $stageCount + 1;
+                    $matchIndex = 0;
+                    $matchesInStage = $this->calculateMatchesForStage($stage, $remain);
+                } else {
+                    // 還在同一輪
+                    $stage = $stageCount > 0 ? $stageCount : 1; // 防呆
+                    $matchIndex = $lastRound->current_round;
+                    $matchesInStage = $lastRound->of_round;
+                }
+            }
+
+            \DB::transaction(function () use ($game, $votes, &$stage, &$matchIndex, &$matchesInStage, &$remain, &$lastCreatedRound) {
+                foreach ($votes as $vote) {
+                    $winnerId = $vote['winner_id'];
+                    $loserId = $vote['loser_id'];
+
+                    // 每一票代表一人淘汰，剩餘人數 -1
+                    $remain--;
+
+                    // 場次 +1
+                    $matchIndex++;
+
+                    if ($matchIndex > $matchesInStage) {
+                        // 進入下一輪
+                        $stage++;
+                        $matchIndex = 1; // 重置為第 1 場
+
+                        // 重新計算 matchesInStage
+                        $matchesInStage = $this->calculateMatchesForStage($stage, $remain + 1);
+                    }
+
+                    $isEndOfRound = ($matchIndex === $matchesInStage);
+
+                    // --- DB Updates ---
+                    \DB::table('game_elements')
+                        ->where('game_id', $game->id)->where('element_id', $winnerId)
+                        ->update(['win_count' => \DB::raw('win_count + 1'), 'is_ready' => false]);
+
+                    \DB::table('game_elements')
+                        ->where('game_id', $game->id)->where('element_id', $loserId)
+                        ->update(['is_eliminated' => true, 'is_ready' => false]);
+
+                    if ($isEndOfRound) {
+                        \DB::table('game_elements')
+                            ->where('game_id', $game->id)->where('is_eliminated', false)
+                            ->update(['is_ready' => true]);
+                    }
+
+                    // 建立紀錄
+                    // current_round: 目前是第幾場
+                    // of_round: 這一輪總共幾場
+                    $lastCreatedRound = $game->game_1v1_rounds()->create([
+                        'post_id' => $game->post_id,
+                        'current_round' => $matchIndex,
+                        'of_round' => $matchesInStage,
+                        'remain_elements' => $remain,
+                        'winner_id' => $winnerId,
+                        'loser_id' => $loserId
+                    ]);
+
+                    $game->increment('vote_count');
+                }
+            });
+
+            $lock->release();
+            return $lastCreatedRound;
+
+        } catch (\Exception $e) {
+            $lock->release();
+            throw $e;
+        }
+    }
+
     public function calculateNextRoundNumber($remain)
     {
         $ofRound = $remain;
@@ -405,13 +687,10 @@ class GameService
                 'score' => $loseScore
             ]);
 
-        // remove won_at and lost_at are null
+        // remove won_at and lost_at that not match
         GameRoomUserBet::where('game_room_id', $gameRoom->id)
-            ->where('current_round', $conditions['current_round'])
-            ->where('of_round', $conditions['of_round'])
-            ->where('remain_elements', $conditions['remain_elements'] + 1)
-            ->whereNull('won_at')
-            ->whereNull('lost_at')
+            ->where('won_at', null)
+            ->where('lost_at', null)
             ->delete();
     }
 

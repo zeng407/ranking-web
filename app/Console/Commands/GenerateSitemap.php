@@ -32,6 +32,9 @@ class GenerateSitemap extends Command
     public function handle()
     {
         $sitemap = SitemapGenerator::create(config('app.url'))
+            ->configureCrawler(function (Crawler $crawler) {
+                $crawler->setMaximumDepth(0);
+            })
             ->hasCrawled(function (Url $url) {
                 if ($url->path() === '' || $url->path() === '/') {
                     $url->setChangeFrequency(Url::CHANGE_FREQUENCY_HOURLY)
@@ -47,7 +50,7 @@ class GenerateSitemap extends Command
             ->getSitemap();
 
         Post::setEagerLoads([])
-            ->where('created_at', '>=', now()->subMonth())
+            ->where('created_at', '>=', now()->subMonths(3))
             ->eachById(function (Post $post) use ($sitemap) {
                 $sitemap->add(route('game.show', $post))
                     ->add(route('game.rank', $post));

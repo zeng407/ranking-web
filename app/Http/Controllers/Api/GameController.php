@@ -9,6 +9,7 @@ use App\Helper\AccessTokenService;
 use App\Helper\CacheService;
 use App\Helper\ClientRequestResolver;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Game\GameElementResource;
 use App\Http\Resources\Game\GameRoomResource;
 use App\Http\Resources\Game\GameRoomUserResource;
 use App\Http\Resources\Game\GameRoomVoteResource;
@@ -16,6 +17,7 @@ use App\Http\Resources\Game\GameRoundResource;
 use App\Http\Resources\Game\HostGameRoomResource;
 use App\Http\Resources\PostResource;
 use App\Jobs\NotifyGameBet;
+use App\Jobs\UpdateBatchElementRanks;
 use App\Models\Game;
 use App\Models\GameRoom;
 use App\Models\Post;
@@ -62,6 +64,38 @@ class GameController extends Controller
         event(new RefreshGameCandidates($game));
 
         return $data;
+    }
+
+    /**
+     * 取得遊戲的所有參賽元素 (支援指定數量)
+     *
+     * @param Request $request
+     * @param Game $game
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getGameElements(Request $request, Game $game)
+    {
+        $request->validate([
+            // 限制最大只能撈取 1024 筆
+            'limit' => 'nullable|integer|min:1|max:1024'
+        ]);
+
+        // 檢查讀取權限 (參考 getSetting 的邏輯)
+        // 確保如果 Post 是設密碼的，需要驗證 Authorization
+        /** @see \App\Policies\PostPolicy::publicRead() */
+        $this->authorize('public-read', [$game->post, $request->header('Authorization')]);
+
+        // 預設最大 1024，或使用使用者指定的 limit
+        $limit = $request->input('limit', 1024);
+
+        $elements = $this->gameService->getGameElements($game, $limit);
+        $elements = GameElementResource::collection($elements);
+        return response()->json([
+            'game_serial' => $game->serial,
+            'total_count' => $game->element_count, // 回傳該局總人數
+            'listed_count' => $elements->count(),   // 回傳本次列出人數
+            'data' => $elements
+        ]);
     }
 
     public function roomRank(Request $request, Game $game)
@@ -143,6 +177,7 @@ class GameController extends Controller
         ]);
         /** @var Game $game */
         $game = $this->getGame($request->input('game_serial'));
+        logger("game candidate before vote", ['candidates' => $game->candidates]);
         $request->validate([
             'winner_id' => ['required', 'different:loser_id', new GameCandicateRule($game)],
             'loser_id' => ['required', 'different:winner_id', new GameCandicateRule($game)]
@@ -179,6 +214,83 @@ class GameController extends Controller
             'data' => $elements
         ]);
 
+    }
+
+    /**
+     * 處理批次投票
+     * * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function batchVote(Request $request)
+    {
+        $request->validate([
+            'game_serial' => 'required',
+            // 驗證 votes 是一個陣列，且 key 為回合數 (雖然 Service 會重新計算順序，但驗證結構很重要)
+            'votes' => 'array|max:1023',
+            'votes.*.winner_id' => 'required|integer|different:votes.*.loser_id',
+            'votes.*.loser_id' => 'required|integer',
+            'current_candidates' => 'nullable|array|size:2'
+        ]);
+
+        /** @var Game $game */
+        $game = $this->getGame($request->input('game_serial'));
+
+        /** @see \App\Policies\GamePolicy::play() */
+        $this->authorize('play', $game);
+
+        try {
+            // 呼叫 Service 處理批次更新
+            $lastGameRound = $this->gameService->batchUpdateGameRounds($game, $request->input('votes'));
+
+            // [New] 收集所有變動過的 Element IDs
+            $votes = $request->input('votes');
+            if ($request->has('votes')) {
+                $elementIds = collect($votes)
+                    ->flatMap(function ($vote) {
+                        return [$vote['winner_id'], $vote['loser_id']];
+                    })
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                // [New] 發送 Queue Job 進行排名計算
+                if (!empty($elementIds)) {
+                    UpdateBatchElementRanks::dispatch($game->post, $elementIds);
+                }
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Batch vote failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Batch processing failed'], 422);
+        }
+
+        // 取得下一組元素 (如果是批次到底，這裡應該會回傳空或最後結果)
+
+
+        // 如果有遊戲房間，通知房間更新 (雖然批次通常是單人快速過關，但保留邏輯)
+        if ($game->game_room) {
+            CacheService::putUpdatingGameRoomRank($game->game_room);
+        }
+
+        // 批次處理完畢，觸發一次最後的 Voted 事件 (或者你可以選擇不觸發中間過程)
+        // if ($lastGameRound) {
+        //     event(new GameElementVoted($game, $lastGameRound));
+        // }
+
+        // 檢查遊戲是否結束
+        if ($this->gameService->isGameComplete($game)) {
+            $anonymousId = session()->get('anonymous_id', 'unknown');
+            $game->update(['completed_at' => now()]);
+            $candidates = $game->candidates;
+            // 觸發遊戲完成事件
+            event(new GameComplete($request->user(), $anonymousId, $lastGameRound, $candidates));
+        }
+
+        $elements = $this->gameService->getCurrentElements($game);
+        return response()->json([
+            'status' => $this->getStatus($game),
+            'data' => GameRoundResource::make($game, $elements)
+        ]);
     }
 
     public function getRoom(Request $request)
@@ -254,9 +366,21 @@ class GameController extends Controller
     {
         $request->validate([
             'game_serial' => 'required',
+            'current_candidates' => 'nullable|array|size:2',
+            'current_candidates.*' => 'integer'
         ]);
         $game = $this->getGame($request->input('game_serial'));
         $room = $this->gameService->createGameRoom($game);
+
+        if ($request->has('current_candidates')
+            && $game->elements()->whereIn('element_id', $request->current_candidates)->count() == 2) {
+            $candidates = $request->current_candidates;
+            $leftId = $candidates[0];
+            $rightId = $candidates[1];
+            logger("set candidates on room creation", ['candidates' => $candidates]);
+            $this->gameService->setCandidates($game, "{$leftId},{$rightId}");
+        }
+
         return HostGameRoomResource::make($room);
     }
 

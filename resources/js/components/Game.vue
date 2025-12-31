@@ -49,6 +49,8 @@ export default {
     updateRoomProfileEndpoint: String,
     getRoomVotesEndpoint: String,
     getRoomUserEndpoint: String,
+    getGameElementsEndpoint: String,
+    batchVoteEndpoint: String,
   },
   data: function () {
     return {
@@ -111,21 +113,72 @@ export default {
       showFirework: false,
       showBetFailed: false,
       gameBetRanks: [],
+      runInBackGameRoom: false,
       isEditingNickname: false,
       newNickname: "",
       qrUrl: "",
       gameRoomUrl: "",
       isHostingGameRank: false,
       autoRefreshRoomInterval: null,
+      autoRefreshRoomCounter: 0,
       showRoomInvitation: true,
       gameRoomVotes: [],
       isListeningGameBet: false,
       showGameRoomVotes: false,
       sortByTop: true,
       showCreateRoomButton: false,
+
+      isClientMode: false,
+      localElements: [], // 儲存所有參賽者物件 { ...element, local_win_count: 0, local_eliminated: false }
+      localVotes: [], // 儲存投票紀錄 [{winner_id, loser_id}, ...]
+      existingElementIds: new Set(), // 已存在的元素 ID 集合 (用來避免重複加入)
+      clientState: {
+          currentRound: 1,
+          matchesPlayedInRound: 0,
+          ofRound: 0, // 這一輪總共要打幾場
+          roundStartRemain: 0 // 這一輪開始時有多少人
+      },
+
+      // Cloud Save 相關變數
+      batchVoteInterval: 10, // 每 10 票存一次 (參數可設定)
+      unsentVotes: [],       // 尚未同步到雲端的投票
+      isCloudSaving: false,  // 是否正在儲存中
     };
   },
   computed: {
+    // UI 顯示：目前場次 (改讀 game)
+    displayCurrentRound() {
+        return (this.game && this.game.current_round) ? this.game.current_round : 1;
+    },
+
+    // UI 顯示：本輪總場次 (改讀 game)
+    displayTotalRound() {
+        return (this.game && this.game.of_round) ? this.game.of_round : 1;
+    },
+
+    // UI 顯示：總參賽人數 (灰階旗標)
+    displayTotalElements() {
+        // 優先使用設定值，若無則回退到 game 物件
+        return this.elementsCount || (this.game ? this.game.total_elements : 0);
+    },
+
+    // UI 顯示：剩餘人數 (改讀 game)
+    displayRemainElements() {
+        return (this.game && this.game.remain_elements) ? this.game.remain_elements : 0;
+    },
+
+    roundTitleCount() {
+        // 優先讀取我們剛剛塞進去的 stage_start_count
+        if (this.game && this.game.stage_start_count) {
+            return this.game.stage_start_count;
+        }
+        // Fallback
+        if (this.clientState && this.clientState.stageStartCount) {
+             return this.clientState.stageStartCount;
+        }
+        return this.displayRemainElements;
+    },
+
     gameRankUrl: function () {
       return this.getRankRoute.replace("_serial", this.postSerial);
     },
@@ -228,18 +281,27 @@ export default {
       this.listenGameRoomRefresh();
       this.getGameRoom();
     },
-    closeGameRoom() {
-      clearInterval(this.autoRefreshRoomInterval);
+    minimizeGameRoom() {
+
+      clearInterval(this.isListeningGameBet);
       this.leaveGameRoom();
       this.isHostingGameRank = false;
-      this.gameRoomSerial = null;
-      this.gameRoom = null;
+      this.runInBackGameRoom = true;
       this.gameBetRanks = [];
       this.gameRoomVotes = [];
       this.showGameRoomVotes = false;
-      this.autoRefreshRoomInterval = null;
+      this.isListeningGameBet = false;
       $("#close-game-room").tooltip("dispose");
+      $("#minimize-game-room").tooltip("dispose");
       this.$bus.$emit("closeGameRoom");
+    },
+    closeGameRoom() {
+      clearInterval(this.autoRefreshRoomInterval);
+      this.minimizeGameRoom();
+      this.gameRoom = null;
+      this.gameRoomSerial = null;
+      this.autoRefreshRoomInterval = null;
+      this.runInBackGameRoom = false;
     },
     changeSortRanks() {
       this.sortByTop = !this.sortByTop;
@@ -460,13 +522,23 @@ export default {
           }
         });
     },
+
+    getCurrentCandidates() {
+        // 確保 le (左邊) 和 re (右邊) 物件存在
+        if (this.le && this.re) {
+            return [this.le.id, this.re.id];
+        }
+        return null;
+    },
+    // Room server
     handleCreatedRoom(data, roomUrl) {
       this.gameRoomSerial = data.serial
       this.gameRoom = data;
       this.gameBetRanks = this.gameRoom.ranks;
       this.gameRoomUrl = roomUrl;
-
+      this.runInBackGameRoom = false;
       this.enableTooltip();
+      this.isClientMode = false;
       Vue.nextTick(() => {
         QRCode.toCanvas(document.getElementById('qrcode'), roomUrl, {
           width: 200,
@@ -484,7 +556,12 @@ export default {
       }
 
       if (!this.autoRefreshRoomInterval) {
+        this.autoRefreshRoomCounter = 0;
         this.autoRefreshRoomInterval = setInterval(() => {
+          if (this.autoRefreshRoomCounter >= 3) {
+            return ;
+          }
+          this.autoRefreshRoomCounter++;
           const route = this.getRoomEndpoint.replace("_serial", this.gameRoomSerial);
           const params = {
             params: {
@@ -498,6 +575,8 @@ export default {
             });
         }, 5 * 1000);
       }
+
+      this.sendBatchVotes();
     },
     isSameUser(rank) {
       return this.gameRoom && this.gameRoom.user && rank.user_id === this.gameRoom.user.user_id;
@@ -563,6 +642,10 @@ export default {
     },
 
     createGame() {
+      // 建立新遊戲前/後，直接刪除該主題的舊存檔
+      const key = `gamestate_${this.postSerial}`;
+      localStorage.removeItem(key);
+
       const data = {
         post_serial: this.postSerial,
         element_count: this.elementsCount,
@@ -574,48 +657,313 @@ export default {
         .then((res) => {
           this.gameSerial = res.data.game_serial;
           this.keepGameCookie();
-          this.nextRound(res.data, false);
+          if (this.isHostingGameRank) {
+              // --- 多人模式 (Server Mode) ---
+              this.isClientMode = false;
+              this.nextRound(null);
+          } else {
+              // --- 單人模式 (Client Mode) ---
+              this.initClientSideGame();
+          }
         })
         .catch((error) => {
-          if (error.response.status === 403) {
-            this.error403WhenLoad = true;
-          } else if (error.response.status === 422) {
-            Swal.fire({
-              icon: "error",
-              toast: true,
-              text: this.$t("The number of elements must be at least 2."),
-            }).then(() => {
-              location.reload();
-            });
-          } else {
-            Swal.fire({
-              icon: "error",
-              toast: true,
-              text: this.$t("An error occurred. Please try again later."),
-            }).then(() => {
-              location.reload();
-            });
-          }
+           if (error.response && error.response.status === 422) {
+              Swal.fire({
+                icon: "error",
+                toast: true,
+                text: this.$t("The number of elements must be at least 2."),
+              });
+           } else {
+              Swal.fire({ icon: "error", toast: true, text: this.$t("An error occurred.") });
+           }
         })
         .finally(() => {
           this.creatingGame = false;
         });
-
       $("#gameSettingPanel").modal("hide");
     },
+
+    // 初始化前端遊戲
+    initClientSideGame() {
+      this.isClientMode = true;
+      this.localVotes = [];
+      this.localElements = [];
+      this.existingElementIds.clear();
+
+      const url = this.getGameElementsEndpoint.replace("_serial", this.gameSerial);
+      const initialLimit = 32;
+      const params = { params: { limit: initialLimit} };
+      this.isDataLoading = true;
+
+      axios.get(url, params)
+        .then(res => {
+            this.processNewElements(res.data.data);
+
+            this.clientState = {
+                stage: 1,
+                matchIndex: 0,
+                stageStartCount: this.elementsCount,
+                matchesInStage: 0,
+                targetMatches: 0
+            };
+
+            this.updateStageConfig();
+            this.saveToLocalStorage();
+
+            this.nextLocalRound();
+
+            // 啟動背景抓取剩餘資料
+              if (this.localElements.length < this.elementsCount) {
+                setTimeout(() => {
+                  this.fetchRemainingElements();
+                }, 30000); // 30秒後執行
+              }
+        })
+        .catch(err => {
+            console.error("Failed to load elements", err);
+        });
+    },
+
+    // 過濾並處理新資料
+    processNewElements(newElements) {
+        if (!newElements || newElements.length === 0) return 0;
+
+        let addedCount = 0;
+
+        newElements.forEach(e => {
+            // 檢查 ID 是否已存在
+            if (!this.existingElementIds.has(e.id)) {
+
+                // 加入 Set
+                this.existingElementIds.add(e.id);
+
+                // 格式化並加入 localElements
+                this.localElements.push({
+                    ...e,
+                    local_win_count: 0,
+                    local_eliminated: false,
+                    local_played: 0,
+                    local_is_ready: true
+                });
+
+                addedCount++;
+            }
+        });
+
+        return addedCount;
+    },
+
+    fetchRemainingElements(retryCount = 0) {
+      // 檢查目標達成：數量已足夠
+      if (this.localElements.length >= this.elementsCount) {
+          console.log("All elements loaded successfully.");
+          return;
+      }
+
+      // 安全閥
+      if (retryCount > 10) {
+          console.warn("Max retries reached. Stopping background fetch.");
+          return;
+      }
+
+      const url = this.getGameElementsEndpoint.replace("_serial", this.gameSerial);
+
+      const requestLimit = this.elementsCount;
+
+      console.log(`Background fetching: requesting limit ${requestLimit}...`);
+
+      axios.get(url, { params: { limit: requestLimit } })
+          .then(res => {
+              const data = res.data.data;
+
+              if (data && data.length > 0) {
+                  // 過濾並加入 (利用 Set 查重)
+                  const actuallyAdded = this.processNewElements(data);
+
+                  console.log(`Fetched ${data.length} items, actually added unique: ${actuallyAdded}`);
+
+                  this.saveToLocalStorage();
+
+                  if (this.localElements.length < this.elementsCount) {
+                      setTimeout(() => {
+                          const nextRetry = actuallyAdded === 0 ? retryCount + 1 : 0;
+                          this.fetchRemainingElements(nextRetry);
+                      }, 30000);
+                  }
+              } else {
+                  console.warn("Backend returned no data.");
+              }
+          })
+          .catch(err => {
+              console.error("Background fetch failed", err);
+              setTimeout(() => {
+                  this.fetchRemainingElements(retryCount + 1);
+              }, 30000);
+          });
+    },
+
+    // 儲存狀態
+    saveToLocalStorage() {
+        if (!this.gameSerial) return;
+
+        const key = `gamestate_${this.postSerial}`;
+
+        const stateToSave = {
+            gameSerial: this.gameSerial,
+            localElements: this.localElements,
+            localVotes: this.localVotes,
+            unsentVotes: this.unsentVotes,
+            clientState: this.clientState,
+            existingElementIds: Array.from(this.existingElementIds),
+            elementsCount: this.elementsCount,
+            updatedAt: new Date().getTime()
+        };
+
+        localStorage.setItem(key, JSON.stringify(stateToSave));
+    },
+
+    // 讀取狀態
+    loadFromLocalStorage() {
+      if (this.isHostingGameRank) return false;
+
+      const key = `gamestate_${this.postSerial}`;
+      const savedData = localStorage.getItem(key);
+
+      if (savedData) {
+          try {
+              const parsed = JSON.parse(savedData);
+
+              if (parsed.localElements && parsed.clientState) {
+                  this.gameSerial = parsed.gameSerial;
+
+                  this.isClientMode = true;
+                  this.localElements = parsed.localElements;
+                  this.localVotes = parsed.localVotes || [];
+                  this.clientState = parsed.clientState;
+                  this.unsentVotes = parsed.unsentVotes || [];
+
+                  // 還原 Set
+                  if (parsed.existingElementIds) {
+                      this.existingElementIds = new Set(parsed.existingElementIds);
+                  } else {
+                      this.existingElementIds = new Set(this.localElements.map(e => e.id));
+                  }
+
+                  // 還原人數設定
+                  if (parsed.elementsCount) {
+                      this.elementsCount = parsed.elementsCount;
+                  }
+
+                  // 舊存檔相容
+                  if (!this.clientState.stageStartCount) {
+                      if (this.clientState.stage === 1) {
+                          this.clientState.stageStartCount = this.elementsCount || this.localElements.length;
+                      } else {
+                          this.clientState.stageStartCount = this.localElements.filter(e => !e.local_eliminated).length;
+                      }
+                  }
+
+                  console.log("Game restored from localStorage (Post Key)");
+                  this.nextLocalRound();
+                  return true;
+              }
+          } catch (e) {
+              console.error("Failed to parse saved game state", e);
+              return false;
+          }
+      }
+      return false;
+    },
+
+    // 清除 LocalStorage
+    clearLocalStorage() {
+        const key = `gamestate_${this.postSerial}`;
+        localStorage.removeItem(key);
+    },
+
+    // 移植後端的 NextRound 計算邏輯
+    calculateNextRoundNumber(remain) {
+        let powerOf2 = Math.pow(2, Math.floor(Math.log2(remain)));
+        if (remain === powerOf2) {
+            powerOf2 = powerOf2 / 2;
+        }
+        return remain - powerOf2;
+    },
+
+    // 更新階段設定
+    updateStageConfig() {
+        let baseCount = 0;
+
+        // 1. 決定基準人數
+        if (this.clientState.stage === 1) {
+            // Stage 1 使用總設定人數
+            baseCount = this.elementsCount;
+        } else {
+            // Stage 2+ 使用存活人數
+            baseCount = this.localElements.filter(e => !e.local_eliminated).length;
+        }
+
+        // 2. 計算目標場次 (ofRound)
+        if (this.clientState.stage === 1) {
+            this.clientState.targetMatches = Math.ceil(baseCount / 2);
+        } else {
+            this.clientState.targetMatches = this.calculateNextRoundNumber(baseCount);
+        }
+    },
+
+    // [Modified] 繼續遊戲
     continueGame() {
+      // 1. 多人模式檢查 (Server Mode)
+      if (this.isHostingGameRank) {
+        if (this.gameSerial) {
+            this.isClientMode = false;
+            this.nextRound(null);
+        } else {
+            console.warn("Room mode: Game serial not found yet.");
+        }
+        $("#gameSettingPanel").modal("hide");
+        return;
+      }
+
+      // 2. 取得 Game Serial
       let gameSerial = '';
       if (this.userLastGameSerial) {
         gameSerial = this.userLastGameSerial;
       } else {
         gameSerial = this.$cookies.get(this.postSerial)
       }
+
       if (gameSerial) {
         this.gameSerial = gameSerial;
-        this.nextRound(null, false);
+
+        // 3. 嘗試讀取本地存檔
+        if (this.loadFromLocalStorage()) {
+          // [New Check] ★★★ 舊資料相容檢查 ★★★
+          // 如果讀取成功，但發現 elementsCount 是空的 (代表是舊系統的存檔)
+          if (!this.elementsCount) {
+              console.log("Legacy save detected (missing elementsCount). Switching to Server Mode for migration.");
+
+              // 1. 強制切換為 Server Mode
+              this.isClientMode = false;
+
+              // 2. 向後端請求最新狀態 (後端回傳後，updateGame 會自動補齊 elementsCount)
+              this.nextRound(null);
+
+          }
+          // [Existing Check] 資料完整性檢查
+          // 只有在 elementsCount 存在時才檢查這個
+          else if (this.localElements.length < this.elementsCount) {
+              console.log(`Continue Game: Elements incomplete (${this.localElements.length}/${this.elementsCount}). Resuming background fetch...`);
+              this.fetchRemainingElements();
+          }
+        } else {
+             // 讀取失敗，走後端流程
+             this.nextRound(null, false);
+        }
       }
       $("#gameSettingPanel").modal("hide");
     },
+
     hintSelect() {
       this.showPopover = true;
       if (this.timeout) {
@@ -625,21 +973,105 @@ export default {
         this.showPopover = false;
       }, 3000);
     },
+
+    // nextRound 修正 Null Error
     nextRound(data, reset = true) {
+      // 1. 如果是 Client Mode，直接呼叫本地邏輯
+      if (!this.isHostingGameRank && this.isClientMode && (data == null || (data && !data.data))) {
+          this.nextLocalRound();
+          return;
+      }
+
+      // 2. Server Mode 的標準處理
       if (data == null) {
         const url = this.nextRoundEndpoint.replace("_serial", this.gameSerial);
-        axios
-          .get(url)
-          .then((res) => {
-            this.nextRound(res.data);
-          })
+        axios.get(url)
+          .then((res) => { this.nextRound(res.data); })
           .catch((error) => {
             this.handleNextRoundError(data, error);
           });
         return;
       }
+
       this.handleAnimationAfterNextRound(data.data, reset);
     },
+
+    nextLocalRound() {
+        let activeElements = this.localElements.filter(e => !e.local_eliminated);
+
+        if (activeElements.length < 2) {
+             this.sendBatchVotes();
+             return;
+        }
+
+        let needTransition = false;
+
+        if (this.clientState.matchesInStage >= this.clientState.targetMatches) {
+            needTransition = true;
+        }
+
+        if (needTransition) {
+            this.clientState.stage++;
+
+            //進入新的一輪，更新 "本輪起始人數"
+            this.clientState.stageStartCount = activeElements.length;
+            this.clientState.matchesInStage = 0;
+
+            this.localElements.forEach(e => {
+                if (!e.local_eliminated) {
+                    e.local_is_ready = true;
+                }
+            });
+            this.updateStageConfig();
+            this.saveToLocalStorage();
+            this.nextLocalRound();
+            return;
+        }
+
+        let el1, el2;
+        let readyElements = activeElements.filter(e => e.local_is_ready);
+
+        if (this.clientState.stage === 2) {
+            readyElements.sort((a, b) => {
+                if (a.local_played !== b.local_played) return a.local_played - b.local_played;
+                return 0.5 - Math.random();
+            });
+            el1 = readyElements[0];
+            el2 = readyElements[1];
+        } else {
+            readyElements.sort(() => 0.5 - Math.random());
+            if (readyElements.length >= 2) {
+                el1 = readyElements[0];
+                el2 = readyElements[1];
+            } else if (readyElements.length === 1) {
+                el1 = readyElements[0];
+                const notReadyElements = activeElements.filter(e => !e.local_is_ready);
+                if (notReadyElements.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * notReadyElements.length);
+                    el2 = notReadyElements[randomIndex];
+                } else {
+                    this.sendBatchVotes();
+                    return;
+                }
+            }
+        }
+
+        const eliminatedCount = this.localElements.filter(e => e.local_eliminated).length;
+        const realRemainCount = this.elementsCount - eliminatedCount;
+        this.clientState.matchIndex++;
+        const currentMatchInStage = this.clientState.matchesInStage + 1;
+        const mockGameData = {
+            current_round: currentMatchInStage,
+            of_round: this.clientState.targetMatches,
+            remain_elements: realRemainCount,
+            total_elements: this.elementsCount,
+            stage_start_count: this.clientState.stageStartCount,
+            elements: [el1, el2]
+        };
+
+        this.handleAnimationAfterNextRound(mockGameData, true);
+    },
+
     handleAnimationAfterNextRound(game, reset) {
       return new Promise((resolve, reject) => {
         this.updateGame(game);
@@ -670,8 +1102,8 @@ export default {
           }
         })
         .catch((error) => {
-          this.handleNextRoundError(data, error);
-        })
+          console.error("Next round error:", error);
+          this.handleNextRoundError(game, error || { response: { status: 500 }});})
         .finally(() => {
           this.isDataLoading = false;
           this.isVoting = false;
@@ -686,8 +1118,35 @@ export default {
           this.loadGoogleAds();
         });
     },
+    // 更新遊戲數據 (核心同步樞紐)
     updateGame(game) {
+      // console.log("isClientMode:", this.isClientMode);
+      // console.log("Received game data:", game);
+      // Server Mode
+      if (!this.isClientMode) {
+          const matchIdx = (game.current_round || 1) - 1;
+
+          if ((game.current_round || 1) === 1) {
+              this.localElements.forEach(e => {
+                  if (!e.local_eliminated) {
+                      e.local_is_ready = true;
+                  }
+              });
+          }
+
+          game.stage_start_count = game.remain_elements + matchIdx;
+
+          // 同步後端數據到 clientState
+          this.clientState.matchesInStage = matchIdx;
+          this.clientState.targetMatches = game.of_round || 1;
+          this.clientState.stageStartCount = game.stage_start_count;
+          // console.log("Updated clientState from server:", this.clientState);
+          this.saveToLocalStorage();
+      }
+
+      // 更新主要遊戲物件 (這一刻，UI 才會跟著變動)
       this.game = game;
+
       if (this.game.current_round == 1 || this.currentRemainElement == false) {
         this.currentRemainElement = this.game.remain_elements;
       }
@@ -699,6 +1158,8 @@ export default {
       }
       this.le = this.game.elements[0];
       this.re = this.game.elements[1];
+      // console.log("Left Element:", this.le);
+      // console.log("Right Element:", this.re);
     },
     handleNextRoundError(data, error) {
       if (error.response.status === 429) {
@@ -785,12 +1246,14 @@ export default {
         if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
-          let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
-          $.when(loseAnimate).then(() => {
-            this.destroyRightPlayer();
-            $('#right-part').css('display', 'none');
-            this.leftReady = true;
-          });
+
+          // 移除觀眾視角的投票動畫
+          // let loseAnimate = $("#right-player").animate({ opacity: "0" }, 500).promise();
+          // $.when(loseAnimate).then(() => {
+          //   this.destroyRightPlayer();
+          //   $('#right-part').css('display', 'none');
+          //   this.leftReady = true;
+          // });
 
         } else {
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
@@ -825,33 +1288,34 @@ export default {
         if (this.isBetGameClient) {
           // bet game send data firstly
           sendWinnerData();
-        }
-        let winAnimate = $("#left-player")
-          .animate({ left: "50%" }, 500, () => {
-            if (this.isBetGameClient) {
-              this.leftReady = true;
-            } else {
-              $("#left-player")
-                .delay(500)
-                .animate({ top: "-2000" }, 500, () => {
-                  this.leftReady = true;
-                });
-            }
-          })
-          .promise();
-        let loseAnimate = $("#right-player")
-          .animate({ left: "2000" }, 500, () => {
-            $("#right-player").css("opacity", "0");
-          })
-          .promise();
+        }else{
+          let winAnimate = $("#left-player")
+            .animate({ left: "50%" }, 500, () => {
+              if (this.isBetGameClient) {
+                this.leftReady = true;
+              } else {
+                $("#left-player")
+                  .delay(500)
+                  .animate({ top: "-2000" }, 500, () => {
+                    this.leftReady = true;
+                  });
+              }
+            })
+            .promise();
+          let loseAnimate = $("#right-player")
+            .animate({ left: "2000" }, 500, () => {
+              $("#right-player").css("opacity", "0");
+            })
+            .promise();
 
-        $.when(loseAnimate).then(() => {
-          if (this.isBetGameClient) {
-            this.destroyRightPlayer();
-          } else {
-            sendWinnerData();
-          }
-        });
+          $.when(loseAnimate).then(() => {
+            if (this.isBetGameClient) {
+              this.destroyRightPlayer();
+            } else {
+              sendWinnerData();
+            }
+          });
+        }
       }
     },
     rightPlay() {
@@ -901,14 +1365,18 @@ export default {
 
       if (this.isMobileScreen) {
         if (this.isBetGameClient) {
-          let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
+          // bet game send data firstly
+          sendWinnerData();
 
-          $.when(loseAnimate).then(() => {
-            this.destroyLeftPlayer();
-            $('#left-part').css('display', 'none');
-            this.rightReady = true;
-            sendWinnerData();
-          });
+          // 移除觀眾視角的投票動畫
+          // let loseAnimate = $("#left-player").animate({ opacity: "0" }, 500).promise();
+          // $.when(loseAnimate).then(() => {
+          //   this.destroyLeftPlayer();
+          //   $('#left-part').css('display', 'none');
+          //   this.rightReady = true;
+          //   sendWinnerData();
+          // });
+
 
         } else {
           $("#rounds-session").animate({ opacity: 0 }, 100, "linear");
@@ -942,33 +1410,38 @@ export default {
           });
         }
       } else {
-        let winAnimate = $("#right-player")
-          .animate({ left: "-50%" }, 500, () => {
-            if (this.isBetGameClient) {
-              this.rightReady = true;
-            } else {
-              $("#right-player")
-                .delay(500)
-                .animate({ top: "-2000" }, 500, () => {
-                  $("#right-player").hide();
-                  this.rightReady = true;
-                });
-            }
-          })
-          .promise();
-
-        let loseAnimate = $("#left-player")
-          .animate({ left: "-2000" }, 500, () => {
-            $("#left-player").css("opacity", "0");
-          })
-          .promise();
-
-        $.when(loseAnimate).then(() => {
-          if (this.isBetGameClient) {
-            this.destroyLeftPlayer();
-          }
+        if (this.isBetGameClient) {
+           // bet game send data firstly
           sendWinnerData();
-        });
+        } else {
+          let winAnimate = $("#right-player")
+            .animate({ left: "-50%" }, 500, () => {
+              if (this.isBetGameClient) {
+                this.rightReady = true;
+              } else {
+                $("#right-player")
+                  .delay(500)
+                  .animate({ top: "-2000" }, 500, () => {
+                    $("#right-player").hide();
+                    this.rightReady = true;
+                  });
+              }
+            })
+            .promise();
+
+          let loseAnimate = $("#left-player")
+            .animate({ left: "-2000" }, 500, () => {
+              $("#left-player").css("opacity", "0");
+            })
+            .promise();
+
+          $.when(loseAnimate).then(() => {
+            if (this.isBetGameClient) {
+              this.destroyLeftPlayer();
+            }
+            sendWinnerData();
+          });
+        }
       }
     },
     destroyRightPlayer() {
@@ -1077,16 +1550,129 @@ export default {
         this.loadGoogleAds();
       });
     },
+
     vote(winner, loser) {
+      if (!this.isClientMode || this.isHostingGameRank) {
+        const data = { game_serial: this.gameSerial, winner_id: winner.id, loser_id: loser.id };
+        this.sendVote(data);
+      } else {
+        this.handleClientVote(winner, loser);
+      }
+    },
+
+    handleClientVote(winner, loser) {
+      const winnerObj = this.localElements.find(e => e.id === winner.id);
+      const loserObj = this.localElements.find(e => e.id === loser.id);
+
+      if (winnerObj && loserObj) {
+          winnerObj.local_win_count++;
+          winnerObj.local_played++;
+          loserObj.local_played++;
+          loserObj.local_eliminated = true;
+          winnerObj.local_is_ready = false;
+          loserObj.local_is_ready = false;
+          this.clientState.matchesInStage++;
+
+          this.localVotes.push({ winner_id: winner.id, loser_id: loser.id });
+          this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
+
+          // 狀態改變後立即存檔
+          this.saveToLocalStorage();
+
+          // 檢查是否需要觸發雲端備份
+          if (this.unsentVotes.length >= this.batchVoteInterval && !this.isCloudSaving) {
+              this.sendPartialBatchVotes();
+          }
+      }
+
+      const activeCount = this.localElements.filter(e => !e.local_eliminated).length;
+      const mockRes = {
+          data: {
+              status: activeCount < 2 ? 'end_game' : 'processing',
+              data: null
+          }
+      };
+      this.handleAnimationAfterVoted(mockRes);
+    },
+
+    sendPartialBatchVotes() {
+      if (this.unsentVotes.length === 0) return;
+
+      this.isCloudSaving = true;
+      const votesToSend = [...this.unsentVotes];
+
       const data = {
-        game_serial: this.gameSerial,
-        winner_id: winner.id,
-        loser_id: loser.id,
+          game_serial: this.gameSerial,
+          votes: votesToSend
       };
 
-      this.sendVote(data);
+      axios.post(this.batchVoteEndpoint, data)
+        .then(res => {
+            this.unsentVotes.splice(0, votesToSend.length);
+            this.saveToLocalStorage();
+
+            // 延長動畫時間至 2 秒
+            setTimeout(() => {
+                this.isCloudSaving = false;
+            }, 2000);
+        })
+        .catch(err => {
+            console.error("Cloud save failed", err);
+            this.isCloudSaving = false;
+        });
     },
+
+    // Batch send votes (Clear local storage after sync)
+    sendBatchVotes() {
+      this.isDataLoading = true;
+
+      const data = {
+          game_serial: this.gameSerial,
+          votes: this.unsentVotes
+      };
+
+      axios.post(this.batchVoteEndpoint, data)
+          .then(res => {
+              this.unsentVotes = [];
+              this.saveToLocalStorage();
+              this.handleSendVote(res);
+          })
+          .catch(err => {
+              console.error("Batch vote failed", err);
+
+              this.isDataLoading = false;
+
+              Swal.fire({
+                  icon: 'error',
+                  toast: true,
+                  text: 'Failed to sync with server. Please try again.'
+              });
+          });
+    },
+
     sendVote(data) {
+
+      // 1. 在送出前，更新本地 localElements 的狀態
+      // 這是為了確保本地端的 "淘汰名單" 與 Server 端同步
+      const winnerObj = this.localElements.find(e => e.id === data.winner_id);
+      const loserObj = this.localElements.find(e => e.id === data.loser_id);
+
+      if (winnerObj && loserObj) {
+          // 更新勝場與場次
+          winnerObj.local_win_count++;
+          winnerObj.local_played++;
+          loserObj.local_played++;
+
+          loserObj.local_eliminated = true;
+
+          winnerObj.local_is_ready = false;
+          loserObj.local_is_ready = false;
+      }
+
+      this.localVotes.push({
+          winner_id: data.winner_id,
+          loser_id: data.loser_id
+      });
       axios
         .post(this.voteGameEndpoint, data)
         .then((res) => {
@@ -1111,7 +1697,8 @@ export default {
           let interval = setInterval(() => {
             if (this.leftReady && this.rightReady) {
               this.resetPlayerPosition();
-              // this.scrollToLastPosition();
+              console.log("Vote failed, resetting state.");
+
               this.resetPlayingStatus();
               clearInterval(interval);
               setTimeout(() => {
@@ -1128,7 +1715,16 @@ export default {
       let interval = setInterval(() => {
         // console.log('leftReady: '+this.leftReady+' | rightReady: '+this.rightReady);
         if (this.leftReady && this.rightReady) {
-          if (this.game.current_round == 1 && this.currentRemainElement == 2) {
+          // 判斷最後一局的邏輯調整
+          let isFinalRound = false;
+          if (this.isClientMode) {
+              const activeCount = this.localElements.filter(e => !e.local_eliminated).length;
+              isFinalRound = activeCount < 2;
+          } else {
+              isFinalRound = (this.game.current_round == 1 && this.currentRemainElement == 2);
+          }
+
+          if (isFinalRound) {
             // final round
             this.isDataLoading = true;
             this.finishingGame = true;
@@ -1151,11 +1747,20 @@ export default {
               this.animationShowRightPlayer = false;
               this.animationShowRoundSession = false;
               this.isDataLoading = true;
-              this.handleSendVote(res);
+
+              if (this.isClientMode && isFinalRound) {
+                   this.sendBatchVotes();
+              } else {
+                   this.handleSendVote(res);
+              }
             });
           } else {
             this.isDataLoading = true;
-            this.handleSendVote(res);
+            if (this.isClientMode && isFinalRound) {
+                 this.sendBatchVotes();
+            } else {
+                 this.handleSendVote(res);
+            }
           }
         }
       }, 10);
@@ -1176,9 +1781,13 @@ export default {
       }
     },
     handleSendVote(res) {
+      if(this.autoRefreshRoomInterval){
+        this.autoRefreshRoomCounter = 0;
+      }
       this.status = res.data.status;
       if (this.status === "end_game") {
         this.$cookies.remove(this.postSerial);
+        this.clearLocalStorage();
         this.showGameResult();
       } else {
         this.keepGameCookie();
@@ -1224,7 +1833,7 @@ export default {
       }
 
       if (element.twitchPlayer === undefined) {
-        element.twitchPlayer = new Twitch.Embed("twitch-video-" + element.id, {
+        element.twitchPlayer =  Twitch.Embed("twitch-video-" + element.id, {
           width: "100%",
           height: this.elementHeight,
           video: element.video_id,

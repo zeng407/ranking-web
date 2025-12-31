@@ -1,8 +1,12 @@
 <template>
   <div>
     <button class="btn btn-secondary create-game-button" data-toggle="modal" @click.prevent="showModal">
-      <h5 class="m-0">
+      <h5 class="m-0 d-flex align-items-center justify-content-center">
         <i class="fa-solid fa-gamepad">&nbsp;{{$t('game_room.multiplayer_mode')}}</i>
+        <span v-if="hasActiveRoom" class="ml-2 d-flex align-items-center">
+             <i class="fa-solid fa-circle text-success animate-flicker" style="font-size: 0.6em;"></i>
+            <span class="ml-1" style="font-size: 0.9em;">{{ onlineUsers }}</span>
+        </span>
       </h5>
     </button>
 
@@ -154,6 +158,18 @@ export default {
     handleCreatedRoom: {
       type: Function,
     },
+    getCurrentCandidates: {
+      type: Function,
+      default: () => null,
+    },
+    hasActiveRoom: {
+        type: Boolean,
+        default: false
+    },
+    onlineUsers: {
+        type: Number,
+        default: 0
+    }
 
   },
   data() {
@@ -170,7 +186,11 @@ export default {
   },
   methods: {
     showModal(){
-      $('#createGameRoomModal').modal('show');
+      if(this.hasActiveRoom){
+        this.createGameRoom();
+      }else{
+        $('#createGameRoomModal').modal('show');
+      }
     },
     getRoom(){
       if(!this.getRoomEndpoint || !this.roomSerial){
@@ -192,9 +212,23 @@ export default {
       }
 
       const gameSerial = this.getGameSerial();
-      axios.post(this.createGameRoomEndpoint, {
+
+      // [New] 準備 Payload
+      const payload = {
         game_serial: gameSerial
-      })
+      };
+
+      // [New] 如果有傳入 getCurrentCandidates 函式，就執行它取得 ID 陣列
+      if (this.getCurrentCandidates) {
+        const candidates = this.getCurrentCandidates();
+        // 確保回傳的是有效的資料 (例如 [123, 456])
+        if (candidates && Array.isArray(candidates) && candidates.length === 2) {
+           payload.current_candidates = candidates;
+        }
+      }
+
+      // 發送請求
+      axios.post(this.createGameRoomEndpoint, payload)
       .then(response => {
         this.roomSerial = response.data.data.serial;
         this.gameRoomUrl = this.gameRoomRoute.replace('_serial', this.roomSerial);
@@ -214,7 +248,9 @@ export default {
     },
     updateStep(step){
       this.step = step;
-      this.createGameRoom();
+      if(step === 1){
+        this.createGameRoom();
+      }
     },
     flipOnhover(event){
       const target = event.target.getAttribute('data-target');
@@ -251,3 +287,15 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* 綠燈呼吸效果 */
+.animate-flicker {
+    animation: flicker 1.5s infinite alternate;
+}
+@keyframes flicker {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
