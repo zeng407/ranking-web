@@ -685,7 +685,7 @@ export default {
 
     // 初始化前端遊戲
     initClientSideGame() {
-      this.isClientMode = true;
+      this.isClientMode = false;
       this.localVotes = [];
       this.localElements = [];
       this.existingElementIds.clear();
@@ -836,7 +836,7 @@ export default {
               if (parsed.localElements && parsed.clientState) {
                   this.gameSerial = parsed.gameSerial;
 
-                  this.isClientMode = true;
+                  this.isClientMode = false;
                   this.localElements = parsed.localElements;
                   this.localVotes = parsed.localVotes || [];
                   this.clientState = parsed.clientState;
