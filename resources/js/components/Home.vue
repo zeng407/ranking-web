@@ -14,7 +14,7 @@ export default {
     this.initGoogleAds();
     // this.initMasonry();
     this.loadTags();
-    this.getChampions();
+    // this.getChampions();
     // this.handleNewChampion();
     this.autoRefreshChampionsTimestamp();
     window.addEventListener('resize', this.updateMobileScreen);
