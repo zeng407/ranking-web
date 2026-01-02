@@ -242,7 +242,7 @@ class GameController extends Controller
             // 呼叫 Service 處理批次更新
             $lastGameRound = $this->gameService->batchUpdateGameRounds($game, $request->input('votes'));
 
-            // [New] 收集所有變動過的 Element IDs
+            //收集所有變動過的 Element IDs
             $votes = $request->input('votes');
             if ($request->has('votes')) {
                 $elementIds = collect($votes)
@@ -253,7 +253,7 @@ class GameController extends Controller
                     ->values()
                     ->toArray();
 
-                // [New] 發送 Queue Job 進行排名計算
+                //發送 Queue Job 進行排名計算
                 if (!empty($elementIds)) {
                     UpdateBatchElementRanks::dispatch($game->post, $elementIds);
                 }
@@ -263,19 +263,6 @@ class GameController extends Controller
             \Log::error('Batch vote failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Batch processing failed'], 422);
         }
-
-        // 取得下一組元素 (如果是批次到底，這裡應該會回傳空或最後結果)
-
-
-        // 如果有遊戲房間，通知房間更新 (雖然批次通常是單人快速過關，但保留邏輯)
-        if ($game->game_room) {
-            CacheService::putUpdatingGameRoomRank($game->game_room);
-        }
-
-        // 批次處理完畢，觸發一次最後的 Voted 事件 (或者你可以選擇不觸發中間過程)
-        // if ($lastGameRound) {
-        //     event(new GameElementVoted($game, $lastGameRound));
-        // }
 
         // 檢查遊戲是否結束
         if ($this->gameService->isGameComplete($game)) {

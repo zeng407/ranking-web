@@ -68,7 +68,8 @@
         update-room-profile-endpoint="{{route('api.game-room.update-profile', '_serial')}}"
         bet-endpoint="{{route('api.game-room.bet', '_serial')}}"
         get-game-elements-endpoint="{{route('api.game.elements', '_serial')}}"
-        batch-vote-endpoint="{{route('api.game.batch-vote', '_serial')}}"
+        batch-vote-endpoint="{{route('api.game.batch-vote')}}"
+        :props-enable-client-mode="true"
     >
     <div class="container-fluid hide-scrollbar" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())

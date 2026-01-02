@@ -18,6 +18,7 @@ use App\Models\GameRoomUserBet;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Ramsey\Uuid\Uuid;
@@ -135,65 +136,65 @@ class GameService
 
     public function updateGameRounds(Game $game, $winnerId, $loserId): Game1V1Round
     {
-        $lastRound = $game->game_1v1_rounds()->latest('id')->first();
-        if ($lastRound === null) {
-            $round = 1;
-            $ofRound = (int) ceil($game->element_count / 2);
-            $remain = $game->element_count - 1;
-        } else if ($lastRound->current_round + 1 > $lastRound->of_round) {
-            $round = 1;
-            $ofRound = $this->calculateNextRoundNumber($lastRound->remain_elements);
-            $remain = $lastRound->remain_elements - 1;
-        } else {
-            $round = $lastRound->current_round + 1;
-            $ofRound = $lastRound->of_round;
-            $remain = $lastRound->remain_elements - 1;
-        }
-        $data = [
-            'post_id' => $game->post_id,
-            'current_round' => $round,
-            'of_round' => $ofRound,
-            'remain_elements' => $remain,
-            'winner_id' => $winnerId,
-            'loser_id' => $loserId
-        ];
-        logger('saving game : ' . $game->id, $data);
-
+        $lock = Locker::lockUpdateGameElement($game);
+        $lock->block(5);
         try {
-            $lock = Locker::lockUpdateGameElement($game);
-            $lock->block(5);
-            $isEndOfRound = $round === $ofRound;
 
-            \DB::transaction(function () use ($game, $winnerId, $loserId, $isEndOfRound) {
+            $lastRound = $game->game_1v1_rounds()->latest('id')->first();
+            if ($lastRound === null) {
+                $round = 1;
+                $ofRound = (int) ceil($game->element_count / 2);
+                $remain = $game->element_count - 1;
+            } else if ($lastRound->current_round + 1 > $lastRound->of_round) {
+                $round = 1;
+                $ofRound = $this->calculateNextRoundNumber($lastRound->remain_elements);
+                $remain = $lastRound->remain_elements - 1;
+            } else {
+                $round = $lastRound->current_round + 1;
+                $ofRound = $lastRound->of_round;
+                $remain = $lastRound->remain_elements - 1;
+            }
+            $data = [
+                'post_id' => $game->post_id,
+                'current_round' => $round,
+                'of_round' => $ofRound,
+                'remain_elements' => $remain,
+                'winner_id' => $winnerId,
+                'loser_id' => $loserId
+            ];
+            logger('saving game : ' . $game->id, $data);
+
+            $isEndOfRound = $round === $ofRound;
+            $winner = $game->game_elements()
+                ->where('element_id', $winnerId)
+                ->where('is_eliminated', false)
+                ->first();
+            $loser = $game->game_elements()
+                ->where('element_id', $loserId)
+                ->where('is_eliminated', false)
+                ->first();
+            \DB::transaction(function () use ($game, $winner, $loser, $isEndOfRound) {
                 // update winner
-                $gameElement = $game->game_elements()
-                    ->where('element_id', $winnerId)
-                    ->where('is_eliminated', false)
-                    ->first();
-                if($gameElement){
-                    $gameElement->update([
-                        'win_count' => $gameElement->win_count + 1,
+                if($winner){
+                    $winner->update([
+                        'win_count' => $winner->win_count + 1,
                         'is_ready' => false
                     ]);
-                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $winnerId, 'win_count' => $gameElement->win_count]);
+                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $winner->element_id, 'win_count' => $winner->win_count]);
                 }else{
-                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $winnerId]);
+                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $winner->element_id]);
                     throw new \Exception('game element not found');
                 }
 
                 // update loser
-                $gameElement = $game->game_elements()
-                    ->where('element_id', $loserId)
-                    ->where('is_eliminated', false)
-                    ->first();
-                if($gameElement){
-                    $gameElement->update([
+                if($loser){
+                    $loser->update([
                         'is_eliminated' => true,
                         'is_ready' => false
                     ]);
-                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $loserId, 'is_eliminated' => $gameElement->is_eliminated]);
+                    \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $loser->element_id, 'is_eliminated' => $loser->is_eliminated]);
                 }else{
-                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $loserId]);
+                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $loser->element_id]);
                     throw new \Exception('game element not found');
                 }
 
@@ -268,9 +269,7 @@ class GameService
     public function getGameElements(Game $game, int $limit)
     {
         return $game->elements()
-            // 預加載圖片關聯，避免 N+1 (參考 getWinner 的用法)
             ->with('imgur_image')
-            // 撈取 Pivot 表上的遊戲狀態
             ->withPivot(['win_count', 'is_eliminated', 'is_ready'])
             // 排序邏輯：未淘汰的優先，然後按勝場數排序 (可依需求調整)
             ->orderByPivot('is_eliminated', 'asc') // 活著的在前面
@@ -280,11 +279,10 @@ class GameService
     }
 
     /**
-     * 驗證批次投票 (更新版邏輯)
+     * 驗證批次投票
      */
     private function validateBatchVotes(Game $game, array $votes)
     {
-        // ... (前面的 ID 檢查、重複淘汰檢查 保持不變) ...
         $winnerIds = collect($votes)->pluck('winner_id');
         $loserIds = collect($votes)->pluck('loser_id');
         $allIds = $winnerIds->merge($loserIds)->unique();
@@ -292,7 +290,7 @@ class GameService
         // 1. 基本檢查
         $count = $game->elements()->whereIn('elements.id', $allIds)->count();
         if ($count !== $allIds->count()) {
-            throw ValidationException::withMessages(['votes' => 'Invalid elements.']);
+            throw new Exception("Some elements do not belong to the game. Expected {$allIds->count()}, found {$count}.");
         }
 
         $alreadyEliminated = $game->elements()
@@ -308,20 +306,16 @@ class GameService
             $simRound = $lastRound->current_round;
             $simRemain = $lastRound->remain_elements;
 
-            // 這裡很關鍵：要算一下這一輪「已經」打了幾場，加上這次 batch 的第一張票會不會溢出
-            // 取得 DB 中這一輪已經產生的場次數量 (例如 R1 應打 34 場，DB 已有 30 場)
-            $matchesPlayedInCurrentRound = $game->game_1v1_rounds()
-                ->where('current_round', $simRound)
-                ->count();
+            $matchesPlayedInCurrentRound = $lastRound->current_round;
 
-            // 計算這一輪「總共」該有幾場 (使用新邏輯)
+            // 計算這一輪總共該有幾場
             $matchesNeededForCurrentRound = $lastRound->of_round;
         } else {
             // 遊戲剛開始
             $simRound = 1;
             $simRemain = $game->element_count;
             $matchesPlayedInCurrentRound = 0;
-            // 計算 R1 該打幾場 (68 -> 34)
+            // 計算該打幾場 (68人 -> 34場)
             $matchesNeededForCurrentRound = $this->calculateMatchesForRound(1, $simRemain);
         }
 
@@ -332,10 +326,10 @@ class GameService
             $loserId = $vote['loser_id'];
 
             if (in_array($winnerId, $alreadyEliminated) || in_array($winnerId, $batchEliminated)) {
-                throw ValidationException::withMessages(["votes.{$index}" => "Winner {$winnerId} eliminated."]);
+                throw new Exception("Winner {$winnerId} eliminated.");
             }
             if (in_array($loserId, $alreadyEliminated) || in_array($loserId, $batchEliminated)) {
-                throw ValidationException::withMessages(["votes.{$index}" => "Loser {$loserId} eliminated."]);
+                throw new Exception("Loser {$loserId} eliminated.");
             }
             $batchEliminated[] = $loserId;
 
@@ -413,85 +407,116 @@ class GameService
             $lastRound = $game->game_1v1_rounds()->latest('id')->first();
 
             // 1. 判斷目前的 Stage (第幾輪)
-            // 透過計算資料庫中有多少次 "current_round = 1" 來得知目前是第幾階段
             $stageCount = $game->game_1v1_rounds()->where('current_round', 1)->count();
 
             // 2. 初始化狀態變數
             if ($lastRound === null) {
-                // 遊戲剛開始
                 $stage = 1;
                 $remain = $game->element_count;
-                $matchIndex = 0; // 下一場是 1
+                $matchIndex = 0;
                 $matchesInStage = $this->calculateMatchesForStage($stage, $remain);
             } else {
                 $remain = $lastRound->remain_elements;
-
-                // 判斷上一筆紀錄是否為該輪的最後一場
                 if ($lastRound->current_round >= $lastRound->of_round) {
-                    // 上一輪已結束，準備進入下一輪
                     $stage = $stageCount + 1;
                     $matchIndex = 0;
                     $matchesInStage = $this->calculateMatchesForStage($stage, $remain);
                 } else {
-                    // 還在同一輪
-                    $stage = $stageCount > 0 ? $stageCount : 1; // 防呆
+                    $stage = $stageCount > 0 ? $stageCount : 1;
                     $matchIndex = $lastRound->current_round;
                     $matchesInStage = $lastRound->of_round;
                 }
             }
 
-            \DB::transaction(function () use ($game, $votes, &$stage, &$matchIndex, &$matchesInStage, &$remain, &$lastCreatedRound) {
-                foreach ($votes as $vote) {
-                    $winnerId = $vote['winner_id'];
-                    $loserId = $vote['loser_id'];
+            // 準備批次寫入的陣列
+            $roundsToInsert = [];
+            $now = now();
+            $voteCountIncrement = 0;
 
-                    // 每一票代表一人淘汰，剩餘人數 -1
-                    $remain--;
+            // 直接執行迴圈，每一行 SQL 執行完就會自動釋放 Row Lock
+            foreach ($votes as $vote) {
+                $winnerId = $vote['winner_id'];
+                $loserId = $vote['loser_id'];
 
-                    // 場次 +1
-                    $matchIndex++;
+                $remain--;
+                $matchIndex++;
+                $voteCountIncrement++;
 
-                    if ($matchIndex > $matchesInStage) {
-                        // 進入下一輪
-                        $stage++;
-                        $matchIndex = 1; // 重置為第 1 場
+                if ($matchIndex > $matchesInStage) {
+                    $stage++;
+                    $matchIndex = 1;
+                    $matchesInStage = $this->calculateMatchesForStage($stage, $remain + 1);
+                }
 
-                        // 重新計算 matchesInStage
-                        $matchesInStage = $this->calculateMatchesForStage($stage, $remain + 1);
-                    }
+                $isEndOfRound = ($matchIndex === $matchesInStage);
 
-                    $isEndOfRound = ($matchIndex === $matchesInStage);
-
-                    // --- DB Updates ---
-                    \DB::table('game_elements')
-                        ->where('game_id', $game->id)->where('element_id', $winnerId)
-                        ->update(['win_count' => \DB::raw('win_count + 1'), 'is_ready' => false]);
-
-                    \DB::table('game_elements')
-                        ->where('game_id', $game->id)->where('element_id', $loserId)
-                        ->update(['is_eliminated' => true, 'is_ready' => false]);
-
-                    if ($isEndOfRound) {
-                        \DB::table('game_elements')
-                            ->where('game_id', $game->id)->where('is_eliminated', false)
-                            ->update(['is_ready' => true]);
-                    }
-
-                    // 建立紀錄
-                    // current_round: 目前是第幾場
-                    // of_round: 這一輪總共幾場
-                    $lastCreatedRound = $game->game_1v1_rounds()->create([
-                        'post_id' => $game->post_id,
-                        'current_round' => $matchIndex,
-                        'of_round' => $matchesInStage,
-                        'remain_elements' => $remain,
-                        'winner_id' => $winnerId,
-                        'loser_id' => $loserId
+                //更新贏家
+                \DB::table('game_elements')
+                    ->where('game_id', $game->id)
+                    ->where('element_id', $winnerId)
+                    ->update([
+                        'win_count' => \DB::raw('win_count + 1'),
+                        'is_ready' => false
                     ]);
 
-                    $game->increment('vote_count');
+                //更新輸家
+                \DB::table('game_elements')
+                    ->where('game_id', $game->id)
+                    ->where('element_id', $loserId)
+                    ->update([
+                        'is_eliminated' => true,
+                        'is_ready' => false
+                    ]);
+
+                if ($isEndOfRound) {
+                    \DB::table('game_elements')
+                        ->where('game_id', $game->id)
+                        ->where('is_eliminated', false)
+                        ->update(['is_ready' => true]);
                 }
-            });
+
+                // 收集 Round 資料，稍後一次寫入
+                $roundsToInsert[] = [
+                    'game_id' => $game->id,
+                    'current_round' => $matchIndex,
+                    'of_round' => $matchesInStage,
+                    'remain_elements' => $remain,
+                    'winner_id' => $winnerId,
+                    'loser_id' => $loserId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+                logger('prepared round data', end($roundsToInsert));
+            }
+
+            // 使用 chunk 防止一次寫入過多導致 SQL 長度過長
+            if (!empty($roundsToInsert)) {
+                foreach (array_chunk($roundsToInsert, 500) as $chunk) {
+                    Game1V1Round::insert($chunk);
+                }
+
+                $lastData = end($roundsToInsert);
+                $lastCreatedRound = Game1V1Round::where('game_id', $game->id)
+                    ->where('current_round', $lastData['current_round'])
+                    ->where('of_round', $lastData['of_round'])
+                    ->where('remain_elements', $lastData['remain_elements'])
+                    ->orderByDesc('id')
+                    ->first();
+            }
+
+            // 最後只更新一次 Game 表 (減少 Row Lock 競爭)
+            if ($voteCountIncrement > 0) {
+                \DB::table('games')
+                    ->where('id', $game->id)
+                    ->increment('vote_count', $voteCountIncrement);
+
+                // 更新 user_id (如果是登入用戶)
+                if (request()->user()) {
+                    \DB::table('games')
+                        ->where('id', $game->id)
+                        ->update(['user_id' => request()->user()->id]);
+                }
+            }
 
             $lock->release();
             return $lastCreatedRound;

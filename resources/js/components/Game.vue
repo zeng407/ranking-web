@@ -51,6 +51,10 @@ export default {
     getRoomUserEndpoint: String,
     getGameElementsEndpoint: String,
     batchVoteEndpoint: String,
+    propsEnableClientMode: {
+      type: Boolean,
+      default: true,
+    },
   },
   data: function () {
     return {
@@ -128,7 +132,7 @@ export default {
       sortByTop: true,
       showCreateRoomButton: false,
 
-      isClientMode: false,
+      isClientMode: this.propsEnableClientMode,
       localElements: [], // 儲存所有參賽者物件 { ...element, local_win_count: 0, local_eliminated: false }
       localVotes: [], // 儲存投票紀錄 [{winner_id, loser_id}, ...]
       existingElementIds: new Set(), // 已存在的元素 ID 集合 (用來避免重複加入)
@@ -657,10 +661,11 @@ export default {
         .then((res) => {
           this.gameSerial = res.data.game_serial;
           this.keepGameCookie();
-          if (this.isHostingGameRank) {
+          if (this.isHostingGameRank || this.isClientMode === false) {
               // --- 多人模式 (Server Mode) ---
               this.isClientMode = false;
-              this.nextRound(null);
+              this.saveToLocalStorage();
+              this.nextRound(null, false);
           } else {
               // --- 單人模式 (Client Mode) ---
               this.initClientSideGame();
@@ -816,7 +821,8 @@ export default {
             clientState: this.clientState,
             existingElementIds: Array.from(this.existingElementIds),
             elementsCount: this.elementsCount,
-            updatedAt: new Date().getTime()
+            updatedAt: new Date().getTime(),
+            clientMode: this.isClientMode
         };
 
         localStorage.setItem(key, JSON.stringify(stateToSave));
@@ -832,6 +838,13 @@ export default {
       if (savedData) {
           try {
               const parsed = JSON.parse(savedData);
+              const savedClientMode = (parsed.clientMode !== undefined) ? parsed.clientMode : false;
+              if (savedClientMode === false) {
+                  this.gameSerial = parsed.gameSerial;
+                  this.isClientMode = false;
+                  console.log("Restored as Server Mode from localStorage");
+                  return true;
+              }
 
               if (parsed.localElements && parsed.clientState) {
                   this.gameSerial = parsed.gameSerial;
@@ -911,11 +924,21 @@ export default {
         }
     },
 
-    // [Modified] 繼續遊戲
+    // 繼續遊戲
     continueGame() {
-      // 1. 多人模式檢查 (Server Mode)
-      if (this.isHostingGameRank) {
-        if (this.gameSerial) {
+
+      let gameSerial = '';
+      if (this.userLastGameSerial) {
+        gameSerial = this.userLastGameSerial;
+      } else {
+        gameSerial = this.$cookies.get(this.postSerial)
+      }
+
+      // Server Mode
+      if (this.isHostingGameRank || this.isClientMode === false) {
+        if (gameSerial) {
+            this.gameSerial = gameSerial;
+            console.log("Room mode: Continuing game with serial", gameSerial);
             this.isClientMode = false;
             this.nextRound(null);
         } else {
@@ -925,20 +948,18 @@ export default {
         return;
       }
 
-      // 2. 取得 Game Serial
-      let gameSerial = '';
-      if (this.userLastGameSerial) {
-        gameSerial = this.userLastGameSerial;
-      } else {
-        gameSerial = this.$cookies.get(this.postSerial)
-      }
-
+      // Client Mode
       if (gameSerial) {
         this.gameSerial = gameSerial;
 
-        // 3. 嘗試讀取本地存檔
+        // 嘗試讀取本地存檔
         if (this.loadFromLocalStorage()) {
-          // [New Check] ★★★ 舊資料相容檢查 ★★★
+          if (this.isClientMode === false) {
+             this.nextRound(null, false);
+             $("#gameSettingPanel").modal("hide");
+             return;
+          }
+
           // 如果讀取成功，但發現 elementsCount 是空的 (代表是舊系統的存檔)
           if (!this.elementsCount) {
               console.log("Legacy save detected (missing elementsCount). Switching to Server Mode for migration.");
@@ -947,10 +968,9 @@ export default {
               this.isClientMode = false;
 
               // 2. 向後端請求最新狀態 (後端回傳後，updateGame 會自動補齊 elementsCount)
-              this.nextRound(null);
+              this.nextRound(null, false);
 
           }
-          // [Existing Check] 資料完整性檢查
           // 只有在 elementsCount 存在時才檢查這個
           else if (this.localElements.length < this.elementsCount) {
               console.log(`Continue Game: Elements incomplete (${this.localElements.length}/${this.elementsCount}). Resuming background fetch...`);
@@ -958,6 +978,7 @@ export default {
           }
         } else {
              // 讀取失敗，走後端流程
+             this.isClientMode = false;
              this.nextRound(null, false);
         }
       }
@@ -975,7 +996,7 @@ export default {
     },
 
     // nextRound 修正 Null Error
-    nextRound(data, reset = true) {
+    nextRound(data, resetAnimation = true) {
       // 1. 如果是 Client Mode，直接呼叫本地邏輯
       if (!this.isHostingGameRank && this.isClientMode && (data == null || (data && !data.data))) {
           this.nextLocalRound();
@@ -993,7 +1014,7 @@ export default {
         return;
       }
 
-      this.handleAnimationAfterNextRound(data.data, reset);
+      this.handleAnimationAfterNextRound(data.data, resetAnimation);
     },
 
     nextLocalRound() {
@@ -1072,13 +1093,13 @@ export default {
         this.handleAnimationAfterNextRound(mockGameData, true);
     },
 
-    handleAnimationAfterNextRound(game, reset) {
+    handleAnimationAfterNextRound(game, resetAnimation) {
       return new Promise((resolve, reject) => {
         this.updateGame(game);
         resolve();
       })
         .then(() => {
-          if (reset) {
+          if (resetAnimation) {
             this.resetPlayerPosition();
             // this.scrollToLastPosition();
             this.resetPlayingStatus();
@@ -1617,8 +1638,9 @@ export default {
             }, 2000);
         })
         .catch(err => {
-            console.error("Cloud save failed", err);
             this.isCloudSaving = false;
+            // 發生錯誤之後不再回傳伺服器
+            this.batchVoteInterval = 2000;
         });
     },
 
@@ -1641,7 +1663,6 @@ export default {
               console.error("Batch vote failed", err);
 
               this.isDataLoading = false;
-
               Swal.fire({
                   icon: 'error',
                   toast: true,
