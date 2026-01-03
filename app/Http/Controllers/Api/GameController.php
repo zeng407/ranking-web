@@ -25,6 +25,7 @@ use App\Rules\GameCandicateRule;
 use App\Services\GameService;
 use App\Services\RankService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GameController extends Controller
 {
@@ -239,13 +240,39 @@ class GameController extends Controller
         $this->authorize('play', $game);
 
         try {
+            // 先去除重複的 winner/loser 組合，避免前端重試造成重複票
+            $votes = $request->input('votes', []);
+            $uniqueVotes = [];
+            $seenPairs = [];
+
+            // 查 DB 已存在的回合，跳過已處理的組合
+            $existingPairs = DB::table('game_1v1_rounds')
+                ->where('game_id', $game->id)
+                ->select('winner_id', 'loser_id')
+                ->get()
+                ->map(function ($row) {
+                    return $row->winner_id . '-' . $row->loser_id;
+                })
+                ->flip();
+
+            foreach ($votes as $vote) {
+                $pairKey = $vote['winner_id'] . '-' . $vote['loser_id'];
+
+                // 已處理過 (DB 或本批次) 就跳過
+                if (isset($existingPairs[$pairKey]) || isset($seenPairs[$pairKey])) {
+                    continue;
+                }
+
+                $seenPairs[$pairKey] = true;
+                $uniqueVotes[] = $vote;
+            }
+
             // 呼叫 Service 處理批次更新
-            $lastGameRound = $this->gameService->batchUpdateGameRounds($game, $request->input('votes'));
+            $lastGameRound = $this->gameService->batchUpdateGameRounds($game, $uniqueVotes);
 
             //收集所有變動過的 Element IDs
-            $votes = $request->input('votes');
-            if ($request->has('votes')) {
-                $elementIds = collect($votes)
+            if (!empty($uniqueVotes)) {
+                $elementIds = collect($uniqueVotes)
                     ->flatMap(function ($vote) {
                         return [$vote['winner_id'], $vote['loser_id']];
                     })

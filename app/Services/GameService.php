@@ -19,6 +19,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Ramsey\Uuid\Uuid;
@@ -326,10 +327,10 @@ class GameService
             $loserId = $vote['loser_id'];
 
             if (in_array($winnerId, $alreadyEliminated) || in_array($winnerId, $batchEliminated)) {
-                throw new Exception("Winner {$winnerId} eliminated.");
+                throw new Exception("Game {$game->id} Winner {$winnerId} eliminated.");
             }
             if (in_array($loserId, $alreadyEliminated) || in_array($loserId, $batchEliminated)) {
-                throw new Exception("Loser {$loserId} eliminated.");
+                throw new Exception("Game {$game->id} Loser {$loserId} eliminated.");
             }
             $batchEliminated[] = $loserId;
 
@@ -392,19 +393,151 @@ class GameService
     }
 
     /**
+     * Deadlock-aware update for game_elements rows.
+     */
+    private function updateGameElementWithRetry(int $gameId, int $elementId, array $data, int $attempts = 3, int $backoffMs = 100): void
+    {
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                \DB::table('game_elements')
+                    ->where('game_id', $gameId)
+                    ->where('element_id', $elementId)
+                    ->update($data);
+
+                return;
+            } catch (QueryException $e) {
+                if ($this->isDeadlock($e) && $i < $attempts - 1) {
+                    usleep($backoffMs * 1000 * ($i + 1));
+                    continue;
+                }
+
+                throw $e;
+            }
+        }
+    }
+
+    private function updateGameElementByIdWithRetry(int $id, array $data, int $attempts = 3, int $backoffMs = 100): void
+    {
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                \DB::table('game_elements')
+                    ->where('id', $id)
+                    ->update($data);
+
+                return;
+            } catch (QueryException $e) {
+                if ($this->isDeadlock($e) && $i < $attempts - 1) {
+                    usleep($backoffMs * 1000 * ($i + 1));
+                    continue;
+                }
+
+                throw $e;
+            }
+        }
+    }
+
+    private function incrementWinCountWithRetry(int $gameId, int $elementId, int $attempts = 3, int $backoffMs = 100): void
+    {
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                \DB::table('game_elements')
+                    ->where('game_id', $gameId)
+                    ->where('element_id', $elementId)
+                    ->increment('win_count');
+
+                return;
+            } catch (QueryException $e) {
+                if ($this->isDeadlock($e) && $i < $attempts - 1) {
+                    usleep($backoffMs * 1000 * ($i + 1));
+                    continue;
+                }
+
+                throw $e;
+            }
+        }
+    }
+
+    private function incrementWinCountByIdWithRetry(int $id, int $attempts = 3, int $backoffMs = 100): void
+    {
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                \DB::table('game_elements')
+                    ->where('id', $id)
+                    ->increment('win_count');
+
+                return;
+            } catch (QueryException $e) {
+                if ($this->isDeadlock($e) && $i < $attempts - 1) {
+                    usleep($backoffMs * 1000 * ($i + 1));
+                    continue;
+                }
+
+                throw $e;
+            }
+        }
+    }
+
+    private function isDeadlock(QueryException $e): bool
+    {
+        $sqlState = $e->getCode(); // MySQL deadlock: 40001; sometimes driver-specific 1213 message
+        return $sqlState === '40001' || str_contains($e->getMessage(), 'Deadlock') || str_contains($e->getMessage(), '1213');
+    }
+
+    /**
      * @return Game1V1Round|null
      */
     public function batchUpdateGameRounds(Game $game, array $votes)
     {
+        $tStart = microtime(true);
+        \Log::warning('batchUpdateGameRounds.start', [
+            'game_id' => $game->id,
+            'votes_count' => count($votes),
+        ]);
+
         $this->validateBatchVotes($game, $votes);
+
+        $tAfterValidate = microtime(true);
+        \Log::warning('batchUpdateGameRounds.after_validate', [
+            'elapsed_ms' => round(($tAfterValidate - $tStart) * 1000, 2),
+        ]);
 
         ksort($votes);
         $lock = Locker::lockUpdateGameElement($game);
+        $tBeforeLock = microtime(true);
         $lock->block(10);
+        $tAfterLock = microtime(true);
+        \Log::warning('batchUpdateGameRounds.lock_acquired', [
+            'wait_ms' => round(($tAfterLock - $tBeforeLock) * 1000, 2),
+        ]);
 
         try {
             $lastCreatedRound = null;
             $lastRound = $game->game_1v1_rounds()->latest('id')->first();
+
+            // Preload all game_elements once by game_id
+            $gameElements = \DB::table('game_elements')
+                ->where('game_id', $game->id)
+                ->get()
+                ->keyBy('element_id');
+
+            $gameElementStates = [];
+            $originalStates = [];
+            foreach ($gameElements as $elementId => $row) {
+                $state = [
+                    'id' => $row->id,
+                    'element_id' => $elementId,
+                    'win_count' => (int) $row->win_count,
+                    'is_eliminated' => (bool) $row->is_eliminated,
+                    'is_ready' => (bool) $row->is_ready,
+                ];
+                $gameElementStates[$elementId] = $state;
+                $originalStates[$elementId] = $state;
+            }
+
+            \Log::warning('batchUpdateGameRounds.element_map_loaded', [
+                'game_id' => $game->id,
+                'count' => count($gameElementStates),
+            ]);
 
             // 1. 判斷目前的 Stage (第幾輪)
             $stageCount = $game->game_1v1_rounds()->where('current_round', 1)->count();
@@ -428,15 +561,46 @@ class GameService
                 }
             }
 
+            \Log::warning('batchUpdateGameRounds.state_init', [
+                'game_id' => $game->id,
+                'last_round_id' => $lastRound?->id,
+                'last_round_current' => $lastRound?->current_round,
+                'last_round_of_round' => $lastRound?->of_round,
+                'last_round_remain' => $lastRound?->remain_elements,
+                'stage_count' => $stageCount,
+                'stage' => $stage,
+                'remain' => $remain,
+                'match_index' => $matchIndex,
+                'matches_in_stage' => $matchesInStage,
+                'votes_count' => count($votes),
+            ]);
+
             // 準備批次寫入的陣列
             $roundsToInsert = [];
             $now = now();
             $voteCountIncrement = 0;
+            $stats = [
+                'winner_updates' => 0,
+                'loser_updates' => 0,
+                'ready_resets' => 0,
+            ];
 
             // 直接執行迴圈，每一行 SQL 執行完就會自動釋放 Row Lock
             foreach ($votes as $vote) {
+                $loopStart = microtime(true);
                 $winnerId = $vote['winner_id'];
                 $loserId = $vote['loser_id'];
+
+                if (!isset($gameElementStates[$winnerId]) || !isset($gameElementStates[$loserId])) {
+                    throw new \RuntimeException("game_element row missing for winner {$winnerId} or loser {$loserId} in game {$game->id}");
+                }
+
+                // mutate in-memory state
+                $gameElementStates[$winnerId]['win_count'] += 1;
+                $gameElementStates[$winnerId]['is_ready'] = false;
+
+                $gameElementStates[$loserId]['is_eliminated'] = true;
+                $gameElementStates[$loserId]['is_ready'] = false;
 
                 $remain--;
                 $matchIndex++;
@@ -450,29 +614,17 @@ class GameService
 
                 $isEndOfRound = ($matchIndex === $matchesInStage);
 
-                //更新贏家
-                \DB::table('game_elements')
-                    ->where('game_id', $game->id)
-                    ->where('element_id', $winnerId)
-                    ->update([
-                        'win_count' => \DB::raw('win_count + 1'),
-                        'is_ready' => false
-                    ]);
-
-                //更新輸家
-                \DB::table('game_elements')
-                    ->where('game_id', $game->id)
-                    ->where('element_id', $loserId)
-                    ->update([
-                        'is_eliminated' => true,
-                        'is_ready' => false
-                    ]);
+                $stats['winner_updates']++;
+                $stats['loser_updates']++;
 
                 if ($isEndOfRound) {
-                    \DB::table('game_elements')
-                        ->where('game_id', $game->id)
-                        ->where('is_eliminated', false)
-                        ->update(['is_ready' => true]);
+                    foreach ($gameElementStates as &$state) {
+                        if (!$state['is_eliminated']) {
+                            $state['is_ready'] = true;
+                        }
+                    }
+                    unset($state);
+                    $stats['ready_resets']++;
                 }
 
                 // 收集 Round 資料，稍後一次寫入
@@ -487,12 +639,58 @@ class GameService
                     'updated_at' => $now,
                 ];
                 logger('prepared round data', end($roundsToInsert));
+
+                \Log::warning('batchUpdateGameRounds.vote_processed', [
+                    'game_id' => $game->id,
+                    'winner_id' => $winnerId,
+                    'loser_id' => $loserId,
+                    'stage' => $stage,
+                    'match_index' => $matchIndex,
+                    'matches_in_stage' => $matchesInStage,
+                    'remain' => $remain,
+                    'is_end_of_round' => $isEndOfRound,
+                    'elapsed_ms' => round((microtime(true) - $loopStart) * 1000, 2),
+                ]);
             }
+
+            // Apply consolidated updates back to DB (only changed rows)
+            $elementUpdates = [];
+            foreach ($gameElementStates as $elementId => $state) {
+                $orig = $originalStates[$elementId];
+                $data = [];
+                if ($state['win_count'] !== $orig['win_count']) {
+                    $data['win_count'] = $state['win_count'];
+                }
+                if ($state['is_eliminated'] !== $orig['is_eliminated']) {
+                    $data['is_eliminated'] = $state['is_eliminated'];
+                }
+                if ($state['is_ready'] !== $orig['is_ready']) {
+                    $data['is_ready'] = $state['is_ready'];
+                }
+
+                if (!empty($data)) {
+                    $elementUpdates[] = ['id' => $state['id'], 'data' => $data];
+                }
+            }
+
+            foreach ($elementUpdates as $update) {
+                $this->updateGameElementByIdWithRetry($update['id'], $update['data']);
+            }
+
+            \Log::warning('batchUpdateGameRounds.elements_updated', [
+                'game_id' => $game->id,
+                'rows' => count($elementUpdates),
+            ]);
 
             // 使用 chunk 防止一次寫入過多導致 SQL 長度過長
             if (!empty($roundsToInsert)) {
                 foreach (array_chunk($roundsToInsert, 500) as $chunk) {
+                    $chunkStart = microtime(true);
                     Game1V1Round::insert($chunk);
+                    \Log::warning('batchUpdateGameRounds.insert_chunk', [
+                        'size' => count($chunk),
+                        'elapsed_ms' => round((microtime(true) - $chunkStart) * 1000, 2),
+                    ]);
                 }
 
                 $lastData = end($roundsToInsert);
@@ -519,6 +717,14 @@ class GameService
             }
 
             $lock->release();
+            \Log::warning('batchUpdateGameRounds.done', [
+                'game_id' => $game->id,
+                'votes_count' => count($votes),
+                'winner_updates' => $stats['winner_updates'],
+                'loser_updates' => $stats['loser_updates'],
+                'ready_resets' => $stats['ready_resets'],
+                'total_ms' => round((microtime(true) - $tStart) * 1000, 2),
+            ]);
             return $lastCreatedRound;
 
         } catch (\Exception $e) {
