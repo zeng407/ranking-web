@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AddUniqueIndexToRankReports extends Migration
@@ -9,7 +10,12 @@ class AddUniqueIndexToRankReports extends Migration
     public function up()
     {
         Schema::table('rank_reports', function (Blueprint $table) {
-            $table->dropUnique('rank_reports_post_element_unique');
+            $indexName = 'rank_reports_post_element_unique';
+            $indexes = Schema::getConnection()->getDoctrineSchemaManager()->listTableIndexes('rank_reports');
+
+            if (array_key_exists($indexName, $indexes)) {
+                $table->dropUnique($indexName);
+            }
             $table->dropSoftDeletes();
         });
 
@@ -38,7 +44,13 @@ class AddUniqueIndexToRankReports extends Migration
     {
         Schema::table('rank_reports', function (Blueprint $table) {
             $table->softDeletes();
-            $table->dropUnique('unique_post_element');
+
+            $indexName = 'unique_post_element';
+            $indexes = Schema::getConnection()->getDoctrineSchemaManager()->listTableIndexes('rank_reports');
+
+            if (array_key_exists($indexName, $indexes)) {
+                $table->dropUnique($indexName);
+            }
             $table->unique(['post_id', 'element_id', 'deleted_at'], 'rank_reports_post_element_unique');
         });
     }
