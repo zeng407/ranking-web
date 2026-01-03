@@ -50,11 +50,6 @@ class RankReport extends Model
         return $this->hasMany(RankReportHistory::class);
     }
 
-    public function scopeVisible($query)
-    {
-        return $query->where('hidden', false);
-    }
-
     protected static function booted()
     {
         // 定義一個名為 'visible' 的全域 Scope

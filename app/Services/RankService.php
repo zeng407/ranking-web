@@ -208,7 +208,6 @@ class RankService
 
         // 取得現有的 Reports
         $existingReports = RankReport::where('post_id', $post->id)
-            ->visible()
             ->get()
             ->keyBy('element_id');
 

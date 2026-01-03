@@ -182,7 +182,7 @@ class GameService
                     ]);
                     \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $winner->element_id, 'win_count' => $winner->win_count]);
                 }else{
-                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $winner->element_id]);
+                    \Log::error('game element not found', ['game_id' => $game->id]);
                     throw new \Exception('game element not found');
                 }
 
@@ -194,7 +194,7 @@ class GameService
                     ]);
                     \Log::debug('game element updated', ['game_id' => $game->id, 'element_id' => $loser->element_id, 'is_eliminated' => $loser->is_eliminated]);
                 }else{
-                    \Log::error('game element not found', ['game_id' => $game->id, 'element_id' => $loser->element_id]);
+                    \Log::error('game element not found', ['game_id' => $game->id]);
                     throw new \Exception('game element not found');
                 }
 
