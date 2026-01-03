@@ -416,6 +416,27 @@ class GameService
         }
     }
 
+    private function incrementWinCountWithRetry(int $gameId, int $elementId, int $attempts = 3, int $backoffMs = 100): void
+    {
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                \DB::table('game_elements')
+                    ->where('game_id', $gameId)
+                    ->where('element_id', $elementId)
+                    ->increment('win_count');
+
+                return;
+            } catch (QueryException $e) {
+                if ($this->isDeadlock($e) && $i < $attempts - 1) {
+                    usleep($backoffMs * 1000 * ($i + 1));
+                    continue;
+                }
+
+                throw $e;
+            }
+        }
+    }
+
     private function isDeadlock(QueryException $e): bool
     {
         $sqlState = $e->getCode(); // MySQL deadlock: 40001; sometimes driver-specific 1213 message
@@ -481,12 +502,12 @@ class GameService
 
                 $isEndOfRound = ($matchIndex === $matchesInStage);
 
-                //更新贏家
+                //更新贏家：先 increment，再更新 is_ready，避免 SQL 中使用 win_count + 1 表達式
+                $this->incrementWinCountWithRetry($game->id, $winnerId);
                 $this->updateGameElementWithRetry(
                     $game->id,
                     $winnerId,
                     [
-                        'win_count' => \DB::raw('win_count + 1'),
                         'is_ready' => false,
                     ]
                 );
