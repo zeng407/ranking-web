@@ -6,7 +6,7 @@ import QRCode from 'qrcode';
 
 const MD_WIDTH_SIZE = 576;
 const MOBILE_HEIGHT = 700;
-const BATCH_VOTE_SAVE_INTERVAL = 10; // 每 30 票存一次
+const BATCH_VOTE_SAVE_INTERVAL = 10; // 每 10 票存一次
 const KEEP_VOTE_RECORD_COUNT = 128 // 保留最近 128 筆投票紀錄
 export default {
   beforeMount() {
