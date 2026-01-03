@@ -12,7 +12,9 @@
 @endsection
 
 @section('content')
-  <Rank inline-template post-serial="{{ $post->serial }}" comment-max-length="{{ config('setting.comment_max_length') }}"
+  <Rank inline-template
+    post-serial="{{ $post->serial }}"
+    comment-max-length="{{ config('setting.comment_max_length') }}"
     search-endpoint="{{ route('api.rank.search') }}"
     index-comment-endpoint="{{ route('api.public-post.comment.index', $post->serial) }}"
     create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"
@@ -21,6 +23,7 @@
     :champion-histories="{{ json_encode($champion_histories) }}" :max-rank="{{ $reports->total() }}"
     :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
     game-serial="{{ $gameResult ? $gameResult->game_serial : '' }}"
+    :has-game-room="{{ $gameResult && isset($gameResult->game_room) ? 'true' : 'false' }}"
     request-host="{{ request()->getHost() }}">
     {{-- Main --}}
     <div class="container-fuild" v-cloak>
@@ -38,7 +41,7 @@
         {{-- main part --}}
         <div class="col-12 col-lg-8">
           @if (!$embed)
-            <div class="row mb-3">
+            <div class="row mb-3 sticky-top-rank-buttons">
               <div class="col-10">
                 <a class="btn btn-outline-dark btn-sm m-1" href="{{ route('home') }}">
                   <h5 class="m-0"><i class="fa-solid fa-home"></i>&nbsp;{{ __('rank.return_home') }}</h5>
@@ -48,10 +51,16 @@
                 </a>
                 <div class="m-1 d-inline-block">
                   <h5 class="m-0">
-                    <share-link heading-tag="h5" id="rank" :url="shareRankLink()" text="{{ __('rank.share') }}"
+                    <share-link heading-tag="h5" id="game" :url="shareGameLink()" text="{{ __('rank.share-game') }}"
                       after-copy-text="{{ __('Copied link') }}"></share-link>
                   </h5>
                 </div>
+                {{-- <div class="m-1 d-inline-block">
+                  <h5 class="m-0">
+                    <share-link heading-tag="h5" id="rank" :url="shareRankLink()" text="{{ __('rank.share') }}"
+                      after-copy-text="{{ __('Copied link') }}"></share-link>
+                  </h5>
+                </div> --}}
                 @if ($gameResult && !$shared)
                   <div class="m-1 d-inline-block">
                     <h5 class="m-0">
@@ -166,7 +175,7 @@
             </div>
           @endif
 
-          <b-tabs content-class="mt-3"
+          <b-tabs content-class="mt-1"
             nav-wrapper-class="@if ($gameResult) sticky-top-rank-tab bg-default @endif rank-tabs hide-scrollbar">
             {{-- my game result --}}
             @if ($gameResult)
@@ -286,6 +295,68 @@
                       </div>
                     @endif
                   @endforeach
+                </div>
+              </b-tab>
+
+            @else
+              {{-- load rank from local --}}
+              <b-tab {{ request('tab') == 0 ? 'active' : '' }} @click="clickTab('0')" v-if="localRanks.length > 0">
+                <template #title>
+                  <h5><i class="fa-solid fa-trophy"></i>&nbsp;@{{ $t('My Rank') }}</h5>
+                </template>
+                <div class="row">
+                  {{-- Rank #1 ~ #10 --}}
+                  <div v-for="(rank, index) in localRanks" :key="rank.id"
+                    class="col-12">
+                    <div class="card my-2 card-hover">
+                      <div class="card-header rank-header">
+                        <span class="text-left w-25 rank-number">@{{ index + 1 }}</span>
+                        <h2 class="text-center w-50 element-title">
+                          @{{ rank.title }}
+                        </h2>
+                      </div>
+                      <div class="card-body text-center rank-card">
+                        <youtube-player v-if="rank.type === 'video' && rank.video_source === 'youtube'"
+                          width="100%" :ref-id="rank.id.toString()"
+                          :video-id="rank.video_id" :controls="true" :autoplay="false"
+                          :rel="0" :origin="requestHost">
+                        </youtube-player>
+
+                        <youtube-embed v-else-if="rank.type === 'video' && rank.video_source === 'youtube_embed'"
+                          :element="rank" width="100%" height="auto" :autoplay="false">
+                        </youtube-embed>
+
+                        <bilibili-video v-else-if="rank.type === 'video' && rank.video_source === 'bilibili_video'"
+                          width="100%" :element="rank" :autoplay="false" :muted="false" :preview="true">
+                        </bilibili-video>
+
+                        <iframe v-else-if="rank.type === 'video' && rank.video_source === 'twitch_video'"
+                          :src="'https://player.twitch.tv/?video=' + rank.video_id + '&parent=' + requestHost"
+                          width="100%" allowfullscreen>
+                        </iframe>
+
+                        <iframe v-else-if="rank.type === 'video' && rank.video_source === 'twitch_clip'"
+                          :src="'https://clips.twitch.tv/embed?clip=' + rank.video_id + '&parent=' + requestHost + '&autoplay=false'"
+                          width="100%" allowfullscreen>
+                        </iframe>
+
+                        <video v-else-if="rank.type === 'video'" width="100%" loop controls playsinline :src="rank.source_url" :poster="rank.thumb_url"></video>
+
+                        <viewer v-else-if="rank.type === 'image'" :options="viewerOptions">
+                          <flex-image
+                            class="w-auto mw-100 cursor-pointer my-champion-element"
+                            :key="rank.id"
+                            :image-key="rank.id"
+                            :element-id="rank.id"
+                            :imgur-url="rank.imgur_url"
+                            :thumb-url="rank.thumb_url || rank.mediumthumb_url"
+                            :thumb-url2="rank.mediumthumb_url || rank.lowthumb_url"
+                            :alt="rank.title">
+                          </flex-image>
+                        </viewer>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </b-tab>
             @endif
@@ -670,6 +741,15 @@
           </div>
         @endif
 
+        {{-- return to top --}}
+        <div v-if="showReturnUpButton" class="align-content-center"
+          style="position: fixed; right: 20px; bottom: 20px; z-index:1050;">
+          <span class="cursor-pointer" @click="scrollToTop">
+            <div class="bg-secondary text-center align-content-center return-top-button">
+              <i class="fas fa-arrow-up text-white"></i>
+            </div>
+          </span>
+        </div>
       </div>
     </div>
   </rank>

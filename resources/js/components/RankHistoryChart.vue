@@ -82,6 +82,11 @@ export default {
           return false;
         }
 
+        // 過濾大於今天的日期
+        if(moment(item.date).isAfter(moment())){
+          return false;
+        }
+
         return true;
       })
       .map((item, index) => {
@@ -91,11 +96,20 @@ export default {
           win_rate: item.win_rate
         }
       });
-      const allRankData = [this.ranks['current']]
+      // 累積排名
+      let allRankData = [this.ranks['current']]
+        .concat(this.ranks['all'].filter((item) => item.date !== moment().format('YYYY-MM-DD')));
+      const allRankDataCount = allRankData.length;
+
+      allRankData = [this.ranks['current']]
         .concat(this.ranks['all'].filter((item) => item.date !== moment().format('YYYY-MM-DD')))
         .filter((item, index) => {
           if(item.rank === 0 || item.win_rate <= 0){
             return false;
+          }
+
+          if (allRankDataCount <=5){
+            return true;
           }
 
           if(item.date == moment().format('YYYY-MM-DD')){
@@ -123,7 +137,6 @@ export default {
             win_rate: item.win_rate
           }
         });
-
 
       new Chart(ctx, {
         type: 'line',

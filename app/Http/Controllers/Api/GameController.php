@@ -268,7 +268,7 @@ class GameController extends Controller
         if ($this->gameService->isGameComplete($game)) {
             $anonymousId = session()->get('anonymous_id', 'unknown');
             $game->update(['completed_at' => now()]);
-            $candidates = $game->candidates;
+            $candidates = "{$lastGameRound->winner_id},{$lastGameRound->loser_id}";
             // 觸發遊戲完成事件
             event(new GameComplete($request->user(), $anonymousId, $lastGameRound, $candidates));
         }

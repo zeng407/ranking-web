@@ -1639,8 +1639,8 @@ export default {
         })
         .catch(err => {
             this.isCloudSaving = false;
-            // 發生錯誤之後不再回傳伺服器
-            this.batchVoteInterval = 2000;
+            // 發生錯誤後增加 batchVoteInterval
+            this.batchVoteInterval = (this.batchVoteInterval*2)+1;
         });
     },
 
@@ -1663,11 +1663,7 @@ export default {
               console.error("Batch vote failed", err);
 
               this.isDataLoading = false;
-              Swal.fire({
-                  icon: 'error',
-                  toast: true,
-                  text: 'Failed to sync with server. Please try again.'
-              });
+              this.showGameResult();
           });
     },
 

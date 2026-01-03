@@ -177,7 +177,7 @@ class RankService
                 $query->whereNull('deleted_at');
             });
 
-        // [Fix 1] 取得原始排序的 List (不要在這裡 keyBy，保持 0, 1, 2 的索引)
+        // 取得原始排序的 List (不要在這裡 keyBy，保持 0, 1, 2 的索引)
         $championRanksList = (clone $baseRankQuery)
             ->where('rank_type', RankType::CHAMPION)
             ->orderByDesc('win_rate')
@@ -228,7 +228,7 @@ class RankService
             $champion = $championMap[$elementId] ?? null;
             $pk = $pkMap[$elementId] ?? null;
 
-            // [Fix 3] 直接從 Map 取得名次，如果沒有就用舊的，再沒有就是 null
+            // 直接從 Map 取得名次，如果沒有就用舊的，再沒有就是 null
             $finalWinPosition = $championPosMap[$elementId] ?? ($report ? $report->final_win_position : null);
             $winPosition = $pkPosMap[$elementId] ?? ($report ? $report->win_position : null);
 
@@ -254,7 +254,7 @@ class RankService
             $upsertData[] = $data;
         }
 
-        // [Fix 4] 計算總排名 (Rank)
+        // 計算總排名 (Rank)
         // 這裡維持原樣，使用 usort 進行記憶體內排序
         usort($upsertData, function ($a, $b) {
             // 邏輯：優先比較 win_rate，若相同則比較 final_win_rate

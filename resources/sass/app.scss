@@ -968,6 +968,19 @@
     position: sticky;
     top: 0;
     z-index: 999;
+    margin-bottom: 5px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    @media (min-width: 576px) {
+        top: calc(56.45px + 40.48px)  // navbar + buttons 高度
+    }
+}
+
+.sticky-top-rank-buttons {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 1025;  // 高於 tab
+    background-color: #f8fafc;
     @media (min-width: 576px) {
         top: 56.45px;
     }

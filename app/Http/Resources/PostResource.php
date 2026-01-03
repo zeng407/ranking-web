@@ -45,7 +45,7 @@ class PostResource extends JsonResource
             'element2' => $this->getElement($element2),
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
-            'play_count' => $this->games()->count(),
+            'play_count' => $this->getAllPlayedCount() ?? $this->games()->count(),
             'elements_count' => $this->elements()->count(),
             'tags' => $this->tags->pluck('name')->toArray(),
             'is_censored' => $this->is_censored,

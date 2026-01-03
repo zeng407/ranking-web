@@ -44,20 +44,24 @@ export default {
   },
   methods: {
     share() {
+      this.copyToClipboard();
       if (navigator.share) {
         navigator.share({
+          title: document.title,
+          text: this.text,
           url: this.url
-        }).catch(console.error);
-      } else {
-        this.$refs.popover.$emit('open');
-        navigator.clipboard.writeText(this.url).then(() => {
-          this.$refs.popover.$emit('show');
-          this.afterCopyFunction();
-          setTimeout(() => {
-            this.$root.$emit('bv::hide::popover');
-          }, 1000);
-        });
+        })
       }
+    },
+    copyToClipboard() {
+      this.$refs.popover.$emit('open');
+      navigator.clipboard.writeText(this.url).then(() => {
+        this.$refs.popover.$emit('show');
+        this.afterCopyFunction();
+        setTimeout(() => {
+          this.$root.$emit('bv::hide::popover');
+        }, 3000);
+      });
     },
     getClass() {
       if(this.customClass !== ''){
