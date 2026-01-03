@@ -448,11 +448,27 @@ class GameService
      */
     public function batchUpdateGameRounds(Game $game, array $votes)
     {
+        $tStart = microtime(true);
+        \Log::warning('batchUpdateGameRounds.start', [
+            'game_id' => $game->id,
+            'votes_count' => count($votes),
+        ]);
+
         $this->validateBatchVotes($game, $votes);
+
+        $tAfterValidate = microtime(true);
+        \Log::warning('batchUpdateGameRounds.after_validate', [
+            'elapsed_ms' => round(($tAfterValidate - $tStart) * 1000, 2),
+        ]);
 
         ksort($votes);
         $lock = Locker::lockUpdateGameElement($game);
+        $tBeforeLock = microtime(true);
         $lock->block(10);
+        $tAfterLock = microtime(true);
+        \Log::warning('batchUpdateGameRounds.lock_acquired', [
+            'wait_ms' => round(($tAfterLock - $tBeforeLock) * 1000, 2),
+        ]);
 
         try {
             $lastCreatedRound = null;
@@ -484,6 +500,11 @@ class GameService
             $roundsToInsert = [];
             $now = now();
             $voteCountIncrement = 0;
+            $stats = [
+                'winner_updates' => 0,
+                'loser_updates' => 0,
+                'ready_resets' => 0,
+            ];
 
             // 直接執行迴圈，每一行 SQL 執行完就會自動釋放 Row Lock
             foreach ($votes as $vote) {
@@ -511,6 +532,7 @@ class GameService
                         'is_ready' => false,
                     ]
                 );
+                $stats['winner_updates']++;
 
                 //更新輸家
                 $this->updateGameElementWithRetry(
@@ -521,12 +543,14 @@ class GameService
                         'is_ready' => false,
                     ]
                 );
+                $stats['loser_updates']++;
 
                 if ($isEndOfRound) {
                     \DB::table('game_elements')
                         ->where('game_id', $game->id)
                         ->where('is_eliminated', false)
                         ->update(['is_ready' => true]);
+                    $stats['ready_resets']++;
                 }
 
                 // 收集 Round 資料，稍後一次寫入
@@ -546,7 +570,12 @@ class GameService
             // 使用 chunk 防止一次寫入過多導致 SQL 長度過長
             if (!empty($roundsToInsert)) {
                 foreach (array_chunk($roundsToInsert, 500) as $chunk) {
+                    $chunkStart = microtime(true);
                     Game1V1Round::insert($chunk);
+                    \Log::warning('batchUpdateGameRounds.insert_chunk', [
+                        'size' => count($chunk),
+                        'elapsed_ms' => round((microtime(true) - $chunkStart) * 1000, 2),
+                    ]);
                 }
 
                 $lastData = end($roundsToInsert);
@@ -573,6 +602,14 @@ class GameService
             }
 
             $lock->release();
+            \Log::warning('batchUpdateGameRounds.done', [
+                'game_id' => $game->id,
+                'votes_count' => count($votes),
+                'winner_updates' => $stats['winner_updates'],
+                'loser_updates' => $stats['loser_updates'],
+                'ready_resets' => $stats['ready_resets'],
+                'total_ms' => round((microtime(true) - $tStart) * 1000, 2),
+            ]);
             return $lastCreatedRound;
 
         } catch (\Exception $e) {

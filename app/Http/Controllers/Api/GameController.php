@@ -246,12 +246,8 @@ class GameController extends Controller
             $seenPairs = [];
 
             // 查 DB 已存在的回合，跳過已處理的組合
-            $winners = collect($votes)->pluck('winner_id')->unique();
-            $losers = collect($votes)->pluck('loser_id')->unique();
             $existingPairs = DB::table('game_1v1_rounds')
                 ->where('game_id', $game->id)
-                ->whereIn('winner_id', $winners)
-                ->whereIn('loser_id', $losers)
                 ->select('winner_id', 'loser_id')
                 ->get()
                 ->map(function ($row) {
