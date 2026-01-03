@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="btn btn-secondary create-game-button" data-toggle="modal" @click.prevent="showModal">
+    <button class="btn btn-primary create-game-button" data-toggle="modal" @click.prevent="showModal">
       <h5 class="m-0 d-flex align-items-center justify-content-center">
         <i class="fa-solid fa-gamepad">&nbsp;{{$t('game_room.multiplayer_mode')}}</i>
         <span v-if="hasActiveRoom" class="ml-2 d-flex align-items-center">
@@ -12,8 +12,8 @@
 
     <!-- modal -->
     <div class="modal fade" id="createGameRoomModal" tabindex="-1" aria-labelledby="createGameRoomModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
+      <div class="modal-dialog game-room-modal">
+        <div class="modal-content game-room-modal-content">
           <div class="modal-header">
             <h5 v-if="step == 0" class="modal-title" id="createGameRoomModalLabel">{{$t('game_room.create_game.title')}}</h5>
             <h5 v-if="step == 1" class="modal-title" id="createGameRoomModalLabel">{{$t('game_room.create_game.invite')}}</h5>
@@ -24,7 +24,7 @@
           <div class="modal-body text-center">
             <div class="row" v-show="step == 0">
               <div class="col-12 col-md-6 my-2">
-                <button class="btn btn-outline-dark"
+                <button class="btn game-mode-card"
                   @click="updateStep(1)" @mouseenter="flipOnhover" @mouseleave="flipOffhover"
                   data-target="flip-item-1" style="width: 100%;">
                   <h2 >
@@ -56,8 +56,8 @@
                 </button>
               </div>
               <div class="col-12 col-md-6 my-2">
-                <button class="btn btn-outline-dark disabled position-relative" disabled >
-                  <div class=" h-100 w-100 position-absolute" style="top: 0; left: 0; background: #FFF7;"></div>
+                <button class="btn game-mode-card disabled position-relative" disabled >
+                  <div class="h-100 w-100 position-absolute game-mode-disabled-mask"></div>
                   <h2>
                     <i id="flip-item-2" class="fa-solid fa-users"></i>
                   </h2>
@@ -91,7 +91,7 @@
             <div v-show="step == 1">
               <div class="row">
                 <div class="col-12 text-left mb-1">
-                  <button class="btn btn-outline-dark btn-sm" @click="updateStep(0)">
+                  <button class="btn btn-outline-light btn-sm game-mode-back" @click="updateStep(0)">
                     <i class="fa-solid fa-arrow-left"></i>&nbsp;{{ $t('game_room.create_game.back') }}
                   </button>
                 </div>
@@ -108,7 +108,7 @@
                       <h2 class="break-word">
                         <p>{{ gameRoomUrl }}</p>
                       </h2>
-                      <a @click="downloadQrcode" class="btn btn-outline-dark btn-sm">
+                      <a @click="downloadQrcode" class="btn btn-outline-light btn-sm game-mode-back">
                         <i class="fa-solid fa-download"></i> {{ $t('Download QR code') }}
                       </a>
                       <copy-link id="game1-room-url" placement="bottom" :url="gameRoomUrl" :text="$t('Copy link')" :after-copy-text="$t('Copied link')"></copy-link>

@@ -66,7 +66,7 @@
                     <h5 class="m-0">
                       <share-link heading-tag="h5" id="result" :url="shareResultLink()"
                         text="{{ __('rank.share-result') }}" after-copy-text="{{ __('Copied link') }}"
-                        custom-class="btn btn-primary btn-sm"></share-link>
+                        ></share-link>
                     </h5>
                   </div>
                 @endif

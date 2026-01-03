@@ -6,6 +6,8 @@ import QRCode from 'qrcode';
 
 const MD_WIDTH_SIZE = 576;
 const MOBILE_HEIGHT = 700;
+const BATCH_VOTE_SAVE_INTERVAL = 10; // 每 10 票存一次
+const KEEP_VOTE_RECORD_COUNT = 64; // 保留最近 64 筆投票紀錄
 export default {
   beforeMount() {
     this.loadGameSerialFromCookie();
@@ -28,8 +30,6 @@ export default {
     this.resizeElementHeight();
     this.registerScrollEvent();
 
-    // 啟動計時器
-    this.startTimer();
   },
 
   beforeDestroy() {
@@ -151,13 +151,18 @@ export default {
       },
 
       // Cloud Save 相關變數
-      batchVoteInterval: 10, // 每 10 票存一次 (參數可設定)
+      batchVoteInterval: BATCH_VOTE_SAVE_INTERVAL,
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
 
       // 計時器
       timerSeconds: 0,
       timerInterval: null,
+
+      // 對戰紀錄時間軸
+      matchHistory: [],
+      lastVotePair: null,
+      showMatchHistory: false,
     };
   },
   computed: {
@@ -200,14 +205,14 @@ export default {
         const h = Math.floor(total / 3600);
         const m = Math.floor((total % 3600) / 60);
         const s = total % 60;
-        return `${h}小時${m}分${s}秒`;
+        return `${h}h${m}m${s}s`;
       }
       if (total >= 60) {
         const m = Math.floor(total / 60);
         const s = total % 60;
-        return `${m}分${s}秒`;
+        return `${m}m${s}s`;
       }
-      return `${total}秒`;
+      return `${total}s`;
     },
 
     gameRankUrl: function () {
@@ -301,6 +306,21 @@ export default {
     },
   },
   methods: {
+    formatThinkingTime(seconds) {
+      if (!seconds) return '0s';
+      if (seconds >= 3600) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h}h${m}m${s}s`;
+      }
+      if (seconds >= 60) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}m${s}s`;
+      }
+      return `${seconds}s`;
+    },
     // game room
     showGameRoomJoinSetting() {
       $("#gameRoomJoin").modal("show");
@@ -496,7 +516,8 @@ export default {
       } else {
         this.gameRoom.is_game_completed = true;
         this.finishingGame = true;
-        this.isVoting = false
+        this.isVoting = false;
+        this.clearMatchHistory();
       }
     },
     isBetBefore() {
@@ -677,6 +698,9 @@ export default {
       const key = `gamestate_${this.postSerial}`;
       localStorage.removeItem(key);
 
+      // 清空時間軸
+      this.clearMatchHistory();
+
       const data = {
         post_serial: this.postSerial,
         element_count: this.elementsCount,
@@ -687,6 +711,9 @@ export default {
         .post(this.createGameEndpoint, data)
         .then((res) => {
           this.gameSerial = res.data.game_serial;
+          this.showMatchHistory = true;
+          this.resetTimer();
+          this.startTimer();
           this.keepGameCookie();
           if (this.isHostingGameRank || this.isClientMode === false) {
               // --- 多人模式 (Server Mode) ---
@@ -874,7 +901,6 @@ export default {
               if (parsed.localElements && parsed.clientState) {
                   this.gameSerial = parsed.gameSerial;
 
-                  this.isClientMode = false;
                   this.localElements = parsed.localElements;
                   this.localVotes = parsed.localVotes || [];
                   this.clientState = parsed.clientState;
@@ -959,10 +985,17 @@ export default {
         gameSerial = this.$cookies.get(this.postSerial)
       }
 
+      if (gameSerial) {
+        this.gameSerial = gameSerial;
+        this.showMatchHistory = true;
+        this.loadMatchHistory();
+        this.resetTimer();
+        this.startTimer();
+      }
+
       // Server Mode
       if (this.isHostingGameRank || this.isClientMode === false) {
         if (gameSerial) {
-            this.gameSerial = gameSerial;
             console.log("Room mode: Continuing game with serial", gameSerial);
             this.isClientMode = false;
             this.nextRound(null);
@@ -1278,7 +1311,7 @@ export default {
         if (this.isBetGameClient) {
           this.bet(this.le, this.re);
         } else {
-          this.vote(this.le, this.re);
+          this.vote(this.le, this.re, 'left');
         }
       };
 
@@ -1397,7 +1430,7 @@ export default {
         if (this.isBetGameClient) {
           this.bet(this.re, this.le);
         } else {
-          this.vote(this.re, this.le);
+          this.vote(this.re, this.le, 'right');
         }
       };
 
@@ -1597,16 +1630,16 @@ export default {
       });
     },
 
-    vote(winner, loser) {
+    vote(winner, loser, winSide = 'left') {
       if (!this.isClientMode || this.isHostingGameRank) {
         const data = { game_serial: this.gameSerial, winner_id: winner.id, loser_id: loser.id };
-        this.sendVote(data);
+        this.sendVote(data, winSide);
       } else {
-        this.handleClientVote(winner, loser);
+        this.handleClientVote(winner, loser, winSide);
       }
     },
 
-    handleClientVote(winner, loser) {
+    handleClientVote(winner, loser, winSide = 'left') {
       const winnerObj = this.localElements.find(e => e.id === winner.id);
       const loserObj = this.localElements.find(e => e.id === loser.id);
 
@@ -1621,6 +1654,9 @@ export default {
 
           this.localVotes.push({ winner_id: winner.id, loser_id: loser.id });
           this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
+
+          // 紀錄最後一筆投票，用於時間軸
+          this.lastVotePair = { winner_id: winner.id, loser_id: loser.id, winSide: winSide };
 
           // 狀態改變後立即存檔
           this.saveToLocalStorage();
@@ -1692,7 +1728,7 @@ export default {
           });
     },
 
-    sendVote(data) {
+    sendVote(data, winSide = 'left') {
 
       // 1. 在送出前，更新本地 localElements 的狀態
       // 這是為了確保本地端的 "淘汰名單" 與 Server 端同步
@@ -1715,6 +1751,10 @@ export default {
           winner_id: data.winner_id,
           loser_id: data.loser_id
       });
+
+      // 紀錄最後一筆投票，用於時間軸
+      this.lastVotePair = { winner_id: data.winner_id, loser_id: data.loser_id, winSide: winSide };
+
       axios
         .post(this.voteGameEndpoint, data)
         .then((res) => {
@@ -1770,6 +1810,7 @@ export default {
             // final round
             this.isDataLoading = true;
             this.finishingGame = true;
+            this.clearMatchHistory();
           }
 
           if (!this.finishingGame) {
@@ -1826,6 +1867,8 @@ export default {
       if(this.autoRefreshRoomInterval){
         this.autoRefreshRoomCounter = 0;
       }
+      // 先記錄思考時間，再重置計時器，避免被歸零
+      this.recordMatchFromLastVote();
       this.resetTimer();
       this.status = res.data.status;
       if (this.status === "end_game") {
@@ -1876,6 +1919,110 @@ export default {
       if (this.timerInterval) {
         clearInterval(this.timerInterval);
         this.timerInterval = null;
+      }
+    },
+
+    // --- Timeline helpers ---
+    getBestThumb(element) {
+      if (!element) return '';
+      return element.lowthumb_url || element.mediumthumb_url || element.thumb_url || '';
+    },
+    findElementById(id) {
+      if (!id) return null;
+      let found = this.localElements.find(e => e.id === id);
+      if (!found) {
+        if (this.le && this.le.id === id) found = this.le;
+        if (this.re && this.re.id === id) found = this.re;
+      }
+      return found || null;
+    },
+    recordMatchFromLastVote() {
+      if (!this.lastVotePair) return;
+      const { winner_id, loser_id } = this.lastVotePair;
+      const winner = this.findElementById(winner_id);
+      const loser = this.findElementById(loser_id);
+      if (!winner || !loser) return;
+
+      // 使用與頁面相同的回合標籤邏輯
+      let roundLabel = '';
+      if (this.roundTitleCount <= 2) {
+        roundLabel = this.$t('game_round_final');
+      } else if (this.roundTitleCount <= 4) {
+        roundLabel = this.$t('game_round_semifinal');
+      } else if (this.roundTitleCount <= 8) {
+        roundLabel = this.$t('game_round_quarterfinal');
+      } else if (this.roundTitleCount <= 1024) {
+        roundLabel = this.$t('game_round_of', { round: this.roundTitleCount });
+      }
+
+      const progressLabel = `${this.displayCurrentRound}/${this.displayTotalRound}`;
+      const thinkingTime = this.timerSeconds;
+      const winSide = this.lastVotePair.winSide || 'left';
+
+      this.matchHistory.unshift({
+        id: `${Date.now()}-${winner_id}-${loser_id}-${this.matchHistory.length}`,
+        roundLabel,
+        progressLabel,
+        thinkingTime,
+        winSide,
+        winner: {
+          title: winner.title,
+          thumb: this.getBestThumb(winner),
+        },
+        loser: {
+          title: loser.title,
+          thumb: this.getBestThumb(loser),
+        },
+      });
+
+      // 保留筆數
+      if (this.matchHistory.length > KEEP_VOTE_RECORD_COUNT) {
+        this.matchHistory.pop();
+      }
+
+      // 儲存到 localStorage
+      this.saveMatchHistory();
+
+      // 清空暫存
+      this.lastVotePair = null;
+    },
+    loadMatchHistory() {
+      try {
+        const key = `matchHistory_${this.postSerial}`;
+        const saved = localStorage.getItem(key);
+        if (saved && this.gameSerial) {
+          const data = JSON.parse(saved);
+          // 驗證資料格式、gameSerial並限制在 50 筆內
+          if (data && data.gameSerial === this.gameSerial && Array.isArray(data.matches)) {
+            this.matchHistory = data.matches.slice(0, 50);
+          } else {
+            // gameSerial不匹配，清空
+            this.matchHistory = [];
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load match history:', error);
+      }
+    },
+    saveMatchHistory() {
+      try {
+        const key = `matchHistory_${this.postSerial}`;
+        const data = {
+          gameSerial: this.gameSerial,
+          matches: this.matchHistory
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (error) {
+        console.error('Failed to save match history:', error);
+      }
+    },
+    clearMatchHistory() {
+      try {
+        const key = `matchHistory_${this.postSerial}`;
+        localStorage.removeItem(key);
+        this.matchHistory = [];
+      } catch (error) {
+        console.error('Failed to clear match history:', error);
       }
     },
     getYoutubePlayer(element) {

@@ -71,7 +71,7 @@
         batch-vote-endpoint="{{route('api.game.batch-vote')}}"
         :props-enable-client-mode="true"
     >
-    <div class="container-fluid hide-scrollbar" v-cloak>
+    <div class="container-fluid hide-scrollbar game-dark-theme" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
         {{-- ads --}}
 
@@ -113,18 +113,19 @@
 
         {{-- finishing game loading --}}
         <div v-show="finishingGame && !isBetGameClient"
-             style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: rgba(255, 255, 255, 0.95);">
+             class="finishing-game-overlay"
+             style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999;">
 
           <div class="d-flex justify-content-center align-items-center flex-column w-100 h-100">
             <img src="{{ asset('storage/logo.png') }}" class="updown-animation" alt="logo" style="width: 50px; height: 50px;">
-            <div v-if="gameResultUrl === ''">
+            <div v-if="gameResultUrl === ''" class="finishing-text">
               @{{ $t('game.finishing') }}
               {{-- spinner --}}
               <div class="spinner-border text-primary" role="status">
                 <span class="sr-only">Loading...</span>
               </div>
             </div>
-            <div v-else>
+            <div v-else class="finishing-text">
               <a :href="gameResultUrl">@{{ $t('game.checkout_result') }}</a>
             </div>
           </div>
@@ -231,7 +232,7 @@
               <!--left part-->
               <div class="col-12 col-sm-6 pr-sm-1 mb-2 mb-sm-0" id="left-part">
                 <transition name="slide-in-left">
-                  <div v-if="animationShowLeftPlayer" class="card game-player left-player" id="left-player">
+                  <div v-if="animationShowLeftPlayer" class="card game-player left-player vs-card" id="left-player">
                     <div v-show="isImageSource(le)" class="game-image-container" v-cloak>
                       <flex-image
                         :key="le.id"
@@ -288,7 +289,7 @@
                       <div class="my-1 overflow-scroll hide-scrollbar" style="height: 120px" v-else>
                         <h1 class="my-1 game-element-title">@{{ le.title }}</h1>
                       </div>
-                      <button id="left-btn" class="btn btn-primary vote-button btn-block d-none d-sm-block" :disabled="isVoting"
+                      <button id="left-btn" class="btn btn-vote-left vote-button btn-block d-none d-sm-block" :disabled="isVoting"
                         @click="leftWin">
                         <i class="fa-solid fa-2x fa-thumbs-up"></i>
                         <h3 class="d-inline-block m-0" v-if="showGameRoomVotes">
@@ -299,14 +300,14 @@
                       <div class="row" v-if="isYoutubeSource(le) || isVideoUrlSource(le)">
                         {{-- mobile --}}
                         <div class="col-3">
-                          <button class="btn btn-outline-primary btn-lg btn-block d-block d-sm-none" :class="{active: isLeftPlaying}" :disabled="isVoting"
+                          <button class="btn btn-outline-primary btn-lg btn-block d-block d-sm-none btn-hover-bounce" :class="{active: isLeftPlaying}" :disabled="isVoting"
                             @click="leftPlay()">
                             <i class="fas fa-volume-mute" v-show="!isLeftPlaying"></i>
                             <i class="fas fa-volume-up" v-show="isLeftPlaying"></i>
                           </button>
                         </div>
                         <div class="col-9">
-                          <button class="btn btn-primary btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
+                          <button class="btn btn-vote-left btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
                             @click="leftWin"><i class="fa-solid fa-thumbs-up"></i>
                             <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                               <I-Count-Up :end-val="leftVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
@@ -317,7 +318,7 @@
                       </div>
 
                       <div v-else>
-                        <button class="btn btn-primary btn-block btn-lg d-block d-sm-none" :disabled="isVoting"
+                        <button class="btn btn-vote-left btn-block btn-lg d-block d-sm-none" :disabled="isVoting"
                           @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                           <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                             <I-Count-Up :end-val="leftVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
@@ -374,7 +375,7 @@
               <!--right part-->
               <div class="col-12 col-sm-6 pl-sm-1 mb-4 mb-sm-0" id="right-part">
                 <transition :name="isMobileScreen ? 'slide-in-left' : 'slide-in-right'">
-                  <div v-if="animationShowRightPlayer" class="card game-player right-player" id="right-player" :class="{ 'flex-column-reverse': isMobileScreen, 'mb-4': isMobileScreen}">
+                  <div v-if="animationShowRightPlayer" class="card game-player right-player vs-card" id="right-player" :class="{ 'flex-column-reverse': isMobileScreen, 'mb-4': isMobileScreen}">
                     <div v-show="isImageSource(re)" class="game-image-container" v-cloak>
                       <flex-image
                         v-show="!rightImageLoaded"
@@ -434,7 +435,7 @@
                       <div class="my-1 overflow-scroll hide-scrollbar" style="height: 120px" v-else>
                         <h1 class="my-1 game-element-title">@{{ re.title }}</h1>
                       </div>
-                      <button id="right-btn" class="btn btn-danger vote-button btn-block d-none d-sm-block" :disabled="isVoting"
+                      <button id="right-btn" class="btn btn-vote-right vote-button btn-block d-none d-sm-block" :disabled="isVoting"
                         @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                         <h3 class="d-inline-block m-0" v-if="showGameRoomVotes">
                           <I-Count-Up :end-val="rightVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
@@ -444,14 +445,14 @@
                       <div class="row" v-if="isYoutubeSource(re) || isVideoUrlSource(re)">
                         {{-- mobile --}}
                         <div class="col-3">
-                          <button class="btn btn-outline-danger btn-lg btn-block d-block d-sm-none" :class="{active: isRightPlaying}" :disabled="isVoting"
+                          <button class="btn btn-outline-danger btn-lg btn-block d-block d-sm-none btn-hover-bounce" :class="{active: isRightPlaying}" :disabled="isVoting"
                             @click="rightPlay()">
                             <i class="fas fa-volume-mute" v-show="!isRightPlaying"></i>
                             <i class="fas fa-volume-up" v-show="isRightPlaying"></i>
                           </button>
                         </div>
                         <div class="col-9">
-                          <button class="btn btn-danger btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
+                          <button class="btn btn-vote-right btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
                             @click="rightWin"><i class="fa-solid fa-thumbs-up"></i>
                             <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                               <I-Count-Up :end-val="rightVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
@@ -461,7 +462,7 @@
                         </div>
                       </div>
                       <div v-else>
-                        <button class="btn btn-danger btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
+                        <button class="btn btn-vote-right btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
                           @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                           <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                             <I-Count-Up :end-val="rightVotes" :options="{'duration':0.5}" :delay="0"></I-Count-Up>
@@ -550,7 +551,7 @@
                   </span>
                 </div>
               </div>
-              {{-- rank --}}
+              {{-- room rank --}}
               <div class="p-1 my-1">
                 <h3 class="text-center position-relative">
                   @{{ $t('game_room.leaderboard') }}
@@ -658,6 +659,7 @@
               </div>
             </div>
 
+            {{-- game room setting --}}
             <div v-if="isBetGameHost" class="d-flex position-absolute mx-2 mb-4" style="right: 0; bottom:0">
               <div v-show="!showRoomInvitation"
                 class="btn btn-outline-dark"
@@ -687,7 +689,71 @@
           </div>
         </div>
 
-        <div v-if="game && gameSerial && !finishingGame && !isMobileScreen" class="d-flex justify-content-end my-2" id="create-game">
+        {{-- 投票時間軸 --}}
+        <div class="row mt-3" v-if="showMatchHistory && matchHistory.length">
+          <div class="col-12">
+            <div class="match-history-list d-flex overflow-x-scroll hide-scrollbar py-2">
+              <div
+                v-for="item in matchHistory"
+                :key="item.id"
+                class="match-card"
+                :class="item.winSide === 'left' ? 'left-win' : 'right-win'"
+              >
+                {{-- Header with round info and thinking time --}}
+                <div class="match-card-header d-flex justify-content-between align-items-center mb-2">
+                  <div class="match-card-round font-weight-bold text-white">
+                    @{{ item.roundLabel }}
+                  </div>
+                  <div class="match-card-progress badge badge-light">
+                    @{{ item.progressLabel }}
+                  </div>
+                </div>
+
+                {{-- Thinking time badge --}}
+                <div class="text-center mb-2">
+                  <div class="match-card-thinking badge">
+                    <i class="fas fa-clock"></i> @{{ formatThinkingTime(item.thinkingTime) }}
+                  </div>
+                </div>
+
+                {{-- Winner --}}
+                <div class="match-card-winner mb-2 position-relative">
+                  <img
+                    :src="item.winner.thumb"
+                    :alt="item.winner.title"
+                    class="match-card-image"
+                  >
+                  <div class="match-card-overlay position-absolute w-100">
+                    <div class="d-flex align-items-center match-card-overlay-content">
+                      <i class="fas fa-trophy match-card-icon-trophy"></i>
+                      <div class="match-card-title font-weight-bold text-white text-truncate">
+                        @{{ item.winner.title }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {{-- Loser --}}
+                <div class="match-card-loser position-relative">
+                  <img
+                    :src="item.loser.thumb"
+                    :alt="item.loser.title"
+                    class="match-card-image"
+                  >
+                  <div class="match-card-overlay match-card-overlay-loser position-absolute w-100">
+                    <div class="d-flex align-items-center match-card-overlay-content">
+                      <i class="fas fa-times-circle match-card-icon-loss"></i>
+                      <div class="match-card-title text-white text-truncate match-card-title-muted">
+                        @{{ item.loser.title }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="game && gameSerial && !finishingGame && !isMobileScreen" class="d-flex justify-content-end py-2" id="create-game">
           <create-game-room
             game-room-route="{{route('game.room.index', '_serial')}}"
             get-room-endpoint="{{route('api.game-room.get', '_serial')}}"
@@ -747,15 +813,15 @@
                       url="{{route('game.show',$post['serial'])}}"
                       text="{{__('Share')}}"
                       after-copy-text="{{__('Copied link')}}"
-                      custom-class="btn btn-outline-secondary mx-1 white-space-no-wrap"
+                      custom-class="btn btn-outline-secondary text-white mx-1 white-space-no-wrap"
                       >
                     </share-link>
                   </div>
                   <div>
-                    <a class="btn btn-outline-secondary white-space-no-wrap" :href="gameRankUrl">
+                    <a class="btn btn-outline-secondary text-white white-space-no-wrap" :href="gameRankUrl">
                       <i class="fas fa-trophy"></i>&nbsp;@{{$t('game.rank')}}
                     </a>
-                    <a class="btn btn-outline-secondary white-space-no-wrap" href="/">
+                    <a class="btn btn-outline-secondary text-white white-space-no-wrap" href="/">
                       <i class="fas fa-home"></i>&nbsp;@{{ $t('game.cancel') }}
                     </a>
                   </div>
