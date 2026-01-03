@@ -496,6 +496,20 @@ class GameService
                 }
             }
 
+            \Log::warning('batchUpdateGameRounds.state_init', [
+                'game_id' => $game->id,
+                'last_round_id' => $lastRound?->id,
+                'last_round_current' => $lastRound?->current_round,
+                'last_round_of_round' => $lastRound?->of_round,
+                'last_round_remain' => $lastRound?->remain_elements,
+                'stage_count' => $stageCount,
+                'stage' => $stage,
+                'remain' => $remain,
+                'match_index' => $matchIndex,
+                'matches_in_stage' => $matchesInStage,
+                'votes_count' => count($votes),
+            ]);
+
             // 準備批次寫入的陣列
             $roundsToInsert = [];
             $now = now();
@@ -508,6 +522,7 @@ class GameService
 
             // 直接執行迴圈，每一行 SQL 執行完就會自動釋放 Row Lock
             foreach ($votes as $vote) {
+                $loopStart = microtime(true);
                 $winnerId = $vote['winner_id'];
                 $loserId = $vote['loser_id'];
 
@@ -565,6 +580,18 @@ class GameService
                     'updated_at' => $now,
                 ];
                 logger('prepared round data', end($roundsToInsert));
+
+                \Log::warning('batchUpdateGameRounds.vote_processed', [
+                    'game_id' => $game->id,
+                    'winner_id' => $winnerId,
+                    'loser_id' => $loserId,
+                    'stage' => $stage,
+                    'match_index' => $matchIndex,
+                    'matches_in_stage' => $matchesInStage,
+                    'remain' => $remain,
+                    'is_end_of_round' => $isEndOfRound,
+                    'elapsed_ms' => round((microtime(true) - $loopStart) * 1000, 2),
+                ]);
             }
 
             // 使用 chunk 防止一次寫入過多導致 SQL 長度過長
