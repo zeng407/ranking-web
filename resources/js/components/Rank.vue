@@ -348,9 +348,6 @@ export default {
     shareGameLink() {
       return window.location.origin + '/g/' + this.postSerial;
     },
-    handleScroll() {
-      this.showReturnTop = window.scrollY > 300;
-    },
     handleScroll(event) {
       this.recordLastScrollPosition();
     },
