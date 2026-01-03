@@ -60,13 +60,12 @@ class RankServiceTest extends TestCase
             $elements[2]->id,
             $elements[0]->id,
         ], RankReport::where('post_id', $post->id)
-            ->whereNull('deleted_at')
             ->orderBy('rank')
             ->pluck('element_id')
             ->toArray());
 
         $this->assertSoftDeleted('rank_reports', ['id' => $staleReport->id]);
-        $this->assertEquals(3, RankReport::where('post_id', $post->id)->whereNull('deleted_at')->count());
+        $this->assertEquals(3, RankReport::where('post_id', $post->id)->count());
     }
 
     private function seedRankMetrics(Post $post, $elements): void
