@@ -7,7 +7,7 @@ import QRCode from 'qrcode';
 const MD_WIDTH_SIZE = 576;
 const MOBILE_HEIGHT = 700;
 const BATCH_VOTE_SAVE_INTERVAL = 10; // 每 10 票存一次
-const KEEP_VOTE_RECORD_COUNT = 64; // 保留最近 64 筆投票紀錄
+const KEEP_VOTE_RECORD_COUNT = 1024 // 保留最近 1024 筆投票紀錄
 export default {
   beforeMount() {
     this.loadGameSerialFromCookie();
@@ -163,6 +163,11 @@ export default {
       matchHistory: [],
       lastVotePair: null,
       showMatchHistory: false,
+
+      // 時間軸拖曳
+      isDragging: false,
+      startX: 0,
+      scrollLeft: 0,
     };
   },
   computed: {
@@ -2144,12 +2149,17 @@ export default {
                       this.videoHoverIn(this.re, this.le, false);
                     }
                   }
+                }).catch((error) => {
+                  console.error('getPlayerState failed in interval:', error);
+                  clearInterval(interval);
                 });
               }, 100);
             } else {
               theirPlayer.pauseVideo();
               theirPlayer.mute();
             }
+          }).catch((error) => {
+            console.error('getPlayerState failed:', error);
           });
         }
 
@@ -2332,6 +2342,30 @@ export default {
           this.showCreateRoomButton = false;
         }
       });
+    },
+
+    // 時間軸拖曳相關方法
+    startDrag(e) {
+      const container = e.currentTarget;
+      this.isDragging = true;
+      this.startX = e.pageX - container.offsetLeft;
+      this.scrollLeft = container.scrollLeft;
+      container.style.cursor = 'grabbing';
+      container.style.userSelect = 'none';
+    },
+    onDrag(e) {
+      if (!this.isDragging) return;
+      e.preventDefault();
+      const container = e.currentTarget;
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - this.startX) * 2; // 拖曳速度係數
+      container.scrollLeft = this.scrollLeft - walk;
+    },
+    stopDrag(e) {
+      this.isDragging = false;
+      const container = e.currentTarget;
+      container.style.cursor = 'grab';
+      container.style.userSelect = '';
     },
   },
 };

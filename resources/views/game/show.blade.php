@@ -692,7 +692,14 @@
         {{-- 投票時間軸 --}}
         <div class="row mt-3" v-if="showMatchHistory && matchHistory.length">
           <div class="col-12">
-            <div class="match-history-list d-flex overflow-x-scroll hide-scrollbar py-2">
+            <div
+              class="match-history-list d-flex overflow-x-scroll hide-scrollbar py-2"
+              @mousedown="startDrag"
+              @mousemove="onDrag"
+              @mouseup="stopDrag"
+              @mouseleave="stopDrag"
+              style="cursor: grab;"
+            >
               <div
                 v-for="item in matchHistory"
                 :key="item.id"
