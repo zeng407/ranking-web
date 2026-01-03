@@ -190,6 +190,18 @@
                 </h3>
 
                 <h3 class="d-flex justify-content-end text-right align-self-center" style="width: 20%">
+                  <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center mr-2"
+                    style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
+                    title="Timer">
+                    <div class="d-flex align-items-center text-secondary mr-2" style="opacity: 0.6;">
+                      <i class="fa-regular fa-clock" style="width: 20px; text-align: center;"></i>
+                    </div>
+                    <div class="d-flex align-items-center">
+                      <span class="text-muted small" style="font-size: 0.95rem;">
+                        @{{ displayTimer }}
+                      </span>
+                    </div>
+                  </div>
 
                   <div class="badge badge-pill badge-light px-3 py-1 shadow-sm d-flex align-items-center"
                     style="font-size: 0.85rem; border: 1px solid #dee2e6; max-width: 200px"
@@ -754,7 +766,6 @@
                 <div class="alert alert-danger" v-if="userLastGameSerial">
                   <i class="fas fa-exclamation-triangle"></i>&nbsp;@{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
-
                     <i class="fas fa-play"></i>&nbsp;@{{ $t('game.continue') }}
                   </span>
                 </div>

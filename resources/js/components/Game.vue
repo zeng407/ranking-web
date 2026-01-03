@@ -27,6 +27,13 @@ export default {
     this.registerResizeEvent();
     this.resizeElementHeight();
     this.registerScrollEvent();
+
+    // 啟動計時器
+    this.startTimer();
+  },
+
+  beforeDestroy() {
+    this.stopTimer();
   },
   components: {
     ICountUp
@@ -147,6 +154,10 @@ export default {
       batchVoteInterval: 10, // 每 10 票存一次 (參數可設定)
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
+
+      // 計時器
+      timerSeconds: 0,
+      timerInterval: null,
     };
   },
   computed: {
@@ -181,6 +192,22 @@ export default {
              return this.clientState.stageStartCount;
         }
         return this.displayRemainElements;
+    },
+
+    displayTimer() {
+      const total = this.timerSeconds;
+      if (total >= 3600) {
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        return `${h}小時${m}分${s}秒`;
+      }
+      if (total >= 60) {
+        const m = Math.floor(total / 60);
+        const s = total % 60;
+        return `${m}分${s}秒`;
+      }
+      return `${total}秒`;
     },
 
     gameRankUrl: function () {
@@ -690,7 +717,6 @@ export default {
 
     // 初始化前端遊戲
     initClientSideGame() {
-      this.isClientMode = false;
       this.localVotes = [];
       this.localElements = [];
       this.existingElementIds.clear();
@@ -714,15 +740,14 @@ export default {
 
             this.updateStageConfig();
             this.saveToLocalStorage();
-
             this.nextLocalRound();
 
             // 啟動背景抓取剩餘資料
-              if (this.localElements.length < this.elementsCount) {
-                setTimeout(() => {
-                  this.fetchRemainingElements();
-                }, 30000); // 30秒後執行
-              }
+            if (this.localElements.length < this.elementsCount) {
+              setTimeout(() => {
+                this.fetchRemainingElements();
+              }, 30000); // 30秒後執行
+            }
         })
         .catch(err => {
             console.error("Failed to load elements", err);
@@ -1801,6 +1826,7 @@ export default {
       if(this.autoRefreshRoomInterval){
         this.autoRefreshRoomCounter = 0;
       }
+      this.resetTimer();
       this.status = res.data.status;
       if (this.status === "end_game") {
         this.$cookies.remove(this.postSerial);
@@ -1833,6 +1859,24 @@ export default {
         return this.getRankRoute.replace("_serial", this.postSerial) + "?g=" + this.gameSerial;
       }
       return this.getRankRoute.replace("_serial", this.postSerial);
+    },
+
+    startTimer() {
+      if (this.timerInterval) {
+        return;
+      }
+      this.timerInterval = setInterval(() => {
+        this.timerSeconds += 1;
+      }, 1000);
+    },
+    resetTimer() {
+      this.timerSeconds = 0;
+    },
+    stopTimer() {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
     },
     getYoutubePlayer(element) {
       if (!element) {
