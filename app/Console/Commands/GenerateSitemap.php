@@ -5,6 +5,7 @@ use Illuminate\Console\Command;
 use Spatie\Sitemap\SitemapGenerator;
 use Spatie\Sitemap\Tags\Url;
 use App\Models\Post;
+use App\Models\PublicPost;
 use Spatie\Crawler\Crawler;
 
 
@@ -49,11 +50,17 @@ class GenerateSitemap extends Command
             })
             ->getSitemap();
 
-        Post::setEagerLoads([])
+        $sitemap->add(Url::create(url('/'))
+            ->setChangeFrequency(Url::CHANGE_FREQUENCY_HOURLY)
+            ->setPriority(1.0)
+            ->addImage(asset('/storage/og-image.jpeg'), 'Home page image')
+        );
+
+        PublicPost::setEagerLoads([])
             ->where('created_at', '>=', now()->subMonths(3))
-            ->eachById(function (Post $post) use ($sitemap) {
-                $sitemap->add(route('game.show', $post))
-                    ->add(route('game.rank', $post));
+            ->eachById(function (PublicPost $publicPost) use ($sitemap) {
+                $sitemap->add(route('game.show', $publicPost->post))
+                    ->add(route('game.rank', $publicPost->post));
             });
 
         $sitemap->writeToFile(public_path('sitemap.xml'));

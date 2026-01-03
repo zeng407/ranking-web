@@ -166,59 +166,131 @@ class RankService
     {
         \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
 
-        DB::transaction(function () use ($post) {
-            $baseRankQuery = Rank::query()
-                ->select(['post_id', 'element_id', 'rank_type', 'win_rate', 'win_count'])
-                ->where('post_id', $post->id)
-                ->where('record_date', today())
-                ->whereHas('element', function ($query) {
-                    $query->whereNull('deleted_at');
-                });
+        // ==========================================
+        // 第一階段：準備與計算
+        // ==========================================
 
-            $rankReports = RankReport::where('post_id', $post->id)
-                ->whereNull('deleted_at')
-                ->lockForUpdate() // prevent concurrent jobs from touching same rows
-                ->get()
-                ->keyBy('element_id');
+        $baseRankQuery = Rank::select(['element_id', 'rank_type', 'win_rate', 'win_count'])
+            ->where('post_id', $post->id)
+            ->where('record_date', today())
+            ->whereHas('element', function ($query) {
+                $query->whereNull('deleted_at');
+            });
 
-            $championRanks = (clone $baseRankQuery)
-                ->where('rank_type', RankType::CHAMPION)
-                ->orderByDesc('win_rate')
-                ->orderByDesc('win_count')
-                ->get();
-            $this->applyRankUpdates($championRanks, $rankReports, 'final_win_position', 'final_win_rate');
+        // 取得原始排序的 List (不要在這裡 keyBy，保持 0, 1, 2 的索引)
+        $championRanksList = (clone $baseRankQuery)
+            ->where('rank_type', RankType::CHAMPION)
+            ->orderByDesc('win_rate')
+            ->orderByDesc('win_count')
+            ->get();
 
-            $pkRanks = (clone $baseRankQuery)
-                ->where('rank_type', RankType::PK_KING)
-                ->orderByDesc('win_rate')
-                ->orderByDesc('win_count')
-                ->get();
-            $this->applyRankUpdates($pkRanks, $rankReports, 'win_position', 'win_rate');
+        $pkRanksList = (clone $baseRankQuery)
+            ->where('rank_type', RankType::PK_KING)
+            ->orderByDesc('win_rate')
+            ->orderByDesc('win_count')
+            ->get();
 
-            RankReport::where('post_id', $post->id)
-                ->whereHas('element', function ($query) {
-                    $query->whereNotNull('deleted_at');
-                })
-                ->delete();
+        // 格式: [element_id => rank_position]
+        // 這樣查詢名次的時間複雜度是 O(1)，非常快
+        $championMap = [];     // 用來查數值 (win_rate)
+        $championPosMap = [];  // 用來查名次 (position)
+        foreach ($championRanksList as $index => $rank) {
+            $championMap[$rank->element_id] = $rank;
+            $championPosMap[$rank->element_id] = $index + 1; // 名次 = 索引 + 1
+        }
 
-            $orderedIds = RankReport::where('post_id', $post->id)
-                ->orderByDesc('win_rate')
-                ->orderByDesc('final_win_rate')
-                ->pluck('id');
+        $pkMap = [];
+        $pkPosMap = [];
+        foreach ($pkRanksList as $index => $rank) {
+            $pkMap[$rank->element_id] = $rank;
+            $pkPosMap[$rank->element_id] = $index + 1;
+        }
 
-            if ($orderedIds->isNotEmpty()) {
-                $caseSql = 'CASE id';
-                foreach ($orderedIds as $index => $id) {
-                    $rank = $index + 1;
-                    $caseSql .= " WHEN {$id} THEN {$rank}";
-                }
-                $caseSql .= ' END';
+        // 取得現有的 Reports
+        $existingReports = RankReport::where('post_id', $post->id)
+            ->get()
+            ->keyBy('element_id');
 
-                DB::table('rank_reports')
-                    ->whereIn('id', $orderedIds)
-                    ->update(['rank' => DB::raw($caseSql)]);
+        // 組裝資料
+        $upsertData = [];
+        $now = now();
+
+        $allElementIds = $existingReports->keys()
+            ->merge(array_keys($championMap))
+            ->merge(array_keys($pkMap))
+            ->unique();
+
+        foreach ($allElementIds as $elementId) {
+            $report = $existingReports->get($elementId);
+
+            // 從 Map 取得資料
+            $champion = $championMap[$elementId] ?? null;
+            $pk = $pkMap[$elementId] ?? null;
+
+            // 直接從 Map 取得名次，如果沒有就用舊的，再沒有就是 null
+            $finalWinPosition = $championPosMap[$elementId] ?? ($report ? $report->final_win_position : null);
+            $winPosition = $pkPosMap[$elementId] ?? ($report ? $report->win_position : null);
+
+            $finalWinRate = $champion ? $champion->win_rate : ($report ? $report->final_win_rate : 0);
+            $winRate = $pk ? $pk->win_rate : ($report ? $report->win_rate : 0);
+
+            $data = [
+                'post_id' => $post->id,
+                'element_id' => $elementId,
+                'final_win_position' => $finalWinPosition,
+                'final_win_rate' => $finalWinRate,
+                'win_position' => $winPosition,
+                'win_rate' => $winRate,
+                'updated_at' => $now,
+            ];
+
+            if (!$report) {
+                $data['created_at'] = $now;
+            } else {
+                $data['created_at'] = $report->created_at;
             }
+
+            $upsertData[] = $data;
+        }
+
+        // 計算總排名 (Rank)
+        // 這裡維持原樣，使用 usort 進行記憶體內排序
+        usort($upsertData, function ($a, $b) {
+            // 邏輯：優先比較 win_rate，若相同則比較 final_win_rate
+            if ($b['win_rate'] != $a['win_rate']) {
+                return $b['win_rate'] <=> $a['win_rate'];
+            }
+            return $b['final_win_rate'] <=> $a['final_win_rate'];
         });
+
+        // 填入 Rank 欄位
+        foreach ($upsertData as $index => &$row) {
+            $row['rank'] = $index + 1;
+        }
+        unset($row);
+
+        // ==========================================
+        // 第二階段：寫入 (Transaction)
+        // ==========================================
+        if (!empty($upsertData)) {
+            DB::transaction(function () use ($post, $upsertData) {
+                RankReport::where('post_id', $post->id)
+                    ->whereHas('element', function ($query) {
+                        $query->whereNotNull('deleted_at');
+                    })
+                    ->update(['hidden' => true]);
+
+                $chunks = array_chunk($upsertData, 500);
+                foreach ($chunks as $chunk) {
+                    RankReport::upsert(
+                        $chunk,
+                        ['post_id', 'element_id'],
+                        ['final_win_position', 'final_win_rate', 'win_position', 'win_rate', 'rank', 'updated_at']
+                    );
+                }
+            });
+        }
+
         \Log::info("end update post [{$post->id}] rank report [{$post->title}]");
     }
 

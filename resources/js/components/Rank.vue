@@ -4,6 +4,7 @@ import CountWords from './partials/CountWords.vue';
 import Chart from 'chart.js/auto';
 import ICountUp from 'vue-countup-v2';
 import 'chartjs-adapter-moment';
+import Vue from 'vue';
 
 export default {
   components: {
@@ -11,10 +12,17 @@ export default {
     ICountUp
   },
   mounted() {
-    this.loadGameRoomRanks();
+    if(this.hasGameRoom){
+      this.loadGameRoomRanks();
+    }
+    this.loadRankFromLocal();
     this.loadCommnets();
     this.initChart();
     this.enableTooltip();
+    window.addEventListener('scroll', this.handleScroll);
+  },
+  beforeDestroy() {
+    window.removeEventListener('scroll', this.handleScroll);
   },
   data() {
     return {
@@ -52,6 +60,10 @@ export default {
       keyword: '',
       searchResults: [],
       gameRoomRanks: [],
+      localRanks: [],
+      // scrolling detection
+      lastScrollPosition: 0,
+      showReturnUpButton: false,
     }
   },
   props: {
@@ -103,6 +115,10 @@ export default {
       type: String,
       required: true
     },
+    hasGameRoom: {
+      type: Boolean,
+      required: true
+    }
   },
   computed: {
     commentWords() {
@@ -123,6 +139,24 @@ export default {
     },
   },
   methods: {
+    loadRankFromLocal() {
+      const key = `gamestate_${this.postSerial}`;
+      const savedData = localStorage.getItem(key);
+
+      if (savedData) {
+        try {
+            const parsedData = JSON.parse(savedData);
+            const elements = parsedData.localElements;
+            elements.sort((a, b) => b.local_win_count - a.local_win_count);
+            const top10 = elements.slice(0, 10);
+            this.localRanks = top10;
+            return top10;
+        } catch (e) {
+            console.error('Failed to parse saved game state from localStorage:', e);
+            return false;
+        }
+      }
+    },
     search(){
       const inputValue = this.keyword.trim();
       const params = {
@@ -310,6 +344,36 @@ export default {
       const g = urlParams.get('g');
       const url = window.location.origin + window.location.pathname + '?s=' + g;
       return url;
+    },
+    shareGameLink() {
+      return window.location.origin + '/g/' + this.postSerial;
+    },
+    handleScroll(event) {
+      this.recordLastScrollPosition();
+    },
+    recordLastScrollPosition() {
+      const currentScrollPosition = window.scrollY;
+      if(this.recording == null){
+        this.recording = setTimeout(() => {
+          this.lastScrollPosition = currentScrollPosition;
+          this.recording = null;
+        }, 100);
+      }
+
+      if(this.isScrollingUp()) {
+        this.showReturnUpButton = true;
+      }else{
+        this.showReturnUpButton = false;
+      }
+    },
+    scrollToTop() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    },
+    isScrollingUp() {
+      return window.scrollY < this.lastScrollPosition && window.scrollY > 300;
     },
     drawMyTimeline(target, container, data) {
       // skip if target is not found

@@ -6,6 +6,8 @@ import QRCode from 'qrcode';
 
 const MD_WIDTH_SIZE = 576;
 const MOBILE_HEIGHT = 700;
+const BATCH_VOTE_SAVE_INTERVAL = 10; // 每 10 票存一次
+const KEEP_VOTE_RECORD_COUNT = 128 // 保留最近 128 筆投票紀錄
 export default {
   beforeMount() {
     this.loadGameSerialFromCookie();
@@ -27,6 +29,11 @@ export default {
     this.registerResizeEvent();
     this.resizeElementHeight();
     this.registerScrollEvent();
+
+  },
+
+  beforeDestroy() {
+    this.stopTimer();
   },
   components: {
     ICountUp
@@ -51,6 +58,10 @@ export default {
     getRoomUserEndpoint: String,
     getGameElementsEndpoint: String,
     batchVoteEndpoint: String,
+    propsEnableClientMode: {
+      type: Boolean,
+      default: true,
+    },
   },
   data: function () {
     return {
@@ -128,7 +139,7 @@ export default {
       sortByTop: true,
       showCreateRoomButton: false,
 
-      isClientMode: false,
+      isClientMode: this.propsEnableClientMode,
       localElements: [], // 儲存所有參賽者物件 { ...element, local_win_count: 0, local_eliminated: false }
       localVotes: [], // 儲存投票紀錄 [{winner_id, loser_id}, ...]
       existingElementIds: new Set(), // 已存在的元素 ID 集合 (用來避免重複加入)
@@ -140,9 +151,23 @@ export default {
       },
 
       // Cloud Save 相關變數
-      batchVoteInterval: 10, // 每 10 票存一次 (參數可設定)
+      batchVoteInterval: BATCH_VOTE_SAVE_INTERVAL,
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
+
+      // 計時器
+      timerSeconds: 0,
+      timerInterval: null,
+
+      // 對戰紀錄時間軸
+      matchHistory: [],
+      lastVotePair: null,
+      showMatchHistory: false,
+
+      // 時間軸拖曳
+      isDragging: false,
+      startX: 0,
+      scrollLeft: 0,
     };
   },
   computed: {
@@ -177,6 +202,22 @@ export default {
              return this.clientState.stageStartCount;
         }
         return this.displayRemainElements;
+    },
+
+    displayTimer() {
+      const total = this.timerSeconds;
+      if (total >= 3600) {
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        return `${h}h${m}m${s}s`;
+      }
+      if (total >= 60) {
+        const m = Math.floor(total / 60);
+        const s = total % 60;
+        return `${m}m${s}s`;
+      }
+      return `${total}s`;
     },
 
     gameRankUrl: function () {
@@ -270,6 +311,21 @@ export default {
     },
   },
   methods: {
+    formatThinkingTime(seconds) {
+      if (!seconds) return '0s';
+      if (seconds >= 3600) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h}h${m}m${s}s`;
+      }
+      if (seconds >= 60) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}m${s}s`;
+      }
+      return `${seconds}s`;
+    },
     // game room
     showGameRoomJoinSetting() {
       $("#gameRoomJoin").modal("show");
@@ -465,7 +521,8 @@ export default {
       } else {
         this.gameRoom.is_game_completed = true;
         this.finishingGame = true;
-        this.isVoting = false
+        this.isVoting = false;
+        this.clearMatchHistory();
       }
     },
     isBetBefore() {
@@ -646,6 +703,9 @@ export default {
       const key = `gamestate_${this.postSerial}`;
       localStorage.removeItem(key);
 
+      // 清空時間軸
+      this.clearMatchHistory();
+
       const data = {
         post_serial: this.postSerial,
         element_count: this.elementsCount,
@@ -656,11 +716,15 @@ export default {
         .post(this.createGameEndpoint, data)
         .then((res) => {
           this.gameSerial = res.data.game_serial;
+          this.showMatchHistory = true;
+          this.resetTimer();
+          this.startTimer();
           this.keepGameCookie();
-          if (this.isHostingGameRank) {
+          if (this.isHostingGameRank || this.isClientMode === false) {
               // --- 多人模式 (Server Mode) ---
               this.isClientMode = false;
-              this.nextRound(null);
+              this.saveToLocalStorage();
+              this.nextRound(null, false);
           } else {
               // --- 單人模式 (Client Mode) ---
               this.initClientSideGame();
@@ -685,7 +749,6 @@ export default {
 
     // 初始化前端遊戲
     initClientSideGame() {
-      this.isClientMode = false;
       this.localVotes = [];
       this.localElements = [];
       this.existingElementIds.clear();
@@ -709,15 +772,14 @@ export default {
 
             this.updateStageConfig();
             this.saveToLocalStorage();
-
             this.nextLocalRound();
 
             // 啟動背景抓取剩餘資料
-              if (this.localElements.length < this.elementsCount) {
-                setTimeout(() => {
-                  this.fetchRemainingElements();
-                }, 30000); // 30秒後執行
-              }
+            if (this.localElements.length < this.elementsCount) {
+              setTimeout(() => {
+                this.fetchRemainingElements();
+              }, 30000); // 30秒後執行
+            }
         })
         .catch(err => {
             console.error("Failed to load elements", err);
@@ -816,7 +878,8 @@ export default {
             clientState: this.clientState,
             existingElementIds: Array.from(this.existingElementIds),
             elementsCount: this.elementsCount,
-            updatedAt: new Date().getTime()
+            updatedAt: new Date().getTime(),
+            clientMode: this.isClientMode
         };
 
         localStorage.setItem(key, JSON.stringify(stateToSave));
@@ -832,11 +895,17 @@ export default {
       if (savedData) {
           try {
               const parsed = JSON.parse(savedData);
+              const savedClientMode = (parsed.clientMode !== undefined) ? parsed.clientMode : false;
+              if (savedClientMode === false) {
+                  this.gameSerial = parsed.gameSerial;
+                  this.isClientMode = false;
+                  console.log("Restored as Server Mode from localStorage");
+                  return true;
+              }
 
               if (parsed.localElements && parsed.clientState) {
                   this.gameSerial = parsed.gameSerial;
 
-                  this.isClientMode = false;
                   this.localElements = parsed.localElements;
                   this.localVotes = parsed.localVotes || [];
                   this.clientState = parsed.clientState;
@@ -911,21 +980,9 @@ export default {
         }
     },
 
-    // [Modified] 繼續遊戲
+    // 繼續遊戲
     continueGame() {
-      // 1. 多人模式檢查 (Server Mode)
-      if (this.isHostingGameRank) {
-        if (this.gameSerial) {
-            this.isClientMode = false;
-            this.nextRound(null);
-        } else {
-            console.warn("Room mode: Game serial not found yet.");
-        }
-        $("#gameSettingPanel").modal("hide");
-        return;
-      }
 
-      // 2. 取得 Game Serial
       let gameSerial = '';
       if (this.userLastGameSerial) {
         gameSerial = this.userLastGameSerial;
@@ -935,10 +992,37 @@ export default {
 
       if (gameSerial) {
         this.gameSerial = gameSerial;
+        this.showMatchHistory = true;
+        this.loadMatchHistory();
+        this.resetTimer();
+        this.startTimer();
+      }
 
-        // 3. 嘗試讀取本地存檔
+      // Server Mode
+      if (this.isHostingGameRank || this.isClientMode === false) {
+        if (gameSerial) {
+            console.log("Room mode: Continuing game with serial", gameSerial);
+            this.isClientMode = false;
+            this.nextRound(null);
+        } else {
+            console.warn("Room mode: Game serial not found yet.");
+        }
+        $("#gameSettingPanel").modal("hide");
+        return;
+      }
+
+      // Client Mode
+      if (gameSerial) {
+        this.gameSerial = gameSerial;
+
+        // 嘗試讀取本地存檔
         if (this.loadFromLocalStorage()) {
-          // [New Check] ★★★ 舊資料相容檢查 ★★★
+          if (this.isClientMode === false) {
+             this.nextRound(null, false);
+             $("#gameSettingPanel").modal("hide");
+             return;
+          }
+
           // 如果讀取成功，但發現 elementsCount 是空的 (代表是舊系統的存檔)
           if (!this.elementsCount) {
               console.log("Legacy save detected (missing elementsCount). Switching to Server Mode for migration.");
@@ -947,10 +1031,9 @@ export default {
               this.isClientMode = false;
 
               // 2. 向後端請求最新狀態 (後端回傳後，updateGame 會自動補齊 elementsCount)
-              this.nextRound(null);
+              this.nextRound(null, false);
 
           }
-          // [Existing Check] 資料完整性檢查
           // 只有在 elementsCount 存在時才檢查這個
           else if (this.localElements.length < this.elementsCount) {
               console.log(`Continue Game: Elements incomplete (${this.localElements.length}/${this.elementsCount}). Resuming background fetch...`);
@@ -958,6 +1041,7 @@ export default {
           }
         } else {
              // 讀取失敗，走後端流程
+             this.isClientMode = false;
              this.nextRound(null, false);
         }
       }
@@ -975,7 +1059,7 @@ export default {
     },
 
     // nextRound 修正 Null Error
-    nextRound(data, reset = true) {
+    nextRound(data, resetAnimation = true) {
       // 1. 如果是 Client Mode，直接呼叫本地邏輯
       if (!this.isHostingGameRank && this.isClientMode && (data == null || (data && !data.data))) {
           this.nextLocalRound();
@@ -993,7 +1077,7 @@ export default {
         return;
       }
 
-      this.handleAnimationAfterNextRound(data.data, reset);
+      this.handleAnimationAfterNextRound(data.data, resetAnimation);
     },
 
     nextLocalRound() {
@@ -1072,13 +1156,13 @@ export default {
         this.handleAnimationAfterNextRound(mockGameData, true);
     },
 
-    handleAnimationAfterNextRound(game, reset) {
+    handleAnimationAfterNextRound(game, resetAnimation) {
       return new Promise((resolve, reject) => {
         this.updateGame(game);
         resolve();
       })
         .then(() => {
-          if (reset) {
+          if (resetAnimation) {
             this.resetPlayerPosition();
             // this.scrollToLastPosition();
             this.resetPlayingStatus();
@@ -1232,7 +1316,7 @@ export default {
         if (this.isBetGameClient) {
           this.bet(this.le, this.re);
         } else {
-          this.vote(this.le, this.re);
+          this.vote(this.le, this.re, 'left');
         }
       };
 
@@ -1351,7 +1435,7 @@ export default {
         if (this.isBetGameClient) {
           this.bet(this.re, this.le);
         } else {
-          this.vote(this.re, this.le);
+          this.vote(this.re, this.le, 'right');
         }
       };
 
@@ -1551,16 +1635,16 @@ export default {
       });
     },
 
-    vote(winner, loser) {
+    vote(winner, loser, winSide = 'left') {
       if (!this.isClientMode || this.isHostingGameRank) {
         const data = { game_serial: this.gameSerial, winner_id: winner.id, loser_id: loser.id };
-        this.sendVote(data);
+        this.sendVote(data, winSide);
       } else {
-        this.handleClientVote(winner, loser);
+        this.handleClientVote(winner, loser, winSide);
       }
     },
 
-    handleClientVote(winner, loser) {
+    handleClientVote(winner, loser, winSide = 'left') {
       const winnerObj = this.localElements.find(e => e.id === winner.id);
       const loserObj = this.localElements.find(e => e.id === loser.id);
 
@@ -1575,6 +1659,9 @@ export default {
 
           this.localVotes.push({ winner_id: winner.id, loser_id: loser.id });
           this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
+
+          // 紀錄最後一筆投票，用於時間軸
+          this.lastVotePair = { winner_id: winner.id, loser_id: loser.id, winSide: winSide };
 
           // 狀態改變後立即存檔
           this.saveToLocalStorage();
@@ -1617,8 +1704,9 @@ export default {
             }, 2000);
         })
         .catch(err => {
-            console.error("Cloud save failed", err);
             this.isCloudSaving = false;
+            // 發生錯誤後增加 batchVoteInterval
+            this.batchVoteInterval = (this.batchVoteInterval*2)+1;
         });
     },
 
@@ -1641,16 +1729,11 @@ export default {
               console.error("Batch vote failed", err);
 
               this.isDataLoading = false;
-
-              Swal.fire({
-                  icon: 'error',
-                  toast: true,
-                  text: 'Failed to sync with server. Please try again.'
-              });
+              this.showGameResult();
           });
     },
 
-    sendVote(data) {
+    sendVote(data, winSide = 'left') {
 
       // 1. 在送出前，更新本地 localElements 的狀態
       // 這是為了確保本地端的 "淘汰名單" 與 Server 端同步
@@ -1673,6 +1756,10 @@ export default {
           winner_id: data.winner_id,
           loser_id: data.loser_id
       });
+
+      // 紀錄最後一筆投票，用於時間軸
+      this.lastVotePair = { winner_id: data.winner_id, loser_id: data.loser_id, winSide: winSide };
+
       axios
         .post(this.voteGameEndpoint, data)
         .then((res) => {
@@ -1728,6 +1815,7 @@ export default {
             // final round
             this.isDataLoading = true;
             this.finishingGame = true;
+            this.clearMatchHistory();
           }
 
           if (!this.finishingGame) {
@@ -1784,6 +1872,9 @@ export default {
       if(this.autoRefreshRoomInterval){
         this.autoRefreshRoomCounter = 0;
       }
+      // 先記錄思考時間，再重置計時器，避免被歸零
+      this.recordMatchFromLastVote();
+      this.resetTimer();
       this.status = res.data.status;
       if (this.status === "end_game") {
         this.$cookies.remove(this.postSerial);
@@ -1816,6 +1907,128 @@ export default {
         return this.getRankRoute.replace("_serial", this.postSerial) + "?g=" + this.gameSerial;
       }
       return this.getRankRoute.replace("_serial", this.postSerial);
+    },
+
+    startTimer() {
+      if (this.timerInterval) {
+        return;
+      }
+      this.timerInterval = setInterval(() => {
+        this.timerSeconds += 1;
+      }, 1000);
+    },
+    resetTimer() {
+      this.timerSeconds = 0;
+    },
+    stopTimer() {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+    },
+
+    // --- Timeline helpers ---
+    getBestThumb(element) {
+      if (!element) return '';
+      return element.lowthumb_url || element.mediumthumb_url || element.thumb_url || '';
+    },
+    findElementById(id) {
+      if (!id) return null;
+      let found = this.localElements.find(e => e.id === id);
+      if (!found) {
+        if (this.le && this.le.id === id) found = this.le;
+        if (this.re && this.re.id === id) found = this.re;
+      }
+      return found || null;
+    },
+    recordMatchFromLastVote() {
+      if (!this.lastVotePair) return;
+      const { winner_id, loser_id } = this.lastVotePair;
+      const winner = this.findElementById(winner_id);
+      const loser = this.findElementById(loser_id);
+      if (!winner || !loser) return;
+
+      // 使用與頁面相同的回合標籤邏輯
+      let roundLabel = '';
+      if (this.roundTitleCount <= 2) {
+        roundLabel = this.$t('game_round_final');
+      } else if (this.roundTitleCount <= 4) {
+        roundLabel = this.$t('game_round_semifinal');
+      } else if (this.roundTitleCount <= 8) {
+        roundLabel = this.$t('game_round_quarterfinal');
+      } else if (this.roundTitleCount <= 1024) {
+        roundLabel = this.$t('game_round_of', { round: this.roundTitleCount });
+      }
+
+      const progressLabel = `${this.displayCurrentRound}/${this.displayTotalRound}`;
+      const thinkingTime = this.timerSeconds;
+      const winSide = this.lastVotePair.winSide || 'left';
+
+      this.matchHistory.unshift({
+        id: `${Date.now()}-${winner_id}-${loser_id}-${this.matchHistory.length}`,
+        roundLabel,
+        progressLabel,
+        thinkingTime,
+        winSide,
+        winner: {
+          title: winner.title,
+          thumb: this.getBestThumb(winner),
+        },
+        loser: {
+          title: loser.title,
+          thumb: this.getBestThumb(loser),
+        },
+      });
+
+      // 保留筆數
+      if (this.matchHistory.length > KEEP_VOTE_RECORD_COUNT) {
+        this.matchHistory.pop();
+      }
+
+      // 儲存到 localStorage
+      this.saveMatchHistory();
+
+      // 清空暫存
+      this.lastVotePair = null;
+    },
+    loadMatchHistory() {
+      try {
+        const key = `matchHistory_${this.postSerial}`;
+        const saved = localStorage.getItem(key);
+        if (saved && this.gameSerial) {
+          const data = JSON.parse(saved);
+          // 驗證資料格式、gameSerial並限制在 50 筆內
+          if (data && data.gameSerial === this.gameSerial && Array.isArray(data.matches)) {
+            this.matchHistory = data.matches.slice(0, 50);
+          } else {
+            // gameSerial不匹配，清空
+            this.matchHistory = [];
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load match history:', error);
+      }
+    },
+    saveMatchHistory() {
+      try {
+        const key = `matchHistory_${this.postSerial}`;
+        const data = {
+          gameSerial: this.gameSerial,
+          matches: this.matchHistory
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (error) {
+        console.error('Failed to save match history:', error);
+      }
+    },
+    clearMatchHistory() {
+      try {
+        const key = `matchHistory_${this.postSerial}`;
+        localStorage.removeItem(key);
+        this.matchHistory = [];
+      } catch (error) {
+        console.error('Failed to clear match history:', error);
+      }
     },
     getYoutubePlayer(element) {
       if (!element) {
@@ -1936,12 +2149,17 @@ export default {
                       this.videoHoverIn(this.re, this.le, false);
                     }
                   }
+                }).catch((error) => {
+                  console.error('getPlayerState failed in interval:', error);
+                  clearInterval(interval);
                 });
               }, 100);
             } else {
               theirPlayer.pauseVideo();
               theirPlayer.mute();
             }
+          }).catch((error) => {
+            console.error('getPlayerState failed:', error);
           });
         }
 
@@ -2124,6 +2342,30 @@ export default {
           this.showCreateRoomButton = false;
         }
       });
+    },
+
+    // 時間軸拖曳相關方法
+    startDrag(e) {
+      const container = e.currentTarget;
+      this.isDragging = true;
+      this.startX = e.pageX - container.offsetLeft;
+      this.scrollLeft = container.scrollLeft;
+      container.style.cursor = 'grabbing';
+      container.style.userSelect = 'none';
+    },
+    onDrag(e) {
+      if (!this.isDragging) return;
+      e.preventDefault();
+      const container = e.currentTarget;
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - this.startX) * 2; // 拖曳速度係數
+      container.scrollLeft = this.scrollLeft - walk;
+    },
+    stopDrag(e) {
+      this.isDragging = false;
+      const container = e.currentTarget;
+      container.style.cursor = 'grab';
+      container.style.userSelect = '';
     },
   },
 };

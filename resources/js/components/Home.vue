@@ -14,8 +14,8 @@ export default {
     this.initGoogleAds();
     // this.initMasonry();
     this.loadTags();
-    // this.getChampions();
-    // this.handleNewChampion();
+    this.getChampions();
+    this.handleNewChampion();
     this.autoRefreshChampionsTimestamp();
     window.addEventListener('resize', this.updateMobileScreen);
     history.scrollRestoration = 'manual'; // Disable automatic scroll restoration

@@ -52,9 +52,19 @@
         height: 300px;
         display: block;
         object-fit: contain;
-        background-color: #fff;
+        background-color: #0f1f3d;
         cursor: pointer;
     }
+}
+
+.left-player .game-image-container,
+.left-player .game-image-container img {
+    background-color: #0f1f3d;
+}
+
+.right-player .game-image-container,
+.right-player .game-image-container img {
+    background-color: #3d0f0f;
 }
 
 .home-logo {
@@ -968,6 +978,19 @@
     position: sticky;
     top: 0;
     z-index: 999;
+    margin-bottom: 5px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    @media (min-width: 576px) {
+        top: calc(56.45px + 38.08px);  // navbar + buttons 高度
+    }
+}
+
+.sticky-top-rank-buttons {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 1025;  // 高於 tab
+    background-color: #f8fafc;
     @media (min-width: 576px) {
         top: 56.45px;
     }
@@ -1320,4 +1343,762 @@ $box-shadow2: ();
     padding: 5px 10px;
     cursor: pointer;
     z-index: 1;
+}
+
+// Game vs card + hover buttons
+.vs-card {
+    background: linear-gradient(145deg, #1a2131 0%, #1d2436 45%, #171c2c 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
+    overflow: hidden;
+    color: #eef2ff;
+}
+
+.right-player.vs-card {
+    background: linear-gradient(145deg, #24191b 0%, #291c1e 45%, #1f1618 100%);
+}
+
+.vs-card .card-body {
+    background: transparent;
+    color: inherit;
+}
+
+.vs-card h1,
+.vs-card h2,
+.vs-card h3,
+.vs-card h4,
+.vs-card h5,
+.vs-card h6,
+.vs-card p {
+    color: inherit;
+}
+
+.vs-card .badge-light {
+    background: rgba(255, 255, 255, 0.12);
+    color: #eef2ff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.btn-hover-bounce {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+.btn-hover-bounce:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 14px 26px rgba(0, 0, 0, 0.18);
+}
+
+// Match history timeline
+.match-history-list {
+    gap: 20px;
+    background: linear-gradient(135deg, rgba(15, 22, 36, 0.7) 0%, rgba(65, 49, 49, 0.75) 45%, rgba(13, 20, 32, 0.7) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
+    padding: 16px 20px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.match-card {
+    min-width: 220px;
+    max-width: 220px;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.match-card.left-win {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.2) 0%, rgba(53, 122, 189, 0.8) 100%);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.match-card.right-win {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.2) 0%, rgba(192, 57, 43, 0.8) 100%);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.match-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 22px rgba(0, 0, 0, 0.2);
+}
+
+.match-card-header {
+    gap: 8px;
+}
+
+.match-card-round {
+    font-size: 0.9rem;
+}
+
+.match-card-progress {
+    font-size: 0.75rem;
+}
+
+.match-card-thinking {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.match-card-winner,
+.match-card-loser {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.match-card-loser {
+    filter: grayscale(100%);
+}
+
+.match-card-image {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    display: block;
+}
+
+.match-card-overlay {
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(to top, rgba(110, 110, 150, 0.9), transparent);
+    padding: 6px 8px;
+}
+
+.match-card-overlay-loser {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+}
+
+.match-card-overlay-content {
+    gap: 4px;
+}
+
+.match-card-icon-trophy {
+    color: #ffd700;
+    font-size: 0.8rem;
+}
+
+.match-card-icon-loss {
+    color: #e74c3c;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.match-card-title {
+    font-size: 0.85rem;
+}
+
+.match-card-title-muted {
+    opacity: 0.9;
+}
+
+// Game page dark theme
+.game-dark-theme {
+    background: linear-gradient(90deg, #111a2b 0%, #141e32 25%, #191f2e 50%, #1e1b24 75%, #231b1f 100%);
+    color: #ffffff;
+    min-height: 100vh;
+}
+
+.game-dark-theme a {
+    color: #9bc2ff;
+}
+.game-dark-theme a:hover {
+    color: #c3daff;
+}
+
+// Finishing game overlay
+.finishing-game-overlay {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.finishing-text {
+    color: #333;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.finishing-text a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.finishing-text a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+// Dark theme finishing overlay
+.game-dark-theme .finishing-game-overlay {
+    background: rgba(17, 23, 38, 0.95);
+}
+
+.game-dark-theme .finishing-text {
+    color: #e7ecff;
+}
+
+.game-dark-theme .finishing-text a {
+    color: #9bc2ff;
+}
+
+.game-dark-theme .finishing-text a:hover {
+    color: #c3daff;
+}
+
+.game-dark-theme .badge-light {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f0f3ff;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.game-dark-theme .badge-secondary,
+.game-dark-theme .bg-secondary {
+    background-color: #1f273a !important;
+    color: #e7ecff;
+}
+
+.game-dark-theme .text-muted {
+    color: #c9d2f0 !important;
+}
+
+.game-dark-theme hr {
+    border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.game-dark-theme .game-room-box {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(22, 26, 44, 0.9);
+}
+
+.game-dark-theme .card {
+    background-color: rgba(21, 26, 42, 0.88);
+    color: #e7ecff;
+}
+
+.game-dark-theme .badge-pill.badge-light {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.game-dark-theme .badge-light i,
+.game-dark-theme .badge-pill.badge-light i {
+    color: #f0f3ff;
+    opacity: 0.9;
+}
+
+.game-dark-theme .badge-pill.badge-light span,
+.game-dark-theme .badge-pill.badge-light small,
+.game-dark-theme .badge-pill.badge-light strong {
+    color: #f0f3ff;
+}
+
+.game-dark-theme .modal-content {
+    background-color: #111726;
+    color: #e7ecff;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+        0 18px 36px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.game-dark-theme .modal-header,
+.game-dark-theme .modal-footer {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.game-dark-theme .form-control,
+.game-dark-theme .custom-select,
+.game-dark-theme select,
+.game-dark-theme input,
+.game-dark-theme textarea {
+    background-color: #151c2d;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e7ecff;
+}
+
+.game-dark-theme .form-control:focus,
+.game-dark-theme .custom-select:focus,
+.game-dark-theme select:focus,
+.game-dark-theme input:focus,
+.game-dark-theme textarea:focus {
+    background-color: #1c2336;
+    border-color: #6ea8ff;
+    box-shadow: 0 0 0 0.15rem rgba(110, 168, 255, 0.25);
+    color: #f5f7ff;
+}
+
+.game-dark-theme .dropdown-menu {
+    background-color: #111726;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.game-dark-theme .dropdown-item {
+    color: #e7ecff;
+}
+
+.game-dark-theme .dropdown-item:hover,
+.game-dark-theme .dropdown-item:focus,
+.game-dark-theme .dropdown-item.active {
+    background-color: #1c2336;
+    color: #f5f7ff;
+}
+
+// Enhanced button styles (non-dark theme)
+.btn-primary.btn-block {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #fff;
+}
+
+.btn-primary.btn-block:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    transform: translateY(-2px);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #fff;
+}
+
+.btn-primary.btn-block:active,
+.btn-primary.btn-block:focus {
+    background: linear-gradient(135deg, #0069d9 0%, #0056b3 100%);
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.35);
+    color: #fff;
+}
+
+.btn-primary.btn-block:disabled,
+.btn-primary.btn-block.disabled {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: none;
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+// Enhanced secondary button styles (non-dark theme)
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.25);
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #4e555b 100%);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.35);
+    transform: translateY(-1px);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #fff;
+}
+
+.btn-secondary:active,
+.btn-secondary:focus {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(108, 117, 125, 0.3);
+    color: #fff;
+}
+
+.btn-secondary:disabled,
+.btn-secondary.disabled {
+    background: linear-gradient(135deg, #868e96 0%, #6c757d 100%);
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+// Modern Vote Buttons (Left - Blue)
+.btn-vote-left {
+    position: relative;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 1.2rem 2rem;
+    border-radius: 16px;
+    box-shadow:
+        0 8px 24px rgba(37, 99, 235, 0.4),
+        0 4px 12px rgba(37, 99, 235, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.btn-vote-left::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-vote-left:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+        0 12px 32px rgba(37, 99, 235, 0.5),
+        0 6px 16px rgba(37, 99, 235, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.btn-vote-left:hover::before {
+    left: 100%;
+}
+
+.btn-vote-left:active {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    transform: translateY(-1px) scale(1.01);
+    box-shadow:
+        0 6px 20px rgba(37, 99, 235, 0.4),
+        0 3px 10px rgba(37, 99, 235, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-vote-left:disabled,
+.btn-vote-left.disabled {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+// Modern Vote Buttons (Right - Red)
+.btn-vote-right {
+    position: relative;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 1.2rem 2rem;
+    border-radius: 16px;
+    box-shadow:
+        0 8px 24px rgba(220, 38, 38, 0.4),
+        0 4px 12px rgba(220, 38, 38, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.btn-vote-right::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-vote-right:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+        0 12px 32px rgba(220, 38, 38, 0.5),
+        0 6px 16px rgba(220, 38, 38, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.btn-vote-right:hover::before {
+    left: 100%;
+}
+
+.btn-vote-right:active {
+    background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+    transform: translateY(-1px) scale(1.01);
+    box-shadow:
+        0 6px 20px rgba(220, 38, 38, 0.4),
+        0 3px 10px rgba(220, 38, 38, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-vote-right:disabled,
+.btn-vote-right.disabled {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+// Mobile responsive adjustments for vote buttons
+@media (max-width: 768px) {
+    .btn-vote-left,
+    .btn-vote-right {
+        font-size: 0.95rem;
+        padding: 0.5rem 1.5rem;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-vote-left,
+    .btn-vote-right {
+        font-size: 0.9rem;
+        padding: 0.5rem 1.2rem;
+        border-radius: 10px;
+    }
+}
+
+.game-dark-theme .btn-primary {
+    background-color: #1f6ad5;
+    border-color: #1a5cc0;
+}
+
+.game-dark-theme .btn-primary:hover,
+.game-dark-theme .btn-primary:focus,
+.game-dark-theme .btn-primary:active,
+.game-dark-theme .btn-primary:not(:disabled):not(.disabled):active,
+.game-dark-theme .btn-primary:not(:disabled):not(.disabled).active,
+.game-dark-theme .show > .btn-primary.dropdown-toggle {
+    background-color: #1750a3;
+    border-color: #14478f;
+}
+
+// Primary block button enhancements
+.game-dark-theme .btn-primary.btn-block {
+    background: linear-gradient(135deg, #1f6ad5 0%, #1a5cc0 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(31, 106, 213, 0.25);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-dark-theme .btn-primary.btn-block:hover {
+    background: linear-gradient(135deg, #1a5cc0 0%, #1750a3 100%);
+    box-shadow: 0 6px 20px rgba(31, 106, 213, 0.35);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.game-dark-theme .btn-primary.btn-block:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(31, 106, 213, 0.3);
+}
+
+.game-dark-theme .btn-primary.btn-block:disabled,
+.game-dark-theme .btn-primary.btn-block.disabled {
+    background: linear-gradient(135deg, #374356 0%, #2d3749 100%);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.game-dark-theme .btn-danger {
+    background-color: #c22c2c;
+    border-color: #ac2424;
+}
+
+.game-dark-theme .btn-danger:hover,
+.game-dark-theme .btn-danger:focus,
+.game-dark-theme .btn-danger:active,
+.game-dark-theme .btn-danger:not(:disabled):not(.disabled):active,
+.game-dark-theme .btn-danger:not(:disabled):not(.disabled).active,
+.game-dark-theme .show > .btn-danger.dropdown-toggle {
+    background-color: #971f1f;
+    border-color: #821a1a;
+}
+
+// Secondary button for dark theme
+.game-dark-theme .btn-secondary {
+    background: linear-gradient(135deg, #4a5568 0%, #3d4554 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    color: #e7ecff;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-dark-theme .btn-secondary:hover {
+    background: linear-gradient(135deg, #3d4554 0%, #323949 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+.game-dark-theme .btn-secondary:active,
+.game-dark-theme .btn-secondary:focus {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+}
+
+.game-dark-theme .btn-secondary:disabled,
+.game-dark-theme .btn-secondary.disabled {
+    background: linear-gradient(135deg, #2d3442 0%, #252a36 100%);
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+// Game room modal (dark)
+.game-room-modal .game-room-modal-content {
+    background: #111726;
+    color: #e7ecff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+}
+
+.game-room-modal .modal-header,
+.game-room-modal .modal-footer {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.game-room-modal .close {
+    color: #e7ecff;
+    opacity: 0.8;
+}
+
+.game-room-modal .close:hover {
+    opacity: 1;
+}
+
+.game-mode-card {
+    background: linear-gradient(145deg, #1a1f2c 0%, #1c2232 45%, #161b28 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 16px;
+    color: #e7ecff;
+    width: 100%;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.game-mode-card:hover,
+.game-mode-card:focus {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+    color: #fff;
+}
+
+.game-mode-card hr {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.game-mode-card table th,
+.game-mode-card table i {
+    color: inherit;
+}
+
+.game-mode-card.disabled,
+.game-mode-card.disabled:hover,
+.game-mode-card:disabled,
+.game-mode-card:disabled:hover {
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.game-mode-disabled-mask {
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 16px;
+    pointer-events: none;
+}
+
+.game-mode-back {
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #e7ecff !important;
+}
+
+.game-mode-back:hover,
+.game-mode-back:focus {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: #ffffff !important;
+}
+
+.game-dark-theme .alert-warning {
+    background-color: rgba(255, 193, 7, 0.08);
+    border-color: rgba(255, 193, 7, 0.3);
+    color: #f3d27a;
+}
+
+.game-dark-theme .alert-danger {
+    background-color: rgba(220, 53, 69, 0.08);
+    border-color: rgba(220, 53, 69, 0.28);
+    color: #f2a8b2;
+}
+
+// Game room control buttons
+.game-room-box .btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e7ecff;
+    transition: all 0.2s ease;
+}
+
+.game-room-box .btn-secondary:hover,
+.game-room-box .btn-secondary:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.game-room-box .btn-secondary:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
+}
+
+// Game room setting buttons (bottom controls)
+.btn-outline-dark {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-radius: 12px;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.btn-outline-dark:hover,
+.btn-outline-dark:focus {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.btn-outline-dark:active {
+    background: rgba(0, 0, 0, 0.7);
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-outline-dark h5 {
+    margin: 0;
+    font-size: 1rem;
 }
