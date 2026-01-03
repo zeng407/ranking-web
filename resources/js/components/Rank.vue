@@ -150,7 +150,6 @@ export default {
             elements.sort((a, b) => b.local_win_count - a.local_win_count);
             const top10 = elements.slice(0, 10);
             this.localRanks = top10;
-            console.log('Loaded game state from localStorage:', top10);
             return top10;
         } catch (e) {
             console.error('Failed to parse saved game state from localStorage:', e);
