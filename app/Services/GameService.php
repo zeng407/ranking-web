@@ -19,6 +19,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Ramsey\Uuid\Uuid;
@@ -392,6 +393,36 @@ class GameService
     }
 
     /**
+     * Deadlock-aware update for game_elements rows.
+     */
+    private function updateGameElementWithRetry(int $gameId, int $elementId, array $data, int $attempts = 3, int $backoffMs = 100): void
+    {
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                \DB::table('game_elements')
+                    ->where('game_id', $gameId)
+                    ->where('element_id', $elementId)
+                    ->update($data);
+
+                return;
+            } catch (QueryException $e) {
+                if ($this->isDeadlock($e) && $i < $attempts - 1) {
+                    usleep($backoffMs * 1000 * ($i + 1));
+                    continue;
+                }
+
+                throw $e;
+            }
+        }
+    }
+
+    private function isDeadlock(QueryException $e): bool
+    {
+        $sqlState = $e->getCode(); // MySQL deadlock: 40001; sometimes driver-specific 1213 message
+        return $sqlState === '40001' || str_contains($e->getMessage(), 'Deadlock') || str_contains($e->getMessage(), '1213');
+    }
+
+    /**
      * @return Game1V1Round|null
      */
     public function batchUpdateGameRounds(Game $game, array $votes)
@@ -451,22 +482,24 @@ class GameService
                 $isEndOfRound = ($matchIndex === $matchesInStage);
 
                 //更新贏家
-                \DB::table('game_elements')
-                    ->where('game_id', $game->id)
-                    ->where('element_id', $winnerId)
-                    ->update([
+                $this->updateGameElementWithRetry(
+                    $game->id,
+                    $winnerId,
+                    [
                         'win_count' => \DB::raw('win_count + 1'),
-                        'is_ready' => false
-                    ]);
+                        'is_ready' => false,
+                    ]
+                );
 
                 //更新輸家
-                \DB::table('game_elements')
-                    ->where('game_id', $game->id)
-                    ->where('element_id', $loserId)
-                    ->update([
+                $this->updateGameElementWithRetry(
+                    $game->id,
+                    $loserId,
+                    [
                         'is_eliminated' => true,
-                        'is_ready' => false
-                    ]);
+                        'is_ready' => false,
+                    ]
+                );
 
                 if ($isEndOfRound) {
                     \DB::table('game_elements')
