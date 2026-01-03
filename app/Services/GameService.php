@@ -327,10 +327,10 @@ class GameService
             $loserId = $vote['loser_id'];
 
             if (in_array($winnerId, $alreadyEliminated) || in_array($winnerId, $batchEliminated)) {
-                throw new Exception("Winner {$winnerId} eliminated.");
+                throw new Exception("Game {$game->id} Winner {$winnerId} eliminated.");
             }
             if (in_array($loserId, $alreadyEliminated) || in_array($loserId, $batchEliminated)) {
-                throw new Exception("Loser {$loserId} eliminated.");
+                throw new Exception("Game {$game->id} Loser {$loserId} eliminated.");
             }
             $batchEliminated[] = $loserId;
 
