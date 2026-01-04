@@ -164,11 +164,13 @@ class RankService
 
     public function createRankReports(Post $post)
     {
+        $t0 = microtime(true);
         \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
 
         // ==========================================
         // 第一階段：準備與計算
         // ==========================================
+        $tStage1Start = microtime(true);
 
         $baseRankQuery = Rank::select(['element_id', 'rank_type', 'win_rate', 'win_count'])
             ->where('post_id', $post->id)
@@ -177,6 +179,8 @@ class RankService
                 $query->whereNull('deleted_at');
             });
 
+        $tChampionStart = microtime(true);
+
         // 取得原始排序的 List (不要在這裡 keyBy，保持 0, 1, 2 的索引)
         $championRanksList = (clone $baseRankQuery)
             ->where('rank_type', RankType::CHAMPION)
@@ -184,11 +188,15 @@ class RankService
             ->orderByDesc('win_count')
             ->get();
 
+        $tPkStart = microtime(true);
+
         $pkRanksList = (clone $baseRankQuery)
             ->where('rank_type', RankType::PK_KING)
             ->orderByDesc('win_rate')
             ->orderByDesc('win_count')
             ->get();
+
+        $tExistingStart = microtime(true);
 
         // 格式: [element_id => rank_position]
         // 這樣查詢名次的時間複雜度是 O(1)，非常快
@@ -210,6 +218,8 @@ class RankService
         $existingReports = RankReport::where('post_id', $post->id)
             ->get()
             ->keyBy('element_id');
+
+        $tAssembleStart = microtime(true);
 
         // 組裝資料
         $upsertData = [];
@@ -255,6 +265,7 @@ class RankService
 
         // 計算總排名 (Rank)
         // 這裡維持原樣，使用 usort 進行記憶體內排序
+        $tSortStart = microtime(true);
         usort($upsertData, function ($a, $b) {
             // 邏輯：優先比較 win_rate，若相同則比較 final_win_rate
             if ($b['win_rate'] != $a['win_rate']) {
@@ -269,6 +280,8 @@ class RankService
         }
         unset($row);
 
+        $tStage1End = microtime(true);
+
         // ==========================================
         // 第二階段：寫入 (Transaction)
         // ==========================================
@@ -277,6 +290,8 @@ class RankService
             ->where('post_elements.post_id', $post->id)
             ->whereNotNull('elements.deleted_at')
             ->pluck('elements.id');
+
+        $tTxStart = microtime(true);
 
         if (!empty($upsertData)) {
             DB::transaction(function () use ($post, $upsertData, $deletedElementIds) {
@@ -296,6 +311,19 @@ class RankService
                 }
             });
         }
+
+        $tTxEnd = microtime(true);
+
+        \Log::info('rank report timing', [
+            'post_id' => $post->id,
+            'stage_champion_fetch_ms' => ($tPkStart - $tChampionStart) * 1000,
+            'stage_pk_fetch_ms' => ($tExistingStart - $tPkStart) * 1000,
+            'stage_existing_fetch_ms' => ($tAssembleStart - $tExistingStart) * 1000,
+            'stage_assemble_ms' => ($tSortStart - $tAssembleStart) * 1000,
+            'stage_sort_ms' => ($tStage1End - $tSortStart) * 1000,
+            'stage_write_ms' => ($tTxEnd - $tTxStart) * 1000,
+            'total_ms' => ($tTxEnd - $t0) * 1000,
+        ]);
 
         \Log::info("end update post [{$post->id}] rank report [{$post->title}]");
     }
