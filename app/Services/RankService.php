@@ -272,13 +272,19 @@ class RankService
         // ==========================================
         // 第二階段：寫入 (Transaction)
         // ==========================================
+        $deletedElementIds = \DB::table('elements')
+            ->join('post_elements', 'post_elements.element_id', '=', 'elements.id')
+            ->where('post_elements.post_id', $post->id)
+            ->whereNotNull('elements.deleted_at')
+            ->pluck('elements.id');
+
         if (!empty($upsertData)) {
-            DB::transaction(function () use ($post, $upsertData) {
-                RankReport::where('post_id', $post->id)
-                    ->whereHas('element', function ($query) {
-                        $query->whereNotNull('deleted_at');
-                    })
-                    ->update(['hidden' => true]);
+            DB::transaction(function () use ($post, $upsertData, $deletedElementIds) {
+                if ($deletedElementIds->isNotEmpty()) {
+                    RankReport::where('post_id', $post->id)
+                        ->whereIn('element_id', $deletedElementIds)
+                        ->update(['hidden' => true]);
+                }
 
                 $chunks = array_chunk($upsertData, 500);
                 foreach ($chunks as $chunk) {
