@@ -170,8 +170,6 @@ class RankService
         // ==========================================
         // 第一階段：準備與計算
         // ==========================================
-        $tStage1Start = microtime(true);
-
         $baseRankQuery = Rank::select(['element_id', 'rank_type', 'win_rate', 'win_count'])
             ->where('post_id', $post->id)
             ->where('record_date', today())
@@ -179,27 +177,40 @@ class RankService
                 $query->whereNull('deleted_at');
             });
 
-        $tChampionStart = microtime(true);
+        $tBaseFetchStart = microtime(true);
+        $baseRanks = $baseRankQuery->get();
+        $tBaseFetchEnd = microtime(true);
 
-        // 取得原始排序的 List (不要在這裡 keyBy，保持 0, 1, 2 的索引)
-        $championRanksList = (clone $baseRankQuery)
+        // 取得原始排序的 List (本地排序)
+        $tChampionProcessStart = microtime(true);
+        $championRanksList = $baseRanks
             ->where('rank_type', RankType::CHAMPION)
-            ->orderByDesc('win_rate')
-            ->orderByDesc('win_count')
-            ->get();
+            ->values()
+            ->all();
+        usort($championRanksList, function ($a, $b) {
+            if ($b->win_rate != $a->win_rate) {
+                return $b->win_rate <=> $a->win_rate;
+            }
+            return $b->win_count <=> $a->win_count;
+        });
+        $tChampionProcessEnd = microtime(true);
 
-        $tPkStart = microtime(true);
-
-        $pkRanksList = (clone $baseRankQuery)
+        $tPkProcessStart = microtime(true);
+        $pkRanksList = $baseRanks
             ->where('rank_type', RankType::PK_KING)
-            ->orderByDesc('win_rate')
-            ->orderByDesc('win_count')
-            ->get();
+            ->values()
+            ->all();
+        usort($pkRanksList, function ($a, $b) {
+            if ($b->win_rate != $a->win_rate) {
+                return $b->win_rate <=> $a->win_rate;
+            }
+            return $b->win_count <=> $a->win_count;
+        });
+        $tPkProcessEnd = microtime(true);
 
         $tExistingStart = microtime(true);
 
         // 格式: [element_id => rank_position]
-        // 這樣查詢名次的時間複雜度是 O(1)，非常快
         $championMap = [];     // 用來查數值 (win_rate)
         $championPosMap = [];  // 用來查名次 (position)
         foreach ($championRanksList as $index => $rank) {
@@ -316,8 +327,9 @@ class RankService
 
         \Log::info('rank report timing', [
             'post_id' => $post->id,
-            'stage_champion_fetch_ms' => ($tPkStart - $tChampionStart) * 1000,
-            'stage_pk_fetch_ms' => ($tExistingStart - $tPkStart) * 1000,
+            'stage_base_fetch_ms' => ($tBaseFetchEnd - $tBaseFetchStart) * 1000,
+            'stage_champion_process_ms' => ($tChampionProcessEnd - $tChampionProcessStart) * 1000,
+            'stage_pk_process_ms' => ($tPkProcessEnd - $tPkProcessStart) * 1000,
             'stage_existing_fetch_ms' => ($tAssembleStart - $tExistingStart) * 1000,
             'stage_assemble_ms' => ($tSortStart - $tAssembleStart) * 1000,
             'stage_sort_ms' => ($tStage1End - $tSortStart) * 1000,
