@@ -16,6 +16,7 @@ use App\Models\RankReport;
 use App\Models\RankReportHistory;
 use App\Services\Builders\RankReportHistoryBuilder;
 use DB;
+use Illuminate\Database\QueryException;
 
 class RankService
 {
@@ -304,23 +305,22 @@ class RankService
 
         $tTxStart = microtime(true);
 
-        if (!empty($upsertData)) {
-            DB::transaction(function () use ($post, $upsertData, $deletedElementIds) {
-                if ($deletedElementIds->isNotEmpty()) {
-                    RankReport::where('post_id', $post->id)
-                        ->whereIn('element_id', $deletedElementIds)
-                        ->update(['hidden' => true]);
-                }
+        if ($deletedElementIds->isNotEmpty()) {
+            RankReport::where('post_id', $post->id)
+                ->whereIn('element_id', $deletedElementIds)
+                ->update(['hidden' => true]);
+        }
 
-                $chunks = array_chunk($upsertData, 500);
-                foreach ($chunks as $chunk) {
-                    RankReport::upsert(
-                        $chunk,
-                        ['post_id', 'element_id'],
-                        ['final_win_position', 'final_win_rate', 'win_position', 'win_rate', 'rank', 'updated_at']
-                    );
-                }
+        if (!empty($upsertData)) {
+            $orderedUpsertData = $upsertData;
+            usort($orderedUpsertData, function ($a, $b) {
+                return $a['element_id'] <=> $b['element_id'];
             });
+
+            $chunks = array_chunk($orderedUpsertData, 200);
+            foreach ($chunks as $chunk) {
+                $this->upsertRankReportsWithRetry($chunk);
+            }
         }
 
         $tTxEnd = microtime(true);
@@ -379,6 +379,36 @@ class RankService
         }
         foreach ($dates as $date) {
             UpdateRankForReportHistory::dispatch($post->id, $timeRange, $date);
+        }
+    }
+
+    /**
+     * Upsert rank reports with deadlock retries to reduce 1213/40001 failures.
+     */
+    private function upsertRankReportsWithRetry(array $chunk, int $maxAttempts = 3): void
+    {
+        $attempt = 0;
+        while ($attempt < $maxAttempts) {
+            try {
+                RankReport::upsert(
+                    $chunk,
+                    ['post_id', 'element_id'],
+                    ['final_win_position', 'final_win_rate', 'win_position', 'win_rate', 'rank', 'updated_at']
+                );
+                return;
+            } catch (QueryException $e) {
+                $code = (string) $e->getCode();
+                if (!in_array($code, ['40001', '1213'])) {
+                    throw $e;
+                }
+
+                $attempt++;
+                if ($attempt >= $maxAttempts) {
+                    throw $e;
+                }
+
+                usleep(random_int(100000, 400000));
+            }
         }
     }
 }
