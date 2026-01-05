@@ -63,8 +63,8 @@ class GameService
             ->take($game->element_count)
             ->get(['elements.id']);
 
-        // attch first 32 elements
-        $firstElements = $elements->take(32);
+        // attach first 128 elements
+        $firstElements = $elements->take(128);
         $firstElements->each(function (Element $element) use ($game) {
             $game->elements()->attach($element, [
                 'is_ready' => true
@@ -291,7 +291,13 @@ class GameService
         // 1. 基本檢查
         $count = $game->elements()->whereIn('elements.id', $allIds)->count();
         if ($count !== $allIds->count()) {
-            throw new Exception("Some elements do not belong to the game. Expected {$allIds->count()}, found {$count}.");
+            \Log::error("Some elements do not belong to the game.", [
+                'game_id' => $game->id,
+                'expected_count' => $allIds->count(),
+                'found_count' => $count,
+                'element_ids' => $allIds->toArray()
+            ]);
+            throw new Exception("Some elements do not belong to the game {$game->id}. Expected {$allIds->count()}, found {$count}.");
         }
 
         $alreadyEliminated = $game->elements()
@@ -327,9 +333,15 @@ class GameService
             $loserId = $vote['loser_id'];
 
             if (in_array($winnerId, $alreadyEliminated) || in_array($winnerId, $batchEliminated)) {
+                \Log::error("Winner already eliminated.", [
+                    'votes' => $votes,
+                ]);
                 throw new Exception("Game {$game->id} Winner {$winnerId} eliminated.");
             }
             if (in_array($loserId, $alreadyEliminated) || in_array($loserId, $batchEliminated)) {
+                \Log::error("Loser already eliminated.", [
+                    'votes' => $votes,
+                ]);
                 throw new Exception("Game {$game->id} Loser {$loserId} eliminated.");
             }
             $batchEliminated[] = $loserId;
@@ -489,7 +501,7 @@ class GameService
     public function batchUpdateGameRounds(Game $game, array $votes)
     {
         $tStart = microtime(true);
-        \Log::warning('batchUpdateGameRounds.start', [
+        logger('batchUpdateGameRounds.start', [
             'game_id' => $game->id,
             'votes_count' => count($votes),
         ]);
@@ -497,7 +509,7 @@ class GameService
         $this->validateBatchVotes($game, $votes);
 
         $tAfterValidate = microtime(true);
-        \Log::warning('batchUpdateGameRounds.after_validate', [
+        logger('batchUpdateGameRounds.after_validate', [
             'elapsed_ms' => round(($tAfterValidate - $tStart) * 1000, 2),
         ]);
 
@@ -506,7 +518,7 @@ class GameService
         $tBeforeLock = microtime(true);
         $lock->block(10);
         $tAfterLock = microtime(true);
-        \Log::warning('batchUpdateGameRounds.lock_acquired', [
+        logger('batchUpdateGameRounds.lock_acquired', [
             'wait_ms' => round(($tAfterLock - $tBeforeLock) * 1000, 2),
         ]);
 
@@ -534,7 +546,7 @@ class GameService
                 $originalStates[$elementId] = $state;
             }
 
-            \Log::warning('batchUpdateGameRounds.element_map_loaded', [
+            logger('batchUpdateGameRounds.element_map_loaded', [
                 'game_id' => $game->id,
                 'count' => count($gameElementStates),
             ]);
@@ -561,7 +573,7 @@ class GameService
                 }
             }
 
-            \Log::warning('batchUpdateGameRounds.state_init', [
+            logger('batchUpdateGameRounds.state_init', [
                 'game_id' => $game->id,
                 'last_round_id' => $lastRound?->id,
                 'last_round_current' => $lastRound?->current_round,
@@ -640,7 +652,7 @@ class GameService
                 ];
                 logger('prepared round data', end($roundsToInsert));
 
-                \Log::warning('batchUpdateGameRounds.vote_processed', [
+                logger('batchUpdateGameRounds.vote_processed', [
                     'game_id' => $game->id,
                     'winner_id' => $winnerId,
                     'loser_id' => $loserId,
@@ -677,7 +689,7 @@ class GameService
                 $this->updateGameElementByIdWithRetry($update['id'], $update['data']);
             }
 
-            \Log::warning('batchUpdateGameRounds.elements_updated', [
+            logger('batchUpdateGameRounds.elements_updated', [
                 'game_id' => $game->id,
                 'rows' => count($elementUpdates),
             ]);
@@ -687,7 +699,7 @@ class GameService
                 foreach (array_chunk($roundsToInsert, 500) as $chunk) {
                     $chunkStart = microtime(true);
                     Game1V1Round::insert($chunk);
-                    \Log::warning('batchUpdateGameRounds.insert_chunk', [
+                    logger('batchUpdateGameRounds.insert_chunk', [
                         'size' => count($chunk),
                         'elapsed_ms' => round((microtime(true) - $chunkStart) * 1000, 2),
                     ]);
@@ -717,7 +729,7 @@ class GameService
             }
 
             $lock->release();
-            \Log::warning('batchUpdateGameRounds.done', [
+            logger('batchUpdateGameRounds.done', [
                 'game_id' => $game->id,
                 'votes_count' => count($votes),
                 'winner_updates' => $stats['winner_updates'],

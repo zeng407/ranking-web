@@ -715,12 +715,6 @@
     }
 }
 
-.champions-container {
-    top: 56.45px;
-    overflow: auto;
-    max-height: 95vh;
-}
-
 .return-top-button {
     width: 30px;
     height: 30px;
@@ -981,7 +975,7 @@
     margin-bottom: 5px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     @media (min-width: 576px) {
-        top: calc(56.45px + 38.08px);  // navbar + buttons 高度
+        top: calc(56.64px + 38.08px);  // navbar + buttons 高度
     }
 }
 
@@ -992,7 +986,7 @@
     z-index: 1025;  // 高於 tab
     background-color: #f8fafc;
     @media (min-width: 576px) {
-        top: 56.45px;
+        top: 56.64px;
     }
 }
 

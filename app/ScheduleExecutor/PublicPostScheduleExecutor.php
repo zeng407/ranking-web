@@ -10,12 +10,15 @@ use App\Helper\CacheService;
 use App\Models\Post;
 use App\Models\PostTrend;
 use App\Models\PublicPost;
+use Illuminate\Support\Facades\Log;
 
 class PublicPostScheduleExecutor
 {
     const POST_BATCH_SIZE = 2000;
     public function updatePublicPosts()
     {
+        $started = microtime(true);
+
         if (CacheService::hasPublicPostFreshCache()) {
             return;
         }
@@ -52,10 +55,16 @@ class PublicPostScheduleExecutor
             report($e);
         }
 
+        Log::info('updatePublicPosts finished', [
+            'duration_ms' => round((microtime(true) - $started) * 1000, 2),
+        ]);
+
     }
 
     protected function updateNewPublicPosts()
     {
+        $started = microtime(true);
+
         PublicPost::getQuery()->update([
             'is_dirty' => true,
         ]);
@@ -87,17 +96,20 @@ class PublicPostScheduleExecutor
                 'new_position' => 9999,
             ]);
 
+        Log::info('updateNewPublicPosts finished', [
+            'processed' => $counter,
+            'duration_ms' => round((microtime(true) - $started) * 1000, 2),
+        ]);
     }
 
     protected function updateTodayPublicPosts()
     {
-        PublicPost::getQuery()->update([
-            'is_dirty' => true,
-        ]);
-
+        $startedOverall = microtime(true);
         $counter = 0;
         $startDate = today()->toDateString();
-        PostTrend::with(['post'])
+        $started = microtime(true);
+
+        $trends = PostTrend::with(['post'])
             ->whereRelation('post', 'deleted_at', null)
             ->whereRelation('post.post_policy', 'access_policy','=',PostAccessPolicy::PUBLIC)
             ->whereHas('post.elements', null, '>=', config('setting.post_min_element_count'))
@@ -106,7 +118,28 @@ class PublicPostScheduleExecutor
             ->where('start_date', $startDate)
             ->orderBy('position')
             ->limit(self::POST_BATCH_SIZE)
-            ->get()
+            ->get();
+
+        $fetchDurationMs = round((microtime(true) - $started) * 1000, 2);
+        Log::info('updateTodayPublicPosts fetch completed', [
+            'start_date' => $startDate,
+            'fetched' => $trends->count(),
+            'duration_ms' => $fetchDurationMs,
+        ]);
+
+        if ($trends->isEmpty()) {
+            Log::info('updateTodayPublicPosts skipped (no trends)', [
+                'start_date' => $startDate,
+                'duration_ms' => round((microtime(true) - $startedOverall) * 1000, 2),
+            ]);
+            return;
+        }
+
+        PublicPost::getQuery()->update([
+            'is_dirty' => true,
+        ]);
+
+        $trends
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
                 $counter++;
@@ -128,17 +161,23 @@ class PublicPostScheduleExecutor
             ->update([
                 'day_position' => 9999,
             ]);
+
+        Log::info('updateTodayPublicPosts finished', [
+            'start_date' => $startDate,
+            'processed' => $counter,
+            'duration_ms' => round((microtime(true) - $startedOverall) * 1000, 2),
+        ]);
     }
 
     protected function updateWeekPublicPosts()
     {
-        PublicPost::getQuery()->update([
-            'is_dirty' => true,
-        ]);
+        $startedOverall = microtime(true);
 
         $counter = 0;
         $startDate = today()->startOfWeek()->toDateString();
-        PostTrend::with(['post'])
+
+        $fetchStarted = microtime(true);
+        $trends = PostTrend::with(['post'])
             ->whereRelation('post', 'deleted_at', null)
             ->whereRelation('post.post_policy', 'access_policy','=',PostAccessPolicy::PUBLIC)
             ->whereHas('post.elements', null, '>=', config('setting.post_min_element_count'))
@@ -147,7 +186,28 @@ class PublicPostScheduleExecutor
             ->where('start_date', $startDate)
             ->orderBy('position')
             ->limit(self::POST_BATCH_SIZE)
-            ->get()
+            ->get();
+
+        $fetchDurationMs = round((microtime(true) - $fetchStarted) * 1000, 2);
+        Log::info('updateWeekPublicPosts fetch completed', [
+            'start_date' => $startDate,
+            'fetched' => $trends->count(),
+            'duration_ms' => $fetchDurationMs,
+        ]);
+
+        if ($trends->isEmpty()) {
+            Log::info('updateWeekPublicPosts skipped (no trends)', [
+                'start_date' => $startDate,
+                'duration_ms' => round((microtime(true) - $startedOverall) * 1000, 2),
+            ]);
+            return;
+        }
+
+        PublicPost::getQuery()->update([
+            'is_dirty' => true,
+        ]);
+
+        $trends
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
                 $counter++;
@@ -169,17 +229,23 @@ class PublicPostScheduleExecutor
             ->update([
                 'week_position' => 9999,
             ]);
+
+        Log::info('updateWeekPublicPosts finished', [
+            'start_date' => $startDate,
+            'processed' => $counter,
+            'duration_ms' => round((microtime(true) - $startedOverall) * 1000, 2),
+        ]);
     }
 
     protected function updateMonthPublicPosts()
     {
-        PublicPost::getQuery()->update([
-            'is_dirty' => true,
-        ]);
+        $startedOverall = microtime(true);
 
         $counter = 0;
         $startDate = today()->startOfMonth()->toDateString();
-        PostTrend::with(['post'])
+
+        $fetchStarted = microtime(true);
+        $trends = PostTrend::with(['post'])
             ->whereRelation('post', 'deleted_at', null)
             ->whereRelation('post.post_policy', 'access_policy','=',PostAccessPolicy::PUBLIC)
             ->whereHas('post.elements', null, '>=', config('setting.post_min_element_count'))
@@ -188,7 +254,28 @@ class PublicPostScheduleExecutor
             ->where('start_date', $startDate)
             ->orderBy('position')
             ->limit(self::POST_BATCH_SIZE)
-            ->get()
+            ->get();
+
+        $fetchDurationMs = round((microtime(true) - $fetchStarted) * 1000, 2);
+        Log::info('updateMonthPublicPosts fetch completed', [
+            'start_date' => $startDate,
+            'fetched' => $trends->count(),
+            'duration_ms' => $fetchDurationMs,
+        ]);
+
+        if ($trends->isEmpty()) {
+            Log::info('updateMonthPublicPosts skipped (no trends)', [
+                'start_date' => $startDate,
+                'duration_ms' => round((microtime(true) - $startedOverall) * 1000, 2),
+            ]);
+            return;
+        }
+
+        PublicPost::getQuery()->update([
+            'is_dirty' => true,
+        ]);
+
+        $trends
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
                 $counter++;
@@ -210,29 +297,55 @@ class PublicPostScheduleExecutor
             ->update([
                 'month_position' => 9999,
             ]);
+
+        Log::info('updateMonthPublicPosts finished', [
+            'start_date' => $startDate,
+            'processed' => $counter,
+            'duration_ms' => round((microtime(true) - $startedOverall) * 1000, 2),
+        ]);
     }
 
     protected function removeDirtyPublicPosts()
     {
+        $started = microtime(true);
+        $deleted = 0;
+
         PublicPost::where('is_dirty', true)
             ->limit(self::POST_BATCH_SIZE)
             ->get()
-            ->each(function (PublicPost $publicPost) {
+            ->each(function (PublicPost $publicPost) use (&$deleted) {
                 if(!$publicPost->post) {
                     $publicPost->delete();
-                }else if(!$publicPost->post->isPublic()) {
+                    $deleted++;
+                } else if(!$publicPost->post->isPublic()) {
                     $publicPost->delete();
-                }else if($publicPost->post->elements()->count() < config('setting.post_min_element_count')) {
+                    $deleted++;
+                } else if($publicPost->post->elements()->count() < config('setting.post_min_element_count')) {
                     $publicPost->delete();
+                    $deleted++;
                 }
             });
+
+        Log::info('removeDirtyPublicPosts finished', [
+            'deleted' => $deleted,
+            'duration_ms' => round((microtime(true) - $started) * 1000, 2),
+        ]);
     }
 
     protected function clearPostResourceCache()
     {
+        $started = microtime(true);
+        $count = 0;
+
         PublicPost::select('post_id')
-            ->each(function ($publicPost) {
+            ->each(function ($publicPost) use (&$count) {
                 CacheService::pullPostResourceByPostId($publicPost->post_id);
+                $count++;
             });
+
+        Log::info('clearPostResourceCache finished', [
+            'processed' => $count,
+            'duration_ms' => round((microtime(true) - $started) * 1000, 2),
+        ]);
     }
 }

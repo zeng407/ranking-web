@@ -239,6 +239,8 @@ class GameController extends Controller
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
 
+        $lastGameRound = null;
+
         try {
             // 先去除重複的 winner/loser 組合，避免前端重試造成重複票
             $votes = $request->input('votes', []);
@@ -293,11 +295,24 @@ class GameController extends Controller
 
         // 檢查遊戲是否結束
         if ($this->gameService->isGameComplete($game)) {
-            $anonymousId = session()->get('anonymous_id', 'unknown');
-            $game->update(['completed_at' => now()]);
-            $candidates = "{$lastGameRound->winner_id},{$lastGameRound->loser_id}";
-            // 觸發遊戲完成事件
-            event(new GameComplete($request->user(), $anonymousId, $lastGameRound, $candidates));
+            // 如果前面沒有回傳最後一回合，補抓最新一筆避免 null 取屬性
+            if (!$lastGameRound) {
+                \Log::warning('Game complete but lastGameRound missing, fetching last round', ['game_id' => $game->id]);
+                $lastGameRound = DB::table('game_1v1_rounds')
+                    ->where('game_id', $game->id)
+                    ->orderByDesc('id')
+                    ->first();
+            }
+
+            if ($lastGameRound) {
+                $anonymousId = session()->get('anonymous_id', 'unknown');
+                $game->update(['completed_at' => now()]);
+                $candidates = "{$lastGameRound->winner_id},{$lastGameRound->loser_id}";
+                // 觸發遊戲完成事件
+                event(new GameComplete($request->user(), $anonymousId, $lastGameRound, $candidates));
+            } else {
+                \Log::warning('Game complete but no lastGameRound found', ['game_id' => $game->id]);
+            }
         }
 
         $elements = $this->gameService->getCurrentElements($game);

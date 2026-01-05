@@ -154,6 +154,7 @@ export default {
       batchVoteInterval: BATCH_VOTE_SAVE_INTERVAL,
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
+      isBatchVoting: false,  // 避免重複送出 batch vote
 
       // 計時器
       timerSeconds: 0,
@@ -1712,6 +1713,15 @@ export default {
 
     // Batch send votes (Clear local storage after sync)
     sendBatchVotes() {
+      if (this.isBatchVoting) {
+        return;
+      }
+
+      if (!this.unsentVotes.length) {
+        return;
+      }
+
+      this.isBatchVoting = true;
       this.isDataLoading = true;
 
       const data = {
@@ -1730,6 +1740,9 @@ export default {
 
               this.isDataLoading = false;
               this.showGameResult();
+          })
+          .finally(() => {
+              this.isBatchVoting = false;
           });
     },
 

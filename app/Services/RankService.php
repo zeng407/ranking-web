@@ -16,6 +16,7 @@ use App\Models\RankReport;
 use App\Models\RankReportHistory;
 use App\Services\Builders\RankReportHistoryBuilder;
 use DB;
+use Illuminate\Database\QueryException;
 
 class RankService
 {
@@ -164,12 +165,12 @@ class RankService
 
     public function createRankReports(Post $post)
     {
+        $t0 = microtime(true);
         \Log::info("start update post [{$post->id}] rank report [{$post->title}]");
 
         // ==========================================
         // 第一階段：準備與計算
         // ==========================================
-
         $baseRankQuery = Rank::select(['element_id', 'rank_type', 'win_rate', 'win_count'])
             ->where('post_id', $post->id)
             ->where('record_date', today())
@@ -177,21 +178,42 @@ class RankService
                 $query->whereNull('deleted_at');
             });
 
-        // 取得原始排序的 List (不要在這裡 keyBy，保持 0, 1, 2 的索引)
-        $championRanksList = (clone $baseRankQuery)
+        $tBaseFetchStart = microtime(true);
+        $baseRanks = $baseRankQuery->get();
+        $tBaseFetchEnd = microtime(true);
+
+        // 取得原始排序的 List (本地排序)
+        $tChampionProcessStart = microtime(true);
+        $championRanksList = $baseRanks
             ->where('rank_type', RankType::CHAMPION)
-            ->orderByDesc('win_rate')
-            ->orderByDesc('win_count')
-            ->get();
+            ->values()
+            ->all();
+        usort($championRanksList, function ($a, $b) {
+            if ($b->win_rate != $a->win_rate) {
+                return $b->win_rate <=> $a->win_rate;
+            }
+            return $b->win_count <=> $a->win_count;
+        });
+        $tChampionProcessEnd = microtime(true);
 
-        $pkRanksList = (clone $baseRankQuery)
+        $tPkProcessStart = microtime(true);
+        $pkRanksList = $baseRanks
             ->where('rank_type', RankType::PK_KING)
-            ->orderByDesc('win_rate')
-            ->orderByDesc('win_count')
-            ->get();
+            ->values()
+            ->all();
+        usort($pkRanksList, function ($a, $b) {
+            if ($b->win_rate != $a->win_rate) {
+                return $b->win_rate <=> $a->win_rate;
+            }
+            return $b->win_count <=> $a->win_count;
+        });
+        $tPkProcessEnd = microtime(true);
 
-        // 格式: [element_id => rank_position]
-        // 這樣查詢名次的時間複雜度是 O(1)，非常快
+        $tExistingStart = microtime(true);
+
+        // 將 element_id 映射到對應資料／名次：
+        // - $championMap / $pkMap      : [element_id => Rank]，用來 O(1) 查詢數值 (例如 win_rate)
+        // - $championPosMap / $pkPosMap: [element_id => rank_position]，用來 O(1) 查詢名次 (position)
         $championMap = [];     // 用來查數值 (win_rate)
         $championPosMap = [];  // 用來查名次 (position)
         foreach ($championRanksList as $index => $rank) {
@@ -210,6 +232,8 @@ class RankService
         $existingReports = RankReport::where('post_id', $post->id)
             ->get()
             ->keyBy('element_id');
+
+        $tAssembleStart = microtime(true);
 
         // 組裝資料
         $upsertData = [];
@@ -255,6 +279,7 @@ class RankService
 
         // 計算總排名 (Rank)
         // 這裡維持原樣，使用 usort 進行記憶體內排序
+        $tSortStart = microtime(true);
         usort($upsertData, function ($a, $b) {
             // 邏輯：優先比較 win_rate，若相同則比較 final_win_rate
             if ($b['win_rate'] != $a['win_rate']) {
@@ -269,27 +294,50 @@ class RankService
         }
         unset($row);
 
+        $tStage1End = microtime(true);
+
         // ==========================================
         // 第二階段：寫入 (Transaction)
         // ==========================================
-        if (!empty($upsertData)) {
-            DB::transaction(function () use ($post, $upsertData) {
-                RankReport::where('post_id', $post->id)
-                    ->whereHas('element', function ($query) {
-                        $query->whereNotNull('deleted_at');
-                    })
-                    ->update(['hidden' => true]);
+        $deletedElementIds = \DB::table('elements')
+            ->join('post_elements', 'post_elements.element_id', '=', 'elements.id')
+            ->where('post_elements.post_id', $post->id)
+            ->whereNotNull('elements.deleted_at')
+            ->pluck('elements.id');
 
-                $chunks = array_chunk($upsertData, 500);
-                foreach ($chunks as $chunk) {
-                    RankReport::upsert(
-                        $chunk,
-                        ['post_id', 'element_id'],
-                        ['final_win_position', 'final_win_rate', 'win_position', 'win_rate', 'rank', 'updated_at']
-                    );
-                }
-            });
+        $tTxStart = microtime(true);
+
+        if ($deletedElementIds->isNotEmpty()) {
+            RankReport::where('post_id', $post->id)
+                ->whereIn('element_id', $deletedElementIds)
+                ->update(['hidden' => true]);
         }
+
+        if (!empty($upsertData)) {
+            $orderedUpsertData = $upsertData;
+            usort($orderedUpsertData, function ($a, $b) {
+                return $a['element_id'] <=> $b['element_id'];
+            });
+
+            $chunks = array_chunk($orderedUpsertData, 200);
+            foreach ($chunks as $chunk) {
+                $this->upsertRankReportsWithRetry($chunk);
+            }
+        }
+
+        $tTxEnd = microtime(true);
+
+        \Log::info('rank report timing', [
+            'post_id' => $post->id,
+            'stage_base_fetch_ms' => ($tBaseFetchEnd - $tBaseFetchStart) * 1000,
+            'stage_champion_process_ms' => ($tChampionProcessEnd - $tChampionProcessStart) * 1000,
+            'stage_pk_process_ms' => ($tPkProcessEnd - $tPkProcessStart) * 1000,
+            'stage_existing_fetch_ms' => ($tAssembleStart - $tExistingStart) * 1000,
+            'stage_assemble_ms' => ($tSortStart - $tAssembleStart) * 1000,
+            'stage_sort_ms' => ($tStage1End - $tSortStart) * 1000,
+            'stage_write_ms' => ($tTxEnd - $tTxStart) * 1000,
+            'total_ms' => ($tTxEnd - $t0) * 1000,
+        ]);
 
         \Log::info("end update post [{$post->id}] rank report [{$post->title}]");
     }
@@ -333,6 +381,36 @@ class RankService
         }
         foreach ($dates as $date) {
             UpdateRankForReportHistory::dispatch($post->id, $timeRange, $date);
+        }
+    }
+
+    /**
+     * Upsert rank reports with deadlock retries to reduce 1213/40001 failures.
+     */
+    private function upsertRankReportsWithRetry(array $chunk, int $maxAttempts = 3): void
+    {
+        $attempt = 0;
+        while ($attempt < $maxAttempts) {
+            try {
+                RankReport::upsert(
+                    $chunk,
+                    ['post_id', 'element_id'],
+                    ['final_win_position', 'final_win_rate', 'win_position', 'win_rate', 'rank', 'updated_at']
+                );
+                return;
+            } catch (QueryException $e) {
+                $code = (string) $e->getCode();
+                if (!in_array($code, ['40001', '1213'])) {
+                    throw $e;
+                }
+
+                $attempt++;
+                if ($attempt >= $maxAttempts) {
+                    throw $e;
+                }
+
+                usleep(random_int(100000, 400000));
+            }
         }
     }
 }
