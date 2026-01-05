@@ -211,7 +211,9 @@ class RankService
 
         $tExistingStart = microtime(true);
 
-        // 格式: [element_id => rank_position]
+        // 將 element_id 映射到對應資料／名次：
+        // - $championMap / $pkMap      : [element_id => Rank]，用來 O(1) 查詢數值 (例如 win_rate)
+        // - $championPosMap / $pkPosMap: [element_id => rank_position]，用來 O(1) 查詢名次 (position)
         $championMap = [];     // 用來查數值 (win_rate)
         $championPosMap = [];  // 用來查名次 (position)
         foreach ($championRanksList as $index => $rank) {
