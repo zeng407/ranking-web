@@ -63,7 +63,7 @@ class GameService
             ->take($game->element_count)
             ->get(['elements.id']);
 
-        // attch first 128 elements
+        // attach first 128 elements
         $firstElements = $elements->take(128);
         $firstElements->each(function (Element $element) use ($game) {
             $game->elements()->attach($element, [
