@@ -18,7 +18,6 @@ class BroadcastNewChampion implements ShouldBroadcast
 
     protected UserGameResult $userGameResult;
 
-
     /**
      * Create a new job instance.
      *
