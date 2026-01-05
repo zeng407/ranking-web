@@ -9,13 +9,15 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Bus\Queueable;
 
 
 class BroadcastNewChampion implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets;
+    use Dispatchable, InteractsWithSockets, Queueable;
 
     protected UserGameResult $userGameResult;
+
 
     /**
      * Create a new job instance.
@@ -25,6 +27,7 @@ class BroadcastNewChampion implements ShouldBroadcast
     public function __construct(UserGameResult $userGameResult)
     {
         $this->userGameResult = $userGameResult;
+        $this->onQueue('low');
     }
 
     public function broadcastWith()
