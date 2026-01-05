@@ -689,8 +689,8 @@
           </div>
         </div>
 
-        {{-- 投票時間軸 --}}
-        <div class="row mt-3" v-if="showMatchHistory && matchHistory.length">
+        {{-- 投票時間軸（桌面版顯示，手機隱藏） --}}
+        <div class="row mt-3" v-if="showMatchHistory && matchHistory.length && !isMobileScreen">
           <div class="col-12">
             <div
               class="match-history-list d-flex overflow-x-scroll hide-scrollbar py-2"
