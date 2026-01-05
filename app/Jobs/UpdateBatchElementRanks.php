@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Element;
 use App\Models\Post;
-use App\Services\RankService;
+use App\Jobs\UpdateElementRank;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -33,26 +33,22 @@ class UpdateBatchElementRanks implements ShouldQueue
 
     /**
      * Execute the job.
-     *
-     * @param RankService $rankService
-     * @return void
      */
-    public function handle(RankService $rankService)
+    public function handle()
     {
         if (empty($this->elementIds)) {
             return;
         }
 
         // 為了避免一次撈取過多資料，使用 chunk 處理
-        // 雖然 createElementRank 裡面是個別 query，但這裡先撈出 Model 傳進去
+        // 這裡先撈出 Model 傳進去，再個別派發 UpdateElementRank 工作
         Element::whereIn('id', $this->elementIds)
-            ->chunk(50, function ($elements) use ($rankService) {
+            ->chunk(50, function ($elements) {
                 foreach ($elements as $element) {
                     try {
-                        // 執行排名更新邏輯
-                        $rankService->createElementRank($this->post, $element);
+                        UpdateElementRank::dispatch($this->post, $element);
                     } catch (\Exception $e) {
-                        \Log::error('Update rank failed in batch job', [
+                        \Log::error('Dispatch UpdateElementRank failed in batch job', [
                             'post_id' => $this->post->id,
                             'element_id' => $element->id,
                             'error' => $e->getMessage()
