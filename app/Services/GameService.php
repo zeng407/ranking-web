@@ -297,7 +297,7 @@ class GameService
                 'found_count' => $count,
                 'element_ids' => $allIds->toArray()
             ]);
-            throw new Exception("Some elements do not belong to the game {{$game->id}}. Expected {$allIds->count()}, found {$count}.");
+            throw new Exception("Some elements do not belong to the game {$game->id}. Expected {$allIds->count()}, found {$count}.");
         }
 
         $alreadyEliminated = $game->elements()
