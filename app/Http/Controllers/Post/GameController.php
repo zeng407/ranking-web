@@ -117,7 +117,7 @@ class GameController extends Controller
     protected function gameView(Post $post, $element, $requiredPassword, $gameRoom = null)
     {
         $userLastGameSerial = $this->gameService->getUserLastGameSerial($post, request()->user());
-        
+
         return view('game.show', [
             'serial' => $post->serial,
             'post' => $post,
@@ -154,7 +154,7 @@ class GameController extends Controller
         $game = Game::where('serial', $gameSerial)->first();
         $gameResult = null;
         if ($game && $this->gameService->isGameComplete($game)) {
-            $gameResult = $this->gameService->getGameResult($request, $game);
+            $gameResult = $this->gameService->getGameResult($game);
         }
         return $gameResult;
     }
