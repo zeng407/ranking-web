@@ -38,7 +38,7 @@ class GamePolicy
         }
 
         return $this->gameService->isGamePublic($game)
-            && !$this->gameService->isGameComplete($game);
+            && $game->completed_at === null;
     }
 }
 

@@ -219,7 +219,7 @@ class GameController extends Controller
         event(new GameElementVoted($game, $gameRound));
         $mark('event_voted');
 
-        $isComplete = $this->gameService->isGameComplete($game);
+        $isComplete = ((int) ($gameRound->remain_elements ?? 0)) === 1;
         $mark('is_game_complete');
 
         // update rank when game complete
