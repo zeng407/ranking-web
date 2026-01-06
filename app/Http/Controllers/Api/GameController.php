@@ -173,42 +173,67 @@ class GameController extends Controller
 
     public function vote(Request $request)
     {
+        $start = microtime(true);
+        $lastMark = $start;
+        $timings = [];
+        $mark = function (string $label) use (&$timings, &$lastMark) {
+            $now = microtime(true);
+            $timings[$label] = round(($now - $lastMark) * 1000, 2);
+            $lastMark = $now;
+        };
+
         $request->validate([
             'game_serial' => 'required',
         ]);
+        $mark('validate_serial');
         /** @var Game $game */
         $game = $this->getGame($request->input('game_serial'));
+        $mark('load_game');
         logger("game candidate before vote", ['candidates' => $game->candidates]);
         $request->validate([
             'winner_id' => ['required', 'different:loser_id', new GameCandicateRule($game)],
             'loser_id' => ['required', 'different:winner_id', new GameCandicateRule($game)]
         ]);
+        $mark('validate_candidates');
 
         /** @see \App\Policies\GamePolicy::play() */
         $this->authorize('play', $game);
+        $mark('authorize');
 
         try{
             $gameRound = $this->gameService->updateGameRounds($game, $request->winner_id, $request->loser_id);
+            $mark('update_round');
         }catch (\Exception $e){
             return response()->json([], 422);
         }
 
         // retrieve next round
         $elements = $this->getNextElements($game);
+        $mark('next_elements');
 
         // Add to processing job
         if($game->game_room){
             CacheService::putUpdatingGameRoomRank($game->game_room);
         }
+        $mark('flag_room_rank');
         event(new GameElementVoted($game, $gameRound));
+        $mark('event_voted');
 
         // update rank when game complete
         if ($this->gameService->isGameComplete($game)) {
+            $mark('check_complete');
             $anonymousId = session()->get('anonymous_id', 'unknown');
             $game->update(['completed_at' => now()]);
             $candidates = $game->candidates;
             event(new GameComplete($request->user(), $anonymousId, $gameRound, $candidates));
+            $mark('complete_flow');
         }
+
+        logger('vote timings', [
+            'game_id' => $game->id,
+            'timings_ms' => $timings,
+            'total_ms' => round((microtime(true) - $start) * 1000, 2),
+        ]);
 
         return response()->json([
             'status' => $this->getStatus($game),
