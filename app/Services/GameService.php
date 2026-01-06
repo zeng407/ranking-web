@@ -85,7 +85,7 @@ class GameService
 
     public function isGameComplete(Game $game)
     {
-        return $game->game_1v1_rounds()
+        return $game->completed_at || $game->game_1v1_rounds()
             ->where('remain_elements', 1)
             ->exists();
     }

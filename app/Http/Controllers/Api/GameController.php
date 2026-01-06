@@ -219,8 +219,11 @@ class GameController extends Controller
         event(new GameElementVoted($game, $gameRound));
         $mark('event_voted');
 
+        $isComplete = $this->gameService->isGameComplete($game);
+        $mark('is_game_complete');
+
         // update rank when game complete
-        if ($this->gameService->isGameComplete($game)) {
+        if ($isComplete) {
             $mark('check_complete');
             $anonymousId = session()->get('anonymous_id', 'unknown');
             $game->update(['completed_at' => now()]);
@@ -229,14 +232,23 @@ class GameController extends Controller
             $mark('complete_flow');
         }
 
+        $status = $isComplete ? self::END_GAME : self::PROCESSING;
+        $mark('status');
+
+        $totalMs = round((microtime(true) - $start) * 1000, 2);
+        $sumMs = round(array_sum($timings), 2);
+        $gapMs = round($totalMs - $sumMs, 2);
+
         logger('vote timings', [
             'game_id' => $game->id,
             'timings_ms' => $timings,
-            'total_ms' => round((microtime(true) - $start) * 1000, 2),
+            'sum_ms' => $sumMs,
+            'gap_ms' => $gapMs,
+            'total_ms' => $totalMs,
         ]);
 
         return response()->json([
-            'status' => $this->getStatus($game),
+            'status' => $status,
             'data' => $elements
         ]);
 
