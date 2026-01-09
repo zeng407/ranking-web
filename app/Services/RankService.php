@@ -22,15 +22,43 @@ class RankService
 {
     public function getRankReports(Post $post, $limit = 10, $page = null)
     {
-        $reports = RankReport::where('post_id', $post->id)
+        $allReports = CacheService::rememberRankReports($post);
+
+        if ($allReports && !empty($allReports)) {
+            // 如果是array，轉換成RankReport Collection
+            if (is_array($allReports)) {
+                $allReports = collect($allReports)->map(function ($item) {
+                    if ($item instanceof RankReport) {
+                        return $item;
+                    }
+                    // 將array轉換為RankReport model
+                    $report = new RankReport((array) $item);
+                    $report->exists = true;
+                    return $report;
+                });
+            }
+
+            $page = $page ?: request()->input('page', 1);
+            $offset = ($page - 1) * $limit;
+            $items = $allReports->slice($offset, $limit)->values();
+
+            return new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $allReports->count(),
+                $limit,
+                $page,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+        }
+
+        // Fallback if cache fails
+        return RankReport::where('post_id', $post->id)
             ->whereHas('element', function ($query) {
                 $query->whereNull('deleted_at');
             })
             ->orderByRaw('ISNULL(`rank`)')
             ->orderBy('rank')
             ->paginate($limit, ['*'], 'page', $page);
-
-        return $reports;
     }
 
     public function getRankReportByElement(Post $post, Element $element): ?RankReport

@@ -217,6 +217,31 @@ class CacheService
         return static::remember($key, $seconds, $callback, $refresh);
     }
 
+    static public function rememberRankReports(Post $post, $refresh = false)
+    {
+        $key = 'rank_reports_all:' . $post->id;
+        $seconds = 10 * 60; // 10 minutes
+        return static::remember($key, $seconds, function () use ($post) {
+            return \DB::table('rank_reports')
+                ->join('elements', 'rank_reports.element_id', '=', 'elements.id')
+                ->where('rank_reports.post_id', $post->id)
+                ->whereNull('elements.deleted_at')
+                ->orderByRaw('ISNULL(rank_reports.rank)')
+                ->orderBy('rank_reports.rank')
+                ->select('rank_reports.id', 'rank_reports.element_id', 'rank_reports.rank', 'rank_reports.win_rate')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'element_id' => $item->element_id,
+                        'rank' => $item->rank,
+                        'win_rate' => $item->win_rate,
+                    ];
+                })
+                ->toArray();
+        }, $refresh);
+    }
+
     static function putUpdateGameUserNameThreashold(GameRoomUser $gameRoomUser)
     {
         $time = 60 * 60; // 1 hour
