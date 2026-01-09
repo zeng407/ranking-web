@@ -1,3 +1,4 @@
+# Only for development environment
 pkill -f 'php artisan queue:listen'
 php artisan queue:listen --tries=3 --timeout=60 --sleep=3 --queue=default &
 php artisan queue:listen --tries=3 --timeout=60 --sleep=3 --queue=high,low &

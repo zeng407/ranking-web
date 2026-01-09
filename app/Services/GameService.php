@@ -141,6 +141,9 @@ class GameService
 
     public function updateGameRounds(Game $game, $winnerId, $loserId): Game1V1Round
     {
+        $lock = Locker::lockUpdateGameElement($game);
+        $lock->block(5);
+        
         $lastRound = $game->game_1v1_rounds()->latest('id')->first();
         if ($lastRound === null) {
             $round = 1;
@@ -175,8 +178,6 @@ class GameService
             ->where('is_eliminated', false)
             ->first();
 
-        $lock = Locker::lockUpdateGameElement($game);
-        $lock->block(5);
         try {
             \DB::transaction(function () use ($game, $winner, $loser, $isEndOfRound) {
                 // update winner
