@@ -85,6 +85,10 @@ class GameService
 
     public function isGameComplete(Game $game)
     {
+        if ($game->completed_at !== null) {
+            return true;
+        }
+
         return $game->game_1v1_rounds()
             ->where('remain_elements', 1)
             ->exists();
@@ -104,76 +108,77 @@ class GameService
         return $winner;
     }
 
-    public function getGameResult(Request $request, Game $game)
+    public function getGameResult(Game $game)
     {
-        /** @var RankService */
-        $rankService = app(RankService::class);
-        $rounds = $game->game_1v1_rounds()
-            ->orderBy('remain_elements')
-            ->take(9)
-            ->get();
+        return CacheService::rememberGameResult($game, function () use ($game) {
+            /** @var RankService */
+            $rankService = app(RankService::class);
+            $rounds = $game->game_1v1_rounds()
+                ->orderBy('remain_elements')
+                ->take(9)
+                ->get();
 
-        $winner = $this->getWinner($game);
-        $rankReport = $rankService->getRankReportByElement($game->post, $winner);
+            $winner = $this->getWinner($game);
+            $rankReport = $rankService->getRankReportByElement($game->post, $winner);
 
-        $gameResult = GameResultResource::collection($rounds)
-            ->additional([
-                'game_serial' => $game->serial,
-                'winner' => $winner,
-                'winner_rank' => $rankReport?->rank,
-                'winner_win_rate' => $rankReport?->win_rate,
-                'statistics' => [
-                    'timeline' => $this->getGameTimeline($game),
-                    'game_time' => $game->created_at->diffInSeconds($game->completed_at),
-                    'winner_id' => $winner->id,
-                    'winner_global_rank' => $rankReport?->rank
-                ],
-                'rounds' => $game->element_count,
-                'game_room' => $game->game_room ? CacheService::rememberGameBetRank($game->game_room, true) : null,
-            ]);
-
-        return $gameResult;
+            return GameResultResource::collection($rounds)
+                ->additional([
+                    'game_serial' => $game->serial,
+                    'winner' => $winner,
+                    'winner_rank' => $rankReport?->rank,
+                    'winner_win_rate' => $rankReport?->win_rate,
+                    'statistics' => [
+                        'timeline' => $this->getGameTimeline($game),
+                        'game_time' => $game->created_at->diffInSeconds($game->completed_at),
+                        'winner_id' => $winner?->id,
+                        'winner_global_rank' => $rankReport?->rank
+                    ],
+                    'rounds' => $game->element_count,
+                    'game_room' => $game->game_room ? CacheService::rememberGameBetRank($game->game_room, true) : null,
+                ]);
+        });
     }
 
     public function updateGameRounds(Game $game, $winnerId, $loserId): Game1V1Round
     {
         $lock = Locker::lockUpdateGameElement($game);
         $lock->block(5);
+        
+        $lastRound = $game->game_1v1_rounds()->latest('id')->first();
+        if ($lastRound === null) {
+            $round = 1;
+            $ofRound = (int) ceil($game->element_count / 2);
+            $remain = $game->element_count - 1;
+        } else if ($lastRound->current_round + 1 > $lastRound->of_round) {
+            $round = 1;
+            $ofRound = $this->calculateNextRoundNumber($lastRound->remain_elements);
+            $remain = $lastRound->remain_elements - 1;
+        } else {
+            $round = $lastRound->current_round + 1;
+            $ofRound = $lastRound->of_round;
+            $remain = $lastRound->remain_elements - 1;
+        }
+        $data = [
+            'post_id' => $game->post_id,
+            'current_round' => $round,
+            'of_round' => $ofRound,
+            'remain_elements' => $remain,
+            'winner_id' => $winnerId,
+            'loser_id' => $loserId
+        ];
+        logger('saving game : ' . $game->id, $data);
+
+        $isEndOfRound = $round === $ofRound;
+        $winner = $game->game_elements()
+            ->where('element_id', $winnerId)
+            ->where('is_eliminated', false)
+            ->first();
+        $loser = $game->game_elements()
+            ->where('element_id', $loserId)
+            ->where('is_eliminated', false)
+            ->first();
+
         try {
-
-            $lastRound = $game->game_1v1_rounds()->latest('id')->first();
-            if ($lastRound === null) {
-                $round = 1;
-                $ofRound = (int) ceil($game->element_count / 2);
-                $remain = $game->element_count - 1;
-            } else if ($lastRound->current_round + 1 > $lastRound->of_round) {
-                $round = 1;
-                $ofRound = $this->calculateNextRoundNumber($lastRound->remain_elements);
-                $remain = $lastRound->remain_elements - 1;
-            } else {
-                $round = $lastRound->current_round + 1;
-                $ofRound = $lastRound->of_round;
-                $remain = $lastRound->remain_elements - 1;
-            }
-            $data = [
-                'post_id' => $game->post_id,
-                'current_round' => $round,
-                'of_round' => $ofRound,
-                'remain_elements' => $remain,
-                'winner_id' => $winnerId,
-                'loser_id' => $loserId
-            ];
-            logger('saving game : ' . $game->id, $data);
-
-            $isEndOfRound = $round === $ofRound;
-            $winner = $game->game_elements()
-                ->where('element_id', $winnerId)
-                ->where('is_eliminated', false)
-                ->first();
-            $loser = $game->game_elements()
-                ->where('element_id', $loserId)
-                ->where('is_eliminated', false)
-                ->first();
             \DB::transaction(function () use ($game, $winner, $loser, $isEndOfRound) {
                 // update winner
                 if($winner){

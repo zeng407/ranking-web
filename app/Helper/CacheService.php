@@ -209,6 +209,14 @@ class CacheService
         }, $refresh);
     }
 
+    static public function rememberGameResult(Game $game, callable $callback, $refresh = false)
+    {
+        $updatedAt = $game->updated_at?->getTimestamp() ?? $game->id;
+        $key = 'game_result:' . $game->id . ':' . $updatedAt;
+        $seconds = 30 * 60; // 30 minutes
+        return static::remember($key, $seconds, $callback, $refresh);
+    }
+
     static function putUpdateGameUserNameThreashold(GameRoomUser $gameRoomUser)
     {
         $time = 60 * 60; // 1 hour

@@ -47,10 +47,21 @@ class GameController extends Controller
 
     public function rank(Request $request)
     {
+        $start = microtime(true);
+        $lastMark = $start;
+        $timings = [];
+        $mark = function (string $label) use (&$timings, &$lastMark) {
+            $now = microtime(true);
+            $timings[$label] = round(($now - $lastMark) * 1000, 2);
+            $lastMark = $now;
+        };
+
         $post = $this->getPostOrFail($request);
+        $mark('get_post');
 
         // we first check if user has access to the post
         $embed = $request->session()->pull('rank-embed', false);
+        $mark('session_pull');
 
         if ($post->isPasswordRequired()) {
             if ($embed && $post->user_id == optional($request->user())->id) {
@@ -64,10 +75,29 @@ class GameController extends Controller
             // we disable the embed option
             $embed = false;
         }
+        $mark('access_check');
 
         $gameResult = $this->getGameResult($request);
+        $mark('get_game_result');
+
         $reports = $this->rankService->getRankReports($post, 10);
+        $mark('get_rank_reports');
+
         $myChampionHistories = $this->getChampionRankReportHistoryByGameResult($post, $gameResult, 365);
+        $mark('get_champion_histories');
+
+        $totalMs = round((microtime(true) - $start) * 1000, 2);
+        $sumMs = round(array_sum($timings), 2);
+        $gapMs = round($totalMs - $sumMs, 2);
+
+        logger('rank timings', [
+            'post_id' => $post->id,
+            'timings_ms' => $timings,
+            'sum_ms' => $sumMs,
+            'gap_ms' => $gapMs,
+            'total_ms' => $totalMs,
+        ]);
+
         return view('game.rank', [
             'serial' => $post->serial,
             'post' => $post,
@@ -117,7 +147,7 @@ class GameController extends Controller
     protected function gameView(Post $post, $element, $requiredPassword, $gameRoom = null)
     {
         $userLastGameSerial = $this->gameService->getUserLastGameSerial($post, request()->user());
-        
+
         return view('game.show', [
             'serial' => $post->serial,
             'post' => $post,
@@ -154,7 +184,7 @@ class GameController extends Controller
         $game = Game::where('serial', $gameSerial)->first();
         $gameResult = null;
         if ($game && $this->gameService->isGameComplete($game)) {
-            $gameResult = $this->gameService->getGameResult($request, $game);
+            $gameResult = $this->gameService->getGameResult($game);
         }
         return $gameResult;
     }
