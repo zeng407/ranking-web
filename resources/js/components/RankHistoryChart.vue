@@ -152,11 +152,11 @@ export default {
             x: {
               type: 'timeseries',
               time: {
-                tooltipFormat: 'YYYY-DD-MM',
+                tooltipFormat: 'YYYY-MM-DD',
                 parser: 'YYYY-MM-DD',
                 unit: 'day',
                 displayFormats: {
-                  day: 'YYYY-DD-MM'
+                  day: 'YYYY-MM-DD'
                 }
               },
               grid: {
@@ -165,7 +165,7 @@ export default {
               ticks: {
                 callback: (value) => {
                   moment.locale(this.$i18n.locale);
-                  return moment(value).format('YYYY-DD-MM');
+                  return moment(value).format('YYYY-MM-DD');
                 },
               },
             },
