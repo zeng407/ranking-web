@@ -226,7 +226,7 @@ class CacheService
                 ->join('elements', 'rank_reports.element_id', '=', 'elements.id')
                 ->where('rank_reports.post_id', $post->id)
                 ->whereNull('elements.deleted_at')
-                ->orderByRaw('ISNULL(rank_reports.rank)')
+                ->orderByRaw('CASE WHEN rank_reports.rank IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('rank_reports.rank')
                 ->select('rank_reports.id', 'rank_reports.element_id', 'rank_reports.rank', 'rank_reports.win_rate')
                 ->get()

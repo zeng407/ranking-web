@@ -22,14 +22,15 @@ class RankService
 {
     public function getRankReports(Post $post, $limit = 10, $page = null)
     {
-            // If it's an array, convert to RankReport Collection
+        $allReports = CacheService::rememberRankReports($post);
+
+        if ($allReports && !empty($allReports)) {
             if (is_array($allReports)) {
                 $allReports = collect($allReports)->map(function ($item) {
-                    if ($item instanceof RankReport) {
-                        return $item;
+                    $report = new RankReport();
+                    foreach ((array) $item as $key => $value) {
+                        $report->setAttribute($key, $value);
                     }
-                    // Convert array to RankReport model
-                    $report = new RankReport((array) $item);
                     $report->exists = true;
                     return $report;
                 });
