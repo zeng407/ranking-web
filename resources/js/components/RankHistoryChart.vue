@@ -39,7 +39,7 @@ export default {
       host: window.location.host,
       showMyTimeline: true,
       ranks: {
-        'week': [],
+        'thousand_votes': [],
         'all': [],
         'current': []
       },
@@ -48,7 +48,7 @@ export default {
   methods: {
     initChart() {
       Promise.all([
-        this.loadRanks(['all','week']),
+        this.loadRanks(['all','thousand_votes']),
       ]).then(() => {
         this.drawChart(this.chartId);
       });
@@ -64,188 +64,175 @@ export default {
           params: params
         }).then(response => {
           this.ranks['all'] = response.data.all;
-          this.ranks['week'] = response.data.week;
+          this.ranks['thousand_votes'] = response.data.thousand_votes;
           this.ranks['current'] = response.data.current;
         }).catch(error => {
           console.log(error);
         });
     },
     drawChart(target) {
-      // skip if target is not found
-      if(!document.getElementById(target)){
-        return;
-      }
-      const ctx = target;
-      const weeklyRankData = this.ranks['week']
-      .filter((item) => {
-        if(item.rank === 0 || item.win_rate <= 0){
-          return false;
-        }
+      // find canvas
+      const canvas = document.getElementById(target);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
 
-        // 過濾大於今天的日期
-        if(moment(item.date).isAfter(moment())){
-          return false;
-        }
+      const today = moment().format('YYYY-MM-DD');
 
-        return true;
-      })
-      .map((item, index) => {
-        return {
-          x: item.date,
-          y: item.rank,
-          win_rate: item.win_rate
-        }
-      });
-      // 累積排名
-      let allRankData = [this.ranks['current']]
-        .concat(this.ranks['all'].filter((item) => item.date !== moment().format('YYYY-MM-DD')));
-      const allRankDataCount = allRankData.length;
-
-      allRankData = [this.ranks['current']]
-        .concat(this.ranks['all'].filter((item) => item.date !== moment().format('YYYY-MM-DD')))
-        .filter((item, index) => {
-          if(item.rank === 0 || item.win_rate <= 0){
-            return false;
-          }
-
-          if (allRankDataCount <=5){
-            return true;
-          }
-
-          if(item.date == moment().format('YYYY-MM-DD')){
-            return true;
-          }
-
-          //  ture if index is 0 2 4
-          if(index % 2 == 0 && index < 5){
-            return true;
-          }
-
-          if(index % 4 == 0 && index >= 5){
-            return true;
-          }
-
-          return weeklyRankData.some((item2) => {
-            return item.date === item2.x;
-          });
-
+      const thousandVotesRankData = (this.ranks['thousand_votes'] || [])
+        .filter((item) => {
+          if (!item) return false;
+          if (item.rank === 0 || item.win_rate <= 0) return false;
+          if (moment(item.date).isAfter(moment())) return false;
+          return true;
         })
-        .map((item, index) => {
-          return {
-            x: item.date,
-            y: item.rank,
-            win_rate: item.win_rate
-          }
-        });
+        .map((item) => ({ x: item.date, y: item.rank, win_rate: item.win_rate }));
+
+      let allRankData = [];
+      if (this.ranks['current']) {
+        allRankData.push(this.ranks['current']);
+      }
+      if (Array.isArray(this.ranks['all'])) {
+        allRankData = allRankData.concat(this.ranks['all'].filter((item) => item.date !== today));
+      }
+      allRankData = allRankData.map((item) => ({ x: item.date, y: item.rank, win_rate: item.win_rate }));
 
       new Chart(ctx, {
         type: 'line',
         data: {
-          datasets: [{
-            label: this.$t('rank.chart.title.rank_history.all'),
-            data: allRankData,
-            pointStyle: 'circle',
-            borderColor: 'rgba(152, 204, 253, 0.5)',
-            backgroundColor: 'rgba(152, 204, 253, 1)', //blue,
-          }
-          ,
-          {
-            label: this.$t('rank.chart.title.rank_history.week'),
-            data: weeklyRankData,
-            pointStyle: 'circle',
-            borderColor: 'rgba(255, 99, 132, 0.5)',
-            backgroundColor: 'rgba(255, 99, 132, 1)', //red,
-          }
-        ]
+          datasets: [
+            {
+              label: this.$t('rank.chart.title.rank_history.all'),
+              data: allRankData,
+              pointStyle: 'circle',
+              borderColor: 'rgba(152, 204, 253, 0.8)',
+              backgroundColor: (context) => {
+                const chart = context.chart;
+                const { ctx, chartArea } = chart;
+                if (!chartArea) return 'rgba(152, 204, 253, 0.15)';
+                const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                gradient.addColorStop(0, 'rgba(152, 204, 253, 0.25)');
+                gradient.addColorStop(1, 'rgba(152, 204, 253, 0.0)');
+                return gradient;
+              },
+              tension: 0.3,
+              fill: true,
+              borderWidth: 2,
+              pointRadius: (ctx) => (ctx.dataIndex === 0 ? 4 : 2),
+              pointHoverRadius: 5,
+              cubicInterpolationMode: 'monotone',
+              borderDash: [4, 4],
+            },
+            {
+              label: this.$t('rank.chart.title.rank_history.thousand_votes'),
+              data: thousandVotesRankData,
+              pointStyle: 'circle',
+              borderColor: 'rgba(255, 99, 132, 0.9)',
+              backgroundColor: (context) => {
+                const chart = context.chart;
+                const { ctx, chartArea } = chart;
+                if (!chartArea) return 'rgba(255, 99, 132, 0.15)';
+                const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                gradient.addColorStop(0, 'rgba(255, 99, 132, 0.25)');
+                gradient.addColorStop(1, 'rgba(255, 99, 132, 0.0)');
+                return gradient;
+              },
+              tension: 0.35,
+              fill: true,
+              borderWidth: 2,
+              pointRadius: (ctx) => (ctx.dataIndex === (thousandVotesRankData.length - 1) ? 4 : 2),
+              pointHoverRadius: 5,
+              cubicInterpolationMode: 'monotone',
+            },
+          ],
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           scales: {
             x: {
               type: 'timeseries',
               time: {
-                tooltipFormat: 'll',
+                tooltipFormat: 'YYYY-DD-MM',
                 parser: 'YYYY-MM-DD',
                 unit: 'day',
+                displayFormats: {
+                  day: 'YYYY-DD-MM'
+                }
               },
-              title: {
-                display: true,
-                text: 'Date'
+              grid: {
+                color: 'rgba(107, 114, 128, 0.1)',
               },
               ticks: {
-                callback: (value, index, values) => {
+                callback: (value) => {
                   moment.locale(this.$i18n.locale);
-                  return moment(value).format('yyyy-MM-DD');
+                  return moment(value).format('YYYY-DD-MM');
                 },
-                // if number is less 10, it will show all, if more than 10, it will show 10
-                stepSize: () => {
-                  if(this.ranks['week'].length < 10){
-                    return 1;
-                  }else{
-                    return Math.ceil(this.ranks['week'].length / 10);
-                  }
-                },
-              }
+              },
             },
             y: {
               suggestedMin: 1,
               type: 'linear',
               position: 'right',
               reverse: true,
-              ticks:{
+              ticks: {
                 stepSize: 1,
                 precision: 0,
-                callback: (value, index, values) => {
-                  return '#'+value;
-                },
+                callback: (value) => '#' + value,
               },
               afterDataLimits: (axis) => {
-                axis.max = axis.max+5;
+                axis.max = axis.max + 5;
                 axis.min = 1;
-              }
+              },
             },
           },
           interaction: {
-            intersect: false
+            intersect: false,
+            mode: 'index',
           },
           plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                boxWidth: 8,
+                padding: 16,
+              },
+            },
+            decimation: {
+              enabled: true,
+              algorithm: 'lttb',
+              samples: 60,
+            },
             title: {
               display: false,
-              text: this.$t('rank.chart.title.rank_history.week'),
+              text: this.$t('rank.chart.title.rank_history.thousand_votes'),
             },
             tooltip: {
               callbacks: {
                 label: (context) => {
                   const data = context.dataset.data[context.dataIndex];
                   let label = context.dataset.label + ' ' + this.$t('rank.chart.rank') + ': ' + data.y;
-                  if(data.win_rate){
+                  if (data.win_rate) {
                     label += ' ' + this.$t('rank.chart.win_rate') + ': ' + data.win_rate + '%';
                   }
                   return label;
-                }
-              }
-            }
+                },
+              },
+            },
           },
-        }
+        },
       });
     },
     getChartWidth(){
-      return 400 + this.ranks.week.length*8;
+      return 400 + ((this.ranks['thousand_votes'] || []).length * 8);
     },
     mergeRankData(){
       let allRankData = this.ranks['all'];
-      let weeklyRankData = this.ranks['week'];
-
-      // filter out the same date
-      allRankData = allRankData.filter((item) => {
-        return !weeklyRankData.some((item2) => {
-          return item.date === item2.date;
-        });
-      });
+      let thousandVotesRankData = this.ranks['thousand_votes'];
 
       return {
         all: allRankData,
-        week: weeklyRankData,
+        thousand_votes: thousandVotesRankData,
       };
     }
   }

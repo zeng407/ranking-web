@@ -159,6 +159,7 @@
     "rank.chart.round": "Round {round}",
     "rank.chart.title.rank_history": "Rank History (All)",
     "rank.chart.title.rank_history.week": "Rank History (Weekly)",
+    "rank.chart.title.rank_history.thousand_votes": "Rank History (Recent Thousand Votes)",
     "rank.chart.title.rank_history.all": "Rank History (All)",
     "rank.chart.title.timeline": "My Timeline",
     "rank.chart.median_time": "Median of thinking time",

@@ -55,13 +55,13 @@ class ReorderRankReportHistory implements ShouldQueue
 
             // put the job back to the queue with a delay
             $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
-            $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::WEEK);
+            $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::THOUSAND_VOTES);
             $this->dispatch($this->post, $this->nextdelay + 60)->delay(now()->addSeconds($this->nextdelay));
             return;
         }
 
         $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::ALL);
-        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::WEEK);
+        $rankService->updateRankReportHistoryRank($this->post, RankReportTimeRange::THOUSAND_VOTES);
 
         logger('ReorderRankReportHistory job completed for post id: ' . $this->post->id);
     }

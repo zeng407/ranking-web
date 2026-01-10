@@ -15,14 +15,14 @@ class MakeRankReportHistoryCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'make:rank-report-history {range} {--refresh}';
+    protected $signature = 'make:rank-report-history {--refresh}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new rank report history for the given time range.';
+    protected $description = 'Create a new rank report history.';
 
     /**
      * Create a new command instance.
@@ -41,9 +41,6 @@ class MakeRankReportHistoryCommand extends Command
      */
     public function handle()
     {
-        $range = $this->argument('range');
-        $range = RankReportTimeRange::from($range);
-
         $refresh = $this->option('refresh');
 
         Post::setEagerLoads([])->chunkById(300, function ($posts)use($refresh){

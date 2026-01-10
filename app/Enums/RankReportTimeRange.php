@@ -10,6 +10,7 @@ enum RankReportTimeRange: string
     case MONTH = 'month';
     case YEAR = 'year';
     case ALL = 'all';
+    case THOUSAND_VOTES = 'thousand_votes';
 
     static function toArray(): array
     {
@@ -18,6 +19,7 @@ enum RankReportTimeRange: string
             RankReportTimeRange::MONTH->value,
             RankReportTimeRange::YEAR->value,
             RankReportTimeRange::ALL->value,
+            RankReportTimeRange::THOUSAND_VOTES->value,
         ];
     }
 }
