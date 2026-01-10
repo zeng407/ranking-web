@@ -22,13 +22,13 @@ class RankService
 {
     public function getRankReports(Post $post, $limit = 10, $page = null)
     {
-        $allReports = CacheService::rememberRankReports($post);
-
-        if ($allReports && !empty($allReports)) {
-            // 如果是array，轉換成RankReport Collection
+            // If it's an array, convert to RankReport Collection
             if (is_array($allReports)) {
                 $allReports = collect($allReports)->map(function ($item) {
-                    // 將array轉換為RankReport model
+                    if ($item instanceof RankReport) {
+                        return $item;
+                    }
+                    // Convert array to RankReport model
                     $report = new RankReport((array) $item);
                     $report->exists = true;
                     return $report;
