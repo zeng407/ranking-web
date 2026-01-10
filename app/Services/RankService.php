@@ -28,9 +28,6 @@ class RankService
             // 如果是array，轉換成RankReport Collection
             if (is_array($allReports)) {
                 $allReports = collect($allReports)->map(function ($item) {
-                    if ($item instanceof RankReport) {
-                        return $item;
-                    }
                     // 將array轉換為RankReport model
                     $report = new RankReport((array) $item);
                     $report->exists = true;
