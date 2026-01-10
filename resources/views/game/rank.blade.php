@@ -176,7 +176,7 @@
           @endif
 
           <b-tabs content-class="mt-1"
-            nav-wrapper-class="sticky-top-rank-tab bg-default rank-tabs hide-scrollbar">
+            nav-wrapper-class="@if(!$embed) sticky-top-rank-tab @endif bg-default rank-tabs hide-scrollbar">
             {{-- my game result --}}
             @if ($gameResult)
               <b-tab {{ request('tab') == 0 ? 'active' : '' }} @click="clickTab('0')">
