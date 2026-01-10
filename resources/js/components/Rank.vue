@@ -55,7 +55,7 @@ export default {
       anonymous: false,
       chartLoaded: [],
       showMyTimeline: false,
-      showRankHistory: false,
+      showRankHistory: true,
       sortByTop: true,
       keyword: '',
       searchResults: [],

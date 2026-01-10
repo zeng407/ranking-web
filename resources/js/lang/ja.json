@@ -169,6 +169,7 @@
     "rank.chart.round": "ラウンド {round}",
     "rank.chart.title.rank_history": "ランク履歴（全て）",
     "rank.chart.title.rank_history.week": "ランク履歴（週間）",
+    "rank.chart.title.rank_history.thousand_votes": "ランク履歴（最近千回の投票）",
     "rank.chart.title.rank_history.all": "ランク履歴（全て）",
     "rank.chart.title.timeline": "マイタイムライン",
     "rank.chart.median_time": "使用時間(中央値)",

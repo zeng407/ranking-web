@@ -47,6 +47,10 @@ class GameController extends Controller
 
     public function rank(Request $request)
     {
+        $request->validate([
+            'page' => 'nullable|numeric|min:1',
+        ]);
+
         $start = microtime(true);
         $lastMark = $start;
         $timings = [];

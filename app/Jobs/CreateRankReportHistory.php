@@ -41,7 +41,7 @@ class CreateRankReportHistory implements ShouldQueue, ShouldBeUnique
     {
         // logger('CreateRankReportHistory job fired for post id: ' . $this->rankReport->post_id);
         $rankService->createRankReportHistory($this->rankReport, RankReportTimeRange::ALL, $this->refresh, $this->startAt);
-        $rankService->createRankReportHistory($this->rankReport, RankReportTimeRange::WEEK, $this->refresh, $this->startAt);
+        $rankService->createRankReportHistory($this->rankReport, RankReportTimeRange::THOUSAND_VOTES, $this->refresh, $this->startAt);
 
         try{
             $locker = Locker::lockRankJob($this->rankReport->post_id);

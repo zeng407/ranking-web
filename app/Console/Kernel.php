@@ -48,8 +48,7 @@ class Kernel extends ConsoleKernel
         })->name('cachePosts')->everyFiveMinutes()->withoutOverlapping(30);
 
         $schedule->call(function(){
-            Artisan::call('make:rank-report-history all');
-            Artisan::call('make:rank-report-history week');
+            Artisan::call('make:rank-report-history');
         })->name('Make Rank Report History')->dailyAt('06:15')->withoutOverlapping(120);
 
         $schedule->call(function(){

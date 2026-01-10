@@ -205,12 +205,12 @@
                       <label class="custom-control-label btn-link" for="switchRankHistory"><i
                           class="fa-solid fa-chart-line"></i>&nbsp;@{{ $t('rank.chart.title.rank_history') }}</label>
                     </div>
-                    <div class="custom-control custom-switch text-right">
+                    {{-- <div class="custom-control custom-switch text-right">
                       <input type="checkbox" class="custom-control-input" id="switchTimeline"
                         v-model="showMyTimeline">
                       <label class="custom-control-label btn-link" for="switchTimeline"><i
                           class="fa-solid fa-chart-line"></i>&nbsp;@{{ $t('rank.chart.title.timeline') }}</label>
-                    </div>
+                    </div> --}}
 
                     <div class="row">
                       <div v-show="showRankHistory" class="col-12" :class="{ 'col-xl-6': showMyTimeline }">
@@ -220,14 +220,14 @@
                         </rank-history-chart>
                       </div>
 
-                      <div v-show="showMyTimeline" id="my-timeline-container"
+                      {{-- <div v-show="showMyTimeline" id="my-timeline-container"
                         class="col-12 hide-scrollbar-md overflow-x-scroll" :class="{ 'col-xl-6': showRankHistory }">
                         <div class="rank-chart-container d-flex align-content-center justify-content-center p-0"
                           style="min-width: {{ 400 + $gameResult->rounds * 8 }}px">
                           <canvas id="my-timeline"></canvas>
                         </div>
-                      </div>
-                      <div v-show="showMyTimeline" class="w-100">
+                      </div> --}}
+                      {{-- <div v-show="showMyTimeline" class="w-100">
                         <div id="chartjs-tooltip"
                           style="padding-left:15px; padding-top:15px; padding-right:15px; display:none">
                           <div class="chart-tooltip-bg">
@@ -258,7 +258,7 @@
                             </table>
                           </div>
                         </div>
-                      </div>
+                      </div> --}}
                     </div>
                   </div>
                 </div>

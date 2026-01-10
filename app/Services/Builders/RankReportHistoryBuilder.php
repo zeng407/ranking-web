@@ -56,6 +56,8 @@ class RankReportHistoryBuilder
                 return $this->buildYear();
             case RankReportTimeRange::ALL:
                 return $this->buildAll();
+            case RankReportTimeRange::THOUSAND_VOTES:
+                return $this->buildThousandVotes();
         }
     }
 
@@ -233,6 +235,83 @@ class RankReportHistoryBuilder
             $lastRounds = $rankPKRecord ? $rankPKRecord->round_count : 0;
 
             $timeline->addWeek();
+        }
+    }
+
+
+    protected function buildThousandVotes()
+    {
+        if ($this->refresh) {
+            $this->deleteHistory(RankReportTimeRange::THOUSAND_VOTES);
+        }
+
+        $today = today()->toDateString();
+
+        // Check if already updated today
+        $existsToday = RankReportHistory::where('element_id', $this->report->element_id)
+            ->where('post_id', $this->report->post_id)
+            ->where('rank_report_id', $this->report->id)
+            ->where('time_range', RankReportTimeRange::THOUSAND_VOTES)
+            ->where('start_date', $today)
+            ->exists();
+
+        if ($existsToday && !$this->refresh) {
+            return;
+        }
+
+        // Get last 1000 votes for this element
+        $lastVotes = Game1V1Round::where(function ($query) {
+            $query->where('winner_id', $this->report->element_id)
+                  ->orWhere('loser_id', $this->report->element_id);
+        })
+        ->join('games', 'game_1v1_rounds.game_id', '=', 'games.id')
+        ->where('games.post_id', $this->report->post_id)
+        ->whereNotNull('games.completed_at')
+        ->orderByDesc('game_1v1_rounds.id')
+        ->limit(1000)
+        ->get();
+
+        if ($lastVotes->isEmpty()) {
+            return;
+        }
+
+        // Calculate win rate from last 1000 votes
+        $winCount = $lastVotes->where('winner_id', $this->report->element_id)->count();
+        $loseCount = $lastVotes->where('loser_id', $this->report->element_id)->count();
+        $totalRounds = $winCount + $loseCount;
+        $winRate = $totalRounds > 0 ? ($winCount / $totalRounds * 100) : 0;
+
+        RankReportHistory::updateOrCreate(
+            [
+                'element_id' => $this->report->element_id,
+                'post_id' => $this->report->post_id,
+                'rank_report_id' => $this->report->id,
+                'time_range' => RankReportTimeRange::THOUSAND_VOTES,
+                'start_date' => $today,
+            ],
+            [
+                'rank' => 0,
+                'win_rate' => $winRate,
+                'win_count' => $winCount,
+                'lose_count' => $loseCount,
+                'champion_count' => 0,
+                'game_complete_count' => 0,
+                'champion_rate' => 0,
+            ]
+        );
+
+        try {
+            $locker = Locker::lockRankHistory($this->report->post_id);
+            $locker->block(5);
+            CacheService::putRankHistoryNeededUpdateDatesCache(
+                $this->report->post_id,
+                RankReportTimeRange::THOUSAND_VOTES,
+                $today
+            );
+            $locker->release();
+        } catch (\Exception $e) {
+            report($e);
+            $locker->release();
         }
     }
 
