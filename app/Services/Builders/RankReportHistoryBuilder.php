@@ -266,7 +266,6 @@ class RankReportHistoryBuilder
         })
         ->join('games', 'game_1v1_rounds.game_id', '=', 'games.id')
         ->where('games.post_id', $this->report->post_id)
-        ->whereNotNull('games.completed_at')
         ->orderByDesc('game_1v1_rounds.id')
         ->limit(1000)
         ->get();
