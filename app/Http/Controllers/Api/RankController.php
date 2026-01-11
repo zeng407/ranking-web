@@ -48,7 +48,7 @@ class RankController extends Controller
             }else{
                 $limit = 90;
             }
-            $ranks = $this->rankService->getRankReportHistoryByElement($post, $element, $time, $limit, 1);
+            $ranks = $this->rankService->getRankReportHistoryByElement($post, $element->id, $time, $limit, 1);
             $result[$time->value] = RankReportHistoryResource::collection($ranks);
         }
 
