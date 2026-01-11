@@ -244,7 +244,7 @@
                       {{-- <div v-show="showMyTimeline" id="my-timeline-container"
                         class="col-12 hide-scrollbar-md overflow-x-scroll" :class="{ 'col-xl-6': showRankHistory }">
                         <div class="rank-chart-container d-flex align-content-center justify-content-center p-0"
-                          style="min-width: {{ 400 + $gameResult->rounds * 8 }}px">
+                          style="min-width: {{ 400 + $gameResult['rounds'] * 8 }}px">
                           <canvas id="my-timeline"></canvas>
                         </div>
                       </div> --}}
@@ -383,7 +383,7 @@
             @endif
 
             {{-- Game room rank --}}
-            @if ($gameResult && isset($gameResult->game_room))
+            @if ($gameResult && isset($gameResult['game_room']))
               <b-tab {{ request('tab') == 2 ? 'active' : '' }} @click="clickTab('2')">
                 <template #title>
                   <h5><i class="fa-solid fa-gamepad"></i>&nbsp;多人模式</h5>
