@@ -271,7 +271,7 @@ class RankReportHistoryBuilder
         })
         ->join('games', 'game_1v1_rounds.game_id', '=', 'games.id')
         ->where('games.post_id', $this->report->post_id)
-        ->select('game_1v1_rounds.*', 'game_1v1_rounds.winner_id');
+        ->select('game_1v1_rounds.*');
 
         // Calculate how many new records we need
         $cachedCount = count($cachedIds);
