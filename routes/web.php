@@ -41,6 +41,41 @@ Route::get('r/{post:serial}', [GameController::class, 'rank'])->name('game.rank'
 Route::get('r/{post:serial}/access', [GameController::class, 'accessRank'])->name('game.rank-access');
 Route::get('r/{post:serial}/embed', [GameController::class, 'rankEmbed'])->name('game.rank-embed');
 
+// Image proxy for CORS
+Route::get('/proxy-image', function () {
+    if(!app()->environment('local')){
+        abort(403, 'Image proxy is only available in local environment');
+    }
+    
+    $url = request('url');
+    if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
+        abort(400, 'Invalid URL');
+    }
+
+    // Only allow specific domains for security
+    $allowedDomains = ['file.2pick.app', 'i.imgur.com'];
+    $host = parse_url($url, PHP_URL_HOST);
+    if (!in_array($host, $allowedDomains)) {
+        abort(403, 'Domain not allowed');
+    }
+
+    try {
+        $response = \Illuminate\Support\Facades\Http::timeout(10)->get($url);
+
+        if (!$response->successful()) {
+            abort(404, 'Image not found');
+        }
+
+        return response($response->body())
+            ->header('Content-Type', $response->header('Content-Type'))
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Cache-Control', 'public, max-age=86400');
+    } catch (\Exception $e) {
+        abort(500, 'Failed to fetch image');
+    }
+})->name('proxy.image');
+
+
 // old url
 Route::get('post/{post:serial}/game', fn() => redirect()->route('game.show', ['post' => request()->post]));
 Route::get('post/{post:serial}/rank', fn() => redirect()->route('game.rank', ['post' => request()->post]));

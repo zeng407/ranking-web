@@ -77,6 +77,162 @@
     transform: translateY(-5px);
 }
 
+// LED download button styling for rank page
+.led-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid #38bdf8;
+    background: linear-gradient(135deg, #0b1220, #0f172a);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.35), inset 0 0 12px rgba(56, 189, 248, 0.2);
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 150ms ease;
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0 24px rgba(94, 234, 212, 0.45), inset 0 0 14px rgba(94, 234, 212, 0.25);
+    }
+
+    .thumb-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 36px);
+        gap: 6px;
+    }
+
+    .thumb {
+        width: 36px;
+        height: 36px;
+        object-fit: cover;
+        border-radius: 6px;
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+    }
+
+    .label {
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        white-space: normal;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .leds {
+        display: inline-flex;
+        gap: 6px;
+    }
+
+    .led {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 10px currentColor;
+        animation: ledPulse 1.2s infinite ease-in-out;
+
+        &:nth-child(1) {
+            color: #38bdf8;
+            animation-delay: 0s;
+        }
+        &:nth-child(2) {
+            color: #22d3ee;
+            animation-delay: 0.2s;
+        }
+        &:nth-child(3) {
+            color: #a855f7;
+            animation-delay: 0.4s;
+        }
+    }
+
+    @media (max-width: 576px) {
+        padding: 8px 10px;
+        gap: 8px;
+
+        .thumb-strip {
+            grid-template-columns: repeat(2, 28px);
+            gap: 4px;
+        }
+
+        .thumb {
+            width: 28px;
+            height: 28px;
+        }
+
+        .label {
+            font-size: 0.9rem;
+            gap: 6px;
+        }
+
+        .leds {
+            gap: 4px;
+        }
+
+        .led {
+            width: 6px;
+            height: 6px;
+        }
+    }
+}
+
+@keyframes ledPulse {
+    0%,
+    100% {
+        opacity: 0.25;
+        filter: blur(0px);
+    }
+    50% {
+        opacity: 1;
+        filter: blur(1px);
+    }
+}
+
+// Fixed position for download button (bottom-right)
+.download-fab {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1050;
+    display: flex;
+    justify-content: flex-end;
+}
+
+// LED button loading state
+.led-download-btn {
+    &.is-loading {
+        opacity: 0.7;
+        cursor: not-allowed;
+
+        &:hover {
+            transform: none;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.35), inset 0 0 12px rgba(56, 189, 248, 0.2);
+        }
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+}
+
+// Loading spinner animation
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(226, 232, 240, 0.3);
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spinnerRotate 1s linear infinite;
+}
+
+@keyframes spinnerRotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .cursor-pointer {
     cursor: pointer;
 }
@@ -977,6 +1133,9 @@
     @media (min-width: 576px) {
         top: calc(56.64px + 38.08px);  // navbar + buttons 高度
     }
+    @media (max-width: 576px) {
+        position: static;
+    }
 }
 
 .sticky-top-rank-buttons {
@@ -987,6 +1146,9 @@
     background-color: #f8fafc;
     @media (min-width: 576px) {
         top: 56.64px;
+    }
+    @media (max-width: 576px) {
+        position: static;
     }
 }
 

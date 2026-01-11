@@ -177,8 +177,13 @@
     "element.type.video": "video",
 
     "Search Results": "{keyword} search results",
-
-
+    "Download": "Download",
+    "Download QR code": "Download QR code",
+    "Download rank": "Download rank",
+    "Open in new tab": "Open in new tab",
+    "Copy": "Copy",
+    "Copy link": "Copy link",
+    "Advertisement": "Advertisement",
 
     "":""
 }

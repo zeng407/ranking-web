@@ -5,6 +5,7 @@ import Chart from 'chart.js/auto';
 import ICountUp from 'vue-countup-v2';
 import 'chartjs-adapter-moment';
 import Vue from 'vue';
+import { Canvas, Image as FabricImage, Rect, Text, filters } from 'fabric';
 
 export default {
   components: {
@@ -64,6 +65,9 @@ export default {
       // scrolling detection
       lastScrollPosition: 0,
       showReturnUpButton: false,
+      // image generation config
+      useImageProxy: false,
+      isGeneratingImage: false
     }
   },
   props: {
@@ -118,7 +122,11 @@ export default {
     hasGameRoom: {
       type: Boolean,
       required: true
-    }
+    },
+    gameResult: {
+      type: Object|null,
+      default: null
+    },
   },
   computed: {
     commentWords() {
@@ -137,8 +145,220 @@ export default {
         return this.gameRoomRanks.ranks.bottom_10;
       }
     },
+    gameResultThumbs() {
+      if (!this.gameResult) {
+        return [];
+      }
+      const thumbs = [];
+      const pushThumb = (el) => {
+        if (!el) return;
+        const url = el.thumb_url || el.imgur_url || el.mediumthumb_url || el.lowthumb_url;
+        if (url) {
+          thumbs.push(url);
+        }
+      };
+      pushThumb(this.gameResult.winner);
+      (this.gameResult.data || []).forEach((r) => pushThumb(r.loser));
+      return thumbs.slice(0, 4);
+    },
   },
   methods: {
+    async buildTop10Image(topCount = 10) {
+      try {
+        this.isGeneratingImage = true;
+
+        if (!this.gameResult) {
+          Swal.fire({
+            title: 'Error!',
+            text: 'No game result found',
+            icon: 'error',
+          });
+          this.isGeneratingImage = false;
+          return;
+        }
+
+        // 假設已有前 10 名資料 ranks = [ {rank:1,img:url,title:""}, ... ]
+        const maxCount = Math.max(1, Math.min(10, topCount));
+        const ranks = [
+          { rank: 1, img: this.gameResult.winner.thumb_url || this.gameResult.winner.imgur_url, title: this.gameResult.winner.title },
+          ...this.gameResult.data.map((r,i) => ({
+            rank: i+2, img: r.loser.thumb_url || r.loser.imgur_url, title: r.loser.title
+          })).slice(0, maxCount - 1)
+        ];
+
+        // 兩欄布局，每排兩張圖
+        const margin = 20;     // 上下左右邊距
+        const gap = 20;        // 圖片間距
+        const slotW = 600;     // 單張寬度
+        const slotH = 400;     // 單張高度
+        const cols = 2;
+        const total = Math.min(ranks.length, maxCount);
+        const rows = Math.ceil(total / cols);
+
+        if (total === 0) {
+          Swal.fire({
+            title: 'Error!',
+            text: 'No images to render',
+            icon: 'error',
+          });
+          this.isGeneratingImage = false;
+          return;
+        }
+
+        // 計算畫布尺寸：固定兩欄，行數依內容決定
+        const canvasWidth = margin * 2 + cols * slotW + (cols - 1) * gap;
+        const canvasHeight = margin * 2 + rows * slotH + (rows - 1) * gap;
+
+        // 產生槽位位置（左右兩欄）
+        const slots = Array.from({ length: total }, (_, i) => {
+          const row = Math.floor(i / cols);
+          const col = i % cols;
+          return {
+            w: slotW,
+            h: slotH,
+            x: margin + col * (slotW + gap),
+            y: margin + row * (slotH + gap),
+          };
+        });
+
+        const canvasEl = document.createElement('canvas');
+        const canvas = new Canvas(canvasEl, { width: canvasWidth, height: canvasHeight, backgroundColor: '#111' });
+
+        const loadImage = (url, slot) => new Promise((resolve, reject) => {
+
+          // 根據設定決定是否使用代理 URL 避免 CORS 問題
+          const imageUrl = this.useImageProxy ? `/proxy-image?url=${encodeURIComponent(url)}` : url;
+
+          // 添加超时机制
+          const timeout = setTimeout(() => {
+            console.error('Image load timeout:', url);
+            reject(new Error('Image load timeout'));
+          }, 10000); // 10秒超时
+
+          // 使用原生 Image 对象加载
+          const imgElement = new Image();
+
+          imgElement.onload = () => {
+            clearTimeout(timeout);
+
+            // 創建模糊背景
+            const bgImg = new FabricImage(imgElement);
+            const bgScaleX = slot.w / bgImg.width;
+            const bgScaleY = slot.h / bgImg.height;
+            bgImg.set({
+              left: slot.x,
+              top: slot.y,
+              scaleX: bgScaleX,
+              scaleY: bgScaleY,
+              originX: 'left',
+              originY: 'top',
+              selectable: false,
+            });
+            bgImg.filters = [new filters.Blur({ blur: 0.8 })];
+            bgImg.applyFilters();
+
+            // 主圖片 - 等比例縮放並居中
+            const mainImg = new FabricImage(imgElement);
+            const scale = Math.min(slot.w / mainImg.width, slot.h / mainImg.height);
+            const scaledW = mainImg.width * scale;
+            const scaledH = mainImg.height * scale;
+
+            mainImg.set({
+              left: slot.x + (slot.w - scaledW) / 2,
+              top: slot.y + (slot.h - scaledH) / 2,
+              scaleX: scale,
+              scaleY: scale,
+              originX: 'left',
+              originY: 'top',
+              selectable: false
+            });
+
+            resolve({ bg: bgImg, main: mainImg });
+          };
+
+          imgElement.onerror = (error) => {
+            clearTimeout(timeout);
+            console.error('Failed to load image:', url, error);
+            reject(new Error('Failed to load image'));
+          };
+
+          imgElement.src = imageUrl;
+        });
+
+        for (let i = 0; i < ranks.length && i < slots.length; i++) {
+          const slot = slots[i];
+          const r = ranks[i];
+          if (!r.img) {
+            console.warn('No image for rank', i+1);
+            continue;
+          }
+
+          try {
+            const { bg, main } = await loadImage(r.img, slot);
+            canvas.add(bg);
+            canvas.add(main);
+          } catch (error) {
+            console.error(`Failed to load image for rank ${i+1}:`, error);
+            continue;
+          }
+
+          // 上方標題文字 - 移除背景框，使用描邊
+          let titleText = r.title || '';
+          if (titleText.length > 25) {
+            titleText = titleText.substring(0, 25) + '...';
+          }
+
+          const title = new Text(titleText, {
+            left: slot.x + 30,
+            top: slot.y + 5,
+            fill: '#fff',
+            fontSize: 18,
+            fontFamily: 'Arial',
+            fontWeight: 'bold',
+            stroke: '#000',
+            strokeWidth: 4,
+            paintFirst: 'stroke',
+            originX: 'left',
+            originY: 'top',
+            selectable: false
+          });
+          canvas.add(title);
+
+          // 左上角排名標籤
+          const rankText = new Text('#' + r.rank, {
+            left: slot.x + 5,
+            top: slot.y + 5,
+            fill: '#fff',
+            fontSize: 32,
+            fontFamily: 'Arial',
+            fontWeight: 'bold',
+            stroke: '#000',
+            strokeWidth: 3,
+            paintFirst: 'stroke',
+            selectable: false
+          });
+          canvas.add(rankText);
+        }
+
+        console.log('Generating data URL...');
+        const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.92 });
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `top${maxCount}.png`;
+        a.click();
+
+        this.isGeneratingImage = false;
+        console.log('Image generation complete');
+      } catch (error) {
+        console.error('Error in buildTop10Image:', error);
+        this.isGeneratingImage = false;
+        Swal.fire({
+          title: 'Error!',
+          text: 'Failed to generate image: ' + error.message,
+          icon: 'error',
+        });
+      }
+    },
     loadRankFromLocal() {
       const key = `gamestate_${this.postSerial}`;
       const savedData = localStorage.getItem(key);
