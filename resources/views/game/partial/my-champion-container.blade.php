@@ -1,5 +1,5 @@
 @if ($gameResult['winner']['type'] === 'video' && $gameResult['winner']['video_source'] === 'youtube')
-    <youtube-player width="100%" ref-id="{{ $gameResult->winner->id }}"
+    <youtube-player width="100%" ref-id="{{ $gameResult['winner']['id'] }}"
         video-id="{{ $gameResult['winner']['video_id'] }}" :controls="true" :autoplay="false"
         :rel="0" origin="{{ request()->getSchemeAndHttpHost() }}">
     </youtube-player>
