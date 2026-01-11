@@ -24,6 +24,7 @@
     :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
     game-serial="{{ $gameResult ? $gameResult->game_serial : '' }}"
     :has-game-room="{{ $gameResult && isset($gameResult->game_room) ? 'true' : 'false' }}"
+    :game-result="{{ $gameResult ? json_encode($gameResult) : 'null' }}"
     request-host="{{ request()->getHost() }}">
     {{-- Main --}}
     <div class="container-fuild" v-cloak>
@@ -41,6 +42,7 @@
         {{-- main part --}}
         <div class="col-12 col-lg-8">
           @if (!$embed)
+            {{-- Top buttons --}}
             <div class="row mb-3 sticky-top-rank-buttons">
               <div class="col-10">
                 <a class="btn btn-outline-dark btn-sm m-1" href="{{ route('home') }}">
@@ -77,16 +79,35 @@
             </div>
             <hr>
 
+            {{-- Title & Description --}}
             <div class="d-flex position-relative">
               <h1 class="break-all post-title">{{ $post->title }} - {{ __('Ranking') }}</h1>
             </div>
             <p>{{ $post->description }}</p>
+
+            {{-- Search Form --}}
             <div class="d-flex position-relative">
               <form class="d-flex ml-auto my-2" @submit.prevent="search">
                 <input class="form-control mr-1 font-size-16" type="search" v-model="keyword"
                   placeholder="{{ __('Search') }}" aria-label="Search">
                 <button class="btn btn-outline-dark" type="submit"><i class="fas fa-search"></i></button>
               </form>
+            </div>
+
+            <div class="download-fab" v-if="gameResult">
+              <button type="button" class="led-download-btn" :class="{ 'is-loading': isGeneratingImage }" :disabled="isGeneratingImage" @click.prevent="buildTop10Image(10)">
+                <div class="thumb-strip" v-if="!isGeneratingImage">
+                  <img v-for="(thumb, idx) in gameResultThumbs" :key="idx" :src="thumb" alt="thumb" class="thumb">
+                </div>
+                <div v-if="isGeneratingImage" class="loading-spinner"></div>
+                <span class="label" v-if="!isGeneratingImage">
+                  <i class="fa-solid fa-download"></i>
+                  @{{ $t('Download rank') }}
+                  <span class="leds">
+                    <span class="led"></span><span class="led"></span><span class="led"></span>
+                  </span>
+                </span>
+              </button>
             </div>
             <!-- Modal -->
             <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true"
