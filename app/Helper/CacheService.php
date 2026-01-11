@@ -361,4 +361,23 @@ class CacheService
         $seconds = 60 * 60 * 24; // 1 day
         Cache::put($key, true, $seconds);
     }
+
+    static function getThousandVotesCachedIds($postId, $elementId)
+    {
+        $key = 'thousand_votes:' . $postId . '_' . $elementId;
+        return Cache::get($key, []);
+    }
+
+    static function putThousandVotesCachedIds($postId, $elementId, $votes)
+    {
+        $key = 'thousand_votes:' . $postId . '_' . $elementId;
+        $seconds = 3 * 24 * 60 * 60; // 3 days
+        Cache::put($key, $votes, $seconds);
+    }
+
+    static function deleteThousandVotesCache($postId, $elementId)
+    {
+        $key = 'thousand_votes:' . $postId . '_' . $elementId;
+        Cache::forget($key);
+    }
 }

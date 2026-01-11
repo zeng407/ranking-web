@@ -121,7 +121,7 @@ class GameService
             $winner = $this->getWinner($game);
             $rankReport = $rankService->getRankReportByElement($game->post, $winner);
 
-            return GameResultResource::collection($rounds)
+            $resource = GameResultResource::collection($rounds)
                 ->additional([
                     'game_serial' => $game->serial,
                     'winner' => $winner,
@@ -136,6 +136,9 @@ class GameService
                     'rounds' => $game->element_count,
                     'game_room' => $game->game_room ? CacheService::rememberGameBetRank($game->game_room, true) : null,
                 ]);
+
+            // Convert to array before caching to avoid serialization issues
+            return $resource->response()->getData(true);
         });
     }
 
@@ -143,7 +146,7 @@ class GameService
     {
         $lock = Locker::lockUpdateGameElement($game);
         $lock->block(5);
-        
+
         $lastRound = $game->game_1v1_rounds()->latest('id')->first();
         if ($lastRound === null) {
             $round = 1;

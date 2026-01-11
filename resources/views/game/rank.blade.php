@@ -21,9 +21,9 @@
     report-comment-endpoint="{{ route('api.public-post.comment.report', [$post->serial, '_comment_id']) }}"
     index-game-room-rank-endpoint="{{ route('api.game.room-rank', '_game_serial') }}"
     :champion-histories="{{ json_encode($champion_histories) }}" :max-rank="{{ $reports->total() }}"
-    :game-statistic="{{ $gameResult ? json_encode($gameResult->statistics) : 'null' }}"
-    game-serial="{{ $gameResult ? $gameResult->game_serial : '' }}"
-    :has-game-room="{{ $gameResult && isset($gameResult->game_room) ? 'true' : 'false' }}"
+    :game-statistic="{{ $gameResult ? json_encode($gameResult['statistics']) : 'null' }}"
+    game-serial="{{ $gameResult ? $gameResult['game_serial'] : '' }}"
+    :has-game-room="{{ $gameResult && isset($gameResult['game_room']) ? 'true' : 'false' }}"
     :game-result="{{ $gameResult ? json_encode($gameResult) : 'null' }}"
     request-host="{{ request()->getHost() }}">
     {{-- Main --}}
@@ -208,15 +208,15 @@
                   <div class="card-header rank-header">
                     <span class="text-left w-25 rank-number">1</span>
                     <h2 class="text-center d-none d-md-block w-50 element-title">
-                      {{ $gameResult->winner->title }}</h2>
+                      {{ $gameResult['winner']['title'] }}</h2>
                     <div class="text-right ml-auto">
-                      {{ __('Global Rank') }}:&nbsp;{{ $gameResult->winner_rank ?? __('none') }}<br>
+                      {{ __('Global Rank') }}:&nbsp;{{ $gameResult['winner_rank'] ?? __('none') }}<br>
                     </div>
                   </div>
                   {{-- Rank #1 --}}
                   <div class="card-body text-center rank-card">
                     <h2 class="text-center d-block d-md-none element-title ">
-                      {{ $gameResult->winner->title }}</h2>
+                      {{ $gameResult['winner']['title'] }}</h2>
                     @include('game.partial.my-champion-container', [
                         'gameResult' => $gameResult,
                     ])
@@ -235,8 +235,8 @@
 
                     <div class="row">
                       <div v-show="showRankHistory" class="col-12" :class="{ 'col-xl-6': showMyTimeline }">
-                        <rank-history-chart chart-id="{{ 'my-rank-history-chart-' . $gameResult->winner->id }}"
-                          element-id="{{ $gameResult->winner->id }}" post-serial="{{ $post->serial }}"
+                        <rank-history-chart chart-id="{{ 'my-rank-history-chart-' . $gameResult['winner']['id'] }}"
+                          element-id="{{ $gameResult['winner']['id'] }}" post-serial="{{ $post->serial }}"
                           index-rank-endpoint="{{ route('api.rank.index') }}">
                         </rank-history-chart>
                       </div>
@@ -244,7 +244,7 @@
                       {{-- <div v-show="showMyTimeline" id="my-timeline-container"
                         class="col-12 hide-scrollbar-md overflow-x-scroll" :class="{ 'col-xl-6': showRankHistory }">
                         <div class="rank-chart-container d-flex align-content-center justify-content-center p-0"
-                          style="min-width: {{ 400 + $gameResult->rounds * 8 }}px">
+                          style="min-width: {{ 400 + $gameResult['rounds'] * 8 }}px">
                           <canvas id="my-timeline"></canvas>
                         </div>
                       </div> --}}
@@ -285,20 +285,20 @@
                 </div>
                 {{-- Rank #2 ~ #10 --}}
                 <div class="row">
-                  @foreach ($gameResult->data as $index => $rank)
+                  @foreach ($gameResult['data'] as $index => $rank)
                     <div class="{{ $index < 3 ? 'col-12' : 'col-12 col-xl-6' }}">
                       <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
                           <span class="text-left w-25 rank-number">{{ (int) $index + 2 }}</span>
                           <h2 class="text-center d-none d-md-block w-50 element-title">
-                            {{ $rank->loser->title }}</h2>
+                            {{ $rank['loser']['title'] }}</h2>
                           <div class="text-right ml-auto w-auto">
-                            {{ __('Global Rank') }}:&nbsp;{{ $rank->rank ?? __('none') }}
+                            {{ __('Global Rank') }}:&nbsp;{{ $rank['rank'] ?? __('none') }}
                           </div>
                         </div>
                         <div class="card-body text-center rank-card">
                           <h2 class="text-center d-block d-md-none element-title ">
-                            {{ $rank->loser->title }}</h2>
+                            {{ $rank['loser']['title'] }}</h2>
                           @include('game.partial.my-element-container', [
                               'rank' => $rank,
                           ])
@@ -383,7 +383,7 @@
             @endif
 
             {{-- Game room rank --}}
-            @if ($gameResult && isset($gameResult->game_room))
+            @if ($gameResult && isset($gameResult['game_room']))
               <b-tab {{ request('tab') == 2 ? 'active' : '' }} @click="clickTab('2')">
                 <template #title>
                   <h5><i class="fa-solid fa-gamepad"></i>&nbsp;多人模式</h5>

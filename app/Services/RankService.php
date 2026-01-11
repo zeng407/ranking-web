@@ -108,10 +108,10 @@ class RankService
         return $reports;
     }
 
-    public function getRankReportHistoryByElement(Post $post, Element $element, RankReportTimeRange $timeRange, $limit = 10, $page = null)
+    public function getRankReportHistoryByElement(Post $post, $elementId, RankReportTimeRange $timeRange, $limit = 10, $page = null)
     {
         $reports = RankReportHistory::where('post_id', $post->id)
-            ->where('element_id', $element->id)
+            ->where('element_id', $elementId)
             ->where('time_range', $timeRange)
             ->orderByDesc('start_date')
             ->paginate($limit, ['*'], 'page', $page);
