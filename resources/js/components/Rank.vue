@@ -237,6 +237,7 @@ export default {
 
           // 使用原生 Image 对象加载
           const imgElement = new Image();
+          imgElement.crossOrigin = 'anonymous'; // 允许跨域图像在 canvas 中使用
 
           imgElement.onload = () => {
             clearTimeout(timeout);
