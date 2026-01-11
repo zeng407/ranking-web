@@ -107,7 +107,7 @@ class GameController extends Controller
             'post' => $post,
             'ogElement' => $this->getElementForOG($post),
             'reports' => $reports,
-            'gameResult' => $gameResult?->toResponse($request)->getData(),
+            'gameResult' => $gameResult,
             'champion_histories' => [
                 'my' => $myChampionHistories
             ],
@@ -180,7 +180,7 @@ class GameController extends Controller
         return $post;
     }
 
-    protected function getGameResult(Request $request)
+    protected function getGameResult(Request $request): array|null
     {
         // g is for game, which user played complete game
         // s is for share, which user shared the game result
@@ -193,17 +193,17 @@ class GameController extends Controller
         return $gameResult;
     }
 
-    protected function getChampionRankReportHistoryByGameResult(Post $post, $gameResult, $limit = 10, $page = null)
+    protected function getChampionRankReportHistoryByGameResult(Post $post, array|null $gameResult, $limit = 10, $page = null)
     {
-        if($gameResult) {
-            $element = $gameResult->additional['winner'];
+        if($gameResult && isset($gameResult['winner'])){
+            $element = $gameResult['winner'];
         }else{
             return null;
         }
 
         $championRankReportHistories = $this->rankService->getRankReportHistoryByElement(
             $post,
-            $element,
+            $element['id'] ?? null,
             RankReportTimeRange::ALL,
             $limit,
             $page);

@@ -243,6 +243,7 @@ class RankReportHistoryBuilder
     {
         if ($this->refresh) {
             $this->deleteHistory(RankReportTimeRange::THOUSAND_VOTES);
+            $this->deleteThousandVotesCache();
         }
 
         $today = today()->toDateString();
@@ -259,24 +260,62 @@ class RankReportHistoryBuilder
             return;
         }
 
-        // Get last 1000 votes for this element
-        $lastVotes = Game1V1Round::where(function ($query) {
+        // Get cached vote records (ID and status)
+        $cachedVotes = $this->getThousandVotesCachedIds();
+        $cachedIds = collect($cachedVotes)->pluck('id')->toArray();
+
+        // Build query to get votes for this element
+        $query = Game1V1Round::where(function ($query) {
             $query->where('winner_id', $this->report->element_id)
                   ->orWhere('loser_id', $this->report->element_id);
         })
         ->join('games', 'game_1v1_rounds.game_id', '=', 'games.id')
         ->where('games.post_id', $this->report->post_id)
-        ->orderByDesc('game_1v1_rounds.id')
-        ->limit(1000)
-        ->get();
+        ->select('game_1v1_rounds.*', 'game_1v1_rounds.winner_id');
 
-        if ($lastVotes->isEmpty()) {
+        // Calculate how many new records we need
+        $cachedCount = count($cachedIds);
+        $limitNew = max(0, 1000 - $cachedCount);
+
+        // If cache exists, only query records with ID greater than max cached ID
+        if (!empty($cachedIds)) {
+            $maxCachedId = max($cachedIds);
+            $query->where('game_1v1_rounds.id', '>', $maxCachedId);
+        }
+
+        $newVotes = $query->orderByDesc('game_1v1_rounds.id')->limit($limitNew)->get();
+        // Merge new votes with cached votes, keeping latest 1000
+        $allVotes = collect();
+        if (!$newVotes->isEmpty()) {
+            $allVotes = $newVotes->map(function ($item) {
+                return (object) [
+                    'id' => $item->id,
+                    'is_win' => ($item->winner_id == $this->report->element_id) ? 1 : 0,
+                ];
+            });
+        }
+        if (!empty($cachedVotes)) {
+            $allVotes = $allVotes->concat(collect($cachedVotes)->map(function ($item) {
+                return (object) $item;
+            }));
+        }
+
+        // Keep only the latest 1000 votes
+        $allVotes = $allVotes->sortByDesc(function ($vote) {
+            return $vote->id ?? 0;
+        })->take(1000);
+
+        if ($allVotes->isEmpty()) {
             return;
         }
 
-        // Calculate win rate from last 1000 votes
-        $winCount = $lastVotes->where('winner_id', $this->report->element_id)->count();
-        $loseCount = $lastVotes->where('loser_id', $this->report->element_id)->count();
+        // Calculate win rate from all votes
+        $winCount = $allVotes->filter(function ($vote) {
+            return ($vote->is_win ?? null) === 1;
+        })->count();
+        $loseCount = $allVotes->filter(function ($vote) {
+            return ($vote->is_win ?? null) === 0;
+        })->count();
         $totalRounds = $winCount + $loseCount;
         $winRate = $totalRounds > 0 ? ($winCount / $totalRounds * 100) : 0;
 
@@ -298,6 +337,15 @@ class RankReportHistoryBuilder
                 'champion_rate' => 0,
             ]
         );
+
+        // Cache all 1000 votes with their IDs and status (win/lose)
+        $votesToCache = $allVotes->map(function ($vote) {
+            return [
+                'id' => $vote->id,
+                'is_win' => $vote->is_win ?? null,
+            ];
+        })->toArray();
+        $this->putThousandVotesCachedIds($votesToCache);
 
         try {
             $locker = Locker::lockRankHistory($this->report->post_id);
@@ -383,5 +431,31 @@ class RankReportHistoryBuilder
             ->first();
 
         return $lastRecord;
+    }
+
+    /**
+     * Get cached 1000 votes (ID and win/lose status) for thousand votes optimization
+     * @return array Array of vote records with ['id', 'is_win']
+     */
+    protected function getThousandVotesCachedIds()
+    {
+        return CacheService::getThousandVotesCachedIds($this->report->post_id, $this->report->element_id);
+    }
+
+    /**
+     * Store all 1000 cached votes with their IDs and status to avoid unnecessary searches
+     * @param array $votes Array of votes with ['id', 'is_win']
+     */
+    protected function putThousandVotesCachedIds($votes)
+    {
+        CacheService::putThousandVotesCachedIds($this->report->post_id, $this->report->element_id, $votes);
+    }
+
+    /**
+     * Delete cached thousand votes when refreshing
+     */
+    protected function deleteThousandVotesCache()
+    {
+        CacheService::deleteThousandVotesCache($this->report->post_id, $this->report->element_id);
     }
 }
