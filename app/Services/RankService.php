@@ -368,27 +368,6 @@ class RankService
         \Log::info("end update post [{$post->id}] rank report [{$post->title}]");
     }
 
-    private function applyRankUpdates($ranks, $rankReports, string $positionField, string $rateField): void
-    {
-        $counter = 0;
-        foreach ($ranks as $rank) {
-            $counter++;
-            $report = $rankReports->get($rank->element_id);
-
-            if (!$report) {
-                $report = new RankReport([
-                    'post_id' => $rank->post_id,
-                    'element_id' => $rank->element_id,
-                ]);
-                $rankReports->put($rank->element_id, $report);
-            }
-
-            $report->setAttribute($positionField, $counter);
-            $report->setAttribute($rateField, $rank->win_rate);
-            $report->save();
-        }
-    }
-
     public function createRankReportHistory(RankReport $rankReport, RankReportTimeRange $timeRange, $refresh = false, $start = null)
     {
         $builder = new RankReportHistoryBuilder;
