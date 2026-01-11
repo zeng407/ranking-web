@@ -163,6 +163,17 @@ export default {
     },
   },
   methods: {
+    downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Release URL object after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    },
     async buildTop10Image(topCount = 10) {
       try {
         this.isGeneratingImage = true;
@@ -177,7 +188,7 @@ export default {
           return;
         }
 
-        // 假設已有前 10 名資料 ranks = [ {rank:1,img:url,title:""}, ... ]
+        // Assume we have top 10 data: ranks = [ {rank:1,img:url,title:""}, ... ]
         const maxCount = Math.max(1, Math.min(10, topCount));
         const ranks = [
           { rank: 1, img: this.gameResult.winner.thumb_url || this.gameResult.winner.imgur_url, title: this.gameResult.winner.title },
@@ -186,11 +197,11 @@ export default {
           })).slice(0, maxCount - 1)
         ];
 
-        // 兩欄布局，每排兩張圖
-        const margin = 20;     // 上下左右邊距
-        const gap = 20;        // 圖片間距
-        const slotW = 600;     // 單張寬度
-        const slotH = 400;     // 單張高度
+        // Two-column layout, 2 images per row
+        const margin = 20;     // Top, bottom, left, right margins
+        const gap = 20;        // Gap between images
+        const slotW = 600;     // Single image width
+        const slotH = 400;     // Single image height
         const cols = 2;
         const total = Math.min(ranks.length, maxCount);
         const rows = Math.ceil(total / cols);
@@ -205,11 +216,11 @@ export default {
           return;
         }
 
-        // 計算畫布尺寸：固定兩欄，行數依內容決定
+        // Calculate canvas size: fixed 2 columns, rows depend on content
         const canvasWidth = margin * 2 + cols * slotW + (cols - 1) * gap;
         const canvasHeight = margin * 2 + rows * slotH + (rows - 1) * gap;
 
-        // 產生槽位位置（左右兩欄）
+        // Generate slot positions (left and right columns)
         const slots = Array.from({ length: total }, (_, i) => {
           const row = Math.floor(i / cols);
           const col = i % cols;
@@ -226,22 +237,23 @@ export default {
 
         const loadImage = (url, slot) => new Promise((resolve, reject) => {
 
-          // 根據設定決定是否使用代理 URL 避免 CORS 問題
+          // Use proxy URL to avoid CORS issues if configured
           const imageUrl = this.useImageProxy ? `/proxy-image?url=${encodeURIComponent(url)}` : url;
 
-          // 添加超时机制
+          // Add timeout mechanism
           const timeout = setTimeout(() => {
             console.error('Image load timeout:', url);
             reject(new Error('Image load timeout'));
-          }, 10000); // 10秒超时
+          }, 10000); // 10 second timeout
 
-          // 使用原生 Image 对象加载
+          // Load using native Image object
           const imgElement = new Image();
+          imgElement.crossOrigin = 'anonymous'; // Allow cross-origin images in canvas
 
           imgElement.onload = () => {
             clearTimeout(timeout);
 
-            // 創建模糊背景
+            // Create blurred background
             const bgImg = new FabricImage(imgElement);
             const bgScaleX = slot.w / bgImg.width;
             const bgScaleY = slot.h / bgImg.height;
@@ -257,7 +269,7 @@ export default {
             bgImg.filters = [new filters.Blur({ blur: 0.8 })];
             bgImg.applyFilters();
 
-            // 主圖片 - 等比例縮放並居中
+            // Main image - scale proportionally and center
             const mainImg = new FabricImage(imgElement);
             const scale = Math.min(slot.w / mainImg.width, slot.h / mainImg.height);
             const scaledW = mainImg.width * scale;
@@ -302,7 +314,7 @@ export default {
             continue;
           }
 
-          // 上方標題文字 - 移除背景框，使用描邊
+          // Top title text - no background box, use stroke
           let titleText = r.title || '';
           if (titleText.length > 25) {
             titleText = titleText.substring(0, 25) + '...';
@@ -324,7 +336,7 @@ export default {
           });
           canvas.add(title);
 
-          // 左上角排名標籤
+          // Top-left rank label
           const rankText = new Text('#' + r.rank, {
             left: slot.x + 5,
             top: slot.y + 5,
@@ -342,13 +354,38 @@ export default {
 
         console.log('Generating data URL...');
         const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.92 });
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `top${maxCount}.png`;
-        a.click();
 
-        this.isGeneratingImage = false;
-        console.log('Image generation complete');
+        // Convert dataURL to Blob (better mobile compatibility)
+        const byteString = atob(dataUrl.split(',')[1]);
+        const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+
+        // Check if Navigator.share is supported (mobile-friendly)
+        if (navigator.share && /mobile|android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
+          const file = new File([blob], `top${maxCount}.png`, { type: 'image/png' });
+          navigator.share({
+            files: [file],
+            title: `Top ${maxCount} Ranking`,
+          }).then(() => {
+            console.log('Image shared successfully');
+            this.isGeneratingImage = false;
+          }).catch((error) => {
+            console.log('Share failed, fallback to download:', error);
+            // Fallback to traditional download on failure
+            this.downloadBlob(blob, `top${maxCount}.png`);
+            this.isGeneratingImage = false;
+          });
+        } else {
+          // Desktop or devices that don't support share, use Blob URL download
+          this.downloadBlob(blob, `top${maxCount}.png`);
+          this.isGeneratingImage = false;
+          console.log('Image generation complete');
+        }
       } catch (error) {
         console.error('Error in buildTop10Image:', error);
         this.isGeneratingImage = false;
