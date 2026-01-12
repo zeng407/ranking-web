@@ -1350,8 +1350,8 @@ $box-shadow2: ();
 
 .game-room-container {
     max-width: 1360px;
-    padding-right: 15px;
-    padding-left: 15px;
+    padding-right: 5px;
+    padding-left: 5px;
     margin-right: auto;
     margin-left: auto;
     @media (max-width: 1360px) {
@@ -1367,9 +1367,86 @@ $box-shadow2: ();
 .game-room-box {
     border-radius: 1rem;
     border: solid 4px #fff;
+    font-size: 0.85rem;
     @media (max-width: 1200px) {
         min-height: 700px;
     }
+
+    h2 {
+        font-size: 1.4rem;
+    }
+    h3 {
+        font-size: 1.2rem;
+    }
+    h4 {
+        font-size: 1rem;
+    }
+    h5 {
+        font-size: 0.9rem;
+    }
+    h6 {
+        font-size: 0.8rem;
+    }
+
+    .btn {
+        padding: 0.35rem;
+        font-size: 0.75rem;
+        width: 2rem;
+        height: 2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .btn-sm {
+        padding: 0.25rem;
+        font-size: 0.7rem;
+        width: 1rem;
+        height: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    i {
+        font-size: 0.9em;
+    }
+
+    .form-control {
+        font-size: 0.85rem;
+        padding: 0.3rem 0.5rem;
+    }
+}
+
+.game-room-box .btn.black-box-toggle {
+    width: auto;
+    height: auto;
+    padding: 0.35rem 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.game-room-box .btn.black-box-toggle h5 {
+    margin: 0;
+}
+
+.game-room-box .btn.users-toggle {
+    width: auto;
+    height: auto;
+    padding: 0.35rem 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.game-room-box .btn.users-toggle h5 {
+    margin: 0;
 }
 
 .break-word {
@@ -1377,15 +1454,15 @@ $box-shadow2: ();
 }
 
 .bet-rank-broad {
-    font-size: 0.9rem; //h6
+    font-size: 0.75rem;
     @media (min-width: 1530px) {
-        font-size: 1.125rem; //h5
+        font-size: 0.9rem;
     }
     @media (min-width: 1800px) {
-        font-size: 1.35rem; //h4
+        font-size: 1rem;
     }
     @media (min-width: 2000px) {
-        font-size: 1.575rem; //h3
+        font-size: 1.1rem;
     }
 }
 

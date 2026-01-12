@@ -71,20 +71,20 @@
         batch-vote-endpoint="{{route('api.game.batch-vote')}}"
         :props-enable-client-mode="true"
     >
-    <div class="container-fluid hide-scrollbar game-dark-theme" v-cloak>
+    <div class="container-fluid hide-scrollbar game-dark-theme pt-2" v-cloak>
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
         {{-- ads --}}
 
         <div id="google-ad-container" class="row overflow-hidden position-relative">
           <!-- /23307026516/game_ad_top -->
-          <div class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
+          <div v-if="isMobileScreen" class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
             <script>
               googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
             </script>
           </div>
 
           <!-- /23307026516/game_ad_top/game_ad_top_2 -->
-          <div class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1751199509158-0' style='min-width: 120px; height: 100px;'>
+          <div v-if="isMobileScreen" class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1751199509158-0' style='min-width: 120px; height: 100px;'>
             <script>
               googletag.cmd.push(function() { googletag.display('div-gpt-ad-1751199509158-0'); });
             </script>
@@ -134,8 +134,7 @@
         {{-- main --}}
         <div class="row">
           {{-- left part --}}
-          <div class="col-xl-2" v-if="isBetGameClient">
-
+          <div class="col-xl-2 d-none d-xl-block">
             @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
             <div v-if="!refreshAD" class="p-lg-1 p-xl-2">
                 @include('ads.game_ad_sides')
@@ -144,7 +143,7 @@
           </div>
 
           {{-- elements --}}
-          <div :class="{'col-xl-9':gameRoomSerial && !isBetGameClient && !runInBackGameRoom, 'col-xl-7':gameRoomSerial && isBetGameClient , 'col-12': !gameRoomSerial || runInBackGameRoom}"
+          <div class="col-xl-8 col-12"
             style="min-height: 800px">
 
             {{-- bet success animation: firework --}}
@@ -479,15 +478,15 @@
           </div>
 
 
-          {{-- game room --}}
+          {{-- right part: game room --}}
           <div v-if="gameRoom && !runInBackGameRoom" id="game-room"
-            class="col-12 col-xl-3 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
+            class="col-12 col-xl-2 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
             <div class="game-room-container">
               {{-- game room --}}
               <div class="p-1 my-1" v-if="isBetGameClient">
                 <input v-show="isEditingNickname" id="newNickname" autocomplete="off" v-model="newNickname" type="text" class="form-control badge-secondary bg-secondary-onfocus font-size-16" maxlength="10">
                 <div class="text-center" v-show="isEditingNickname">(@{{ $t('game_room.nickname_hint')}})</div>
-                <h4 class="d-flex justify-content-center">
+                <h5 class="d-flex justify-content-center">
                   <div class="position-relative">
                     <u class="cursor-pointer" v-if="!isEditingNickname" @click="toggleEditNickname">@{{gameRoom.user.name | cut(10)}}</u>
                     {{-- edit name --}}
@@ -503,7 +502,7 @@
                       </button>
                     </div>
                   </div>
-                </h4>
+                </h5>
                 <div class="d-flex justify-content-between">
                   <span>@{{$t('game_room.point')}}:</span>
                   <div>
@@ -553,7 +552,7 @@
               </div>
               {{-- room rank --}}
               <div class="p-1 my-1">
-                <h3 class="text-center position-relative">
+                <h5 class="text-center position-relative">
                   @{{ $t('game_room.leaderboard') }}
                   <span v-show="sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
                     <i class="fa-solid fa-arrow-up-wide-short"></i>
@@ -561,21 +560,21 @@
                   <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
                   </span>
-                  <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
+                  <span v-if="isBetGameHost" class="btn btn-sm btn-secondary cursor-pointer position-absolute p-0"
                     data-toggle="tooltip" data-placement="left" :title="$t('game_room.minimize_game')"
                     id="minimize-game-room"
                     style="right:20px"
                     @click="minimizeGameRoom">
                     <i class="fa-solid fa-minus"></i>
                   </span>
-                  <span v-if="isBetGameHost" class="btn btn-secondary cursor-pointer position-absolute p-0"
+                  <span v-if="isBetGameHost" class="btn btn-sm btn-secondary cursor-pointer position-absolute p-0"
                     data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
                     id="close-game-room"
                     style="right:0"
                     @click="closeGameRoom">
                     <i class="fa-solid fa-xmark"></i>
                   </span>
-                </h3>
+                </h5>
                 <h5 class="d-flex justify-content-between bet-rank-broad">
                   <div class="d-flex align-items-center">
                     <span class="badge badge-pill badge-light mr-1">
@@ -650,7 +649,7 @@
                     <h5 class="break-word">
                       <a class="text-white" :href="gameRoomUrl" target="_blank">@{{ gameRoomUrl }}</a>
                     </h5>
-                    <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
+                    <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white white-space-no-wrap" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
                   </div>
                   <h4 class="col-12 mt-2">
                     @{{ $t('game_room.online_players')}}：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
@@ -662,7 +661,7 @@
             {{-- game room setting --}}
             <div v-if="isBetGameHost" class="d-flex position-absolute mx-2 mb-4" style="right: 0; bottom:0">
               <div v-show="!showRoomInvitation"
-                class="btn btn-outline-dark"
+                class="btn btn-outline-dark users-toggle"
                 @click="toogleRoomInvitation">
                 <h5 class="text-white align-content-center">
                   <i class="fa-solid fa-users"></i>&nbsp;<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
@@ -671,21 +670,30 @@
               <div>
                 <button v-if="!showGameRoomVotes"
                   style="min-width: 45px"
-                  class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
+                  class="btn btn-outline-dark ml-1 white-space-no-wrap black-box-toggle" @click="toggleShowGameRoomVotes">
                   <h5>
                     <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h5>
                 </button>
                 <button v-else
                   style="min-width: 45px"
-                  class="btn btn-outline-dark ml-1" @click="toggleShowGameRoomVotes">
+                  class="btn btn-outline-dark ml-1 white-space-no-wrap black-box-toggle" @click="toggleShowGameRoomVotes">
                   <h5>
                     <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
                   </h5>
                 </button>
               </div>
             </div>
-
+          </div>
+          {{-- right part: ads --}}
+          <div v-else class="col-12 col-xl-2">
+            @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+              @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+              <div v-if="!refreshAD" class="p-lg-1 p-xl-2">
+                  @include('ads.game_ad_sides')
+              </div>
+              @endif
+            @endif
           </div>
         </div>
 
@@ -787,7 +795,7 @@
 
         <div v-if="game && gameSerial && !finishingGame && isMobileScreen"
           class="position-fixed"
-          id="create-game-mobile" style="right:10px; bottom:20px; z-index:1050"
+          id="create-game-mobile" style="right:10px; bottom:15px; z-index:1050"
           {{-- z-index:1050 to prevent modal mock in front of modal --}}
           >
           <transition-group name="slide-in-up">

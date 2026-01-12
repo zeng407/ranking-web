@@ -2346,7 +2346,7 @@ export default {
           return;
         }
         let ad2Top = $("#google-ad2").offset() ? $("#google-ad2").offset().top : 0;
-        let offset = 50;
+        let offset = 100;
 
         // if scroll reach the bottom of the ad2
         if (window.scrollY + window.innerHeight >= ad2Top + offset) {
