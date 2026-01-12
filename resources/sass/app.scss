@@ -2105,6 +2105,27 @@ $box-shadow2: ();
         padding: 0.5rem 1.2rem;
         border-radius: 10px;
     }
+
+    .btn-vote-left {
+        box-shadow:
+            0 -8px 24px rgba(37, 99, 235, 0.4),
+            0 -4px 12px rgba(37, 99, 235, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-vote-left:hover {
+        box-shadow:
+            0 -12px 32px rgba(37, 99, 235, 0.5),
+            0 -6px 16px rgba(37, 99, 235, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-vote-left:active {
+        box-shadow:
+            0 -6px 20px rgba(37, 99, 235, 0.4),
+            0 -3px 10px rgba(37, 99, 235, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
 }
 
 .game-dark-theme .btn-primary {
