@@ -136,10 +136,10 @@
           {{-- left part --}}
           <div class="col-xl-2 col-xl-fixed-280 d-none d-xl-block">
             {{-- 投票時間軸 --}}
-            <div v-if="showMatchHistory" class="match-history-list d-flex flex-column py-2" style="height: 800px">
-              <h5 class="text-center font-weight-bold mb-2">投票紀錄</h5>
+            <div v-if="showMatchHistory" class="match-history-list d-flex flex-column py-2" style="height: 850px">
+              <h5 class="text-center font-weight-bold mb-2">@{{ $t('game.match_history') }}</h5>
               <div v-if="matchHistory.length === 0" class="text-center my-auto" style="opacity: 0.7;">
-                尚無紀錄
+                @{{ $t('game.no_record') }}
               </div>
               <transition-group
                 name="match-list"
@@ -177,7 +177,7 @@
                       :src="item.winner.thumb"
                       :alt="item.winner.title"
                       class="w-100 bg-dark user-select-none"
-                      style="height: 120px; object-fit: cover; border-radius: 4px;"
+                      style="height: 100px; object-fit: cover; border-radius: 4px;"
                     >
                     <div class="position-absolute w-100" style="bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 2px 4px;">
                       <div class="d-flex align-items-center">
@@ -195,7 +195,7 @@
                       :src="item.loser.thumb"
                       :alt="item.loser.title"
                       class="w-100 bg-dark user-select-none"
-                      style="height: 120px; object-fit: cover; border-radius: 4px;"
+                      style="height: 100px; object-fit: cover; border-radius: 4px;"
                     >
                     <div class="position-absolute w-100" style="bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 2px 4px;">
                       <div class="d-flex align-items-center">
@@ -213,7 +213,7 @@
 
           {{-- elements --}}
           <div class="col-xl col-12"
-            style="min-height: 800px">
+            style="min-height: 850px">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -603,7 +603,7 @@
                       <span>/</span>
                       <I-Count-Up :end-val="gameBetRanks.total_users"></I-Count-Up>
                     </span>
-                    <span v-if="gameRoom.user.rank == 0">無 / @{{gameBetRanks.total_users}}</span>
+                    <span v-if="gameRoom.user.rank == 0">0 / @{{gameBetRanks.total_users}}</span>
                   </div>
                   <div class="d-flex justify-content-between">
                     <span>@{{$t('game_room.win_rate')}}:</span>

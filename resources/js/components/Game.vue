@@ -30,10 +30,13 @@ export default {
     this.resizeElementHeight();
     this.registerScrollEvent();
 
+    // 發動儲存 BatchVotes (離線模式)
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
   },
 
   beforeDestroy() {
     this.stopTimer();
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
   },
   components: {
     ICountUp
@@ -362,6 +365,11 @@ export default {
     },
     changeSortRanks() {
       this.sortByTop = !this.sortByTop;
+    },
+    handleBeforeUnload() {
+        if (this.isClientMode && this.unsentVotes.length > 0) {
+            this.sendBatchVotes();
+        }
     },
     loadGameSerialFromCookie() {
       return this.game_serial = this.$cookies.get(this.postSerial);
@@ -1699,10 +1707,7 @@ export default {
             this.unsentVotes.splice(0, votesToSend.length);
             this.saveToLocalStorage();
 
-            // 延長動畫時間至 2 秒
-            setTimeout(() => {
-                this.isCloudSaving = false;
-            }, 2000);
+            this.isCloudSaving = false;
         })
         .catch(err => {
             this.isCloudSaving = false;

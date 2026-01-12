@@ -115,6 +115,8 @@
     "game.remaining": "残り",
     "game.remaining.hint": "総参加数: {total}，残り: {remaining}",
     "game.saving_progress": "投票進行状況を保存中...",
+    "game.no_record": "記録なし",
+    "game.match_history" : "投票履歴",
 
     "game_room.invite_friends": "友達を招待",
     "game_room.online_players": "オンラインプレイヤー",

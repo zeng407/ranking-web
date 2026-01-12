@@ -120,6 +120,8 @@
     "game.remaining": "剩餘",
     "game.remaining.hint": "總參賽數: {total}，剩餘: {remaining}",
     "game.saving_progress": "儲存投票進度中...",
+    "game.no_record": "尚無紀錄",
+    "game.match_history" : "投票紀錄",
 
     "game_room.invite_friends": "邀請朋友加入遊戲",
     "game_room.online_players": "在線人數",

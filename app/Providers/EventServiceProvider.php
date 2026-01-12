@@ -11,7 +11,7 @@ use App\Listeners\DeleteElementRank;
 use App\Listeners\DeletePostRank;
 use App\Listeners\DettachGameElements;
 use App\Listeners\MakeVideoThumbnail;
-use App\Listeners\NofiyGameRoomRefresh;
+use App\Listeners\NotifyGameRoomRefresh;
 use App\Listeners\NotifyVoted;
 use App\Listeners\UpdateElementRank;
 use App\Listeners\UpdatePostRank;
@@ -36,7 +36,7 @@ class EventServiceProvider extends ServiceProvider
 //            SendEmailVerificationNotification::class,
 //        ],
         RefreshGameCandidates::class => [
-            NofiyGameRoomRefresh::class
+            NotifyGameRoomRefresh::class
         ],
         GameComplete::class => [
             CreateGameResult::class,

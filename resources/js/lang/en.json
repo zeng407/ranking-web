@@ -106,6 +106,8 @@
     "game.remaining": "Left",
     "game.remaining.hint": "Total Candidates: {total}, Remaining: {remaining}",
     "game.saving_progress": "Saving voting progress...",
+    "game.no_record": "No record",
+    "game.match_history" : "Match History",
 
     "game_room.invite_friends": "Invite friends",
     "game_room.online_players": "Online players",
