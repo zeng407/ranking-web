@@ -77,18 +77,18 @@
 
         <div id="google-ad-container" class="row overflow-hidden position-relative">
           <!-- /23307026516/game_ad_top -->
-          <div v-if="isMobileScreen" class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
+          <div v-if="isMobileScreen" class="col-12 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
             <script>
               googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
             </script>
           </div>
 
           <!-- /23307026516/game_ad_top/game_ad_top_2 -->
-          <div v-if="isMobileScreen" class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1751199509158-0' style='min-width: 120px; height: 100px;'>
+          {{-- <div v-if="isMobileScreen" class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1751199509158-0' style='min-width: 120px; height: 100px;'>
             <script>
               googletag.cmd.push(function() { googletag.display('div-gpt-ad-1751199509158-0'); });
             </script>
-          </div>
+          </div> --}}
         </div>
 
           {{-- <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
@@ -689,7 +689,7 @@
           <div v-else class="col-12 col-xl-2">
             @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
               @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-              <div v-if="!refreshAD && game" class="p-lg-1 p-xl-2">
+              <div v-if="!refreshAD && game && !isMobileScreen" class="p-lg-1 p-xl-2">
                   @include('ads.game_ad_sides')
               </div>
               @endif
