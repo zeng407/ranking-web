@@ -624,6 +624,16 @@
     font-weight: 400;
 }
 
+// game-title: h1 size on desktop, h5 size on mobile
+.game-title {
+    font-size: 2rem; // h1 size
+    font-weight: 500;
+    @media (max-width: 576px) {
+        font-size: 1.3rem; // h5 size
+        font-weight: 500;
+    }
+}
+
 .loading-animation {
     animation: spin 2s linear infinite;
     background-size: 50px 50px;
