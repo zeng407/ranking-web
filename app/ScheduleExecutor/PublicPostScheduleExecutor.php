@@ -142,6 +142,11 @@ class PublicPostScheduleExecutor
         $trends
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
+
+                if (!$post) {
+                    return;
+                }
+
                 $counter++;
                 PublicPost::updateOrCreate([
                     'post_id' => $post->id,
@@ -210,6 +215,11 @@ class PublicPostScheduleExecutor
         $trends
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
+
+                if (!$post) {
+                    return;
+                }
+
                 $counter++;
                 PublicPost::updateOrCreate([
                     'post_id' => $post->id,
@@ -278,6 +288,11 @@ class PublicPostScheduleExecutor
         $trends
             ->each(function ($trend) use (&$counter) {
                 $post = $trend->post;
+
+                if (!$post) {
+                    return;
+                }
+
                 $counter++;
                 PublicPost::updateOrCreate([
                     'post_id' => $post->id,

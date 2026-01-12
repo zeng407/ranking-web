@@ -286,18 +286,35 @@
                 {{-- Rank #2 ~ #10 --}}
                 <div class="row">
                   @foreach ($gameResult['data'] as $index => $rank)
-                    <div class="{{ $index < 3 ? 'col-12' : 'col-12 col-xl-6' }}">
+                    @if($index < 3)
+                    <div class="col-12">
                       <div class="card my-2 card-hover">
                         <div class="card-header rank-header">
                           <span class="text-left w-25 rank-number">{{ (int) $index + 2 }}</span>
-                          <h2 class="text-center d-none d-md-block w-50 element-title">
+                          <h2 class="text-center w-50 element-title">
                             {{ $rank['loser']['title'] }}</h2>
                           <div class="text-right ml-auto w-auto">
                             {{ __('Global Rank') }}:&nbsp;{{ $rank['rank'] ?? __('none') }}
                           </div>
                         </div>
                         <div class="card-body text-center rank-card">
-                          <h2 class="text-center d-block d-md-none element-title ">
+                          @include('game.partial.my-element-container', [
+                              'rank' => $rank,
+                          ])
+                        </div>
+                      </div>
+                    </div>
+                    @else
+                    <div class="col-12 col-xl-6">
+                      <div class="card my-2 card-hover">
+                        <div class="card-header rank-header">
+                          <span class="text-left w-25 rank-number">{{ (int) $index + 2 }}</span>
+                          <div class="text-right ml-auto w-auto">
+                            {{ __('Global Rank') }}:&nbsp;{{ $rank['rank'] ?? __('none') }}
+                          </div>
+                        </div>
+                        <div class="card-body text-center rank-card">
+                          <h2 class="text-center element-title ">
                             {{ $rank['loser']['title'] }}</h2>
                           @include('game.partial.my-element-container', [
                               'rank' => $rank,
@@ -305,6 +322,7 @@
                         </div>
                       </div>
                     </div>
+                    @endif
 
                     @if (!$embed &&
                         !$post->is_censored &&

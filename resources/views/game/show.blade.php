@@ -133,18 +133,87 @@
 
         {{-- main --}}
         <div class="row">
-          {{-- left part: ads --}}
-          <div class="col-xl-2 d-none d-xl-block">
-            @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-            <div v-if="!refreshAD && game && !isMobileScreen" class="p-lg-1 p-xl-2">
-                @include('ads.game_ad_sides')
+          {{-- left part --}}
+          <div class="col-xl-2 col-xl-fixed-280 d-none d-xl-block">
+            {{-- 投票時間軸 --}}
+            <div v-if="showMatchHistory" class="match-history-list d-flex flex-column py-2" style="height: 850px">
+              <h5 class="text-center font-weight-bold mb-2">@{{ $t('game.match_history') }}</h5>
+              <div v-if="matchHistory.length === 0" class="text-center my-auto" style="opacity: 0.7;">
+                @{{ $t('game.no_record') }}
+              </div>
+              <transition-group
+                name="match-list"
+                tag="div"
+                class="d-flex flex-column overflow-y-scroll hide-scrollbar"
+                style="flex: 1; min-height: 0;"
+              >
+                <div
+                  v-for="item in matchHistory"
+                  :key="item.id"
+                  class="match-card mb-2"
+                  :class="item.winSide === 'left' ? 'left-win' : 'right-win'"
+                  style="font-size: 0.75rem;"
+                >
+                  {{-- Header with round info and thinking time --}}
+                  <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.65rem;">
+                    <div class="font-weight-bold text-white text-truncate" style="max-width: 60%;">
+                      @{{ item.roundLabel }}
+                    </div>
+                    <div class="badge badge-light" style="font-size: 0.6rem; padding: 0.1rem 0.3rem;">
+                      @{{ item.progressLabel }}
+                    </div>
+                  </div>
+
+                  {{-- Thinking time badge --}}
+                  <div class="text-center mb-1">
+                    <div class="badge" style="font-size: 0.6rem; padding: 0.1rem 0.3rem;">
+                      <i class="fas fa-clock"></i> @{{ formatThinkingTime(item.thinkingTime) }}
+                    </div>
+                  </div>
+
+                  {{-- Winner --}}
+                  <div class="position-relative mb-1">
+                    <img
+                      :src="item.winner.thumb"
+                      :alt="item.winner.title"
+                      class="w-100 bg-dark user-select-none"
+                      style="height: 100px; object-fit: cover; border-radius: 4px;"
+                    >
+                    <div class="position-absolute w-100" style="bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 2px 4px;">
+                      <div class="d-flex align-items-center">
+                        <i class="fas fa-trophy" style="color: gold; font-size: 0.7rem; margin-right: 2px;"></i>
+                        <div class="text-white text-truncate" style="font-size: 0.65rem; font-weight: bold;">
+                          @{{ item.winner.title }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {{-- Loser --}}
+                  <div class="position-relative" style="opacity: 0.6;">
+                    <img
+                      :src="item.loser.thumb"
+                      :alt="item.loser.title"
+                      class="w-100 bg-dark user-select-none"
+                      style="height: 100px; object-fit: cover; border-radius: 4px;"
+                    >
+                    <div class="position-absolute w-100" style="bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 2px 4px;">
+                      <div class="d-flex align-items-center">
+                        <i class="fas fa-times-circle" style="color: #dc3545; font-size: 0.65rem; margin-right: 2px;"></i>
+                        <div class="text-white text-truncate" style="font-size: 0.6rem;">
+                          @{{ item.loser.title }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </transition-group>
             </div>
-            @endif
           </div>
 
           {{-- elements --}}
-          <div class="col-xl-8 col-12"
-            style="min-height: 800px">
+          <div class="col-xl col-12"
+            style="min-height: 850px">
 
             {{-- bet success animation: firework --}}
             <div class="pyro" v-if="showFirework">
@@ -226,7 +295,7 @@
             </div>
 
             {{-- playground --}}
-            <div class="row overflow-hidden" v-if="game && !finishingGame && (!gameRoom || !gameRoom.is_game_completed)"
+            <div class="row overflow-hidden user-select-none" v-if="game && !finishingGame && (!gameRoom || !gameRoom.is_game_completed)"
               :style="{'height': (isFixedGameHeight ? (gameBodyHeight + 'px') : 'auto')}">
               <!--left part-->
               <div class="col-12 col-sm-6 pr-sm-1 mb-2 mb-sm-0" id="left-part">
@@ -283,10 +352,10 @@
                     </div>
                     <div class="card-body text-center">
                       <div class="my-1 overflow-scroll hide-scrollbar" style="max-height: 35px" v-if="isMobileScreen">
-                        <h1 class="my-1 font-size-small">@{{ le.title }}</h1>
+                        <h1 class="my-1 font-size-small user-select-text">@{{ le.title }}</h1>
                       </div>
                       <div class="my-1 overflow-scroll hide-scrollbar" style="height: 120px" v-else>
-                        <h1 class="my-1 game-element-title">@{{ le.title }}</h1>
+                        <h1 class="my-1 game-element-title user-select-text">@{{ le.title }}</h1>
                       </div>
                       <button id="left-btn" class="btn btn-vote-left vote-button btn-block d-none d-sm-block" :disabled="isVoting"
                         @click="leftWin">
@@ -429,10 +498,10 @@
                     <div class="card-body text-center"
                       :class="{ 'flex-column-reverse': isMobileScreen, 'd-flex': isMobileScreen }">
                       <div class="my-1 flex-column-reverse d-flex overflow-scroll hide-scrollbar" style="max-height: 35px" v-if="isMobileScreen">
-                        <h1 class="my-1 font-size-small">@{{ re.title }}</h1>
+                        <h1 class="my-1 font-size-small user-select-text">@{{ re.title }}</h1>
                       </div>
                       <div class="my-1 overflow-scroll hide-scrollbar" style="height: 120px" v-else>
-                        <h1 class="my-1 game-element-title">@{{ re.title }}</h1>
+                        <h1 class="my-1 game-element-title user-select-text">@{{ re.title }}</h1>
                       </div>
                       <button id="right-btn" class="btn btn-vote-right vote-button btn-block d-none d-sm-block" :disabled="isVoting"
                         @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
@@ -480,213 +549,214 @@
 
           {{-- right part: game room --}}
           <div v-if="gameRoom && !runInBackGameRoom" id="game-room"
-            class="col-12 col-xl-2 bg-secondary text-white mt-2 mt-xl-0 game-room-box position-relative">
-            <div class="game-room-container">
-              {{-- game room --}}
-              <div class="p-1 my-1" v-if="isBetGameClient">
-                <input v-show="isEditingNickname" id="newNickname" autocomplete="off" v-model="newNickname" type="text" class="form-control badge-secondary bg-secondary-onfocus font-size-16" maxlength="10">
-                <div class="text-center" v-show="isEditingNickname">(@{{ $t('game_room.nickname_hint')}})</div>
-                <h5 class="d-flex justify-content-center">
-                  <div class="position-relative">
-                    <u class="cursor-pointer" v-if="!isEditingNickname" @click="toggleEditNickname">@{{gameRoom.user.name | cut(10)}}</u>
-                    {{-- edit name --}}
-                    <button v-if="!isEditingNickname && !gameRoom.is_game_completed" class="btn btn-secondary btn-sm position-absolute m-0 p-1 px-1" @click="toggleEditNickname">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <div v-if="isEditingNickname && !gameRoom.is_game_completed">
-                      <button class="btn btn-secondary m-0 p-0 px-1" :disabled="!newNickname" @click="saveNickname">
-                        <i class="fa-solid fa-check"></i>
+            class="col-xl-2 col-xl-fixed-280 text-white mt-2 mt-xl-0 position-relative">
+            <div class="game-room-box" style="height: 800px;">
+              <div class="game-room-container">
+                {{-- game room --}}
+                <div class="p-1 my-1" v-if="isBetGameClient">
+                  <input v-show="isEditingNickname" id="newNickname" autocomplete="off" v-model="newNickname" type="text" class="form-control badge-secondary bg-secondary-onfocus font-size-16" maxlength="10">
+                  <div class="text-center" v-show="isEditingNickname">(@{{ $t('game_room.nickname_hint')}})</div>
+                  <h5 class="d-flex justify-content-center">
+                    <div class="position-relative">
+                      <u class="cursor-pointer" v-if="!isEditingNickname" @click="toggleEditNickname">@{{gameRoom.user.name | cut(10)}}</u>
+                      {{-- edit name --}}
+                      <button v-if="!isEditingNickname && !gameRoom.is_game_completed" class="btn btn-secondary btn-sm position-absolute m-0 p-1 px-1" @click="toggleEditNickname">
+                        <i class="fa-solid fa-pen-to-square"></i>
                       </button>
-                      <button class="btn btn-secondary m-0 p-0 px-1" @click="toggleEditNickname">
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
+                      <div v-if="isEditingNickname && !gameRoom.is_game_completed">
+                        <button class="btn btn-secondary m-0 p-0 px-1" :disabled="!newNickname" @click="saveNickname">
+                          <i class="fa-solid fa-check"></i>
+                        </button>
+                        <button class="btn btn-secondary m-0 p-0 px-1" @click="toggleEditNickname">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </h5>
+                  <div class="d-flex justify-content-between">
+                    <span>@{{$t('game_room.point')}}:</span>
+                    <div>
+                      <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
+                        <span v-if="gameRoom.user.combo >= 10" class="badge badge-pill badge-combo-10">
+                          @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                        </span>
+                        <span v-else-if="gameRoom.user.combo >= 8" class="badge badge-pill badge-combo-8">
+                          @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                        </span>
+                        <span v-else-if="gameRoom.user.combo >= 6" class="badge badge-pill badge-combo-6">
+                          @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                        </span>
+                        <span v-else-if="gameRoom.user.combo >= 4" class="badge badge-pill badge-combo-4">
+                          @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                        </span>
+                        <span v-else-if="gameRoom.user.combo >= 2" class="badge badge-pill badge-combo-2">
+                          @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                        </span>
+                      </span>
+                      <I-Count-Up :end-val="gameRoom.user.score"></I-Count-Up>
                     </div>
                   </div>
-                </h5>
-                <div class="d-flex justify-content-between">
-                  <span>@{{$t('game_room.point')}}:</span>
+                  <div class="d-flex justify-content-between">
+                    <span>@{{$t('game_room.rank_number')}} / @{{$t('game_room.rank_players')}}:</span>
+                    <span v-if="gameRoom.user.rank > 0">
+                      <I-Count-Up :end-val="gameRoom.user.rank"></I-Count-Up>
+                      <span>/</span>
+                      <I-Count-Up :end-val="gameBetRanks.total_users"></I-Count-Up>
+                    </span>
+                    <span v-if="gameRoom.user.rank == 0">0 / @{{gameBetRanks.total_users}}</span>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span>@{{$t('game_room.win_rate')}}:</span>
+                    <span>
+                      <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
+                    </span>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span>@{{$t('game_room.predict_success')}} / @{{$t('game_room.predict_times')}}</span>
+                    <span>
+                      <I-Count-Up :end-val="gameRoom.user.total_correct"></I-Count-Up>
+                      /
+                      <I-Count-Up :end-val="gameRoom.user.total_played"></I-Count-Up>
+                    </span>
+                  </div>
+                </div>
+                {{-- room rank --}}
+                <div class="p-1 my-1">
+                  <h5 class="text-center position-relative">
+                    @{{ $t('game_room.leaderboard') }}
+                    <span v-show="sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
+                      <i class="fa-solid fa-arrow-up-wide-short"></i>
+                    </span>
+                    <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
+                      <i class="fa-solid fa-arrow-down-short-wide"></i>
+                    </span>
+                    <span v-if="isBetGameHost" class="btn btn-sm btn-secondary cursor-pointer position-absolute p-0"
+                      data-toggle="tooltip" data-placement="left" :title="$t('game_room.minimize_game')"
+                      id="minimize-game-room"
+                      style="right:20px"
+                      @click="minimizeGameRoom">
+                      <i class="fa-solid fa-minus"></i>
+                    </span>
+                    <span v-if="isBetGameHost" class="btn btn-sm btn-secondary cursor-pointer position-absolute p-0"
+                      data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
+                      id="close-game-room"
+                      style="right:0"
+                      @click="closeGameRoom">
+                      <i class="fa-solid fa-xmark"></i>
+                    </span>
+                  </h5>
+                  <h5 class="d-flex justify-content-between bet-rank-broad">
+                    <div class="d-flex align-items-center">
+                      <span class="badge badge-pill badge-light mr-1">
+                      #
+                      </span>
+                      @{{$t('game_room.nickname')}}
+                    </div>
+                    <span>@{{$t('game_room.point')}}
+                      <i class="fa-solid fa-circle-question" data-toggle="tooltip" data-placement="left" data-html="true" :title="$t('game_room.point_description')"></i>
+                    </span>
+                  </h5>
+                  <hr class="my-1 text-white bg-white">
+                  <transition-group name="list-left" tag="div">
+                    <div class="d-flex justify-content-between position-relative align-items-center" v-if="getSortedRanks" v-for="(rank,index) in getSortedRanks" :key="rank.user_id+':'+rank.rank">
+                      <h5 class="d-flex align-items-center bet-rank-broad">
+
+                        <i v-if="rank.rank == 1" class="fa-solid fa-trophy mr-1" style="color:gold"></i>
+                        <i v-else-if="rank.rank == 2" class="fa-solid fa-trophy mr-1" style="color:silver"></i>
+                        <i v-else-if="rank.rank == 3" class="fa-solid fa-trophy mr-1" style="color:chocolate"></i>
+                        <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users" class="fa-solid fa-poo mr-1" style="color:gold"></i>
+                        <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users -1" class="fa-solid fa-poo mr-1" style="color:silver"></i>
+                        <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users -2" class="fa-solid fa-poo mr-1" style="color:chocolate"></i>
+                        <span v-else-if="rank.rank > 0" class="badge badge-pill badge-light mr-1">
+                          @{{rank.rank}}
+                        </span>
+                        <span :class="{'text-warning':isSameUser(rank)}">
+                          @{{rank.name | cut(10)}}
+                        </span>
+                      </h5>
+                      <h5 class="position-absolute bet-rank-broad" style="right: 0">
+                        <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
+                          <span v-if="rank.combo >= 10" class="badge badge-pill badge-combo-10">
+                            @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                          </span>
+                          <span v-else-if="rank.combo >= 8" class="badge badge-pill badge-combo-8">
+                            @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                          </span>
+                          <span v-else-if="rank.combo >= 6" class="badge badge-pill badge-combo-6">
+                            @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                          </span>
+                          <span v-else-if="rank.combo >= 4" class="badge badge-pill badge-combo-4">
+                            @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                          </span>
+                          <span v-else-if="rank.combo >= 2" class="badge badge-pill badge-combo-2">
+                            @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
+                          </span>
+                        </span>
+                        <span v-b-tooltip.hover.html.left="tipMethod(rank)">
+                          <I-Count-Up :end-val="rank.score" :options="{startVal:rank.score}"></I-Count-Up>
+                        </span>
+                      </h5>
+                    </div>
+                  </transition-group>
+                </div>
+                <div v-if="gameRoomUrl" class="text-center">
+                  <div v-show="showRoomInvitation" style="background: #00000042">
+                    <hr>
+                    <h2 class="d-flex justify-content-end">
+                      <button class="btn btn-sm btn-secondary text-white mr-3"
+                          @click="toogleRoomInvitation">
+                          <i class="fa-solid fa-window-minimize"></i>
+                      </button>
+                    </h2>
+                    {{-- join game, invitation --}}
+                    <h3 class="position-relative">
+                      @{{$t('game_room.invite_friends')}}
+                    </h3>
+                    <div class="row">
+                      <div class="col-12">
+                        <canvas id="qrcode"></canvas>
+                        <h5 class="break-word">
+                          <a class="text-white" :href="gameRoomUrl" target="_blank">@{{ gameRoomUrl }}</a>
+                        </h5>
+                        <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white white-space-no-wrap" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
+                      </div>
+                      <h4 class="col-12 mt-2">
+                        @{{ $t('game_room.online_players')}}：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+                {{-- game room setting --}}
+                <div v-if="isBetGameHost" class="d-flex position-absolute mx-2 mb-4" style="right: 15px; bottom:0">
+                  <div v-show="!showRoomInvitation"
+                    class="btn btn-outline-dark users-toggle"
+                    @click="toogleRoomInvitation">
+                    <h5 class="text-white align-content-center">
+                      <i class="fa-solid fa-users"></i>&nbsp;<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
+                    </h5>
+                  </div>
                   <div>
-                    <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
-                      <span v-if="gameRoom.user.combo >= 10" class="badge badge-pill badge-combo-10">
-                        @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                      </span>
-                      <span v-else-if="gameRoom.user.combo >= 8" class="badge badge-pill badge-combo-8">
-                        @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                      </span>
-                      <span v-else-if="gameRoom.user.combo >= 6" class="badge badge-pill badge-combo-6">
-                        @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                      </span>
-                      <span v-else-if="gameRoom.user.combo >= 4" class="badge badge-pill badge-combo-4">
-                        @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                      </span>
-                      <span v-else-if="gameRoom.user.combo >= 2" class="badge badge-pill badge-combo-2">
-                        @{{gameRoom.user.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                      </span>
-                    </span>
-                    <I-Count-Up :end-val="gameRoom.user.score"></I-Count-Up>
+                    <button v-if="!showGameRoomVotes"
+                      style="min-width: 45px"
+                      class="btn btn-outline-dark ml-1 white-space-no-wrap black-box-toggle" @click="toggleShowGameRoomVotes">
+                      <h5>
+                        <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
+                      </h5>
+                    </button>
+                    <button v-else
+                      style="min-width: 45px"
+                      class="btn btn-outline-dark ml-1 white-space-no-wrap black-box-toggle" @click="toggleShowGameRoomVotes">
+                      <h5>
+                        <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
+                      </h5>
+                    </button>
                   </div>
                 </div>
-                <div class="d-flex justify-content-between">
-                  <span>@{{$t('game_room.rank_number')}} / @{{$t('game_room.rank_players')}}:</span>
-                  <span v-if="gameRoom.user.rank > 0">
-                    <I-Count-Up :end-val="gameRoom.user.rank"></I-Count-Up>
-                    <span>/</span>
-                    <I-Count-Up :end-val="gameBetRanks.total_users"></I-Count-Up>
-                  </span>
-                  <span v-if="gameRoom.user.rank == 0">無 / @{{gameBetRanks.total_users}}</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <span>@{{$t('game_room.win_rate')}}:</span>
-                  <span>
-                    <I-Count-Up :end-val="Number(gameRoom.user.accuracy)" :options="{suffix:'%', decimalPlaces:'2'}"></I-Count-Up>
-                  </span>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <span>@{{$t('game_room.predict_success')}} / @{{$t('game_room.predict_times')}}</span>
-                  <span>
-                    <I-Count-Up :end-val="gameRoom.user.total_correct"></I-Count-Up>
-                    /
-                    <I-Count-Up :end-val="gameRoom.user.total_played"></I-Count-Up>
-                  </span>
-                </div>
-              </div>
-              {{-- room rank --}}
-              <div class="p-1 my-1">
-                <h5 class="text-center position-relative">
-                  @{{ $t('game_room.leaderboard') }}
-                  <span v-show="sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
-                    <i class="fa-solid fa-arrow-up-wide-short"></i>
-                  </span>
-                  <span v-show="!sortByTop" class="btn btn-secondary btn-sm cursor-pointer position-absolute m-0 p-1" @click="changeSortRanks">
-                    <i class="fa-solid fa-arrow-down-short-wide"></i>
-                  </span>
-                  <span v-if="isBetGameHost" class="btn btn-sm btn-secondary cursor-pointer position-absolute p-0"
-                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.minimize_game')"
-                    id="minimize-game-room"
-                    style="right:20px"
-                    @click="minimizeGameRoom">
-                    <i class="fa-solid fa-minus"></i>
-                  </span>
-                  <span v-if="isBetGameHost" class="btn btn-sm btn-secondary cursor-pointer position-absolute p-0"
-                    data-toggle="tooltip" data-placement="left" :title="$t('game_room.close_game')"
-                    id="close-game-room"
-                    style="right:0"
-                    @click="closeGameRoom">
-                    <i class="fa-solid fa-xmark"></i>
-                  </span>
-                </h5>
-                <h5 class="d-flex justify-content-between bet-rank-broad">
-                  <div class="d-flex align-items-center">
-                    <span class="badge badge-pill badge-light mr-1">
-                    #
-                    </span>
-                    @{{$t('game_room.nickname')}}
-                  </div>
-                  <span>@{{$t('game_room.point')}}
-                    <i class="fa-solid fa-circle-question" data-toggle="tooltip" data-placement="left" data-html="true" :title="$t('game_room.point_description')"></i>
-                  </span>
-                </h5>
-                <hr class="my-1 text-white bg-white">
-                <transition-group name="list-left" tag="div">
-                  <div class="d-flex justify-content-between position-relative align-items-center" v-if="getSortedRanks" v-for="(rank,index) in getSortedRanks" :key="rank.user_id+':'+rank.rank">
-                    <h5 class="d-flex align-items-center bet-rank-broad">
-
-                      <i v-if="rank.rank == 1" class="fa-solid fa-trophy mr-1" style="color:gold"></i>
-                      <i v-else-if="rank.rank == 2" class="fa-solid fa-trophy mr-1" style="color:silver"></i>
-                      <i v-else-if="rank.rank == 3" class="fa-solid fa-trophy mr-1" style="color:chocolate"></i>
-                      <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users" class="fa-solid fa-poo mr-1" style="color:gold"></i>
-                      <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users -1" class="fa-solid fa-poo mr-1" style="color:silver"></i>
-                      <i v-else-if="rank.rank > 0 && rank.rank == gameBetRanks.total_users -2" class="fa-solid fa-poo mr-1" style="color:chocolate"></i>
-                      <span v-else-if="rank.rank > 0" class="badge badge-pill badge-light mr-1">
-                        @{{rank.rank}}
-                      </span>
-                      <span :class="{'text-warning':isSameUser(rank)}">
-                        @{{rank.name | cut(10)}}
-                      </span>
-                    </h5>
-                    <h5 class="position-absolute bet-rank-broad" style="right: 0">
-                      <span data-toggle="tooltip" data-placement="top" :title="$t('game.bet.combo')">
-                        <span v-if="rank.combo >= 10" class="badge badge-pill badge-combo-10">
-                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                        </span>
-                        <span v-else-if="rank.combo >= 8" class="badge badge-pill badge-combo-8">
-                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                        </span>
-                        <span v-else-if="rank.combo >= 6" class="badge badge-pill badge-combo-6">
-                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                        </span>
-                        <span v-else-if="rank.combo >= 4" class="badge badge-pill badge-combo-4">
-                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                        </span>
-                        <span v-else-if="rank.combo >= 2" class="badge badge-pill badge-combo-2">
-                          @{{rank.combo}}&nbsp;<i class="fa-solid fa-fire"></i>
-                        </span>
-                      </span>
-                      <span v-b-tooltip.hover.html.left="tipMethod(rank)">
-                        <I-Count-Up :end-val="rank.score" :options="{startVal:rank.score}"></I-Count-Up>
-                      </span>
-                    </h5>
-                  </div>
-                </transition-group>
-              </div>
-            </div>
-            <div v-if="gameRoomUrl" class="text-center">
-              <div v-show="showRoomInvitation" style="background: #00000042">
-                <hr>
-                <h2 class="d-flex justify-content-end">
-                  <button class="btn btn-sm btn-secondary text-white mr-3"
-                      @click="toogleRoomInvitation">
-                      <i class="fa-solid fa-window-minimize"></i>
-                  </button>
-                </h2>
-                {{-- join game, invitation --}}
-                <h3 class="position-relative">
-                  @{{$t('game_room.invite_friends')}}
-                </h3>
-                <div class="row">
-                  <div class="col-12">
-                    <canvas id="qrcode"></canvas>
-                    <h5 class="break-word">
-                      <a class="text-white" :href="gameRoomUrl" target="_blank">@{{ gameRoomUrl }}</a>
-                    </h5>
-                    <copy-link placement="right" heading-tag="h4" custom-class="btn btn-outline-dark btn-sm text-white white-space-no-wrap" id="host-game-room-url" :url="gameRoomUrl" :text="$t('Copy')" :after-copy-text="$t('Copied link')"></copy-link>
-                  </div>
-                  <h4 class="col-12 mt-2">
-                    @{{ $t('game_room.online_players')}}：<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
-                  </h4>
-                </div>
-              </div>
-            </div>
-
-            {{-- game room setting --}}
-            <div v-if="isBetGameHost" class="d-flex position-absolute mx-2 mb-4" style="right: 0; bottom:0">
-              <div v-show="!showRoomInvitation"
-                class="btn btn-outline-dark users-toggle"
-                @click="toogleRoomInvitation">
-                <h5 class="text-white align-content-center">
-                  <i class="fa-solid fa-users"></i>&nbsp;<I-Count-Up :end-val="gameOnlineUsers"></I-Count-Up>
-                </h5>
-              </div>
-              <div>
-                <button v-if="!showGameRoomVotes"
-                  style="min-width: 45px"
-                  class="btn btn-outline-dark ml-1 white-space-no-wrap black-box-toggle" @click="toggleShowGameRoomVotes">
-                  <h5>
-                    <i class="fa-solid fa-box"></i>&nbsp;@{{$t('game_room.black_box')}}
-                  </h5>
-                </button>
-                <button v-else
-                  style="min-width: 45px"
-                  class="btn btn-outline-dark ml-1 white-space-no-wrap black-box-toggle" @click="toggleShowGameRoomVotes">
-                  <h5>
-                    <i class="fa-solid fa-box-open"></i>&nbsp;@{{$t('game_room.black_box')}}
-                  </h5>
-                </button>
               </div>
             </div>
           </div>
           {{-- right part: ads --}}
-          <div v-else class="col-12 col-xl-2">
+          <div v-else class="col-xl-2 col-xl-fixed-280">
             @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
               <div v-if="!refreshAD && game && !isMobileScreen" class="p-lg-1 p-xl-2">
                   @include('ads.game_ad_sides')
@@ -695,77 +765,6 @@
           </div>
         </div>
 
-        {{-- 投票時間軸（桌面版顯示，手機隱藏） --}}
-        <div class="row mt-3" v-if="showMatchHistory && matchHistory.length && !isMobileScreen">
-          <div class="col-12">
-            <div
-              class="match-history-list d-flex overflow-x-scroll hide-scrollbar py-2"
-              @mousedown="startDrag"
-              @mousemove="onDrag"
-              @mouseup="stopDrag"
-              @mouseleave="stopDrag"
-              style="cursor: grab;"
-            >
-              <div
-                v-for="item in matchHistory"
-                :key="item.id"
-                class="match-card"
-                :class="item.winSide === 'left' ? 'left-win' : 'right-win'"
-              >
-                {{-- Header with round info and thinking time --}}
-                <div class="match-card-header d-flex justify-content-between align-items-center mb-2">
-                  <div class="match-card-round font-weight-bold text-white">
-                    @{{ item.roundLabel }}
-                  </div>
-                  <div class="match-card-progress badge badge-light">
-                    @{{ item.progressLabel }}
-                  </div>
-                </div>
-
-                {{-- Thinking time badge --}}
-                <div class="text-center mb-2">
-                  <div class="match-card-thinking badge">
-                    <i class="fas fa-clock"></i> @{{ formatThinkingTime(item.thinkingTime) }}
-                  </div>
-                </div>
-
-                {{-- Winner --}}
-                <div class="match-card-winner mb-2 position-relative">
-                  <img
-                    :src="item.winner.thumb"
-                    :alt="item.winner.title"
-                    class="match-card-image"
-                  >
-                  <div class="match-card-overlay position-absolute w-100">
-                    <div class="d-flex align-items-center match-card-overlay-content">
-                      <i class="fas fa-trophy match-card-icon-trophy"></i>
-                      <div class="match-card-title font-weight-bold text-white text-truncate">
-                        @{{ item.winner.title }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {{-- Loser --}}
-                <div class="match-card-loser position-relative">
-                  <img
-                    :src="item.loser.thumb"
-                    :alt="item.loser.title"
-                    class="match-card-image"
-                  >
-                  <div class="match-card-overlay match-card-overlay-loser position-absolute w-100">
-                    <div class="d-flex align-items-center match-card-overlay-content">
-                      <i class="fas fa-times-circle match-card-icon-loss"></i>
-                      <div class="match-card-title text-white text-truncate match-card-title-muted">
-                        @{{ item.loser.title }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
         <div v-if="game && gameSerial && !finishingGame && !isMobileScreen" class="d-flex justify-content-end py-2" id="create-game">
           <create-game-room
             game-room-route="{{route('game.room.index', '_serial')}}"

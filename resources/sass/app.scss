@@ -950,6 +950,10 @@
     overflow-y: hidden !important;
 }
 
+.overflow-y-scroll {
+    overflow-y: scroll !important;
+}
+
 /* For Webkit browsers like Chrome and Safari */
 ::-webkit-scrollbar {
     @media (min-width: 576px) {
@@ -1645,7 +1649,7 @@ $box-shadow2: ();
 }
 
 .match-card {
-    min-width: 220px;
+    min-width: 126px;
     max-width: 220px;
     border-radius: 16px;
     padding: 12px;
@@ -1816,8 +1820,11 @@ $box-shadow2: ();
 }
 
 .game-dark-theme .game-room-box {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(22, 26, 44, 0.9);
+    background: linear-gradient(135deg, rgba(15, 22, 36, 0.7) 0%, rgba(65, 49, 49, 0.75) 45%, rgba(13, 20, 32, 0.7) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .game-dark-theme .card {
@@ -2375,4 +2382,49 @@ $box-shadow2: ();
     @media (max-width: 576px) {
         bottom: 100px;
     }
+}
+
+@media (min-width: 1200px) {
+    .col-xl-fixed-280 {
+        flex: 0 0 280px !important;
+        max-width: 280px !important;
+    }
+}
+
+/* Match list transition */
+.match-list-enter-active, .match-list-leave-active {
+    transition: all 0.5s ease;
+}
+.match-list-enter, .match-list-leave-to {
+    opacity: 0;
+    transform: translateX(-30px);
+}
+.match-list-move {
+    transition: transform 0.5s;
+}
+
+/* Match card image hover effect */
+.match-card img {
+    object-position: top center;
+    transition: object-position 3s ease-in-out;
+}
+
+.match-card:hover img {
+    object-position: bottom center;
+}
+
+/* Prevent user selection for media elements */
+.user-select-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Re-enable user selection */
+.user-select-text {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
