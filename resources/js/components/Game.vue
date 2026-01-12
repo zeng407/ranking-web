@@ -599,7 +599,7 @@ export default {
       this.isClientMode = false;
       Vue.nextTick(() => {
         QRCode.toCanvas(document.getElementById('qrcode'), roomUrl, {
-          width: 200,
+          width: 160,
         });
       });
 
@@ -1985,11 +1985,11 @@ export default {
         winSide,
         winner: {
           title: winner.title,
-          thumb: this.getBestThumb(winner),
+          thumb: this.getLowThumbUrl(winner),
         },
         loser: {
           title: loser.title,
-          thumb: this.getBestThumb(loser),
+          thumb: this.getLowThumbUrl(loser),
         },
       });
 

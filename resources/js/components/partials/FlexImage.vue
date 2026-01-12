@@ -1,5 +1,5 @@
 <template>
-  <img ref="flexImage" :src="src" @error="onImageError" :loading="loadingType">
+  <img ref="flexImage" class="user-select-none" :src="src" @error="onImageError" :loading="loadingType">
 </template>
 
 <script>
