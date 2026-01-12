@@ -23,28 +23,28 @@
     {{-- ads --}}
     <script data-cfasync="false" async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
     <script data-cfasync="false">
-      window.googletag = window.googletag || {cmd: []};
-      googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/game_ad_top', [[320, 100], [120, 90], [220, 90], [300, 75], [300, 100], 'fluid'], 'div-gpt-ad-1750913246554-0').addService(googletag.pubads());
-        googletag.pubads().setCentering(true);
-        googletag.pubads().enableSingleRequest();
-        googletag.enableServices();
-        setInterval(() => {
-          googletag.display("div-gpt-ad-1750913246554-0");
-          googletag.pubads().refresh([slot]);
-        }, 30 * 1000); // 30 seconds
-      });
+      // window.googletag = window.googletag || {cmd: []};
+      // googletag.cmd.push(function() {
+      //   var slot = googletag.defineSlot('/23307026516/game_ad_top', [[300, 100], [320, 100], [120, 90], [220, 90], [300, 75], 'fluid'], 'div-gpt-ad-1750913246554-0').addService(googletag.pubads());
+      //   googletag.pubads().setCentering(true);
+      //   googletag.pubads().enableSingleRequest();
+      //   googletag.enableServices();
+      //   setInterval(() => {
+      //     googletag.display("div-gpt-ad-1750913246554-0");
+      //     googletag.pubads().refresh([slot]);
+      //   }, 30 * 1000); // 30 seconds
+      // });
 
-      googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/game_ad_top/game_ad_top_2', [[320, 100], [220, 90], [300, 75], [300, 100], [120, 90], [468, 60]], 'div-gpt-ad-1751199509158-0').addService(googletag.pubads());
-        googletag.pubads().enableSingleRequest();
-        googletag.enableServices();
+      // googletag.cmd.push(function() {
+      //   var slot = googletag.defineSlot('/23307026516/game_ad_top/game_ad_top_2', [[320, 100], [220, 90], [300, 75], [300, 100], [120, 90], [468, 60]], 'div-gpt-ad-1751199509158-0').addService(googletag.pubads());
+      //   googletag.pubads().enableSingleRequest();
+      //   googletag.enableServices();
 
-        setInterval(() => {
-          googletag.display("div-gpt-ad-1751199509158-0");
-          googletag.pubads().refresh([slot]);
-        }, 30 * 1000); // 30 seconds
-      });
+      //   setInterval(() => {
+      //     googletag.display("div-gpt-ad-1751199509158-0");
+      //     googletag.pubads().refresh([slot]);
+      //   }, 30 * 1000); // 30 seconds
+      // });
     </script>
   @endif
 @endsection
@@ -75,13 +75,13 @@
         @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
         {{-- ads --}}
 
-        <div id="google-ad-container" class="row overflow-hidden position-relative">
+        {{-- <div id="google-ad-container" class="row overflow-hidden position-relative"> --}}
           <!-- /23307026516/game_ad_top -->
-          <div v-if="isMobileScreen" class="col-12 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
+          {{-- <div v-if="isMobileScreen" class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
             <script>
               googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
             </script>
-          </div>
+          </div> --}}
 
           <!-- /23307026516/game_ad_top/game_ad_top_2 -->
           {{-- <div v-if="isMobileScreen" class="col-12 col-sm-6 text-center my-2" id='div-gpt-ad-1751199509158-0' style='min-width: 120px; height: 100px;'>
@@ -89,13 +89,13 @@
               googletag.cmd.push(function() { googletag.display('div-gpt-ad-1751199509158-0'); });
             </script>
           </div> --}}
-        </div>
+        {{-- </div> --}}
 
-          {{-- <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
-            <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
-               @include('ads.game_ad_mobile')
-            </div>
-          </div> --}}
+        <div v-if="isMobileScreen" id="google-ad-container" style="height: 100px; z-index:1" class="overflow-hidden position-relative">
+          <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
+              @include('ads.game_ad_mobile')
+          </div>
+        </div>
         @endif
 
         {{-- creating game loading --}}
@@ -136,7 +136,7 @@
           {{-- left part: ads --}}
           <div class="col-xl-2 d-none d-xl-block">
             @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-            <div v-if="!refreshAD && game" class="p-lg-1 p-xl-2">
+            <div v-if="!refreshAD && game && !isMobileScreen" class="p-lg-1 p-xl-2">
                 @include('ads.game_ad_sides')
             </div>
             @endif
@@ -174,7 +174,7 @@
 
             {{-- game heading --}}
             <div v-if="game && !finishingGame">
-              <h1 id="game-title" class="text-center text-break mt-1">{{$post->title}}</h1>
+              <div id="game-title" class="text-center text-break mt-1 game-title">{{$post->title}}</div>
               <div class="d-none d-sm-flex" style="flex-flow: row wrap">
                 <h3 class="text-nowrap" style="width: 20%">
                   <span v-if="isBetGameClient && !isVoting">@{{$t('game_room.guess_winner')}}</span>
@@ -688,11 +688,9 @@
           {{-- right part: ads --}}
           <div v-else class="col-12 col-xl-2">
             @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-              @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
               <div v-if="!refreshAD && game && !isMobileScreen" class="p-lg-1 p-xl-2">
                   @include('ads.game_ad_sides')
               </div>
-              @endif
             @endif
           </div>
         </div>
