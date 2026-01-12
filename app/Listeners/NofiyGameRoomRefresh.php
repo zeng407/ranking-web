@@ -4,12 +4,17 @@ namespace App\Listeners;
 
 use App\Events\RefreshGameCandidates;
 use App\Jobs\BroadcastGameRoomRefresh;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
 class NofiyGameRoomRefresh implements ShouldQueue
 {
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     /**
      * Create the event listener.
      *
@@ -17,7 +22,7 @@ class NofiyGameRoomRefresh implements ShouldQueue
      */
     public function __construct()
     {
-        //
+        $this->onQueue('game_room');
     }
 
     /**
