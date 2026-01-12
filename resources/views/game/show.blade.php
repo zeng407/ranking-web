@@ -77,7 +77,7 @@
 
         <div id="google-ad-container" class="row overflow-hidden position-relative">
           <!-- /23307026516/game_ad_top -->
-          <div v-if="isMobileScreen" class="col-12 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 100px;'>
+          <div v-if="isMobileScreen" class="col-12 text-center my-2" id='div-gpt-ad-1750913246554-0' style='min-width: 120px; height: 200px;'>
             <script>
               googletag.cmd.push(function() { googletag.display('div-gpt-ad-1750913246554-0'); });
             </script>
