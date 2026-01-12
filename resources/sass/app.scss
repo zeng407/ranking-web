@@ -2335,3 +2335,13 @@ $box-shadow2: ();
     margin: 0;
     font-size: 1rem;
 }
+
+.rank-return-top-button {
+    position: fixed;
+    right: 20px;
+    bottom: 85px;
+    z-index:1050;
+    @media (max-width: 576px) {
+        bottom: 100px;
+    }
+}

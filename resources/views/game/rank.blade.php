@@ -763,8 +763,7 @@
         @endif
 
         {{-- return to top --}}
-        <div v-if="showReturnUpButton" class="align-content-center"
-          style="position: fixed; right: 20px; bottom: 20px; z-index:1050;">
+        <div v-if="showReturnUpButton" class="align-content-center rank-return-top-button">
           <span class="cursor-pointer" @click="scrollToTop">
             <div class="bg-secondary text-center align-content-center return-top-button">
               <i class="fas fa-arrow-up text-white"></i>
