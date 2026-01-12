@@ -24,6 +24,7 @@ class BroadcastGameRoomRefresh implements ShouldBroadcastNow
      */
     public function __construct(GameRoom $gameRoom)
     {
+        $this->onQueue('game_room');
         $this->gameRoom = $gameRoom;
     }
 
