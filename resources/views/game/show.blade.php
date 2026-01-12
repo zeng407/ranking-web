@@ -133,10 +133,10 @@
 
         {{-- main --}}
         <div class="row">
-          {{-- left part --}}
+          {{-- left part: ads --}}
           <div class="col-xl-2 d-none d-xl-block">
             @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-            <div v-if="!refreshAD" class="p-lg-1 p-xl-2">
+            <div v-if="!refreshAD && game" class="p-lg-1 p-xl-2">
                 @include('ads.game_ad_sides')
             </div>
             @endif
@@ -689,7 +689,7 @@
           <div v-else class="col-12 col-xl-2">
             @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
               @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-              <div v-if="!refreshAD" class="p-lg-1 p-xl-2">
+              <div v-if="!refreshAD && game" class="p-lg-1 p-xl-2">
                   @include('ads.game_ad_sides')
               </div>
               @endif
