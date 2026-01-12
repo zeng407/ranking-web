@@ -25,7 +25,7 @@
     <script data-cfasync="false">
       window.googletag = window.googletag || {cmd: []};
       googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/game_ad_top', [[320, 100], [120, 90], [220, 90], [300, 75], [300, 100], 'fluid'], 'div-gpt-ad-1750913246554-0').addService(googletag.pubads());
+        var slot = googletag.defineSlot('/23307026516/game_ad_top', [[320, 200], [300, 200], [300, 100], [320, 100], [120, 90], [220, 90], [300, 75], 'fluid'], 'div-gpt-ad-1750913246554-0').addService(googletag.pubads());
         googletag.pubads().setCentering(true);
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -35,16 +35,16 @@
         }, 30 * 1000); // 30 seconds
       });
 
-      googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/game_ad_top/game_ad_top_2', [[320, 100], [220, 90], [300, 75], [300, 100], [120, 90], [468, 60]], 'div-gpt-ad-1751199509158-0').addService(googletag.pubads());
-        googletag.pubads().enableSingleRequest();
-        googletag.enableServices();
+      // googletag.cmd.push(function() {
+      //   var slot = googletag.defineSlot('/23307026516/game_ad_top/game_ad_top_2', [[320, 100], [220, 90], [300, 75], [300, 100], [120, 90], [468, 60]], 'div-gpt-ad-1751199509158-0').addService(googletag.pubads());
+      //   googletag.pubads().enableSingleRequest();
+      //   googletag.enableServices();
 
-        setInterval(() => {
-          googletag.display("div-gpt-ad-1751199509158-0");
-          googletag.pubads().refresh([slot]);
-        }, 30 * 1000); // 30 seconds
-      });
+      //   setInterval(() => {
+      //     googletag.display("div-gpt-ad-1751199509158-0");
+      //     googletag.pubads().refresh([slot]);
+      //   }, 30 * 1000); // 30 seconds
+      // });
     </script>
   @endif
 @endsection
@@ -688,11 +688,9 @@
           {{-- right part: ads --}}
           <div v-else class="col-12 col-xl-2">
             @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
-              @if(config('services.google_ad.enabled') && config('services.google_ad.game_page'))
               <div v-if="!refreshAD && game && !isMobileScreen" class="p-lg-1 p-xl-2">
                   @include('ads.game_ad_sides')
               </div>
-              @endif
             @endif
           </div>
         </div>
