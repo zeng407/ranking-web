@@ -404,7 +404,7 @@ class GameController extends Controller
         $gameRoomUser = $this->gameService->getGameRoomUser($gameRoom, $request);
         $this->gameService->bet($gameRoom, $gameRoomUser, $data);
 
-        NotifyGameBet::dispatch($gameRoom);
+        // NotifyGameBet::dispatch($gameRoom);
         return response()->json();
     }
 

@@ -436,14 +436,16 @@ export default {
           this.enableTooltip();
         });
     },
-    listenGameBet() {
-      if (this.gameRoomSerial) {
-        const channel = "game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial;
-        Echo.channel(channel).listen(".GameBet", (data) => {
-          this.gameRoomVotes = data;
-        });
-      }
-    },
+
+    // 目前定時getRoomVotes抓取投票結果
+    // listenGameBet() {
+    //   if (this.gameRoomSerial) {
+    //     const channel = "game-room." + this.gameRoomSerial + ".game-serial." + this.gameSerial;
+    //     Echo.channel(channel).listen(".GameBet", (data) => {
+    //       this.gameRoomVotes = data;
+    //     });
+    //   }
+    // },
     listenNotifyVoted() {
       if (this.gameRoomSerial) {
         Echo.channel("game-room." + this.gameRoomSerial).listen(".NotifyVoted", (data) => {
