@@ -209,6 +209,14 @@
                 </div>
               </transition-group>
             </div>
+            <div v-else>
+              {{-- empty space --}}
+              @if(!$post->is_censored && config('services.google_ad.enabled') && config('services.google_ad.game_page'))
+              <div v-if="!refreshAD && game && !isMobileScreen" class="p-lg-1 p-xl-2">
+                  @include('ads.game_ad_sides')
+              </div>
+            @endif
+            </div>
           </div>
 
           {{-- elements --}}

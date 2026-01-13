@@ -92,7 +92,11 @@ export default {
         allRankData.push(this.ranks['current']);
       }
       if (Array.isArray(this.ranks['all'])) {
-        allRankData = allRankData.concat(this.ranks['all'].filter((item) => item.date !== today));
+        allRankData = allRankData.concat(this.ranks['all'].filter((item) => {
+          if (item.rank === 0) return false;
+          if (moment(item.date).isAfter(moment())) return false;
+          return item.date !== today;
+        }));
       }
       allRankData = allRankData.map((item) => ({ x: item.date, y: item.rank, win_rate: item.win_rate }));
 

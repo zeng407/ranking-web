@@ -10,20 +10,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class NotifyGameRoomRefresh implements ShouldQueue
+class NotifyGameRoomRefresh
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
-
-    /**
-     * Create the event listener.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->onQueue('game_room');
-    }
-
     /**
      * Handle the event.
      *
