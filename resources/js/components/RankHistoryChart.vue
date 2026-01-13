@@ -95,7 +95,7 @@ export default {
         allRankData = allRankData.concat(this.ranks['all'].filter((item) => {
           if (item.rank === 0) return false;
           if (moment(item.date).isAfter(moment())) return false;
-          return item.date !== today
+          return item.date !== today;
         }));
       }
       allRankData = allRankData.map((item) => ({ x: item.date, y: item.rank, win_rate: item.win_rate }));
