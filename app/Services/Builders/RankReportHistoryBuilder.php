@@ -246,75 +246,81 @@ class RankReportHistoryBuilder
             $this->deleteThousandVotesCache();
         }
 
-        $today = today()->toDateString();
+        if ($this->isThousandVotesUpdatedToday() && !$this->refresh) {
+            return;
+        }
 
-        // Check if already updated today
-        $existsToday = RankReportHistory::where('element_id', $this->report->element_id)
+        $cachedSummary = $this->getThousandVotesCachedIds();
+
+        if (empty($cachedSummary)) {
+            $this->buildThousandVotesFromScratch();
+        } else {
+            $this->updateThousandVotesIncremental($cachedSummary);
+        }
+    }
+
+    protected function isThousandVotesUpdatedToday()
+    {
+        return RankReportHistory::where('element_id', $this->report->element_id)
             ->where('post_id', $this->report->post_id)
             ->where('rank_report_id', $this->report->id)
             ->where('time_range', RankReportTimeRange::THOUSAND_VOTES)
-            ->where('start_date', $today)
+            ->where('start_date', today()->toDateString())
             ->exists();
+    }
 
-        if ($existsToday && !$this->refresh) {
+    protected function getThousandVotesBaseQuery()
+    {
+        return Game1V1Round::where(function ($query) {
+                $query->where('winner_id', $this->report->element_id)
+                      ->orWhere('loser_id', $this->report->element_id);
+            })
+            ->join('games', 'game_1v1_rounds.game_id', '=', 'games.id')
+            ->where('games.post_id', $this->report->post_id)
+            ->select('game_1v1_rounds.id', 'game_1v1_rounds.winner_id', 'game_1v1_rounds.loser_id');
+    }
+
+    protected function buildThousandVotesFromScratch()
+    {
+        $latestVotes = $this->getThousandVotesBaseQuery()
+            ->orderByDesc('game_1v1_rounds.id')
+            ->limit(1000)
+            ->get();
+
+        if ($latestVotes->isEmpty()) {
             return;
         }
-        // Base query for this element/post
-        $baseQuery = function () {
-            return Game1V1Round::where(function ($query) {
-                    $query->where('winner_id', $this->report->element_id)
-                        ->orWhere('loser_id', $this->report->element_id);
-                })
-                ->join('games', 'game_1v1_rounds.game_id', '=', 'games.id')
-                ->where('games.post_id', $this->report->post_id)
-                ->select('game_1v1_rounds.id', 'game_1v1_rounds.winner_id', 'game_1v1_rounds.loser_id');
-        };
 
-        // Cached summary: ['max_id', 'min_id', 'winner_count', 'loser_count']
-        $cachedSummary = $this->getThousandVotesCachedIds();
+        $winCount = $latestVotes->where('winner_id', $this->report->element_id)->count();
+        $loseCount = $latestVotes->where('loser_id', $this->report->element_id)->count();
 
-        // If no cache, rebuild from the latest 1000 votes
-        if (empty($cachedSummary)) {
-            $latestVotes = $baseQuery()->orderByDesc('game_1v1_rounds.id')->limit(1000)->get();
-            if ($latestVotes->isEmpty()) {
-                return;
-            }
+        $maxId = $latestVotes->first()->id;
+        $minId = $latestVotes->last()->id;
 
-            $winCount = $latestVotes->filter(function ($vote) {
-                return $vote->winner_id == $this->report->element_id;
-            })->count();
-            $loseCount = $latestVotes->filter(function ($vote) {
-                return $vote->loser_id == $this->report->element_id;
-            })->count();
+        $this->saveThousandVotesHistory($winCount, $loseCount, $maxId, $minId);
+    }
 
-            $maxId = $latestVotes->first()->id;
-            $minId = $latestVotes->last()->id;
-            $this->putThousandVotesCachedIds([
-                'max_id' => $maxId,
-                'min_id' => $minId,
-                'winner_count' => $winCount,
-                'loser_count' => $loseCount,
-            ]);
-        } else {
-            $winCount = $cachedSummary['winner_count'] ?? 0;
-            $loseCount = $cachedSummary['loser_count'] ?? 0;
-            $maxId = $cachedSummary['max_id'] ?? 0;
-            $minId = $cachedSummary['min_id'] ?? 0;
-        }
+    protected function updateThousandVotesIncremental(array $cachedSummary)
+    {
+        $winCount = $cachedSummary['winner_count'] ?? 0;
+        $loseCount = $cachedSummary['loser_count'] ?? 0;
+        $maxId = $cachedSummary['max_id'] ?? 0;
+        $minId = $cachedSummary['min_id'] ?? 0;
 
         // Find new votes after cached max_id (up to 1000)
-        $newVotes = $baseQuery()->where('game_1v1_rounds.id', '>', $maxId)
+        $newVotes = $this->getThousandVotesBaseQuery()
+            ->where('game_1v1_rounds.id', '>', $maxId)
             ->orderByDesc('game_1v1_rounds.id')
             ->limit(1000)
             ->get();
 
         $newCount = $newVotes->count();
-        $winNew = $newVotes->filter(function ($vote) {
-            return $vote->winner_id == $this->report->element_id;
-        })->count();
-        $loseNew = $newVotes->filter(function ($vote) {
-            return $vote->loser_id == $this->report->element_id;
-        })->count();
+        if ($newCount == 0) {
+            return;
+        }
+
+        $winNew = $newVotes->where('winner_id', $this->report->element_id)->count();
+        $loseNew = $newVotes->where('loser_id', $this->report->element_id)->count();
 
         $winOutdated = 0;
         $loseOutdated = 0;
@@ -322,32 +328,32 @@ class RankReportHistoryBuilder
 
         if ($newCount > 0 && $minId > 0) {
             // Fetch the oldest portion plus the next one to derive newMinId
-            $outdatedVotes = $baseQuery()->where('game_1v1_rounds.id', '>=', $minId)
+            $outdatedVotes = $this->getThousandVotesBaseQuery()
+                ->where('game_1v1_rounds.id', '>=', $minId)
                 ->orderBy('game_1v1_rounds.id')
                 ->limit($newCount + 1)
                 ->get();
 
             if ($outdatedVotes->isNotEmpty()) {
-                // Only the first newCount are outdated; the last one becomes the new min_id
                 $outdatedSlice = $outdatedVotes->take($newCount);
-                $winOutdated = $outdatedSlice->filter(function ($vote) {
-                    return $vote->winner_id == $this->report->element_id;
-                })->count();
-                $loseOutdated = $outdatedSlice->filter(function ($vote) {
-                    return $vote->loser_id == $this->report->element_id;
-                })->count();
+                $winOutdated = $outdatedSlice->where('winner_id', $this->report->element_id)->count();
+                $loseOutdated = $outdatedSlice->where('loser_id', $this->report->element_id)->count();
 
-                $last = $outdatedVotes->last();
-                $newMinId = $last ? $last->id : $minId;
+                $newMinId = $outdatedVotes->last()->id;
             }
         }
 
-        // Update counts with sliding window logic
         $winCount = max(0, $winCount - $winOutdated + $winNew);
         $loseCount = max(0, $loseCount - $loseOutdated + $loseNew);
         $maxId = $newVotes->isNotEmpty() ? max($maxId, $newVotes->first()->id) : $maxId;
         $minId = $newMinId ?: $minId;
 
+        $this->saveThousandVotesHistory($winCount, $loseCount, $maxId, $minId);
+    }
+
+    protected function saveThousandVotesHistory($winCount, $loseCount, $maxId, $minId)
+    {
+        $today = today()->toDateString();
         $totalRounds = $winCount + $loseCount;
         $winRate = $totalRounds > 0 ? ($winCount / $totalRounds * 100) : 0;
 
@@ -370,7 +376,6 @@ class RankReportHistoryBuilder
             ]
         );
 
-        // Cache summary only: max_id, min_id, winner_count, loser_count
         $this->putThousandVotesCachedIds([
             'max_id' => $maxId,
             'min_id' => $minId,
