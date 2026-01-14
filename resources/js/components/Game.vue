@@ -1695,7 +1695,11 @@ export default {
 
     sendPartialBatchVotes() {
       if (this.unsentVotes.length === 0) return;
+      if (this.isBatchVoting) {
+        return;
+      }
 
+      this.isBatchVoting = true;
       this.isCloudSaving = true;
       const votesToSend = [...this.unsentVotes];
 
@@ -1715,6 +1719,9 @@ export default {
             this.isCloudSaving = false;
             // 發生錯誤後增加 batchVoteInterval
             this.batchVoteInterval = (this.batchVoteInterval*2)+1;
+        })
+        .finally(() => {
+          this.isBatchVoting = false;
         });
     },
 
