@@ -40,13 +40,14 @@ Route::get('g/{post:serial}', [GameController::class, 'show'])->name('game.show'
 Route::get('r/{post:serial}', [GameController::class, 'rank'])->name('game.rank');
 Route::get('r/{post:serial}/access', [GameController::class, 'accessRank'])->name('game.rank-access');
 Route::get('r/{post:serial}/embed', [GameController::class, 'rankEmbed'])->name('game.rank-embed');
+Route::get('r/{post:serial}/export', [GameController::class, 'export'])->name('game.export');
 
 // Image proxy for CORS
 Route::get('/proxy-image', function () {
     if(!app()->environment('local')){
         abort(403, 'Image proxy is only available in local environment');
     }
-    
+
     $url = request('url');
     if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
         abort(400, 'Invalid URL');

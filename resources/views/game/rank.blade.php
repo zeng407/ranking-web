@@ -12,7 +12,7 @@
 @endsection
 
 @section('content')
-  <Rank inline-template
+  <rank inline-template
     post-serial="{{ $post->serial }}"
     comment-max-length="{{ config('setting.comment_max_length') }}"
     search-endpoint="{{ route('api.rank.search') }}"
@@ -95,19 +95,18 @@
             </div>
 
             <div class="download-fab" v-if="gameResult">
-              <button type="button" class="led-download-btn" :class="{ 'is-loading': isGeneratingImage }" :disabled="isGeneratingImage" @click.stop.prevent="buildTop10Image(10)" @touchstart.stop.prevent @touchend.stop.prevent="buildTop10Image(10)">
-                <div class="thumb-strip" v-if="!isGeneratingImage">
+              <a href="{{ route('game.export', $post->serial).'?g='.request('g') }}" target="_blank" class="led-download-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                <div class="thumb-strip">
                   <img v-for="(thumb, idx) in gameResultThumbs" :key="idx" :src="thumb" alt="thumb" class="thumb">
                 </div>
-                <div v-if="isGeneratingImage" class="loading-spinner"></div>
-                <span class="label" v-if="!isGeneratingImage">
+                <span class="label">
                   <i class="fa-solid fa-image"></i>
                   @{{ $t('Export result') }}
                   <span class="leds">
                     <span class="led"></span><span class="led"></span><span class="led"></span>
                   </span>
                 </span>
-              </button>
+              </a>
             </div>
             <!-- Modal -->
             <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true"

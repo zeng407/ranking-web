@@ -116,6 +116,28 @@ class GameController extends Controller
         ]);
     }
 
+    public function export(Request $request)
+    {
+        $post = $this->getPostOrFail($request);
+
+        if ($post->isPasswordRequired()) {
+            if (AccessTokenService::verifyPostAccessToken($post) === false) {
+                return redirect()->route('game.rank-access', ['post' => $post->serial]);
+            }
+        }
+
+
+        $gameResult = $this->getGameResult($request);
+
+        return view('game.rank-export', [
+            'serial' => $post->serial,
+            'post' => $post,
+            'ogElement' => $this->getElementForOG($post),
+            'gameResult' => $gameResult,
+            'embed' => false // Added embed variable as it seems used in the view layout
+        ]);
+    }
+
     public function accessRank(Request $request)
     {
         $post = $this->getPostOrFail($request);
