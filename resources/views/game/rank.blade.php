@@ -95,7 +95,7 @@
             </div>
 
             <div class="download-fab" v-if="gameResult">
-              <button type="button" class="led-download-btn" :class="{ 'is-loading': isGeneratingImage }" :disabled="isGeneratingImage" @click.prevent="buildTop10Image(10)">
+              <button type="button" class="led-download-btn" :class="{ 'is-loading': isGeneratingImage }" :disabled="isGeneratingImage" @click.stop.prevent="buildTop10Image(10)" @touchstart.stop.prevent @touchend.stop.prevent="buildTop10Image(10)">
                 <div class="thumb-strip" v-if="!isGeneratingImage">
                   <img v-for="(thumb, idx) in gameResultThumbs" :key="idx" :src="thumb" alt="thumb" class="thumb">
                 </div>

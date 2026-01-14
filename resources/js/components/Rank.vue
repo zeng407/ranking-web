@@ -67,7 +67,8 @@ export default {
       showReturnUpButton: false,
       // image generation config
       useImageProxy: false,
-      isGeneratingImage: false
+      isGeneratingImage: false,
+      cachedTop10: null
     }
   },
   props: {
@@ -164,32 +165,52 @@ export default {
   },
   methods: {
     downloadBlob(blob, filename) {
+      // IE 10+
+      if (navigator.msSaveBlob) {
+        navigator.msSaveBlob(blob, filename);
+        return;
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
+
+      // For mobile devices, target="_blank" prevents the current page from being replaced
+      // if the download doesn't trigger correctly or if the browser treats it as a navigation
+      if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) {
+        a.target = '_blank';
+      }
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      // Release URL object after a delay
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+
+      // Release URL object after a longer delay to ensure download starts
+      setTimeout(() => URL.revokeObjectURL(url), 20000);
     },
     async buildTop10Image(topCount = 10) {
       try {
-        this.isGeneratingImage = true;
-
         if (!this.gameResult) {
           Swal.fire({
             title: 'Error!',
             text: 'No game result found',
             icon: 'error',
           });
-          this.isGeneratingImage = false;
           return;
         }
 
-        // Assume we have top 10 data: ranks = [ {rank:1,img:url,title:""}, ... ]
         const maxCount = Math.max(1, Math.min(10, topCount));
+
+        // Use cache if available
+        if (this.cachedTop10 && this.cachedTop10.count === maxCount) {
+          this.showGeneratedImageModal(this.cachedTop10.dataUrl, this.cachedTop10.rankingText, maxCount);
+          return;
+        }
+
+        this.isGeneratingImage = true;
+
+        // Assume we have top 10 data: ranks = [ {rank:1,img:url,title:""}, ... ]
         const ranks = [
           { rank: 1, img: this.gameResult.winner.thumb_url || this.gameResult.winner.imgur_url, title: this.gameResult.winner.title },
           ...this.gameResult.data.map((r,i) => ({
@@ -211,9 +232,7 @@ export default {
 
         // Custom layout:
         // Row 1: Rank 1 (1200x800)
-        // Row 2: Rank 2 (800x400)
-        // Rank 3 (400x400) at (800, 1200)
-        // Rank 4 (400x400) at (800, 1600)
+        // Row 2: Rank 2-4 (400x400 each)
         // Row 3: Rank 5-7 (400x300 each)
         // Row 4: Rank 8-10 (400x300 each)
         const margin = 20;
@@ -406,104 +425,14 @@ export default {
           rankingText += `#${r.rank} ${r.title}\n`;
         }
 
-        Swal.fire({
-          imageUrl: dataUrl,
-          imageAlt: 'Ranking Result',
-          // dark background
-          background: '#1a1a1a',
-          // add download button logic
-          showConfirmButton: true,
-          confirmButtonText: '<i class="fa fa-download"></i>&nbsp; ' + this.$t('Download'),
-          buttonsStyling: false,
-          customClass: {
-             confirmButton: 'tech-button',
-          },
-          didRender: (modal) => {
-            const confirmBtn = modal.querySelector('.tech-button');
-            if (confirmBtn) {
-              confirmBtn.style.cssText = `
-                background: linear-gradient(135deg, #00d4ff 0%, #00a9ff 50%, #0088ff 100%);
-                color: #fff;
-                border: 2px solid #00d4ff;
-                padding: 12px 28px;
-                font-weight: bold;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 16px;
-                box-shadow: 0 0 20px rgba(0, 212, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1);
-                transition: all 0.3s ease;
-                letter-spacing: 1px;
-              `;
-              confirmBtn.onmouseover = () => {
-                confirmBtn.style.boxShadow = '0 0 30px rgba(0, 212, 255, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.2)';
-                confirmBtn.style.transform = 'translateY(-2px)';
-              };
-              confirmBtn.onmouseout = () => {
-                confirmBtn.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1)';
-                confirmBtn.style.transform = 'translateY(0)';
-              };
-            }
-          },
-          showCloseButton: true,
-          width: 'auto',
-          html: `
-            <div style="text-align: left; color: #fff; max-height: 300px; overflow-y: auto;">
-              <textarea id="rankingText" style="width: 100%; min-height: 200px; padding: 10px; background: #0a0e27; color: #00d4ff; border: 2px solid #00d4ff; border-radius: 6px; font-family: 'Courier New', monospace; resize: none; overflow: hidden; box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.2); font-size: 13px;" readonly>${rankingText}</textarea>
-              <button id="copyBtn" style="margin-top: 12px; padding: 10px 20px; background: linear-gradient(135deg, #ff69b4 0%, #00d9ff 100%); color: #fff; border: 2px solid #ff69b4; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; letter-spacing: 0.5px; box-shadow: 0 0 20px rgba(255, 105, 180, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1); transition: all 0.3s ease;">📋 ${this.$t('Copy')}</button>
-            </div>
-          `,
-          didOpen: (modal) => {
-            const copyBtn = modal.querySelector('#copyBtn');
-            if (copyBtn) {
-              copyBtn.addEventListener('click', async () => {
-                try {
-                  await navigator.clipboard.writeText(rankingText);
-                  const originalText = copyBtn.textContent;
-                  copyBtn.textContent = '✓ ' + this.$t('Copied');
-                  copyBtn.style.background = 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)';
-                  copyBtn.style.borderColor = '#00ff88';
-                  copyBtn.style.boxShadow = '0 0 25px rgba(0, 255, 136, 0.7), inset 0 0 15px rgba(255, 255, 255, 0.1)';
-                  setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.style.background = 'linear-gradient(135deg, #ff69b4 0%, #00d9ff 100%)';
-                    copyBtn.style.borderColor = '#ff69b4';
-                    copyBtn.style.boxShadow = '0 0 20px rgba(255, 105, 180, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1)';
-                  }, 2000);
-                } catch (err) {
-                  console.error('Failed to copy:', err);
-                  Swal.fire({
-                    title: 'Error!',
-                    text: 'Failed to copy ranking text',
-                    icon: 'error',
-                  });
-                }
-              });
+        // Save to cache
+        this.cachedTop10 = {
+            count: maxCount,
+            dataUrl: dataUrl,
+            rankingText: rankingText
+        };
 
-              // Hover effects for copy button
-              copyBtn.onmouseover = () => {
-                copyBtn.style.transform = 'translateY(-2px)';
-                copyBtn.style.boxShadow = '0 0 30px rgba(255, 105, 180, 0.7), inset 0 0 15px rgba(255, 255, 255, 0.2)';
-              };
-              copyBtn.onmouseout = () => {
-                copyBtn.style.transform = 'translateY(0)';
-                copyBtn.style.boxShadow = '0 0 20px rgba(255, 105, 180, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1)';
-              };
-            }
-          }
-        }).then((result) => {
-          if (result.isConfirmed) {
-            // Re-create blob for download
-            const byteString = atob(dataUrl.split(',')[1]);
-            const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            const blob = new Blob([ab], { type: mimeString });
-            this.downloadBlob(blob, `top${maxCount}.png`);
-          }
-        });
+        this.showGeneratedImageModal(dataUrl, rankingText, maxCount);
         this.isGeneratingImage = false;
       } catch (error) {
         console.error('Error in buildTop10Image:', error);
@@ -514,6 +443,169 @@ export default {
           icon: 'error',
         });
       }
+    },
+    showGeneratedImageModal(dataUrl, rankingText, maxCount) {
+        Swal.fire({
+          imageUrl: dataUrl,
+          imageAlt: 'Ranking Result',
+          // dark background
+          background: '#1a1a1a',
+          // add download button logic
+          showConfirmButton: false,
+          customClass: {
+             image: 'generated-rank-image'
+          },
+          didRender: (modal) => {
+            const image = modal.querySelector('.generated-rank-image');
+            if (image) {
+              image.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+              image.style.borderRadius = '8px';
+              image.style.border = '1px solid transparent';
+
+              if (!('ontouchstart' in window)) {
+                image.onmouseover = () => {
+                  image.style.boxShadow = '0 15px 35px rgba(0, 212, 255, 0.15)';
+                  image.style.border = '1px solid rgba(0, 212, 255, 0.3)';
+                };
+                image.onmouseout = () => {
+                  image.style.boxShadow = 'none';
+                  image.style.border = '1px solid transparent';
+                };
+              }
+            }
+
+            const downloadBtn = modal.querySelector('#downloadBtn');
+            if (downloadBtn && !('ontouchstart' in window)) {
+              downloadBtn.onmouseover = () => {
+                downloadBtn.style.boxShadow = '0 0 30px rgba(0, 212, 255, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.2)';
+                downloadBtn.style.transform = 'translateY(-2px)';
+              };
+              downloadBtn.onmouseout = () => {
+                downloadBtn.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1)';
+                downloadBtn.style.transform = 'translateY(0)';
+              };
+            }
+          },
+          showCloseButton: true,
+          width: '480px',
+          padding: '1em',
+          html: `
+            <div style="width: 100%; margin-bottom: 15px;">
+              <button id="downloadBtn" style="
+                background: linear-gradient(135deg, #00d4ff 0%, #00a9ff 50%, #0088ff 100%);
+                color: #fff;
+                border: 2px solid #00d4ff;
+                padding: 12px 28px;
+                font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                width: 100%;
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+                letter-spacing: 1px;">
+                <i class="fa fa-download"></i>&nbsp; ${this.$t('Download Image')}
+              </button>
+            </div>
+            <div style="text-align: left; color: #fff; max-height: 220px; overflow-y: auto;">
+              <textarea id="rankingText" style="width: 100%; min-height: 100px; padding: 10px; background: #0a0e27; color: #00d4ff; border: 2px solid #00d4ff; border-radius: 6px; font-family: 'Courier New', monospace; resize: none; overflow: auto; box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.2); font-size: 13px;" readonly>${rankingText}</textarea>
+              <button id="copyBtn" style="margin-top: 10px; padding: 8px 16px; background: #333; color: #ddd; border: 1px solid #555; border-radius: 6px; cursor: pointer; width: 100%; font-size: 14px; transition: all 0.2s ease;">📋 ${this.$t('Copy result text')}</button>
+            </div>
+          `,
+          didOpen: (modal) => {
+            const downloadBtn = modal.querySelector('#downloadBtn');
+            if (downloadBtn) {
+              downloadBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Re-create blob for download
+                const byteString = atob(dataUrl.split(',')[1]);
+                const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                  ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: mimeString });
+                this.downloadBlob(blob, `top${maxCount}.png`);
+              });
+            }
+
+            const copyBtn = modal.querySelector('#copyBtn');
+            if (copyBtn) {
+              copyBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                let success = false;
+                const textarea = modal.querySelector('#rankingText');
+
+                // Helper for success UI
+                const showSuccess = () => {
+                  const originalText = copyBtn.textContent;
+                  copyBtn.textContent = '✓ ' + this.$t('Copied');
+                  copyBtn.style.background = '#28a745';
+                  copyBtn.style.borderColor = '#28a745';
+                  copyBtn.style.color = '#fff';
+
+                  setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = '#333';
+                    copyBtn.style.borderColor = '#555';
+                    copyBtn.style.color = '#ddd';
+                  }, 2000);
+                };
+
+                try {
+                  // Try Clipboard API first
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(rankingText);
+                    success = true;
+                  } else {
+                    throw new Error('Clipboard API unavailable');
+                  }
+                } catch (err) {
+                  console.warn('Clipboard API failed, trying execCommand:', err);
+                  // Fallback to execCommand
+                  if (textarea) {
+                    try {
+                      textarea.select();
+                      textarea.setSelectionRange(0, 99999); // For mobile devices
+                      success = document.execCommand('copy');
+                      window.getSelection().removeAllRanges();
+                      textarea.blur();
+                    } catch (execErr) {
+                      console.error('execCommand failed:', execErr);
+                    }
+                  }
+                }
+
+                if (success) {
+                  showSuccess();
+                } else {
+                  Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to copy ranking text. Please copy manually.',
+                    icon: 'error',
+                  });
+                }
+              });
+
+              // Hover effects for copy button (desktop only)
+              if (!('ontouchstart' in window)) {
+                copyBtn.onmouseover = () => {
+                  copyBtn.style.background = '#444';
+                };
+                copyBtn.onmouseout = () => {
+                  copyBtn.style.background = '#333';
+                };
+              }
+            }
+          }
+        }).then((result) => {
+          // No confirm button logic needed anymore
+        });
     },
     loadRankFromLocal() {
       const key = `gamestate_${this.postSerial}`;

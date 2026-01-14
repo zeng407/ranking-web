@@ -255,10 +255,12 @@
     "You can only change your nickname once per hour": "ニックネームは1時間に1回だけ変更できます",
 
     "Download": "ダウンロード",
+    "Download Image": "画像をダウンロード",
     "Download QR code": "QRコードをダウンロード",
     "Export result": "結果を保存",
     "Open in new tab": "新しいタブで開く",
     "Copy": "コピー",
+    "Copy result text": "結果テキストをコピー",
     "Copy link": "リンクをコピー",
 
     "total elements": "合計素材数：{count}",
