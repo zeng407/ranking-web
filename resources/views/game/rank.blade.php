@@ -101,8 +101,8 @@
                 </div>
                 <div v-if="isGeneratingImage" class="loading-spinner"></div>
                 <span class="label" v-if="!isGeneratingImage">
-                  <i class="fa-solid fa-download"></i>
-                  @{{ $t('Download rank') }}
+                  <i class="fa-solid fa-image"></i>
+                  @{{ $t('Export result') }}
                   <span class="leds">
                     <span class="led"></span><span class="led"></span><span class="led"></span>
                   </span>

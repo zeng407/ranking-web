@@ -174,16 +174,26 @@ class CacheService
         return Cache::has('waiting_job:update_game_room_rank' . $gameRoom->serial);
     }
 
+
+    /**
+     * @deprecated
+     */
     static public function pullJobCacheUpdateGameBet(GameRoom $gameRoom)
     {
         return Cache::pull('waiting_job:update_game_bet' . $gameRoom->serial);
     }
 
+    /**
+     * @deprecated
+     */
     static public function putJobCacheUpdateGameBet(GameRoom $gameRoom)
     {
         Cache::put('waiting_job:update_game_bet' . $gameRoom->serial, true, 60 * 24);
     }
 
+    /**
+     * @deprecated
+     */
     static public function hasJobCacheUpdateGameBet(GameRoom $gameRoom)
     {
         return Cache::has('waiting_job:update_game_bet' . $gameRoom->serial);
