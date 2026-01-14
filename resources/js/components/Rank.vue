@@ -197,14 +197,7 @@ export default {
           })).slice(0, maxCount - 1)
         ];
 
-        // Two-column layout, 2 images per row
-        const margin = 20;     // Top, bottom, left, right margins
-        const gap = 20;        // Gap between images
-        const slotW = 600;     // Single image width
-        const slotH = 400;     // Single image height
-        const cols = 2;
         const total = Math.min(ranks.length, maxCount);
-        const rows = Math.ceil(total / cols);
 
         if (total === 0) {
           Swal.fire({
@@ -216,20 +209,62 @@ export default {
           return;
         }
 
-        // Calculate canvas size: fixed 2 columns, rows depend on content
-        const canvasWidth = margin * 2 + cols * slotW + (cols - 1) * gap;
-        const canvasHeight = margin * 2 + rows * slotH + (rows - 1) * gap;
+        // Custom layout:
+        // Row 1: Rank 1 (1200x800)
+        // Row 2: Rank 2 (800x400)
+        // Rank 3 (400x400) at (800, 1200)
+        // Rank 4 (400x400) at (800, 1600)
+        // Row 3: Rank 5-7 (400x300 each)
+        // Row 4: Rank 8-10 (400x300 each)
+        const margin = 20;
+        const gap = 20;
 
-        // Generate slot positions (left and right columns)
-        const slots = Array.from({ length: total }, (_, i) => {
-          const row = Math.floor(i / cols);
-          const col = i % cols;
-          return {
-            w: slotW,
-            h: slotH,
-            x: margin + col * (slotW + gap),
-            y: margin + row * (slotH + gap),
+        const slots = [];
+
+        if (total >= 1) {
+          slots[0] = { x: margin, y: margin, w: 1200 + margin * 2, h: 800 }; // Rank 1
+        }
+
+        // Row 2: Rank 2-4 (均匀分布, 400x400)
+        const row2Y = margin + 800 + gap;
+        for (let i = 1; i < Math.min(total, 4); i++) {
+          slots[i] = {
+            x: margin + (i - 1) * (400 + gap),
+            y: row2Y,
+            w: 400,
+            h: 400
           };
+        }
+
+        // Row 3: Rank 5-7 (400x300 each)
+        const row3Y = row2Y + 400 + gap;
+        for (let i = 4; i < Math.min(total, 7); i++) {
+          slots[i] = {
+            x: margin + (i - 4) * (400 + gap),
+            y: row3Y,
+            w: 400,
+            h: 300
+          };
+        }
+
+        // Row 4: Rank 8-10 (400x300 each)
+        const row4Y = row3Y + 300 + gap;
+        for (let i = 7; i < Math.min(total, 10); i++) {
+          slots[i] = {
+            x: margin + (i - 7) * (400 + gap),
+            y: row4Y,
+            w: 400,
+            h: 300
+          };
+        }
+
+        // Calculate canvas size based on slots
+        let canvasWidth = margin;
+        let canvasHeight = margin;
+
+        slots.forEach(slot => {
+          canvasWidth = Math.max(canvasWidth, slot.x + slot.w + margin);
+          canvasHeight = Math.max(canvasHeight, slot.y + slot.h + margin);
         });
 
         const canvasEl = document.createElement('canvas');
@@ -238,7 +273,8 @@ export default {
         const loadImage = (url, slot) => new Promise((resolve, reject) => {
 
           // Use proxy URL to avoid CORS issues if configured
-          const imageUrl = this.useImageProxy ? `/proxy-image?url=${encodeURIComponent(url)}` : url;
+          let imageUrl = this.useImageProxy ? `/proxy-image?url=${encodeURIComponent(url)}` : url;
+          let retried = false;
 
           // Add timeout mechanism
           const timeout = setTimeout(() => {
@@ -290,8 +326,16 @@ export default {
 
           imgElement.onerror = (error) => {
             clearTimeout(timeout);
-            console.error('Failed to load image:', url, error);
-            reject(new Error('Failed to load image'));
+            // If proxy failed and we haven't tried direct URL yet, retry with direct URL
+            if (this.useImageProxy && !retried && imageUrl.includes('/proxy-image')) {
+              console.warn('Proxy failed, retrying with direct URL:', url);
+              retried = true;
+              imageUrl = url;
+              imgElement.src = imageUrl;
+            } else {
+              console.error('Failed to load image:', url, error);
+              reject(new Error('Failed to load image'));
+            }
           };
 
           imgElement.src = imageUrl;
@@ -355,37 +399,112 @@ export default {
         console.log('Generating data URL...');
         const dataUrl = canvas.toDataURL({ format: 'png', quality: 0.92 });
 
-        // Convert dataURL to Blob (better mobile compatibility)
-        const byteString = atob(dataUrl.split(',')[1]);
-        const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
+        // Generate ranking text list
+        let rankingText = '';
+        for (let i = 0; i < ranks.length && i < slots.length; i++) {
+          const r = ranks[i];
+          rankingText += `#${r.rank} ${r.title}\n`;
         }
-        const blob = new Blob([ab], { type: mimeString });
 
-        // Check if Navigator.share is supported (mobile-friendly)
-        if (navigator.share && /mobile|android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
-          const file = new File([blob], `top${maxCount}.png`, { type: 'image/png' });
-          navigator.share({
-            files: [file],
-            title: `Top ${maxCount} Ranking`,
-          }).then(() => {
-            console.log('Image shared successfully');
-            this.isGeneratingImage = false;
-          }).catch((error) => {
-            console.log('Share failed, fallback to download:', error);
-            // Fallback to traditional download on failure
+        Swal.fire({
+          imageUrl: dataUrl,
+          imageAlt: 'Ranking Result',
+          // dark background
+          background: '#1a1a1a',
+          // add download button logic
+          showConfirmButton: true,
+          confirmButtonText: '<i class="fa fa-download"></i>&nbsp; ' + this.$t('Download'),
+          buttonsStyling: false,
+          customClass: {
+             confirmButton: 'tech-button',
+          },
+          didRender: (modal) => {
+            const confirmBtn = modal.querySelector('.tech-button');
+            if (confirmBtn) {
+              confirmBtn.style.cssText = `
+                background: linear-gradient(135deg, #00d4ff 0%, #00a9ff 50%, #0088ff 100%);
+                color: #fff;
+                border: 2px solid #00d4ff;
+                padding: 12px 28px;
+                font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+                letter-spacing: 1px;
+              `;
+              confirmBtn.onmouseover = () => {
+                confirmBtn.style.boxShadow = '0 0 30px rgba(0, 212, 255, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.2)';
+                confirmBtn.style.transform = 'translateY(-2px)';
+              };
+              confirmBtn.onmouseout = () => {
+                confirmBtn.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1)';
+                confirmBtn.style.transform = 'translateY(0)';
+              };
+            }
+          },
+          showCloseButton: true,
+          width: 'auto',
+          html: `
+            <div style="text-align: left; color: #fff; max-height: 300px; overflow-y: auto;">
+              <textarea id="rankingText" style="width: 100%; min-height: 200px; padding: 10px; background: #0a0e27; color: #00d4ff; border: 2px solid #00d4ff; border-radius: 6px; font-family: 'Courier New', monospace; resize: none; overflow: hidden; box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.2); font-size: 13px;" readonly>${rankingText}</textarea>
+              <button id="copyBtn" style="margin-top: 12px; padding: 10px 20px; background: linear-gradient(135deg, #ff69b4 0%, #00d9ff 100%); color: #fff; border: 2px solid #ff69b4; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; letter-spacing: 0.5px; box-shadow: 0 0 20px rgba(255, 105, 180, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1); transition: all 0.3s ease;">📋 ${this.$t('Copy')}</button>
+            </div>
+          `,
+          didOpen: (modal) => {
+            const copyBtn = modal.querySelector('#copyBtn');
+            if (copyBtn) {
+              copyBtn.addEventListener('click', async () => {
+                try {
+                  await navigator.clipboard.writeText(rankingText);
+                  const originalText = copyBtn.textContent;
+                  copyBtn.textContent = '✓ ' + this.$t('Copied');
+                  copyBtn.style.background = 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)';
+                  copyBtn.style.borderColor = '#00ff88';
+                  copyBtn.style.boxShadow = '0 0 25px rgba(0, 255, 136, 0.7), inset 0 0 15px rgba(255, 255, 255, 0.1)';
+                  setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = 'linear-gradient(135deg, #ff69b4 0%, #00d9ff 100%)';
+                    copyBtn.style.borderColor = '#ff69b4';
+                    copyBtn.style.boxShadow = '0 0 20px rgba(255, 105, 180, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1)';
+                  }, 2000);
+                } catch (err) {
+                  console.error('Failed to copy:', err);
+                  Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to copy ranking text',
+                    icon: 'error',
+                  });
+                }
+              });
+
+              // Hover effects for copy button
+              copyBtn.onmouseover = () => {
+                copyBtn.style.transform = 'translateY(-2px)';
+                copyBtn.style.boxShadow = '0 0 30px rgba(255, 105, 180, 0.7), inset 0 0 15px rgba(255, 255, 255, 0.2)';
+              };
+              copyBtn.onmouseout = () => {
+                copyBtn.style.transform = 'translateY(0)';
+                copyBtn.style.boxShadow = '0 0 20px rgba(255, 105, 180, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1)';
+              };
+            }
+          }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Re-create blob for download
+            const byteString = atob(dataUrl.split(',')[1]);
+            const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
             this.downloadBlob(blob, `top${maxCount}.png`);
-            this.isGeneratingImage = false;
-          });
-        } else {
-          // Desktop or devices that don't support share, use Blob URL download
-          this.downloadBlob(blob, `top${maxCount}.png`);
-          this.isGeneratingImage = false;
-          console.log('Image generation complete');
-        }
+          }
+        });
+        this.isGeneratingImage = false;
       } catch (error) {
         console.error('Error in buildTop10Image:', error);
         this.isGeneratingImage = false;
