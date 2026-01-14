@@ -121,14 +121,19 @@ class RankService
 
     public function createElementRank(Post $post, Element $element)
     {
-        $completeGameRounds = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+        $championGamesQuery = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
             ->where('games.post_id', $post->id)
-            ->where(function($subQuery) use ($element) {
-                $subQuery->where('game_1v1_rounds.winner_id', $element->id)
-                    ->orWhere('game_1v1_rounds.loser_id', $element->id);
-            })
-            ->whereNotNull('games.completed_at')
-            ->count();
+            ->whereNotNull('games.completed_at');
+
+        $winQuery = clone $championGamesQuery;
+        $winQuery->where('game_1v1_rounds.winner_id', $element->id)
+            ->select('games.id');
+
+        $loseQuery = clone $championGamesQuery;
+        $loseQuery->where('game_1v1_rounds.loser_id', $element->id)
+            ->select('games.id');
+
+        $completeGameRounds = $winQuery->unionAll($loseQuery)->count();
 
         if ($completeGameRounds) {
             $championCount = Game::where('games.post_id', $post->id)
