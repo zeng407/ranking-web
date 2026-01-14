@@ -1677,8 +1677,13 @@ export default {
           // 狀態改變後立即存檔
           this.saveToLocalStorage();
 
+          // 預先計算剩餘人數
+          const currentActiveCount = this.localElements.filter(e => !e.local_eliminated).length;
+
           // 檢查是否需要觸發雲端備份
-          if (this.unsentVotes.length >= this.batchVoteInterval && !this.isCloudSaving) {
+          // 只有在 "非最後一局" 的情況下才執行 Partial Batch Vote
+          // 如果是最後一局 (currentActiveCount < 2)，則交由 handleAnimationAfterVoted 的 sendBatchVotes 統一送出
+          if (currentActiveCount >= 2 && this.unsentVotes.length >= this.batchVoteInterval && !this.isCloudSaving) {
               this.sendPartialBatchVotes();
           }
       }
