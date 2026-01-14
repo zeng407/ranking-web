@@ -381,7 +381,7 @@ class CacheService
     static function putThousandVotesCachedIds($postId, $elementId, $votes)
     {
         $key = 'thousand_votes:' . $postId . '_' . $elementId;
-        $seconds = 3 * 24 * 60 * 60; // 3 days
+        $seconds = 30 * 24 * 60 * 60; // 30 days
         Cache::put($key, $votes, $seconds);
     }
 
