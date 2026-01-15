@@ -79,8 +79,4 @@ return [
         'client_secret' => env('TWITCH_CLIENT_SECRET'),
         'redirect' => '/auth/twitch/callback',
     ],
-
-    'cloudflare' => [
-        'turnstile_secret_key' => env('TURNSTILE_SECRET_KEY'),
-    ],
 ];

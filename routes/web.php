@@ -34,9 +34,6 @@ Route::get('/lang/{locale}', [HomeController::class, 'lang'])->name('lang');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/donate', [HomeController::class, 'donate'])->name('donate');
-Route::get('/turnstile', function() {
-    return response("Turnstile verification page");
-})->middleware('turnstile')->name('donate');
 
 // short url
 Route::get('g/{post:serial}', [GameController::class, 'show'])->name('game.show');;
