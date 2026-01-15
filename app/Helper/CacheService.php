@@ -390,4 +390,21 @@ class CacheService
         $key = 'thousand_votes:' . $postId . '_' . $elementId;
         Cache::forget($key);
     }
+
+    static function getElementRankStats($postId, $elementId)
+    {
+        $key = "element_rank_stats:{$postId}:{$elementId}";
+        // 7 days cache
+        $stats = static::remember($key, 60 * 60 * 24 * 7, function () {
+            return [];
+        }, false);
+        return $stats;
+    }
+
+    static function putElementRankStats($postId, $elementId, $stats)
+    {
+        $key = "element_rank_stats:{$postId}:{$elementId}";
+        // 7 days cache
+        Cache::put($key, $stats, 60 * 60 * 24 * 7);
+    }
 }

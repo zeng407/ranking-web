@@ -121,76 +121,136 @@ class RankService
 
     public function createElementRank(Post $post, Element $element)
     {
-        $championGamesQuery = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+        $stats = CacheService::getElementRankStats($post->id, $element->id);
+
+        // --- Champion Stats (Completed Games) ---
+        // We track parts separately to support incremental updates
+        // 1. champion_win_rounds (Winner in rounds of completed games)
+        // 2. champion_lose_rounds (Loser in rounds of completed games)
+        // 3. champion_game_wins (Winner of game where remain_elements=1)
+
+        $championMaxWinId = $stats['champion_max_win_id'] ?? 0;
+        $championMaxLoseId = $stats['champion_max_lose_id'] ?? 0;
+
+        $statChampionRoundWins = $stats['champion_round_wins'] ?? 0;
+        $statChampionRoundLoses = $stats['champion_round_loses'] ?? 0;
+        $statChampionGameWins = $stats['champion_game_wins'] ?? 0;
+
+        // Query new WINNER records for Champion Stats (Aggregate directly in DB)
+        $newChampionWinStats = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
             ->where('games.post_id', $post->id)
-            ->whereNotNull('games.completed_at');
+            ->whereNotNull('games.completed_at')
+            ->where('game_1v1_rounds.winner_id', $element->id)
+            ->where('game_1v1_rounds.id', '>', $championMaxWinId)
+            ->selectRaw('COUNT(*) as count, MAX(game_1v1_rounds.id) as max_id, SUM(CASE WHEN remain_elements = 1 THEN 1 ELSE 0 END) as champion_count')
+            ->first();
 
-        $winQuery = clone $championGamesQuery;
-        $winQuery->where('game_1v1_rounds.winner_id', $element->id)
-            ->select('games.id');
-
-        $loseQuery = clone $championGamesQuery;
-        $loseQuery->where('game_1v1_rounds.loser_id', $element->id)
-            ->select('games.id');
-
-        $completeGameRounds = $winQuery->unionAll($loseQuery)->count();
-
-        if ($completeGameRounds) {
-            $championCount = Game::where('games.post_id', $post->id)
-                ->whereHas('game_1v1_rounds', function ($query) use ($element) {
-                    $query->where('remain_elements', 1)
-                        ->where('winner_id', $element->id);
-                })
-                ->count();
-
-            if ($championCount) {
-                Rank::updateOrCreate([
-                    'post_id' => $post->id,
-                    'element_id' => $element->id,
-                    'rank_type' => RankType::CHAMPION,
-                    'record_date' => today(),
-                ], [
-                    'win_count' => $championCount,
-                    'round_count' => $completeGameRounds,
-                    'win_rate' => $championCount / $completeGameRounds * 100
-                ]);
-            }
+        if ($newChampionWinStats->count > 0) {
+            $statChampionRoundWins += $newChampionWinStats->count;
+            $statChampionGameWins += (int) $newChampionWinStats->champion_count;
+            $championMaxWinId = max($championMaxWinId, $newChampionWinStats->max_id);
         }
 
-        $winCount = Game::where('games.post_id', $post->id)
-            ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
-            ->where('game_1v1_rounds.winner_id', $element->id)
-            ->count();
-        $loseCount = Game::where('games.post_id', $post->id)
-            ->join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+        // Query new LOSER records for Champion Stats (Aggregate directly in DB)
+        $newChampionLoseStats = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+            ->where('games.post_id', $post->id)
+            ->whereNotNull('games.completed_at')
             ->where('game_1v1_rounds.loser_id', $element->id)
-            ->count();
+            ->where('game_1v1_rounds.id', '>', $championMaxLoseId)
+            ->selectRaw('COUNT(*) as count, MAX(game_1v1_rounds.id) as max_id')
+            ->first();
 
+        if ($newChampionLoseStats->count > 0) {
+            $statChampionRoundLoses += $newChampionLoseStats->count;
+            $championMaxLoseId = max($championMaxLoseId, $newChampionLoseStats->max_id);
+        }
+
+        // Calculate Totals
+        $completeGameRounds = $statChampionRoundWins + $statChampionRoundLoses;
+        $championCount = $statChampionGameWins;
+
+        if ($completeGameRounds > 0 && $championCount > 0) {
+            Rank::updateOrCreate([
+                'post_id' => $post->id,
+                'element_id' => $element->id,
+                'rank_type' => RankType::CHAMPION,
+                'record_date' => today(),
+            ], [
+                'win_count' => $championCount,
+                'round_count' => $completeGameRounds,
+                'win_rate' => $championCount / $completeGameRounds * 100
+            ]);
+        }
+
+        // --- PK King Stats (All Games) ---
+        // 1. pk_win_count
+        // 2. pk_lose_count
+
+        $pkMaxWinId = $stats['pk_max_win_id'] ?? 0;
+        $pkMaxLoseId = $stats['pk_max_lose_id'] ?? 0;
+
+        $statPkWins = $stats['pk_win_count'] ?? 0;
+        $statPkLoses = $stats['pk_lose_count'] ?? 0;
+
+        // Query new WIN records for PK Stats (Aggregate directly in DB)
+        $newPkWinStats = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+            ->where('games.post_id', $post->id)
+            ->where('game_1v1_rounds.winner_id', $element->id)
+            ->where('game_1v1_rounds.id', '>', $pkMaxWinId)
+            ->selectRaw('COUNT(*) as count, MAX(game_1v1_rounds.id) as max_id')
+            ->first();
+
+        if ($newPkWinStats->count > 0) {
+            $statPkWins += $newPkWinStats->count;
+            $pkMaxWinId = max($pkMaxWinId, $newPkWinStats->max_id);
+        }
+
+        // Query new LOSE records for PK Stats (Aggregate directly in DB)
+        $newPkLoseStats = Game::join('game_1v1_rounds', 'game_1v1_rounds.game_id', '=', 'games.id')
+            ->where('games.post_id', $post->id)
+            ->where('game_1v1_rounds.loser_id', $element->id)
+            ->where('game_1v1_rounds.id', '>', $pkMaxLoseId)
+            ->selectRaw('COUNT(*) as count, MAX(game_1v1_rounds.id) as max_id')
+            ->first();
+
+        if ($newPkLoseStats->count > 0) {
+            $statPkLoses += $newPkLoseStats->count;
+            $pkMaxLoseId = max($pkMaxLoseId, $newPkLoseStats->max_id);
+        }
+
+        // Update Cache
+        $newStats = [
+            'champion_max_win_id' => $championMaxWinId,
+            'champion_max_lose_id' => $championMaxLoseId,
+            'champion_round_wins' => $statChampionRoundWins,
+            'champion_round_loses' => $statChampionRoundLoses,
+            'champion_game_wins' => $statChampionGameWins,
+            'pk_max_win_id' => $pkMaxWinId,
+            'pk_max_lose_id' => $pkMaxLoseId,
+            'pk_win_count' => $statPkWins,
+            'pk_lose_count' => $statPkLoses,
+        ];
+
+        CacheService::putElementRankStats($post->id, $element->id, $newStats);
+
+        $winCount = $statPkWins;
+        $loseCount = $statPkLoses;
+
+        // Update PK King Rank
         $rounds = $winCount + $loseCount;
         if ($rounds > 0) {
-            if ($winCount) {
-                Rank::updateOrCreate([
-                    'post_id' => $post->id,
-                    'element_id' => $element->id,
-                    'rank_type' => RankType::PK_KING,
-                    'record_date' => today(),
-                ], [
-                    'win_count' => $winCount,
-                    'round_count' => $rounds,
-                    'win_rate' => $winCount / $rounds * 100
-                ]);
-            } else {
-                Rank::updateOrCreate([
-                    'post_id' => $post->id,
-                    'element_id' => $element->id,
-                    'rank_type' => RankType::PK_KING,
-                    'record_date' => today(),
-                ], [
-                    'win_count' => 0,
-                    'round_count' => $rounds,
-                    'win_rate' => 0
-                ]);
-            }
+            $winRate = $winCount ? ($winCount / $rounds * 100) : 0;
+
+            Rank::updateOrCreate([
+                'post_id' => $post->id,
+                'element_id' => $element->id,
+                'rank_type' => RankType::PK_KING,
+                'record_date' => today(),
+            ], [
+                'win_count' => $winCount,
+                'round_count' => $rounds,
+                'win_rate' => $winRate
+            ]);
         }
     }
 
