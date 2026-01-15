@@ -710,6 +710,8 @@ export default {
     },
 
     createGame() {
+      if (this.creatingGame) return;
+
       // 建立新遊戲前/後，直接刪除該主題的舊存檔
       const key = `gamestate_${this.postSerial}`;
       localStorage.removeItem(key);
