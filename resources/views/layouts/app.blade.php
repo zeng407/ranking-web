@@ -28,6 +28,18 @@
     @endif
   @endif
 
+  <script>
+    // prevent form resubmission on page refresh
+    document.addEventListener("DOMContentLoaded", function() {
+      if (window.history.replaceState) {
+          var url = window.location.href;
+
+          // replaceState(state, title, url)
+          window.history.replaceState(null, null, url);
+      }
+    });
+  </script>
+
   {{-- SEO --}}
   <title>{{ get_page_title($title ?? '') }}</title>
   <script type="application/ld+json">
@@ -47,6 +59,7 @@
   <meta property="og:image" content="{{ $ogImage ?? asset('/storage/og-image.jpeg') }}" />
   <meta property="og:description" content="{{ $ogDescription ?? get_page_description($post ?? null) }}" />
   <link rel="icon" href="/favicon.ico">
+
 
   @yield('header')
   {{-- CSRF Token --}}

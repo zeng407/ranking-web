@@ -7,7 +7,6 @@ const mobileScreenWidth = 991;
 export default {
   name: 'home',
   mounted() {
-    this.registerHandleRedirectPostSubmit();
     this.registerScrollEvent();
     this.registerInitSearch();
     this.initSorter();
@@ -327,15 +326,6 @@ export default {
         this.filters.keyword = keyword;
         this.search();
       });
-    },
-    registerHandleRedirectPostSubmit() {
-      window.addEventListener('beforeunload', function (e) {
-        // 僅在 reload 時觸發
-        if (performance.getEntriesByType('navigation')[0]?.type === 'reload') {
-          // 用 GET 方式重新導向
-          window.location.assign(window.location.href);
-        }
-      })
     },
     registerScrollEvent() {
       window.addEventListener('scroll', this.handleScroll);

@@ -106,5 +106,4 @@ Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en
 
 /** Game Room */
 Route::get('b/{gameRoom:serial}', [GameController::class, 'joinRoom'])->name('game.room.index');
-
 Route::get('/onead-media', [AdController::class, 'onead_media'])->name('onead.media');
