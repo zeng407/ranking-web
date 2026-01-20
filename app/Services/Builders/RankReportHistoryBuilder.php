@@ -319,6 +319,16 @@ class RankReportHistoryBuilder
             return;
         }
 
+        // 如果剛好是1000則直接用newVotes的結果
+        if ($newCount === 1000) {
+            $winCount = $newVotes->where('winner_id', $this->report->element_id)->count();
+            $loseCount = $newVotes->where('loser_id', $this->report->element_id)->count();
+            $maxId = $newVotes->first()->id;
+            $minId = $newVotes->last()->id;
+            $this->saveThousandVotesHistory($winCount, $loseCount, $maxId, $minId);
+            return;
+        }
+
         $winNew = $newVotes->where('winner_id', $this->report->element_id)->count();
         $loseNew = $newVotes->where('loser_id', $this->report->element_id)->count();
 
