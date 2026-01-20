@@ -319,6 +319,7 @@ class RankReportHistoryBuilder
             return;
         }
 
+
         // 如果剛好是1000則直接用newVotes的結果
         if ($newCount === 1000) {
             $winCount = $newVotes->where('winner_id', $this->report->element_id)->count();
@@ -349,7 +350,7 @@ class RankReportHistoryBuilder
                 $winOutdated = $outdatedSlice->where('winner_id', $this->report->element_id)->count();
                 $loseOutdated = $outdatedSlice->where('loser_id', $this->report->element_id)->count();
 
-                $newMinId = $outdatedVotes->last()->id;
+                $newMinId = $outdatedVotes->first()->id;
             }
         }
 
