@@ -350,7 +350,7 @@ class RankReportHistoryBuilder
                 $winOutdated = $outdatedSlice->where('winner_id', $this->report->element_id)->count();
                 $loseOutdated = $outdatedSlice->where('loser_id', $this->report->element_id)->count();
 
-                $newMinId = $outdatedVotes->first()->id;
+                $newMinId = $outdatedVotes->last()->id;
             }
         }
 
