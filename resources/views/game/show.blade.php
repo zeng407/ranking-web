@@ -53,7 +53,7 @@
     <game
         inline-template
         post-serial="{{$serial}}"
-        user-last-game-serial="{{$userLastGameSerial}}"
+        :user-last-game="{{json_encode($userLastGame)}}"
         :require-password="{{json_encode($requiredPassword)}}"
         get-rank-route="{{route('game.rank', '_serial')}}"
         get-game-setting-endpoint="{{route('api.game.setting', $serial)}}"
@@ -849,7 +849,7 @@
               </div>
               <div class="modal-body">
                 {{-- continue game --}}
-                <div class="alert alert-danger" v-if="userLastGameSerial">
+                <div class="alert alert-danger" v-if="userLastGame">
                   <i class="fas fa-exclamation-triangle"></i>&nbsp;@{{ $t('game.continue_hint') }}
                   <span class="btn btn-outline-danger" @click="continueGame">
                     <i class="fas fa-play"></i>&nbsp;@{{ $t('game.continue') }}

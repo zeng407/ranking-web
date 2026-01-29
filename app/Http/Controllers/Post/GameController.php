@@ -172,12 +172,12 @@ class GameController extends Controller
 
     protected function gameView(Post $post, $element, $requiredPassword, $gameRoom = null)
     {
-        $userLastGameSerial = $this->gameService->getUserLastGameSerial($post, request()->user());
+        $userLastGame = $this->gameService->getUserLastGame($post, request()->user());
 
         return view('game.show', [
             'serial' => $post->serial,
             'post' => $post,
-            'userLastGameSerial' => $userLastGameSerial,
+            'userLastGame' => $userLastGame,
             'gameRoom' => $gameRoom,
             'element' => $element,
             'requiredPassword' => $requiredPassword,

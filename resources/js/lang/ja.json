@@ -161,6 +161,16 @@
     "game_room.create_game.host": "あなたがホストです",
     "game_room.create_game.invite_description": "友達に<u>スキャン</u>または<u>リンクを通じて</u>ゲームに参加してもらう",
 
+    "conflict.title": "セーブデータの競合",
+    "conflict.text": "異なるゲーム記録が検出されました。どちらをロードしますか？",
+    "conflict.local_record": "ローカル記録 (この端末)",
+    "conflict.remote_record": "クラウド記録 (サーバー)",
+    "conflict.progress": "進行状況",
+    "conflict.time": "時間",
+    "conflict.use_local": "ローカルをロード",
+    "conflict.use_remote": "クラウドをロード",
+    "conflict.votes": "{current} / {total} 票",
+    "conflict.status": "合計 {total} / 残り {remain}",
 
     "rank.no_rank": "データなし",
     "rank.chart.rank": "ランク",

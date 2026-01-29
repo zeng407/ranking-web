@@ -34,6 +34,9 @@ class GameElementResource extends JsonResource
             'video_source' => $this->video_source,
             'video_id' => $this->video_id,
             'video_duration_second' => $this->video_duration_second,
+            'is_eliminated' => $this->pivot?->is_eliminated,
+            'is_ready' => $this->pivot?->is_ready,
+            'win_count' => $this->pivot?->win_count,
         ];
     }
 }
