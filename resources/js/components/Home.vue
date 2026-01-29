@@ -268,7 +268,7 @@ export default {
       this.recordLastScrollPosition();
     },
     isScrollAtBottom() {
-      let buffer = 200;
+      let buffer = 400;
       return (window.innerHeight + window.scrollY) >= document.body.offsetHeight - buffer;
     },
     recordLastScrollPosition() {

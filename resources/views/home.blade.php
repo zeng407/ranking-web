@@ -60,7 +60,7 @@
     <div class="container-fuild">
       {{-- main container --}}
       <div class="row m-0">
-        {{-- left part: champions --}}
+
         <div class="d-none d-xl-block col-xl-2">
         </div>
 
@@ -104,68 +104,79 @@
           </div>
           <div v-if="champions.length" class="d-flex overflow-x-scroll hide-scrollbar mx-2">
             <transition-group name="list" tag="div" class="row flex-nowrap ml-0">
+
               <div class="card champion-card-container shadow col-auto list-item m-2" v-for="championResult in champions"
                 :key="championResult.key" v-cloak>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="w-50">
-                      <div class="position-relative">
+
+                <div class="card-body p-2">
+                  <div class="row no-gutters"> {{-- ================= 左邊選手 (Left) ================= --}}
+                    <div class="col-6 px-1">
+                      <div class="champion-media-box">
+
+                        {{-- 1. 模糊背景 (使用 thumb_url) --}}
+                        <div class="champion-media-box__bg"
+                          :style="{ backgroundImage: 'url(' + championResult.left.thumb_url + ')' }">
+                        </div>
+
+                        {{-- 2. 前景圖片/影片 --}}
                         <video v-if="isEndWith(championResult.left.thumb_url, 'mp4')"
                           @loadeddata="handleCandicateLoaded(championResult.left)"
-                          v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100"
-                          :class="{ 'eliminated-image': !championResult.left.is_winner }"
+                          v-show="!isChampionLoading(championResult.left)" class="champion-media-box__content"
+                          :class="{ 'eliminated': !championResult.left.is_winner }"
                           :src="championResult.left.thumb_url + '#t=0.01'" muted></video>
+
                         <img v-else @load="handleCandicateLoaded(championResult.left)"
-                          v-show="!isChampionLoading(championResult.left)" class="bg-dark champion-card w-100"
-                          :class="{ 'eliminated-image': !championResult.left.is_winner }"
-                          :src="championResult.left.thumb_url">
-                        <div class="champion-footer-icons">
-                          <i class="fa-solid fa-x" v-if="!championResult.left.is_winner"
-                            v-show="!isChampionLoading(championResult.left)"></i>
-                          <i class="fa-solid fa-thumbs-up" v-if="championResult.left.is_winner"
-                            v-show="!isChampionLoading(championResult.left)"></i>
-                        </div>
-                        <div v-show="isChampionLoading(championResult.left)" class="champion-card">
-                          <div
-                            class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
-                            <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
-                          </div>
+                          v-show="!isChampionLoading(championResult.left)" class="champion-media-box__content"
+                          :class="{ 'eliminated': !championResult.left.is_winner }" :src="championResult.left.thumb_url">
+
+
+                        {{-- Loading Spinner --}}
+                        <div v-show="isChampionLoading(championResult.left)" class="champion-media-box__loading">
+                          <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
                         </div>
                       </div>
-                      <h5 class="text-center font-size-small">@{{ championResult.left.name | cut(30) }}</h5>
+                      <h5 class="text-center font-size-small mt-2 text-truncate">@{{ championResult.left.name | cut(30) }}</h5>
                     </div>
-                    <div class="w-50" v-if="championResult.right.name">
-                      <div class="position-relative">
+
+                    {{-- ================= 右邊選手 (Right) ================= --}}
+                    <div class="col-6 px-1" v-if="championResult.right.name">
+                      <div class="champion-media-box">
+
+                        {{-- 1. 模糊背景 --}}
+                        <div class="champion-media-box__bg"
+                          :style="{ backgroundImage: 'url(' + championResult.right.thumb_url + ')' }">
+                        </div>
+
+                        {{-- 2. 前景圖片/影片 --}}
                         <video v-if="isEndWith(championResult.right.thumb_url, 'mp4')"
                           @loadeddata="handleCandicateLoaded(championResult.right)"
-                          v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100"
-                          :class="{ 'eliminated-image': !championResult.right.is_winner }"
+                          v-show="!isChampionLoading(championResult.right)" class="champion-media-box__content"
+                          :class="{ 'eliminated': !championResult.right.is_winner }"
                           :src="championResult.right.thumb_url + '#t=0.01'" muted></video>
+
                         <img v-else @load="handleCandicateLoaded(championResult.right)"
-                          v-show="!isChampionLoading(championResult.right)" class="bg-dark champion-card w-100"
-                          :class="{ 'eliminated-image': !championResult.right.is_winner }"
+                          v-show="!isChampionLoading(championResult.right)" class="champion-media-box__content"
+                          :class="{ 'eliminated': !championResult.right.is_winner }"
                           :src="championResult.right.thumb_url">
-                        <div class="champion-footer-icons">
-                          <i class="fa-solid fa-x" v-if="!championResult.right.is_winner"
-                            v-show="!isChampionLoading(championResult.right)"></i>
-                          <i class="fa-solid fa-thumbs-up" v-if="championResult.right.is_winner"
-                            v-show="!isChampionLoading(championResult.right)"></i>
-                        </div>
-                        <div v-show="isChampionLoading(championResult.right)" class="champion-card">
-                          <div
-                            class="position-absolute w-100 h-100 bg-dark d-flex justify-content-center align-items-center">
-                            <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
-                          </div>
+
+                        {{-- Loading Spinner --}}
+                        <div v-show="isChampionLoading(championResult.right)" class="champion-media-box__loading">
+                          <i class="fas fa-spinner fa-spin fa-2x text-white"></i>
                         </div>
                       </div>
-                      <h5 class="text-center font-size-small">@{{ championResult.right.name | cut(30) }}</h5>
+                      <h5 class="text-center font-size-small mt-2 text-truncate">@{{ championResult.right.name | cut(30) }}</h5>
                     </div>
+
                   </div>
-                  <div class="row d-flex justify-content-end">
-                    <div class="text-center d-inline-block"><a target="_blank" class="font-size-xsmall"
-                        :href="getShowGameUrl(championResult.post_serial)">@{{ championResult.post_title }}</a></div>
-                    &nbsp;
-                    <p :key="refreshKey" class="d-inline-block font-size-small">@{{ humanizeDate(championResult.datetime) }}</p>
+
+                  {{-- Footer Info --}}
+                  <div class="row d-flex justify-content-end mt-2 px-2">
+                    <div class="text-right w-100">
+                      <a target="_blank" class="font-size-xsmall d-block text-truncate"
+                        :href="getShowGameUrl(championResult.post_serial)">@{{ championResult.post_title }}</a>
+                      <p :key="refreshKey" class="d-inline-block font-size-small text-muted mb-0">
+                        @{{ humanizeDate(championResult.datetime) }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -240,35 +251,56 @@
                       @if ($post['is_censored'])
                         <image-mask key="image-mask-{{ $post['serial'] }}"></image-mask>
                       @endif
-                      <div class="col-6">
-                        <div class="post-element-container">
-                          @if ($post['element1']['previewable'])
-                            <flex-image element-id="{{ $post['element1']['id'] }}"
-                              thumb-url="{{ $post['element1']['url'] }}" imgur-url="{{ $post['element1']['url2'] }}"
-                              alt="{{ $post['element1']['title'] }}" :lazy="true"></flex-image>
-                          @else
-                            <video src="{{ $post['element1']['url'] }}#t=0.01"></video>
-                          @endif
+
+                      {{-- Element 1 (Left) --}}
+                      <div class="col-6 px-1 py-2">
+                        <div class="comparison-media-box">
+                            {{-- 背景模糊層 (僅當是圖片時顯示，若無法取得 thumb 則黑底) --}}
+                            @if ($post['element1']['previewable'])
+                                <div class="comparison-media-box__bg" style="background-image: url('{{ $post['element1']['url'] }}')"></div>
+                            @endif
+
+                            {{-- 內容層 --}}
+                            <div class="comparison-media-box__content-wrapper">
+                                @if ($post['element1']['previewable'])
+                                    <flex-image element-id="{{ $post['element1']['id'] }}"
+                                    thumb-url="{{ $post['element1']['url'] }}" imgur-url="{{ $post['element1']['url2'] }}"
+                                    alt="{{ $post['element1']['title'] }}" :lazy="true"></flex-image>
+                                @else
+                                    <video src="{{ $post['element1']['url'] }}#t=0.01" muted playsinline></video>
+                                @endif
+                            </div>
                         </div>
                       </div>
-                      <div class="col-6">
-                        <div class="post-element-container">
-                          @if ($post['element2']['previewable'])
-                            <flex-image element-id="{{ $post['element2']['id'] }}"
-                              thumb-url="{{ $post['element2']['url'] }}" imgur-url="{{ $post['element2']['url2'] }}"
-                              alt="{{ $post['element2']['title'] }}" :lazy="true"></flex-image>
-                          @else
-                            <video src="{{ $post['element2']['url'] }}#t=0.01"></video>
-                          @endif
+
+                      {{-- Element 2 (Right) --}}
+                      <div class="col-6 px-1 py-2">
+                        <div class="comparison-media-box">
+                            {{-- 背景模糊層 --}}
+                            @if ($post['element2']['previewable'])
+                                <div class="comparison-media-box__bg" style="background-image: url('{{ $post['element2']['url'] }}')"></div>
+                            @endif
+
+                            {{-- 內容層 --}}
+                            <div class="comparison-media-box__content-wrapper">
+                                @if ($post['element2']['previewable'])
+                                    <flex-image element-id="{{ $post['element2']['id'] }}"
+                                    thumb-url="{{ $post['element2']['url'] }}" imgur-url="{{ $post['element2']['url2'] }}"
+                                    alt="{{ $post['element2']['title'] }}" :lazy="true"></flex-image>
+                                @else
+                                    <video src="{{ $post['element2']['url'] }}#t=0.01" muted playsinline></video>
+                                @endif
+                            </div>
                         </div>
                       </div>
+
                     </div>
                     <div class="row no-gutters m-0 w-100">
                       <div class="col-6">
-                        <h5 class="text-center mt-1 p-1 element-title">{{ $post['element1']['title'] }}</h5>
+                        <h5 class="text-center mt-1 p-1 element-title text-truncate">{{ $post['element1']['title'] }}</h5>
                       </div>
                       <div class="col-6">
-                        <h5 class="text-center mt-1 p-1">{{ $post['element2']['title'] }}</h5>
+                        <h5 class="text-center mt-1 p-1 text-truncate">{{ $post['element2']['title'] }}</h5>
                       </div>
                     </div>
                     <div class="card-body pt-0 text-center">

@@ -7,43 +7,64 @@
       <div class="row no-gutters">
         <div class="row no-gutters m-0 w-100 position-relative">
           <image-mask v-if="post.is_censored" :key="'image-mask-' + post.serial"></image-mask>
-          <div class="col-6">
-            <div class="post-element-container">
-              <flex-image
-                v-if="post.element1.previewable"
-                :key="post.element1.id"
-                :image-key="post.element1.id"
-                :element-id="post.element1.id"
-                :thumb-url="post.element1.url"
-                :imgur-url="post.element1.url2"
-                :alt="post.element1.title"
-                :lazy="true"
-              ></flex-image>
-              <video v-else :src="getVideoPreviewUrl(post.element1.url)"></video>
+
+          <div class="col-6 px-1 py-2">
+            <div class="comparison-media-box">
+                <div v-if="post.element1.previewable"
+                     class="comparison-media-box__bg"
+                     :style="{ backgroundImage: 'url(' + post.element1.url + ')' }">
+                </div>
+
+                <div class="comparison-media-box__content-wrapper">
+                    <flex-image
+                        v-if="post.element1.previewable"
+                        :key="post.element1.id"
+                        :image-key="post.element1.id"
+                        :element-id="post.element1.id"
+                        :thumb-url="post.element1.url"
+                        :imgur-url="post.element1.url2"
+                        :alt="post.element1.title"
+                        :lazy="true"
+                    ></flex-image>
+                    <video v-else
+                           :src="getVideoPreviewUrl(post.element1.url)"
+                           muted playsinline></video>
+                </div>
             </div>
           </div>
-          <div class="col-6">
-            <div class="post-element-container">
-              <flex-image
-                v-if="post.element2.previewable"
-                :key="post.element2.id"
-                :image-key="post.element2.id"
-                :element-id="post.element2.id"
-                :thumb-url="post.element2.url"
-                :imgur-url="post.element2.url2"
-                :alt="post.element2.title"
-                :lazy="true"
-              ></flex-image>
-              <video v-else :src="getVideoPreviewUrl(post.element2.url)"></video>
+
+          <div class="col-6 px-1 py-2">
+            <div class="comparison-media-box">
+                 <div v-if="post.element2.previewable"
+                      class="comparison-media-box__bg"
+                      :style="{ backgroundImage: 'url(' + post.element2.url + ')' }">
+                 </div>
+
+                 <div class="comparison-media-box__content-wrapper">
+                    <flex-image
+                        v-if="post.element2.previewable"
+                        :key="post.element2.id"
+                        :image-key="post.element2.id"
+                        :element-id="post.element2.id"
+                        :thumb-url="post.element2.url"
+                        :imgur-url="post.element2.url2"
+                        :alt="post.element2.title"
+                        :lazy="true"
+                    ></flex-image>
+                    <video v-else
+                           :src="getVideoPreviewUrl(post.element2.url)"
+                           muted playsinline></video>
+                 </div>
             </div>
           </div>
+
         </div>
         <div class="row no-gutters m-0 w-100">
           <div class="col-6">
-            <h5 class="text-center mt-1 p-1 element-title">{{ post.element1.title }}</h5>
+            <h5 class="text-center mt-1 p-1 element-title text-truncate">{{ post.element1.title }}</h5>
           </div>
           <div class="col-6">
-            <h5 class="text-center mt-1 p-1 element-title">{{ post.element2.title }}</h5>
+            <h5 class="text-center mt-1 p-1 element-title text-truncate">{{ post.element2.title }}</h5>
           </div>
         </div>
         <div class="card-body pt-0 text-center">
