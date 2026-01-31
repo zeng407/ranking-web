@@ -1257,6 +1257,7 @@ export default {
         this.nextRound(null, false);
       }
       $("#gameSettingPanel").modal("hide");
+      this.loadMatchHistory();
     },
 
     hintSelect() {
