@@ -2428,3 +2428,104 @@ $box-shadow2: ();
     -ms-user-select: text;
     user-select: text;
 }
+
+// 新增冠軍列表樣式
+.champion-card-container {
+    width: 300px; // [設定] 卡片固定寬度
+    flex: 0 0 auto; // 確保不會被擠壓
+}
+
+// 圖片/影片容器 (正方形或固定比例)
+.champion-media-box {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; // 1:1 正方形比例 (想要 4:3 可改成 75%)
+    background-color: #000;
+    overflow: hidden;
+    border-radius: 8px; // 圓角
+
+    // 1. 模糊背景層
+    &__bg {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-size: cover;
+        background-position: center;
+        filter: blur(10px) brightness(0.6); // 模糊 + 變暗
+        transform: scale(1.1); // 放大避免白邊
+        z-index: 1;
+    }
+
+    // 2. 前景內容 (圖片/影片)
+    &__content {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain; // [關鍵] 完整顯示不裁切
+        z-index: 2;
+
+        &.eliminated {
+            filter: grayscale(100%) brightness(0.5); // 淘汰者變黑白
+        }
+    }
+
+    // 3. UI 圖示層 (確保在最上層)
+    &__overlay {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        z-index: 3;
+        text-shadow: 0 0 3px rgba(0,0,0,0.8);
+    }
+
+    // 4. Loading 層
+    &__loading {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #343a40;
+        z-index: 4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+// 對戰/比較圖專用容器
+.comparison-media-box {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; // 1:1 正方形 (若喜歡長方形可用 75% 或 56.25%)
+    background-color: #000;
+    overflow: hidden;
+    border-radius: 4px;
+
+    // 1. 模糊背景
+    &__bg {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-size: cover;
+        background-position: center;
+        filter: blur(10px) brightness(0.6);
+        transform: scale(1.1);
+        z-index: 1;
+    }
+
+    // 2. 內容容器 (圖片/影片/FlexImage)
+    &__content-wrapper {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 4px; // 內距
+
+        // 強制內部的圖片或 flex-image 完整顯示
+        img, video, .flex-image-container {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            max-width: 100%;
+            max-height: 100%;
+        }
+    }
+}

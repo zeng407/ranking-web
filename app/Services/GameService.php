@@ -983,20 +983,20 @@ class GameService
         ]);
     }
 
-    public function getUserLastGameSerial(Post $post, ?User $user)
+    public function getUserLastGame(Post $post, ?User $user): ?Game
     {
         if(!$user){
             return null;
         }
 
-        $gmae = Game::where('post_id', $post->id)
+        $game = Game::where('post_id', $post->id)
             ->where('user_id', $user?->id)
             ->orderByDesc('id')
-            ->select(['completed_at', 'serial'])
+            ->select(['completed_at', 'serial', 'updated_at',  'vote_count', 'element_count'])
             ->first();
 
-        if($gmae && !$gmae->completed_at){
-            return $gmae->serial;
+        if($game && !$game->completed_at){
+            return $game;
         }
 
         return null;

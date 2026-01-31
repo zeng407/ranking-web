@@ -152,6 +152,17 @@
     "game_room.create_game.host": "You are the Host",
     "game_room.create_game.invite_description": "Have your friends <u>scan</u> or <u>join through the link</u> to join the game",
 
+    "conflict.title": "Save Conflict Detected",
+    "conflict.text": "We found two different game records. Which one would you like to keep?",
+    "conflict.local_record": "Local Record (This Device)",
+    "conflict.remote_record": "Cloud Record (Server)",
+    "conflict.progress": "Progress",
+    "conflict.time": "Time",
+    "conflict.use_local": "Load Local",
+    "conflict.use_remote": "Load Cloud",
+    "conflict.votes": "{current} / {total} votes",
+    "conflict.status": "Total {total} / Remain {remain}",
+
     "rank.no_rank": "No data",
     "rank.chart.rank": "Rank",
     "rank.chart.win_rate": "Winning Rate",

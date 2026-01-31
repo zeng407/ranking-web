@@ -166,6 +166,17 @@
     "game_room.create_game.host": "你是主持人",
     "game_room.create_game.invite_description": "請讓朋友<u>掃描</u>或<u>透過連結</u>加入遊戲",
 
+    "conflict.title": "發現存檔衝突",
+    "conflict.text": "偵測到您有兩份不同的遊戲紀錄，請選擇要繼續哪一份：",
+    "conflict.local_record": "本地紀錄 (此裝置)",
+    "conflict.remote_record": "雲端紀錄 (伺服器)",
+    "conflict.progress": "進度",
+    "conflict.time": "時間",
+    "conflict.use_local": "讀取本地",
+    "conflict.use_remote": "讀取雲端",
+    "conflict.votes": "{current} / {total} 票",
+    "conflict.status": "總人數 {total} / 剩餘 {remain}",
+
     "rank.win_rate": "勝率",
     "rank.no_rank": "尚未有資料",
     "rank.chart.rank": "排名",
