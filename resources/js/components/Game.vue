@@ -845,8 +845,6 @@ export default {
 
       const requestLimit = this.elementsCount;
 
-      console.log(`Background fetching: requesting limit ${requestLimit}...`);
-
       axios.get(url, { params: { limit: requestLimit } })
           .then(res => {
               const data = res.data.data;
@@ -854,8 +852,6 @@ export default {
               if (data && data.length > 0) {
                   // 過濾並加入 (利用 Set 查重)
                   const actuallyAdded = this.processNewElements(data);
-
-                  console.log(`Fetched ${data.length} items, actually added unique: ${actuallyAdded}`);
 
                   this.saveToLocalStorage();
 
@@ -949,7 +945,6 @@ export default {
                       }
                   }
 
-                  console.log("Game restored from localStorage (Post Key)");
                   this.nextLocalRound();
                   return true;
               }
@@ -997,9 +992,8 @@ export default {
         }
     },
 
-    // [New] 將後端回傳的 JSON 轉換為前端本地運算格式
     syncRemoteDataToLocal(responseData) {
-        // 1. 更新總數
+        // 1. 基礎資料同步 (保持不變)
         if (responseData.total_count) {
             this.elementsCount = responseData.total_count;
         }
@@ -1007,13 +1001,13 @@ export default {
         const remoteElements = responseData.data || [];
         this.localElements = [];
         this.existingElementIds.clear();
-        this.localVotes = [];
-        this.unsentVotes = [];
 
         remoteElements.forEach(e => {
             this.existingElementIds.add(e.id);
             const isEliminated = (e.is_eliminated === 1 || e.is_eliminated === true);
             const winCount = parseInt(e.win_count || 0);
+
+            // 計算 played 次數
             const playedCount = winCount + (isEliminated ? 1 : 0);
 
             const localEl = {
@@ -1021,72 +1015,41 @@ export default {
                 local_win_count: winCount,
                 local_eliminated: isEliminated,
                 local_played: playedCount,
-                local_is_ready: (e.is_ready === 1 || e.is_ready === true)
+                // 直接使用後端的 ready 狀態
+                local_is_ready: (e.is_ready === 1 || e.is_ready === true) && !isEliminated
             };
 
             this.localElements.push(localEl);
         });
 
-        // ---------------------------------------------------------
-        // [New] 根據存活人數，自動推算 clientState (Stage, Matches, etc.)
-        // ---------------------------------------------------------
-
-        // 1. 計算目前的存活人數 (Active Count)
-        const activeCount = this.localElements.filter(e => !e.local_eliminated).length;
-        const totalElements = parseInt(this.elementsCount || this.localElements.length);
-
-        // 2. 模擬賽程迴圈
-        let currentStage = 1;
-        let stageStartCount = totalElements;
-        let isCalculated = false;
-
-        // 防止無窮迴圈的安全閥 (最大 20 輪，夠涵蓋 100萬人)
-        while (currentStage < 20) {
-            // 這一輪需要打幾場 (無條件捨去，處理奇數輪空)
-            const targetMatchesForStage = Math.floor(stageStartCount / 2);
-
-            // 這一輪打完後，應該剩多少人
-            const nextStageCount = stageStartCount - targetMatchesForStage;
-
-            // 判斷條件：
-            // 如果「目前存活人數」大於「下一輪的預計人數」，代表我們正處於這一輪之中
-            // 或者如果已經是決賽 (targetMatches == 0)，就停在這裡
-            if (activeCount > nextStageCount || targetMatchesForStage === 0) {
-
-                // 計算這一輪已經打了幾場
-                // 公式：這一輪開始的人數 - 目前剩下的人數 = 目前被淘汰的人數 (即已進行場次)
-                const matchesInStage = stageStartCount - activeCount;
-
-                this.clientState = {
-                    stage: currentStage,
-                    // matchIndex 通常對應當前階段已進行的場次，用於 UI 進度條
-                    matchIndex: matchesInStage,
-                    stageStartCount: stageStartCount,
-                    matchesInStage: matchesInStage,
-                    targetMatches: targetMatchesForStage
-                };
-
-                isCalculated = true;
-                break;
+        this.localVotes = [];
+        this.unsentVotes = [];
+        let stage = 1;
+        let matchesInStage = 0;
+        let targetMatches = Math.ceil(this.elementsCount/2);
+        let remoteRemainElementsCount = this.localElements.filter(e => !e.local_eliminated).length;
+        let stageStartCount = this.elementsCount;
+        let remainElementsCount = this.elementsCount;
+        while(remainElementsCount > remoteRemainElementsCount){
+            if(matchesInStage >= targetMatches){
+                stage += 1;
+                matchesInStage = 0;
+                stageStartCount = remainElementsCount;
+                targetMatches = this.calculateNextRoundNumber(remainElementsCount);
             }
-
-            // 如果不是這一輪，就讓模擬進度推進到下一輪
-            stageStartCount = nextStageCount;
-            currentStage++;
+            matchesInStage++;
+            remainElementsCount--;
+            // console.log(`[stage ${stage}] After match ${matchesInStage} / ${targetMatches}, remain elements: ${remainElementsCount}`);
         }
 
-        // 防呆：如果算不出來 (例如 activeCount = total)，預設回第一輪
-        if (!isCalculated) {
-            this.clientState = {
-                stage: 1,
-                matchIndex: 0,
-                stageStartCount: totalElements,
-                matchesInStage: 0,
-                targetMatches: Math.floor(totalElements / 2)
-            };
-        }
+        this.clientState = {
+            stage: stage,
+            matchIndex: matchesInStage,
+            stageStartCount: stageStartCount,
+            matchesInStage: matchesInStage,
+            targetMatches: targetMatches
+        };
 
-        console.log(`Synced ${this.localElements.length} elements. State calculated:`, this.clientState);
     },
 
     // 繼續遊戲
@@ -1115,7 +1078,6 @@ export default {
       // 定義: 恢復本地進度
       const restoreLocal = () => {
         if (this.loadFromLocalStorage()) {
-          console.log("Game restored from LocalStorage.");
           this.fetchRemainingElements();
           this.nextLocalRound();
         } else {
@@ -1129,10 +1091,10 @@ export default {
 
       // 定義: 恢復雲端進度 (同步並轉為本地模式)
       const restoreRemote = () => {
-        console.log("Restoring from remote and switching to client mode...");
 
         // 1. 設定基礎資訊
         this.gameSerial = remoteData.serial;
+
         this.isClientMode = true; // 切換為客戶端模式
 
         // 2. 刪除舊的衝突資料
@@ -1192,7 +1154,7 @@ export default {
            // 如果沒有 remainElements 欄位，則回退比較票數 (localVotes vs vote_count)
            const localRemain = localData.localElements.filter(e => !e.local_eliminated).length;
            const remoteRemain = remoteData.element_count - (remoteData.vote_count || 0);
-           console.log(`Conflict resolution: local remain=${localRemain}, remote remain=${remoteRemain}`);
+
            if (localRemain <= remoteRemain) {
                restoreLocal();
            } else {
@@ -1994,10 +1956,14 @@ export default {
               this.handleSendVote(res);
           })
           .catch(err => {
-              console.error("Batch vote failed", err);
-
+              console.error("Batch vote failed", err.response.data);
               this.isDataLoading = false;
               this.showGameResult();
+              if(err.response.data && err.response.data.status === 'end_game'){
+                  this.$cookies.remove(this.postSerial);
+                  this.clearLocalStorage();
+                  this.clearMatchHistory();
+              }
           })
           .finally(() => {
               this.isBatchVoting = false;
@@ -2055,7 +2021,6 @@ export default {
           let interval = setInterval(() => {
             if (this.leftReady && this.rightReady) {
               this.resetPlayerPosition();
-              console.log("Vote failed, resetting state.");
 
               this.resetPlayingStatus();
               clearInterval(interval);
@@ -2150,6 +2115,7 @@ export default {
       if (this.status === "end_game") {
         this.$cookies.remove(this.postSerial);
         this.clearLocalStorage();
+        this.clearMatchHistory();
         this.showGameResult();
       } else {
         this.keepGameCookie();

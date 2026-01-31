@@ -11,19 +11,23 @@ export default {
     this.startImageLoadingProcess();
   },
   props: {
-    elementId: { type: String | Number, required: true },
-    thumbUrl: { type: String, required: true },
+
+    elementId: { type: [String, Number], required: true },
+    thumbUrl: { type: [String, Object], default: '' },
+
     thumbUrl2: { type: String },
     imgurUrl: { type: String },
     alt: { type: String },
-    height: { type: String | Number },
-    imageKey: { type: String | Number },
+
+    height: { type: [String, Number] },
+    imageKey: { type: [String, Number] },
+
     handleLoaded: { type: Function, default: () => { } },
     srcSet: { type: String },
     sizes: { type: String },
     customClass: { type: String },
     lazy: { type: Boolean, default: false },
-  },
+},
   data() {
     return {
       reportUrl: "/api/image/report/removed",

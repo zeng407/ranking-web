@@ -94,7 +94,6 @@ class GameController extends Controller
         return response()->json([
             'game_serial' => $game->serial,
             'total_count' => $game->element_count, // 回傳該局總人數
-            'listed_count' => $elements->count(),   // 回傳本次列出人數
             'data' => $elements
         ]);
     }
@@ -335,10 +334,9 @@ class GameController extends Controller
             // 如果前面沒有回傳最後一回合，補抓最新一筆避免 null 取屬性
             if (!$lastGameRound) {
                 \Log::warning('Game complete but lastGameRound missing, fetching last round', ['game_id' => $game->id]);
-                $lastGameRound = DB::table('game_1v1_rounds')
-                    ->where('game_id', $game->id)
-                    ->orderByDesc('id')
-                    ->first();
+                return response()->json([
+                    'status' => self::END_GAME,
+                    'message' => 'Game complete but lastGameRound missing'], 422);
             }
 
             if ($lastGameRound) {
