@@ -1087,6 +1087,8 @@ export default {
         }
         $("#gameSettingPanel").modal("hide");
         this.loadMatchHistory();
+        this.resetTimer();
+        this.startTimer();
       };
 
       // 定義: 恢復雲端進度 (同步並轉為本地模式)
@@ -1136,6 +1138,8 @@ export default {
           .finally(() => {
               this.isDataLoading = false;
               this.loadMatchHistory();
+              this.resetTimer();
+              this.startTimer();
           });
 
         $("#gameSettingPanel").modal("hide");
@@ -1258,6 +1262,8 @@ export default {
       }
       $("#gameSettingPanel").modal("hide");
       this.loadMatchHistory();
+      this.resetTimer();
+      this.startTimer();
     },
 
     hintSelect() {
