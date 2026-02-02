@@ -3,6 +3,7 @@
     'ogTitle' => $post->isPublic() ? $post->title : null,
     'ogImage' => $post->isPublic() ? $element?->getLowThumbUrl() : null,
     'ogDescription' => $post->isPublic() ? $post->description : null,
+    'darkTheme' => true,
 ])
 
 
@@ -64,7 +65,7 @@
     bet-endpoint="{{ route('api.game-room.bet', '_serial') }}"
     get-game-elements-endpoint="{{ route('api.game.elements', '_serial') }}"
     batch-vote-endpoint="{{ route('api.game.batch-vote') }}" :props-enable-client-mode="true">
-    <div class="container-fluid hide-scrollbar game-dark-theme pt-2" v-cloak>
+    <div class="container-fluid hide-scrollbar pt-2" v-cloak>
       @if (
           !$post->is_censored &&
               config('services.google_ad.enabled') &&
@@ -204,7 +205,7 @@
         </div>
 
         {{-- elements --}}
-        <div class="col-xl col-12" style="min-height: 850px">
+        <div class="col-xl col-12">
 
           {{-- bet success animation: firework --}}
           <div class="pyro" v-if="showFirework">

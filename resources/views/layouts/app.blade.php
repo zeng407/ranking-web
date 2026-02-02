@@ -77,7 +77,7 @@
   <link href="{{ app()->isProduction() ? mix('css/prod.css') : mix('css/local.css') }}" rel="stylesheet">
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 @if (isset($darkTheme) && $darkTheme) game-dark-theme @endif">
   <div id="app">
     @if (!isset($embed) || !$embed)
       <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm {{ isset($stickyNav) ? $stickyNav : '' }}">

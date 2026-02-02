@@ -52,19 +52,18 @@
         height: 300px;
         display: block;
         object-fit: contain;
-        background-color: #0f1f3d;
         cursor: pointer;
     }
 }
 
 .left-player .game-image-container,
 .left-player .game-image-container img {
-    background-color: #0f1f3d;
+    background-color: #040a15;
 }
 
 .right-player .game-image-container,
 .right-player .game-image-container img {
-    background-color: #3d0f0f;
+    background-color: #170404;
 }
 
 .home-logo {
