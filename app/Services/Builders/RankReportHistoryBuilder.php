@@ -316,7 +316,7 @@ class RankReportHistoryBuilder
 
         $newCount = $newVotes->count();
 
-        if ($newCount == 0) {
+        if ($newCount === 0) {
             return;
         }
 
@@ -364,19 +364,12 @@ class RankReportHistoryBuilder
                 $winOutdated = $outdatedSlice->where('winner_id', $this->report->element_id)->count();
                 $loseOutdated = $outdatedSlice->where('loser_id', $this->report->element_id)->count();
 
-                // 新的 min_id 是被移除區段後的下一筆資料 ID
-                // 如果 outdatedVotes 數量足夠，last() 就是新的起點
-                if ($outdatedVotes->count() > $countToRemove) {
-                    $newMinId = $outdatedVotes->last()->id;
-                } else {
-                    // 防呆：如果資料庫剛好斷層，取最後一筆
-                    $newMinId = $outdatedVotes->last()->id; 
-                }
+                $newMinId = $outdatedVotes->last()->id; 
             }
         } 
         // [情況 B] 總數還沒滿 1000，不需要移除舊資料
         // 但如果是第一次建立 ($minId == 0)，需要設定 minId
-        elseif ($minId == 0 && $newCount > 0) {
+        elseif ($minId === 0 && $newCount > 0) {
             // 因為 $newVotes 是 orderByDesc，所以最後一筆是 ID 最小的
             $newMinId = $newVotes->last()->id;
         }
