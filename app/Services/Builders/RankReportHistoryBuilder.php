@@ -315,12 +315,12 @@ class RankReportHistoryBuilder
             ->get();
 
         $newCount = $newVotes->count();
+
         if ($newCount == 0) {
             return;
         }
 
-
-        // 如果剛好是1000則直接用newVotes的結果
+        // 如果一次抓回來就滿1000筆(或更多)，直接覆蓋成最新的這1000筆
         if ($newCount === 1000) {
             $winCount = $newVotes->where('winner_id', $this->report->element_id)->count();
             $loseCount = $newVotes->where('loser_id', $this->report->element_id)->count();
@@ -330,34 +330,66 @@ class RankReportHistoryBuilder
             return;
         }
 
+        // 計算新票數的勝敗
         $winNew = $newVotes->where('winner_id', $this->report->element_id)->count();
         $loseNew = $newVotes->where('loser_id', $this->report->element_id)->count();
 
         $winOutdated = 0;
         $loseOutdated = 0;
+        
+        // 計算目前的總票數與預期總票數
+        $currentTotal = $winCount + $loseCount;
+        $totalAfterAdd = $currentTotal + $newCount;
+        
+        // 只有當 (原票數 + 新票數) > 1000 時，才需要移除舊資料
+        // 需要移除的數量 = 總數 - 1000
+        $countToRemove = max(0, $totalAfterAdd - 1000);
+
+        // 初始化 newMinId，預設維持原狀
         $newMinId = $minId;
 
-        if ($newCount > 0 && $minId > 0) {
-            // Fetch the oldest portion plus the next one to derive newMinId
+        // [情況 A] 總數超過 1000，需要移除舊的 ($countToRemove > 0)
+        // 且必須原本就有 minId (有資料可移)
+        if ($countToRemove > 0 && $minId > 0) {
+            // Fetch the oldest portion needed to be removed plus one to find new boundary
             $outdatedVotes = $this->getThousandVotesBaseQuery()
                 ->where('game_1v1_rounds.id', '>=', $minId)
                 ->orderBy('game_1v1_rounds.id')
-                ->limit($newCount + 1)
+                ->limit($countToRemove + 1) // 多抓一筆用來定位新的 min_id
                 ->get();
 
             if ($outdatedVotes->isNotEmpty()) {
-                $outdatedSlice = $outdatedVotes->take($newCount);
+                // 取出真正要扣掉的那幾筆
+                $outdatedSlice = $outdatedVotes->take($countToRemove);
                 $winOutdated = $outdatedSlice->where('winner_id', $this->report->element_id)->count();
                 $loseOutdated = $outdatedSlice->where('loser_id', $this->report->element_id)->count();
 
-                $newMinId = $outdatedVotes->last()->id;
+                // 新的 min_id 是被移除區段後的下一筆資料 ID
+                // 如果 outdatedVotes 數量足夠，last() 就是新的起點
+                if ($outdatedVotes->count() > $countToRemove) {
+                    $newMinId = $outdatedVotes->last()->id;
+                } else {
+                    // 防呆：如果資料庫剛好斷層，取最後一筆
+                    $newMinId = $outdatedVotes->last()->id; 
+                }
             }
+        } 
+        // [情況 B] 總數還沒滿 1000，不需要移除舊資料
+        // 但如果是第一次建立 ($minId == 0)，需要設定 minId
+        elseif ($minId == 0 && $newCount > 0) {
+            // 因為 $newVotes 是 orderByDesc，所以最後一筆是 ID 最小的
+            $newMinId = $newVotes->last()->id;
         }
 
+        // 更新數據
         $winCount = max(0, $winCount - $winOutdated + $winNew);
         $loseCount = max(0, $loseCount - $loseOutdated + $loseNew);
+        
+        // maxId 永遠更新為新的最高 ID
         $maxId = $newVotes->isNotEmpty() ? max($maxId, $newVotes->first()->id) : $maxId;
-        $minId = $newMinId ?: $minId;
+        
+        // minId 使用計算後的新起點
+        $minId = $newMinId;
 
         $this->saveThousandVotesHistory($winCount, $loseCount, $maxId, $minId);
     }
