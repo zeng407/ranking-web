@@ -21,9 +21,9 @@
     _ONEAD.pub.google_view_click = "%%CLICK_URL_UNESC%%";
     _ONEAD.pub.google_view_pixel = "";
     _ONEAD.pub.queryAdCallback = custom_call
-    var ONEAD_pubs = ONEAD_pubs || [];
-    ONEAD_pubs.push(_ONEAD);
-    
+    window.ONEAD_pubs = window.ONEAD_pubs || [];
+    window.ONEAD_pubs.push(_ONEAD);
+
     var script = document.createElement('script');
     script.src = 'https://ad-specs.guoshipartners.com/static/js/onead-lib.min.js';
     document.body.appendChild(script);
