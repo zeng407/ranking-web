@@ -29,5 +29,5 @@
       document.body.appendChild(script);
     });
   </script>
-@push('scripts')
+@endpush
 @endif
