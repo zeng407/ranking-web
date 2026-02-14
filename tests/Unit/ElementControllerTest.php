@@ -219,7 +219,7 @@ class ElementControllerTest extends TestCase
         $element = $this->createElements($post, 1)[0];
         $this->be($post->user);
         // update video url
-        $url = 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+        $url = 'https://avtshare01.rz.tu-ilmenau.de/avt-vqdb-uhd-1/test_1/segments/bigbuck_bunny_8bit_15000kbps_1080p_60.0fps_h264.mp4';
         $res = $this->put(route('api.element.update', $element->id), [
             'post_serial' => $post->serial,
             'url' => $url,
