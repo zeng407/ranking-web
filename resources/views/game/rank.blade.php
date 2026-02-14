@@ -9,6 +9,7 @@
 
 @section('header')
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
+  @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
   <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
   <script>
     window.googletag = window.googletag || {cmd: []};
@@ -20,6 +21,7 @@
       googletag.enableServices();
     });
   </script>
+  @endif
 @endsection
 
 @section('content')
