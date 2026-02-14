@@ -9,6 +9,17 @@
 
 @section('header')
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+  <script>
+    window.googletag = window.googletag || {cmd: []};
+    googletag.cmd.push(function() {
+      googletag.defineOutOfPageSlot('/23307026516/rank_page_top', googletag.enums.OutOfPageFormat.TOP_ANCHOR)
+        .addService(googletag.pubads());
+
+      googletag.pubads().enableSingleRequest();
+      googletag.enableServices();
+    });
+  </script>
 @endsection
 
 @section('content')
