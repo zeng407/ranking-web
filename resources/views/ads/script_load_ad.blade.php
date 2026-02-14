@@ -1,5 +1,7 @@
 @if (!is_skip_ad())
-  <script>
+@push('scripts')
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
     function loadAd(retryCount, intervalDelay) {
       let retry = retryCount;
       let interval = setInterval(() => {
@@ -51,5 +53,7 @@
     setTimeout(() => {
       loadAd(5, 200);
     }, 500);
+  });
   </script>
+@endpush
 @endif

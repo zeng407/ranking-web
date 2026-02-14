@@ -6,6 +6,7 @@
 @section('header')
   @if (config('services.google_ad.enabled') && config('services.google_ad.home_page') && !is_skip_ad())
     {{-- Ads --}}
+    @push('scripts')
     <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
     <script>
       window.googletag = window.googletag || {
@@ -35,6 +36,7 @@
         }, 30 * 1000); // 30 seconds
       });
     </script>
+    @endpush
   @endif
 @endsection
 
@@ -428,11 +430,13 @@
               {{-- google ads --}}
               <!-- /23307026516/home_ad_r1/home_ad_2 -->
               <div id='div-gpt-ad-1750917306040-0' style='min-width: 160px; min-height: 600px;'>
+                @push('scripts')
                 <script>
                   googletag.cmd.push(function() {
                     googletag.display('div-gpt-ad-1750917306040-0');
                   });
                 </script>
+                @endpush
               </div>
             </div>
 

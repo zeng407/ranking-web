@@ -886,7 +886,7 @@
                       <div class="comparison-media-box__content-wrapper">
                         <img v-if="post.element1.previewable"
                           @@error="onImageError(post.element1.id, post.element1.url2, $event)"
-                          :src="post.element1.url" alt="Element 1">
+                          :src="post.element1.url" :alt="post.element1.title">
                         <video v-else :src="post.element1.url + '#t=1'" muted playsinline></video>
                       </div>
                     </div>
@@ -905,7 +905,7 @@
                       <div class="comparison-media-box__content-wrapper">
                         <img v-if="post.element2.previewable"
                           @@error="onImageError(post.element2.id, post.element2.url2, $event)"
-                          :src="post.element2.url" alt="Element 2">
+                          :src="post.element2.url" :alt="post.element2.title">
                         <video v-else :src="post.element2.url + '#t=1'" muted playsinline></video>
                       </div>
                     </div>
