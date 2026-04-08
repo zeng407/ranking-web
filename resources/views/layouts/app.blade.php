@@ -28,6 +28,11 @@
     @endif
   @endif
 
+  {{-- gad --}}
+  @if(config('services.gad.enabled'))
+  <script src="https://storage.googleapis.com/teleworker-public-storage/gad_js/net.min.js" async></script>
+  @endif
+
   <script>
     // prevent form resubmission on page refresh
     document.addEventListener("DOMContentLoaded", function() {
