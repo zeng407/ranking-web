@@ -79,4 +79,8 @@ return [
         'client_secret' => env('TWITCH_CLIENT_SECRET'),
         'redirect' => '/auth/twitch/callback',
     ],
+
+    'gad' => [
+        'enabled' => env('GAD_ENABLED', false),
+    ],
 ];
