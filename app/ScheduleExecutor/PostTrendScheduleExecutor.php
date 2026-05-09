@@ -39,6 +39,7 @@ class PostTrendScheduleExecutor
 
     protected function createHotTrendPost(string $range)
     {
+        logger()->info("Start creating post trend for range: $range");
         $startDate = null;
         switch ($range) {
             case TrendTimeRange::ALL:
@@ -67,14 +68,30 @@ class PostTrendScheduleExecutor
             ->setEagerLoads([])
             ->eachById(function (Post $post) use ($startDate, $range) {
                 $date = $startDate ?: $post->created_at->toDateString();
-                $post->post_statistics()->updateOrCreate([
-                    'start_date' => $date,
-                    'time_range' => $range
-                ], [
-                    'start_date' => $date,
-                    'time_range' => $range,
-                    'play_count' => $post->games_count
-                ]);
+                try {
+                    $post->post_statistics()->updateOrCreate([
+                        'start_date' => $date,
+                        'time_range' => $range
+                    ], [
+                        'start_date' => $date,
+                        'time_range' => $range,
+                        'play_count' => $post->games_count
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    $errorCode = $e->errorInfo[1] ?? null;
+                    // 1062 是 MySQL 的 Duplicate entry 錯誤碼
+                    if ($errorCode == 1062 || $e->getCode() == '23000') {
+                        \Log::warning("Duplicate entry skipped for post_statistics", [
+                            'post_id' => $post->id,
+                            'start_date' => $date,
+                            'time_range' => $range,
+                            'play_count' => $post->games_count
+                        ]);
+                    } else {
+                        // 若為其他錯誤則拋出
+                        throw $e;
+                    }
+                }
             });
 
         UpdatePostTrendsPosition::dispatch($startDate, $range);
