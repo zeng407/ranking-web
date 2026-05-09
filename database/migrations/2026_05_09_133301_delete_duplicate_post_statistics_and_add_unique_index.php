@@ -14,7 +14,8 @@ class DeleteDuplicatePostStatisticsAndAddUniqueIndex extends Migration
     public function up()
     {
         // 1. 找出重複的資料並保留第一筆
-        DB::statement("
+        if(app()->environment('production')) {
+            DB::statement("
             DELETE t1 FROM post_statistics t1
             INNER JOIN post_statistics t2
             WHERE
@@ -22,7 +23,8 @@ class DeleteDuplicatePostStatisticsAndAddUniqueIndex extends Migration
                 t1.post_id = t2.post_id AND
                 t1.start_date = t2.start_date AND
                 t1.time_range = t2.time_range
-        ");
+            ");
+        }
 
         // 2. 加入 Unique Index
         Schema::table('post_statistics', function (Blueprint $table) {
