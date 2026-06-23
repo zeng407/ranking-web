@@ -107,6 +107,7 @@
               </form>
             </div>
 
+            @if(request('g'))
             <div class="download-fab" v-if="gameResult">
               <a href="{{ route('game.export', $post->serial).'?g='.request('g') }}" target="_blank" class="led-download-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
                 <div class="thumb-strip">
@@ -121,6 +122,7 @@
                 </span>
               </a>
             </div>
+            @endif
             <!-- Modal -->
             <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true"
               data-backdrop="static" data-keyboard="false">
