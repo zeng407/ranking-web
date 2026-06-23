@@ -62,6 +62,12 @@
                             letter-spacing: 1px;">
                             <i class="fa fa-download"></i>&nbsp; @{{ $t('Download Image') }}
                         </button>
+
+                        <!-- 手機版專用提示區塊：利用 Bootstrap 的 d-md-none 確保僅在行動裝置顯示 -->
+                        <div class="mt-3 text-center d-md-none" style="font-size: 14px; color: #b0bec5;">
+                            <i class="fa fa-info-circle" style="color: #00d4ff;"></i>
+                            {{ __('行動裝置如無法下載，請直接長按上方圖片即可儲存。') }}
+                        </div>
                     </div>
 
                     <!-- Text Area -->

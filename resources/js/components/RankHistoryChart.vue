@@ -121,8 +121,12 @@ export default {
               tension: 0.3,
               fill: true,
               borderWidth: 2,
-              pointRadius: (ctx) => (ctx.dataIndex === 0 ? 4 : 2),
-              pointHoverRadius: 5,
+              pointRadius: (ctx) => {
+                return 0;
+              },
+              pointHoverRadius: () => {
+                return 0;
+              },
               cubicInterpolationMode: 'monotone',
               borderDash: [4, 4],
             },
@@ -143,8 +147,12 @@ export default {
               tension: 0.35,
               fill: true,
               borderWidth: 2,
-              pointRadius: (ctx) => (ctx.dataIndex === (thousandVotesRankData.length - 1) ? 4 : 2),
-              pointHoverRadius: 5,
+              pointRadius: (ctx) => {
+                return 0;
+              },
+              pointHoverRadius: () => {
+                return 0;
+              },
               cubicInterpolationMode: 'monotone',
             },
           ],
