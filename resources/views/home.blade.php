@@ -9,30 +9,32 @@
     @push('scripts')
     <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
     <script>
-      window.googletag = window.googletag || {
-        cmd: []
-      };
-      googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0').addService(
-          googletag.pubads());
-        googletag.pubads().enableSingleRequest();
-        googletag.pubads().collapseEmptyDivs();
-        googletag.enableServices();
-        setInterval(() => {
-          googletag.display("div-gpt-ad-1750906757581-0");
-          googletag.pubads().refresh([slot]);
-        }, 30 * 1000); // 30 seconds
-      });
+      window.googletag = window.googletag || { cmd: [] };
 
       googletag.cmd.push(function() {
-        var slot = googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0')
-          .addService(googletag.pubads());
-        googletag.pubads().enableSingleRequest();
+
+        googletag.setConfig({
+          singleRequest: true
+        });
         googletag.pubads().collapseEmptyDivs();
+
+        var slot1 = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0')
+                            .addService(googletag.pubads());
+
+        var slot2 = googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0')
+                            .addService(googletag.pubads());
+
         googletag.enableServices();
-        setInterval(() => {
-          googletag.display("div-gpt-ad-1750917306040-0");
-          googletag.pubads().refresh([slot]);
+
+        googletag.display('div-gpt-ad-1750906757581-0');
+        googletag.display('div-gpt-ad-1750917306040-0');
+
+        setInterval(function() {
+          googletag.pubads().refresh([slot1]);
+        }, 30 * 1000); // 30 seconds
+
+        setInterval(function() {
+          googletag.pubads().refresh([slot2]);
         }, 30 * 1000); // 30 seconds
       });
     </script>

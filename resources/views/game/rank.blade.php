@@ -14,10 +14,13 @@
   <script>
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
+      googletag.setConfig({
+        singleRequest: true
+      });
+
       googletag.defineOutOfPageSlot('/23307026516/rank_page_top', googletag.enums.OutOfPageFormat.TOP_ANCHOR)
         .addService(googletag.pubads());
 
-      googletag.pubads().enableSingleRequest();
       googletag.enableServices();
     });
   </script>
