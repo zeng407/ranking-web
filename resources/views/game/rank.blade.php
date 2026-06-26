@@ -14,8 +14,12 @@
   <script>
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
+      googletag.setConfig({
+        singleRequest: true,
+        collapseDiv: 'collapse'
+      });
+
       googletag.defineSlot('/23307026516/rank_page_top', ['fluid'], 'div-gpt-ad-1782517467074-0').addService(googletag.pubads());
-      googletag.pubads().enableSingleRequest();
       googletag.enableServices();
     });
   </script>
@@ -92,11 +96,12 @@
             <hr>
 
             @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
-            <!-- /23307026516/rank_page_top -->
-            <div id='div-gpt-ad-1782517467074-0'>
-              <script>
-                googletag.cmd.push(function() { googletag.display('div-gpt-ad-1782517467074-0'); });
-              </script>
+            <div class="d-flex justify-content-center my-3 w-100">
+              <div id='div-gpt-ad-1782517467074-0' style='width: 100%; min-width: 300px; min-height: 50px; display: block;'>
+                <script>
+                  googletag.cmd.push(function() { googletag.display('div-gpt-ad-1782517467074-0'); });
+                </script>
+              </div>
             </div>
             @endif
 
