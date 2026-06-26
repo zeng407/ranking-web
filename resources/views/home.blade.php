@@ -12,30 +12,29 @@
       window.googletag = window.googletag || { cmd: [] };
 
       googletag.cmd.push(function() {
-
         googletag.setConfig({
-          singleRequest: true
+          singleRequest: true,
+          collapseDiv: 'collapse'
         });
-        googletag.pubads().collapseEmptyDivs();
 
-        var slot1 = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0')
-                            .addService(googletag.pubads());
+        // 2. 定義廣告版位
+        // var slot1 = googletag.defineSlot('/23307026516/home_ad_r1', [160, 600], 'div-gpt-ad-1750906757581-0')
+        //                     .addService(googletag.pubads());
 
         var slot2 = googletag.defineSlot('/23307026516/home_ad_r1/home_ad_2', [160, 600], 'div-gpt-ad-1750917306040-0')
                             .addService(googletag.pubads());
 
+        // 3. 啟用服務
         googletag.enableServices();
 
-        googletag.display('div-gpt-ad-1750906757581-0');
-        googletag.display('div-gpt-ad-1750917306040-0');
-
+        // 4. 定時刷新廣告（refresh 會在容器就緒時自動處理，無須在此處強行呼叫 display）
         setInterval(function() {
           googletag.pubads().refresh([slot1]);
-        }, 30 * 1000); // 30 seconds
+        }, 30 * 1000);
 
         setInterval(function() {
           googletag.pubads().refresh([slot2]);
-        }, 30 * 1000); // 30 seconds
+        }, 30 * 1000);
       });
     </script>
     @endpush

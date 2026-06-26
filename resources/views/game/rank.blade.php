@@ -10,17 +10,12 @@
 @section('header')
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
   @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
-  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
   <script>
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
-      googletag.setConfig({
-        singleRequest: true
-      });
-
-      googletag.defineOutOfPageSlot('/23307026516/rank_page_top', googletag.enums.OutOfPageFormat.TOP_ANCHOR)
-        .addService(googletag.pubads());
-
+      googletag.defineSlot('/23307026516/rank_page_top', [[300, 50], [320, 50]], 'div-gpt-ad-1782516823154-0').addService(googletag.pubads());
+      googletag.pubads().enableSingleRequest();
       googletag.enableServices();
     });
   </script>
@@ -58,6 +53,7 @@
         {{-- main part --}}
         <div class="col-12 col-lg-8">
           @if (!$embed)
+
             {{-- Top buttons --}}
             <div class="row mb-3 sticky-top-rank-buttons">
               <div class="col-10">
@@ -94,6 +90,16 @@
               </div>
             </div>
             <hr>
+
+            @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
+            <div class="d-flex justify-content-center my-3">
+              <div id='div-gpt-ad-1782516823154-0' style='min-width: 300px; min-height: 50px;'>
+                <script>
+                  googletag.cmd.push(function() { googletag.display('div-gpt-ad-1782516823154-0'); });
+                </script>
+              </div>
+            </div>
+            @endif
 
             {{-- Title & Description --}}
             <div class="d-flex position-relative">
