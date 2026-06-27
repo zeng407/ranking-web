@@ -14,10 +14,22 @@
   <script>
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
-      googletag.defineSlot('/23307026516/rank_page_top', [[468, 60], [300, 31], [300, 50], 'fluid', [300, 100], [320, 100], [300, 75]], 'div-gpt-ad-1782518224225-0').addService(googletag.pubads());
-      googletag.pubads().enableSingleRequest();
-      googletag.enableServices();
-    });
+        googletag.setConfig({
+          singleRequest: true,
+          collapseDiv: true
+        });
+
+        var mapping = googletag.sizeMapping()
+          .addSize([768, 0], [[468, 60], [320, 100], [300, 100], [300, 75], [300, 50], [300, 31], 'fluid']) // 平板與桌機支援所有尺寸
+          .addSize([0, 0], [[320, 100], [300, 100], [300, 75], [300, 50], [300, 31], 'fluid'])             // 手機版排除 468x60
+          .build();
+
+        googletag.defineSlot('/23307026516/rank_page_top', [[468, 60], [300, 31], [300, 50], 'fluid', [300, 100], [320, 100], [300, 75]], 'div-gpt-ad-1782518224225-0')
+                .defineSizeMapping(mapping) // 套用尺寸對應
+                .addService(googletag.pubads());
+
+        googletag.enableServices();
+      });
   </script>
   @endif
 @endsection
@@ -93,10 +105,14 @@
 
             @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
             <!-- /23307026516/rank_page_top -->
-            <div id='div-gpt-ad-1782518224225-0' style='min-width: 300px; min-height: 31px;'>
-              <script>
-                googletag.cmd.push(function() { googletag.display('div-gpt-ad-1782518224225-0'); });
-              </script>
+            <div class="d-flex justify-content-center my-3 w-100 overflow-hidden">
+              <div id='div-gpt-ad-1782518224225-0' style='width: 100%; max-width: 100%; min-width: 300px; min-height: 31px; display: block;'>
+                <script>
+                  window.addEventListener('load', function() {
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1782518224225-0'); });
+                  });
+                </script>
+              </div>
             </div>
             @endif
 
