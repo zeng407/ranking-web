@@ -530,6 +530,8 @@ class GameService
             'wait_ms' => round(($tAfterLock - $tBeforeLock) * 1000, 2),
         ]);
 
+        \DB::beginTransaction();
+
         try {
             $lastCreatedRound = null;
             $lastRound = $game->game_1v1_rounds()->latest('id')->first();
@@ -745,9 +747,17 @@ class GameService
                 'ready_resets' => $stats['ready_resets'],
                 'total_ms' => round((microtime(true) - $tStart) * 1000, 2),
             ]);
+            \DB::commit();
             return $lastCreatedRound;
 
         } catch (\Exception $e) {
+            \Log::error('batchUpdateGameRounds.failed', [
+                'game_id' => $game->id,
+                'votes_count' => count($votes),
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            \DB::rollBack();
             $lock->release();
             throw $e;
         }

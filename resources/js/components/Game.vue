@@ -158,6 +158,8 @@ export default {
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
       isBatchVoting: false,  // 避免重複送出 batch vote
+      batchVoteFailureCount: 0,
+      batchVoteDisabled: false,
 
       // 計時器
       timerSeconds: 0,
@@ -367,7 +369,7 @@ export default {
       this.sortByTop = !this.sortByTop;
     },
     handleBeforeUnload() {
-        if (this.isClientMode && this.unsentVotes.length > 0) {
+      if (this.isClientMode && !this.batchVoteDisabled && this.unsentVotes.length > 0) {
             this.sendBatchVotes();
         }
     },
@@ -729,6 +731,7 @@ export default {
         .post(this.createGameEndpoint, data)
         .then((res) => {
           this.gameSerial = res.data.game_serial;
+          this.resetBatchVoteState();
           this.showMatchHistory = true;
           this.resetTimer();
           this.startTimer();
@@ -762,6 +765,7 @@ export default {
 
     // 初始化前端遊戲
     initClientSideGame() {
+      this.resetBatchVoteState();
       this.localVotes = [];
       this.localElements = [];
       this.existingElementIds.clear();
@@ -887,6 +891,8 @@ export default {
             clientState: this.clientState,
             existingElementIds: Array.from(this.existingElementIds),
             elementsCount: this.elementsCount,
+            batchVoteFailureCount: this.batchVoteFailureCount,
+            batchVoteDisabled: this.batchVoteDisabled,
 
             updatedAt: Date.now(),
             clientMode: this.isClientMode
@@ -923,6 +929,8 @@ export default {
                   this.localVotes = parsed.localVotes || [];
                   this.clientState = parsed.clientState;
                   this.unsentVotes = parsed.unsentVotes || [];
+                  this.batchVoteFailureCount = parsed.batchVoteFailureCount || 0;
+                  this.batchVoteDisabled = parsed.batchVoteDisabled || false;
 
                   // 還原 Set
                   if (parsed.existingElementIds) {
@@ -960,6 +968,25 @@ export default {
     clearLocalStorage() {
         const key = `gamestate_${this.postSerial}`;
         localStorage.removeItem(key);
+    },
+
+    resetBatchVoteState() {
+      this.batchVoteFailureCount = 0;
+      this.batchVoteDisabled = false;
+      this.batchVoteInterval = BATCH_VOTE_SAVE_INTERVAL;
+      this.isCloudSaving = false;
+    },
+
+    handleBatchVoteFailure(err) {
+      this.isCloudSaving = false;
+      this.batchVoteFailureCount += 1;
+      this.batchVoteInterval = (this.batchVoteInterval * 2) + 1;
+
+      if (this.batchVoteFailureCount >= 3) {
+        this.batchVoteDisabled = true;
+        this.saveToLocalStorage();
+        console.warn('Batch vote disabled after 3 failures; switching to local-only mode.', err);
+      }
     },
 
     // 移植後端的 NextRound 計算邏輯
@@ -1906,7 +1933,21 @@ export default {
       this.handleAnimationAfterVoted(mockRes);
     },
 
+    getVoteKey(vote) {
+      return `${vote.winner_id}-${vote.loser_id}`;
+    },
+
+    removeVotesFromUnsent(votesToRemove) {
+      if (!Array.isArray(votesToRemove) || votesToRemove.length === 0) {
+        return;
+      }
+
+      const removeKeys = new Set(votesToRemove.map((vote) => this.getVoteKey(vote)));
+      this.unsentVotes = this.unsentVotes.filter((vote) => !removeKeys.has(this.getVoteKey(vote)));
+    },
+
     sendPartialBatchVotes() {
+      if (this.batchVoteDisabled) return;
       if (this.unsentVotes.length === 0) return;
       if (this.isBatchVoting) {
         return;
@@ -1923,15 +1964,13 @@ export default {
 
       axios.post(this.batchVoteEndpoint, data)
         .then(res => {
-            this.unsentVotes.splice(0, votesToSend.length);
+            this.removeVotesFromUnsent(votesToSend);
             this.saveToLocalStorage();
 
             this.isCloudSaving = false;
         })
         .catch(err => {
-            this.isCloudSaving = false;
-            // 發生錯誤後增加 batchVoteInterval
-            this.batchVoteInterval = (this.batchVoteInterval*2)+1;
+            this.handleBatchVoteFailure(err);
         })
         .finally(() => {
           this.isBatchVoting = false;
@@ -1940,6 +1979,10 @@ export default {
 
     // Batch send votes (Clear local storage after sync)
     sendBatchVotes() {
+      if (this.batchVoteDisabled) {
+        return;
+      }
+
       if (this.isBatchVoting) {
         return;
       }
@@ -1950,21 +1993,23 @@ export default {
 
       this.isBatchVoting = true;
       this.isDataLoading = true;
+        const votesToSend = [...this.unsentVotes];
 
       const data = {
           game_serial: this.gameSerial,
-          votes: this.unsentVotes
+          votes: votesToSend
       };
 
       axios.post(this.batchVoteEndpoint, data)
           .then(res => {
-              this.unsentVotes = [];
+              this.removeVotesFromUnsent(votesToSend);
               this.saveToLocalStorage();
               this.handleSendVote(res);
           })
           .catch(err => {
               console.error("Batch vote failed", err.response.data);
               this.isDataLoading = false;
+              this.handleBatchVoteFailure(err);
               this.showGameResult();
               if(err.response.data && err.response.data.status === 'end_game'){
                   this.$cookies.remove(this.postSerial);
@@ -2080,7 +2125,11 @@ export default {
               this.isDataLoading = true;
 
               if (this.isClientMode && isFinalRound) {
-                   this.sendBatchVotes();
+                   if (this.batchVoteDisabled) {
+                     this.handleSendVote({ data: { status: 'end_game' } }, { preserveLocalStorage: true });
+                   } else {
+                       this.sendBatchVotes();
+                   }
               } else {
                    this.handleSendVote(res);
               }
@@ -2088,7 +2137,11 @@ export default {
           } else {
             this.isDataLoading = true;
             if (this.isClientMode && isFinalRound) {
-                 this.sendBatchVotes();
+                 if (this.batchVoteDisabled) {
+                 this.handleSendVote({ data: { status: 'end_game' } }, { preserveLocalStorage: true });
+                 } else {
+                     this.sendBatchVotes();
+                 }
             } else {
                  this.handleSendVote(res);
             }
@@ -2111,7 +2164,8 @@ export default {
         $("#google-ad2").css("opacity", "1");
       }
     },
-    handleSendVote(res) {
+    handleSendVote(res, options = {}) {
+      const preserveLocalStorage = options.preserveLocalStorage === true;
       if(this.autoRefreshRoomInterval){
         this.autoRefreshRoomCounter = 0;
       }
@@ -2121,7 +2175,9 @@ export default {
       this.status = res.data.status;
       if (this.status === "end_game") {
         this.$cookies.remove(this.postSerial);
-        this.clearLocalStorage();
+        if (!preserveLocalStorage) {
+          this.clearLocalStorage();
+        }
         this.clearMatchHistory();
         this.showGameResult();
       } else {
