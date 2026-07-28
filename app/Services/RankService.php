@@ -321,6 +321,9 @@ class RankService
 
         // 取得現有的 Reports
         $existingReports = RankReport::where('post_id', $post->id)
+            ->whereHas('element', function ($query) {
+                $query->whereNull('elements.deleted_at');
+            })
             ->get()
             ->keyBy('element_id');
 
