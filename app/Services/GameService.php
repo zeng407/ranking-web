@@ -514,242 +514,269 @@ class GameService
             'votes_count' => count($votes),
         ]);
 
-        $this->validateBatchVotes($game, $votes);
-
-        $tAfterValidate = microtime(true);
-        logger('batchUpdateGameRounds.after_validate', [
-            'elapsed_ms' => round(($tAfterValidate - $tStart) * 1000, 2),
-        ]);
-
         ksort($votes);
         $lock = Locker::lockUpdateGameElement($game);
-        $tBeforeLock = microtime(true);
-        $lock->block(10);
-        $tAfterLock = microtime(true);
-        logger('batchUpdateGameRounds.lock_acquired', [
-            'wait_ms' => round(($tAfterLock - $tBeforeLock) * 1000, 2),
-        ]);
+        $lockAcquired = false;
+        $completionStats = [];
 
         try {
-            $lastCreatedRound = null;
-            $lastRound = $game->game_1v1_rounds()->latest('id')->first();
-
-            // Preload all game_elements once by game_id
-            $gameElements = \DB::table('game_elements')
-                ->where('game_id', $game->id)
-                ->get()
-                ->keyBy('element_id');
-
-            $gameElementStates = [];
-            $originalStates = [];
-            foreach ($gameElements as $elementId => $row) {
-                $state = [
-                    'id' => $row->id,
-                    'element_id' => $elementId,
-                    'win_count' => (int) $row->win_count,
-                    'is_eliminated' => (bool) $row->is_eliminated,
-                    'is_ready' => (bool) $row->is_ready,
-                ];
-                $gameElementStates[$elementId] = $state;
-                $originalStates[$elementId] = $state;
-            }
-
-            logger('batchUpdateGameRounds.element_map_loaded', [
-                'game_id' => $game->id,
-                'count' => count($gameElementStates),
+            $tBeforeLock = microtime(true);
+            $lock->block(10);
+            $lockAcquired = true;
+            $tAfterLock = microtime(true);
+            logger('batchUpdateGameRounds.lock_acquired', [
+                'wait_ms' => round(($tAfterLock - $tBeforeLock) * 1000, 2),
             ]);
 
-            // 1. 判斷目前的 Stage (第幾輪)
-            $stageCount = $game->game_1v1_rounds()->where('current_round', 1)->count();
+            // 驗證、讀取目前狀態與所有寫入必須位於同一把 lock 和 transaction 內。
+            // transaction 的重試以整批為單位，避免 deadlock 後只重跑其中一條 SQL。
+            $lastCreatedRound = \DB::transaction(function () use ($game, $votes, $tStart, &$completionStats) {
+                // DB row lock 是 cache lock 到期時的第二層保護；後續驗證必須讀到最新提交狀態。
+                \DB::table('games')
+                    ->where('id', $game->id)
+                    ->lockForUpdate()
+                    ->first();
 
-            // 2. 初始化狀態變數
-            if ($lastRound === null) {
-                $stage = 1;
-                $remain = $game->element_count;
-                $matchIndex = 0;
-                $matchesInStage = $this->calculateMatchesForStage($stage, $remain);
-            } else {
-                $remain = $lastRound->remain_elements;
-                if ($lastRound->current_round >= $lastRound->of_round) {
-                    $stage = $stageCount + 1;
+                $this->validateBatchVotes($game, $votes);
+
+                $tAfterValidate = microtime(true);
+                logger('batchUpdateGameRounds.after_validate', [
+                    'elapsed_ms' => round(($tAfterValidate - $tStart) * 1000, 2),
+                ]);
+
+                $lastCreatedRound = null;
+                $lastRound = $game->game_1v1_rounds()->latest('id')->first();
+
+                // Preload all game_elements once by game_id
+                $gameElements = \DB::table('game_elements')
+                    ->where('game_id', $game->id)
+                    ->get()
+                    ->keyBy('element_id');
+
+                $gameElementStates = [];
+                $originalStates = [];
+                foreach ($gameElements as $elementId => $row) {
+                    $state = [
+                        'id' => $row->id,
+                        'element_id' => $elementId,
+                        'win_count' => (int) $row->win_count,
+                        'is_eliminated' => (bool) $row->is_eliminated,
+                        'is_ready' => (bool) $row->is_ready,
+                    ];
+                    $gameElementStates[$elementId] = $state;
+                    $originalStates[$elementId] = $state;
+                }
+
+                logger('batchUpdateGameRounds.element_map_loaded', [
+                    'game_id' => $game->id,
+                    'count' => count($gameElementStates),
+                ]);
+
+                // 1. 判斷目前的 Stage (第幾輪)
+                $stageCount = $game->game_1v1_rounds()->where('current_round', 1)->count();
+
+                // 2. 初始化狀態變數
+                if ($lastRound === null) {
+                    $stage = 1;
+                    $remain = $game->element_count;
                     $matchIndex = 0;
                     $matchesInStage = $this->calculateMatchesForStage($stage, $remain);
                 } else {
-                    $stage = $stageCount > 0 ? $stageCount : 1;
-                    $matchIndex = $lastRound->current_round;
-                    $matchesInStage = $lastRound->of_round;
-                }
-            }
-
-            logger('batchUpdateGameRounds.state_init', [
-                'game_id' => $game->id,
-                'last_round_id' => $lastRound?->id,
-                'last_round_current' => $lastRound?->current_round,
-                'last_round_of_round' => $lastRound?->of_round,
-                'last_round_remain' => $lastRound?->remain_elements,
-                'stage_count' => $stageCount,
-                'stage' => $stage,
-                'remain' => $remain,
-                'match_index' => $matchIndex,
-                'matches_in_stage' => $matchesInStage,
-                'votes_count' => count($votes),
-            ]);
-
-            // 準備批次寫入的陣列
-            $roundsToInsert = [];
-            $now = now();
-            $voteCountIncrement = 0;
-            $stats = [
-                'winner_updates' => 0,
-                'loser_updates' => 0,
-                'ready_resets' => 0,
-            ];
-
-            // 直接執行迴圈，每一行 SQL 執行完就會自動釋放 Row Lock
-            foreach ($votes as $vote) {
-                $loopStart = microtime(true);
-                $winnerId = $vote['winner_id'];
-                $loserId = $vote['loser_id'];
-
-                if (!isset($gameElementStates[$winnerId]) || !isset($gameElementStates[$loserId])) {
-                    throw new \RuntimeException("game_element row missing for winner {$winnerId} or loser {$loserId} in game {$game->id}");
-                }
-
-                // mutate in-memory state
-                $gameElementStates[$winnerId]['win_count'] += 1;
-                $gameElementStates[$winnerId]['is_ready'] = false;
-
-                $gameElementStates[$loserId]['is_eliminated'] = true;
-                $gameElementStates[$loserId]['is_ready'] = false;
-
-                $remain--;
-                $matchIndex++;
-                $voteCountIncrement++;
-
-                if ($matchIndex > $matchesInStage) {
-                    $stage++;
-                    $matchIndex = 1;
-                    $matchesInStage = $this->calculateMatchesForStage($stage, $remain + 1);
-                }
-
-                $isEndOfRound = ($matchIndex === $matchesInStage);
-
-                $stats['winner_updates']++;
-                $stats['loser_updates']++;
-
-                if ($isEndOfRound) {
-                    foreach ($gameElementStates as &$state) {
-                        if (!$state['is_eliminated']) {
-                            $state['is_ready'] = true;
-                        }
+                    $remain = $lastRound->remain_elements;
+                    if ($lastRound->current_round >= $lastRound->of_round) {
+                        $stage = $stageCount + 1;
+                        $matchIndex = 0;
+                        $matchesInStage = $this->calculateMatchesForStage($stage, $remain);
+                    } else {
+                        $stage = $stageCount > 0 ? $stageCount : 1;
+                        $matchIndex = $lastRound->current_round;
+                        $matchesInStage = $lastRound->of_round;
                     }
-                    unset($state);
-                    $stats['ready_resets']++;
                 }
 
-                // 收集 Round 資料，稍後一次寫入
-                $roundsToInsert[] = [
+                logger('batchUpdateGameRounds.state_init', [
                     'game_id' => $game->id,
-                    'current_round' => $matchIndex,
-                    'of_round' => $matchesInStage,
-                    'remain_elements' => $remain,
-                    'winner_id' => $winnerId,
-                    'loser_id' => $loserId,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-                logger('prepared round data', end($roundsToInsert));
-
-                logger('batchUpdateGameRounds.vote_processed', [
-                    'game_id' => $game->id,
-                    'winner_id' => $winnerId,
-                    'loser_id' => $loserId,
+                    'last_round_id' => $lastRound?->id,
+                    'last_round_current' => $lastRound?->current_round,
+                    'last_round_of_round' => $lastRound?->of_round,
+                    'last_round_remain' => $lastRound?->remain_elements,
+                    'stage_count' => $stageCount,
                     'stage' => $stage,
+                    'remain' => $remain,
                     'match_index' => $matchIndex,
                     'matches_in_stage' => $matchesInStage,
-                    'remain' => $remain,
-                    'is_end_of_round' => $isEndOfRound,
-                    'elapsed_ms' => round((microtime(true) - $loopStart) * 1000, 2),
+                    'votes_count' => count($votes),
                 ]);
-            }
 
-            // Apply consolidated updates back to DB (only changed rows)
-            $elementUpdates = [];
-            foreach ($gameElementStates as $elementId => $state) {
-                $orig = $originalStates[$elementId];
-                $data = [];
-                if ($state['win_count'] !== $orig['win_count']) {
-                    $data['win_count'] = $state['win_count'];
-                }
-                if ($state['is_eliminated'] !== $orig['is_eliminated']) {
-                    $data['is_eliminated'] = $state['is_eliminated'];
-                }
-                if ($state['is_ready'] !== $orig['is_ready']) {
-                    $data['is_ready'] = $state['is_ready'];
-                }
+                // 準備批次寫入的陣列
+                $roundsToInsert = [];
+                $now = now();
+                $voteCountIncrement = 0;
+                $stats = [
+                    'winner_updates' => 0,
+                    'loser_updates' => 0,
+                    'ready_resets' => 0,
+                ];
 
-                if (!empty($data)) {
-                    $elementUpdates[] = ['id' => $state['id'], 'data' => $data];
-                }
-            }
+                // 先在記憶體中計算完整批次，確認無誤後再於同一 transaction 寫入。
+                foreach ($votes as $vote) {
+                    $loopStart = microtime(true);
+                    $winnerId = $vote['winner_id'];
+                    $loserId = $vote['loser_id'];
 
-            foreach ($elementUpdates as $update) {
-                $this->updateGameElementByIdWithRetry($update['id'], $update['data']);
-            }
+                    if (!isset($gameElementStates[$winnerId]) || !isset($gameElementStates[$loserId])) {
+                        throw new \RuntimeException("game_element row missing for winner {$winnerId} or loser {$loserId} in game {$game->id}");
+                    }
 
-            logger('batchUpdateGameRounds.elements_updated', [
-                'game_id' => $game->id,
-                'rows' => count($elementUpdates),
-            ]);
+                    // mutate in-memory state
+                    $gameElementStates[$winnerId]['win_count'] += 1;
+                    $gameElementStates[$winnerId]['is_ready'] = false;
 
-            // 使用 chunk 防止一次寫入過多導致 SQL 長度過長
-            if (!empty($roundsToInsert)) {
-                foreach (array_chunk($roundsToInsert, 500) as $chunk) {
-                    $chunkStart = microtime(true);
-                    Game1V1Round::insert($chunk);
-                    logger('batchUpdateGameRounds.insert_chunk', [
-                        'size' => count($chunk),
-                        'elapsed_ms' => round((microtime(true) - $chunkStart) * 1000, 2),
+                    $gameElementStates[$loserId]['is_eliminated'] = true;
+                    $gameElementStates[$loserId]['is_ready'] = false;
+
+                    $remain--;
+                    $matchIndex++;
+                    $voteCountIncrement++;
+
+                    if ($matchIndex > $matchesInStage) {
+                        $stage++;
+                        $matchIndex = 1;
+                        $matchesInStage = $this->calculateMatchesForStage($stage, $remain + 1);
+                    }
+
+                    $isEndOfRound = ($matchIndex === $matchesInStage);
+
+                    $stats['winner_updates']++;
+                    $stats['loser_updates']++;
+
+                    if ($isEndOfRound) {
+                        foreach ($gameElementStates as &$state) {
+                            if (!$state['is_eliminated']) {
+                                $state['is_ready'] = true;
+                            }
+                        }
+                        unset($state);
+                        $stats['ready_resets']++;
+                    }
+
+                    // 收集 Round 資料，稍後一次寫入
+                    $roundsToInsert[] = [
+                        'game_id' => $game->id,
+                        'current_round' => $matchIndex,
+                        'of_round' => $matchesInStage,
+                        'remain_elements' => $remain,
+                        'winner_id' => $winnerId,
+                        'loser_id' => $loserId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    logger('prepared round data', end($roundsToInsert));
+
+                    logger('batchUpdateGameRounds.vote_processed', [
+                        'game_id' => $game->id,
+                        'winner_id' => $winnerId,
+                        'loser_id' => $loserId,
+                        'stage' => $stage,
+                        'match_index' => $matchIndex,
+                        'matches_in_stage' => $matchesInStage,
+                        'remain' => $remain,
+                        'is_end_of_round' => $isEndOfRound,
+                        'elapsed_ms' => round((microtime(true) - $loopStart) * 1000, 2),
                     ]);
                 }
 
-                $lastData = end($roundsToInsert);
-                $lastCreatedRound = Game1V1Round::where('game_id', $game->id)
-                    ->where('current_round', $lastData['current_round'])
-                    ->where('of_round', $lastData['of_round'])
-                    ->where('remain_elements', $lastData['remain_elements'])
-                    ->orderByDesc('id')
-                    ->first();
-            }
+                // Apply consolidated updates back to DB (only changed rows)
+                $elementUpdates = [];
+                foreach ($gameElementStates as $elementId => $state) {
+                    $orig = $originalStates[$elementId];
+                    $data = [];
+                    if ($state['win_count'] !== $orig['win_count']) {
+                        $data['win_count'] = $state['win_count'];
+                    }
+                    if ($state['is_eliminated'] !== $orig['is_eliminated']) {
+                        $data['is_eliminated'] = $state['is_eliminated'];
+                    }
+                    if ($state['is_ready'] !== $orig['is_ready']) {
+                        $data['is_ready'] = $state['is_ready'];
+                    }
 
-            // 最後只更新一次 Game 表 (減少 Row Lock 競爭)
-            if ($voteCountIncrement > 0) {
-                \DB::table('games')
-                    ->where('id', $game->id)
-                    ->increment('vote_count', $voteCountIncrement);
+                    if (!empty($data)) {
+                        $elementUpdates[] = ['id' => $state['id'], 'data' => $data];
+                    }
+                }
 
-                // 更新 user_id (如果是登入用戶)
-                if (request()->user()) {
+                foreach ($elementUpdates as $update) {
+                    \DB::table('game_elements')
+                        ->where('id', $update['id'])
+                        ->update($update['data']);
+                }
+
+                logger('batchUpdateGameRounds.elements_updated', [
+                    'game_id' => $game->id,
+                    'rows' => count($elementUpdates),
+                ]);
+
+                // 使用 chunk 防止一次寫入過多導致 SQL 長度過長
+                if (!empty($roundsToInsert)) {
+                    foreach (array_chunk($roundsToInsert, 500) as $chunk) {
+                        $chunkStart = microtime(true);
+                        Game1V1Round::insert($chunk);
+                        logger('batchUpdateGameRounds.insert_chunk', [
+                            'size' => count($chunk),
+                            'elapsed_ms' => round((microtime(true) - $chunkStart) * 1000, 2),
+                        ]);
+                    }
+
+                    $lastData = end($roundsToInsert);
+                    $lastCreatedRound = Game1V1Round::where('game_id', $game->id)
+                        ->where('current_round', $lastData['current_round'])
+                        ->where('of_round', $lastData['of_round'])
+                        ->where('remain_elements', $lastData['remain_elements'])
+                        ->orderByDesc('id')
+                        ->first();
+                }
+
+                // 最後只更新一次 Game 表 (減少 Row Lock 競爭)
+                if ($voteCountIncrement > 0) {
                     \DB::table('games')
                         ->where('id', $game->id)
-                        ->update(['user_id' => request()->user()->id]);
-                }
-            }
+                        ->increment('vote_count', $voteCountIncrement);
 
-            $lock->release();
+                    // 更新 user_id (如果是登入用戶)
+                    if (request()->user()) {
+                        \DB::table('games')
+                            ->where('id', $game->id)
+                            ->update(['user_id' => request()->user()->id]);
+                    }
+                }
+
+                $completionStats = $stats;
+                return $lastCreatedRound;
+            }, 3);
+
             logger('batchUpdateGameRounds.done', [
                 'game_id' => $game->id,
                 'votes_count' => count($votes),
-                'winner_updates' => $stats['winner_updates'],
-                'loser_updates' => $stats['loser_updates'],
-                'ready_resets' => $stats['ready_resets'],
+                'winner_updates' => $completionStats['winner_updates'] ?? 0,
+                'loser_updates' => $completionStats['loser_updates'] ?? 0,
+                'ready_resets' => $completionStats['ready_resets'] ?? 0,
                 'total_ms' => round((microtime(true) - $tStart) * 1000, 2),
             ]);
             return $lastCreatedRound;
 
-        } catch (\Exception $e) {
-            $lock->release();
+        } catch (\Throwable $e) {
+            \Log::error('batchUpdateGameRounds.failed', [
+                'game_id' => $game->id,
+                'votes_count' => count($votes),
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             throw $e;
+        } finally {
+            if ($lockAcquired) {
+                $lock->release();
+            }
         }
     }
 

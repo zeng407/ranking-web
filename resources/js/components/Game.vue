@@ -158,6 +158,8 @@ export default {
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
       isBatchVoting: false,  // 避免重複送出 batch vote
+      pendingFinalBatchVote: false, // Partial batch 完成後是否還需要送出最終結果
+      isLocalOnlyAfterBatchConflict: false, // Batch 422 後改為純本地完成，不再同步後端
 
       // 計時器
       timerSeconds: 0,
@@ -368,7 +370,9 @@ export default {
     },
     handleBeforeUnload() {
         if (this.isClientMode && this.unsentVotes.length > 0) {
-            this.sendBatchVotes();
+            // beforeunload 中的非同步 HTTP 請求可能在離頁時被瀏覽器中斷。
+            // 投票在每回合都會儲存，這裡只再確保佇列已寫入，下次繼續時再送出。
+            this.saveToLocalStorage();
         }
     },
     loadGameSerialFromCookie() {
@@ -644,7 +648,9 @@ export default {
         }, 5 * 1000);
       }
 
-      this.sendBatchVotes();
+      if (this.unsentVotes.length > 0) {
+        this.sendBatchVotes();
+      }
     },
     isSameUser(rank) {
       return this.gameRoom && this.gameRoom.user && rank.user_id === this.gameRoom.user.user_id;
@@ -712,9 +718,9 @@ export default {
     createGame() {
       if (this.creatingGame) return;
 
-      // 建立新遊戲前/後，直接刪除該主題的舊存檔
-      const key = `gamestate_${this.postSerial}`;
-      localStorage.removeItem(key);
+      // 建立新遊戲前，移除該主題的舊進度與上一局本地排行榜。
+      this.clearLocalStorage();
+      this.clearLocalRankResult();
 
       // 清空時間軸
       this.clearMatchHistory();
@@ -763,8 +769,10 @@ export default {
     // 初始化前端遊戲
     initClientSideGame() {
       this.localVotes = [];
+      this.unsentVotes = [];
       this.localElements = [];
       this.existingElementIds.clear();
+      this.isLocalOnlyAfterBatchConflict = false;
 
       const url = this.getGameElementsEndpoint.replace("_serial", this.gameSerial);
       const initialLimit = 32;
@@ -884,6 +892,7 @@ export default {
             localElements: this.localElements,
             localVotes: this.localVotes,
             unsentVotes: this.unsentVotes,
+            localOnlyAfterBatchConflict: this.isLocalOnlyAfterBatchConflict,
             clientState: this.clientState,
             existingElementIds: Array.from(this.existingElementIds),
             elementsCount: this.elementsCount,
@@ -923,6 +932,7 @@ export default {
                   this.localVotes = parsed.localVotes || [];
                   this.clientState = parsed.clientState;
                   this.unsentVotes = parsed.unsentVotes || [];
+                  this.isLocalOnlyAfterBatchConflict = parsed.localOnlyAfterBatchConflict === true;
 
                   // 還原 Set
                   if (parsed.existingElementIds) {
@@ -960,6 +970,33 @@ export default {
     clearLocalStorage() {
         const key = `gamestate_${this.postSerial}`;
         localStorage.removeItem(key);
+    },
+
+    saveLocalRankResult() {
+      if (!this.gameSerial || !Array.isArray(this.localElements)) {
+        return false;
+      }
+
+      const key = `gameresult_${this.postSerial}`;
+      const result = {
+        gameSerial: this.gameSerial,
+        localElements: this.localElements,
+        completedAt: Date.now(),
+        localOnlyAfterBatchConflict: true,
+      };
+
+      try {
+        localStorage.setItem(key, JSON.stringify(result));
+        return true;
+      } catch (error) {
+        console.error("Local rank result save failed", error);
+        return false;
+      }
+    },
+
+    clearLocalRankResult() {
+      const key = `gameresult_${this.postSerial}`;
+      localStorage.removeItem(key);
     },
 
     // 移植後端的 NextRound 計算邏輯
@@ -1024,6 +1061,7 @@ export default {
 
         this.localVotes = [];
         this.unsentVotes = [];
+        this.isLocalOnlyAfterBatchConflict = false;
         let stage = 1;
         let matchesInStage = 0;
         let targetMatches = Math.ceil(this.elementsCount/2);
@@ -1154,6 +1192,12 @@ export default {
       if (localData && remoteData) {
         // C-1: Serial 相同 (同一場遊戲) -> 自動選擇進度較多者 (以剩餘人數少的為優)
         if (localData.gameSerial === remoteData.serial) {
+           // Batch 422 後已明確選擇本地進度，重新載入時也不再被雲端狀態覆蓋。
+           if (localData.localOnlyAfterBatchConflict === true) {
+               restoreLocal();
+               return;
+           }
+
            // 這裡邏輯微調：比較 "剩餘人數"，越少代表玩越久
            // 如果沒有 remainElements 欄位，則回退比較票數 (localVotes vs vote_count)
            const localRemain = localData.localElements.filter(e => !e.local_eliminated).length;
@@ -1279,7 +1323,9 @@ export default {
     // nextRound 修正 Null Error
     nextRound(data, resetAnimation = true) {
       // 1. 如果是 Client Mode，直接呼叫本地邏輯
-      if (!this.isHostingGameRank && this.isClientMode && (data == null || (data && !data.data))) {
+      const shouldUseLocalRound = this.isLocalOnlyAfterBatchConflict
+        || (!this.isHostingGameRank && this.isClientMode);
+      if (shouldUseLocalRound && (data == null || (data && !data.data))) {
           this.nextLocalRound();
           return;
       }
@@ -1855,7 +1901,9 @@ export default {
     },
 
     vote(winner, loser, winSide = 'left') {
-      if (!this.isClientMode || this.isHostingGameRank) {
+      if (this.isLocalOnlyAfterBatchConflict) {
+        this.handleClientVote(winner, loser, winSide);
+      } else if (!this.isClientMode || this.isHostingGameRank) {
         const data = { game_serial: this.gameSerial, winner_id: winner.id, loser_id: loser.id };
         this.sendVote(data, winSide);
       } else {
@@ -1877,7 +1925,9 @@ export default {
           this.clientState.matchesInStage++;
 
           this.localVotes.push({ winner_id: winner.id, loser_id: loser.id });
-          this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
+          if (!this.isLocalOnlyAfterBatchConflict) {
+            this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
+          }
 
           // 紀錄最後一筆投票，用於時間軸
           this.lastVotePair = { winner_id: winner.id, loser_id: loser.id, winSide: winSide };
@@ -1891,7 +1941,10 @@ export default {
           // 檢查是否需要觸發雲端備份
           // 只有在 "非最後一局" 的情況下才執行 Partial Batch Vote
           // 如果是最後一局 (currentActiveCount < 2)，則交由 handleAnimationAfterVoted 的 sendBatchVotes 統一送出
-          if (currentActiveCount >= 2 && this.unsentVotes.length >= this.batchVoteInterval && !this.isCloudSaving) {
+          if (!this.isLocalOnlyAfterBatchConflict
+            && currentActiveCount >= 2
+            && this.unsentVotes.length >= this.batchVoteInterval
+            && !this.isCloudSaving) {
               this.sendPartialBatchVotes();
           }
       }
@@ -1907,74 +1960,192 @@ export default {
     },
 
     sendPartialBatchVotes() {
-      if (this.unsentVotes.length === 0) return;
+      if (this.isLocalOnlyAfterBatchConflict || this.unsentVotes.length === 0) return;
+      return this.submitBatchVotes(false);
+    },
+
+    // Batch send votes (Clear local storage after sync)
+    sendBatchVotes() {
+      if (this.isLocalOnlyAfterBatchConflict) {
+        this.finishLocalOnlyGame();
+        return;
+      }
+      return this.submitBatchVotes(true);
+    },
+
+    /**
+     * 所有 batch vote 共用同一個送出流程，避免 partial/final request 互相超車。
+     */
+    submitBatchVotes(isFinalBatch) {
+      if (this.isLocalOnlyAfterBatchConflict) {
+        if (isFinalBatch) {
+          this.finishLocalOnlyGame();
+        }
+        return;
+      }
+
       if (this.isBatchVoting) {
+        if (isFinalBatch) {
+          this.pendingFinalBatchVote = true;
+          this.isDataLoading = true;
+        }
+        return;
+      }
+
+      if (!isFinalBatch && this.unsentVotes.length === 0) {
         return;
       }
 
       this.isBatchVoting = true;
       this.isCloudSaving = true;
-      const votesToSend = [...this.unsentVotes];
+      if (isFinalBatch) {
+        this.isDataLoading = true;
+      }
 
-      const data = {
-          game_serial: this.gameSerial,
-          votes: votesToSend
-      };
+      let finalBatchHandled = false;
 
-      axios.post(this.batchVoteEndpoint, data)
-        .then(res => {
-            this.unsentVotes.splice(0, votesToSend.length);
-            this.saveToLocalStorage();
+      return this.performBatchVote()
+        .then(response => {
+          this.batchVoteInterval = BATCH_VOTE_SAVE_INTERVAL;
 
-            this.isCloudSaving = false;
+          const shouldFinishGame = isFinalBatch || this.pendingFinalBatchVote;
+          if (!shouldFinishGame) {
+            return;
+          }
+
+          // 如果請求送出後又新增了投票，由 finally 再串接一次 final batch。
+          if (this.unsentVotes.length > 0) {
+            this.pendingFinalBatchVote = true;
+            return;
+          }
+
+          this.pendingFinalBatchVote = false;
+          finalBatchHandled = true;
+          if (response) {
+            this.handleSendVote(response);
+          } else {
+            this.finishLocalOnlyGame();
+          }
         })
-        .catch(err => {
-            this.isCloudSaving = false;
-            // 發生錯誤後增加 batchVoteInterval
-            this.batchVoteInterval = (this.batchVoteInterval*2)+1;
+        .catch(error => {
+          if (error.response && error.response.status === 422) {
+            const shouldFinishGame = isFinalBatch || this.pendingFinalBatchVote;
+            finalBatchHandled = true;
+            this.switchToLocalOnlyAfterBatchConflict();
+            console.warn("Batch vote returned 422; continuing with local game state only.");
+
+            if (shouldFinishGame) {
+              this.finishLocalOnlyGame();
+            }
+            return;
+          }
+
+          this.saveToLocalStorage();
+          this.batchVoteInterval = (this.batchVoteInterval * 2) + 1;
+
+          const responseData = error.response ? error.response.data : null;
+          console.error("Batch vote failed", responseData || error);
+
+          if (isFinalBatch || this.pendingFinalBatchVote) {
+            this.pendingFinalBatchVote = false;
+            this.finishingGame = false;
+            this.isDataLoading = false;
+            this.isVoting = false;
+
+            // 單純網路錯誤仍保留佇列重試；只有後端明確回覆 422 才切換為純本地模式。
+            Swal.fire({
+              icon: "error",
+              text: this.$t("An error occurred. Please try again later."),
+              allowOutsideClick: false,
+            }).then(() => {
+              this.sendBatchVotes();
+            });
+          }
         })
         .finally(() => {
           this.isBatchVoting = false;
+          this.isCloudSaving = false;
+
+          if (!finalBatchHandled && this.pendingFinalBatchVote) {
+            this.pendingFinalBatchVote = false;
+            this.sendBatchVotes();
+          }
         });
     },
 
-    // Batch send votes (Clear local storage after sync)
-    sendBatchVotes() {
-      if (this.isBatchVoting) {
+    /**
+     * 只送出當下佇列的快照；請求期間新增的投票仍保留在佇列中。
+     */
+    performBatchVote() {
+      const votesToSend = this.unsentVotes.map(vote => ({
+        winner_id: vote.winner_id,
+        loser_id: vote.loser_id,
+      }));
+      if (votesToSend.length === 0) {
+        return Promise.resolve(null);
+      }
+
+      return axios.post(this.batchVoteEndpoint, {
+        game_serial: this.gameSerial,
+        votes: votesToSend,
+      }).then(response => {
+        this.removeSubmittedVotes(votesToSend);
+        this.saveToLocalStorage();
+        return response;
+      });
+    },
+
+    removeSubmittedVotes(submittedVotes) {
+      const isSameVote = (left, right) => left
+        && right
+        && String(left.winner_id) === String(right.winner_id)
+        && String(left.loser_id) === String(right.loser_id);
+      const queueStillHasSubmittedPrefix = submittedVotes.every((vote, index) => {
+        return isSameVote(this.unsentVotes[index], vote);
+      });
+
+      if (!queueStillHasSubmittedPrefix) {
+        // 佇列若被其他流程改過，寧可保留到下次重試，不要誤刪尚未送出的票。
+        console.warn("Batch vote queue changed while saving; keeping it for the next retry.");
         return;
       }
 
-      if (!this.unsentVotes.length) {
-        return;
+      this.unsentVotes.splice(0, submittedVotes.length);
+    },
+
+    switchToLocalOnlyAfterBatchConflict() {
+      this.isLocalOnlyAfterBatchConflict = true;
+      this.isClientMode = true;
+      this.unsentVotes = [];
+      this.pendingFinalBatchVote = false;
+      this.saveToLocalStorage();
+    },
+
+    finishLocalOnlyGame() {
+      const activeCount = this.localElements.filter(element => !element.local_eliminated).length;
+      if (activeCount >= 2) {
+        this.finishingGame = false;
+        this.isDataLoading = false;
+        return false;
       }
 
-      this.isBatchVoting = true;
-      this.isDataLoading = true;
+      if (this.status === "end_game") {
+        return true;
+      }
 
-      const data = {
-          game_serial: this.gameSerial,
-          votes: this.unsentVotes
-      };
-
-      axios.post(this.batchVoteEndpoint, data)
-          .then(res => {
-              this.unsentVotes = [];
-              this.saveToLocalStorage();
-              this.handleSendVote(res);
-          })
-          .catch(err => {
-              console.error("Batch vote failed", err.response.data);
-              this.isDataLoading = false;
-              this.showGameResult();
-              if(err.response.data && err.response.data.status === 'end_game'){
-                  this.$cookies.remove(this.postSerial);
-                  this.clearLocalStorage();
-                  this.clearMatchHistory();
-              }
-          })
-          .finally(() => {
-              this.isBatchVoting = false;
-          });
+      this.status = "end_game";
+      this.finishingGame = true;
+      this.unsentVotes = [];
+      this.pendingFinalBatchVote = false;
+      this.recordMatchFromLastVote();
+      this.$cookies.remove(this.postSerial);
+      // Rank.vue 需要這份本地結果。只有獨立結果保存成功後，才清掉可續玩的遊戲進度。
+      if (this.saveLocalRankResult()) {
+        this.clearLocalStorage();
+      }
+      this.clearMatchHistory();
+      this.showGameResult();
+      return true;
     },
 
     sendVote(data, winSide = 'left') {
