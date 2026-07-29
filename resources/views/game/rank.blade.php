@@ -10,16 +10,26 @@
 @section('header')
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
   @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
-  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
   <script>
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
-      googletag.defineOutOfPageSlot('/23307026516/rank_page_top', googletag.enums.OutOfPageFormat.TOP_ANCHOR)
-        .addService(googletag.pubads());
+        googletag.setConfig({
+          singleRequest: true,
+          collapseDiv: true
+        });
 
-      googletag.pubads().enableSingleRequest();
-      googletag.enableServices();
-    });
+        var mapping = googletag.sizeMapping()
+          .addSize([768, 0], [[468, 60], [320, 100], [300, 100], [300, 75], [300, 50], [300, 31], 'fluid']) // 平板與桌機支援所有尺寸
+          .addSize([0, 0], [[320, 100], [300, 100], [300, 75], [300, 50], [300, 31], 'fluid'])             // 手機版排除 468x60
+          .build();
+
+        googletag.defineSlot('/23307026516/rank_page_top', [[468, 60], [300, 31], [300, 50], 'fluid', [300, 100], [320, 100], [300, 75]], 'div-gpt-ad-1782518224225-0')
+                .defineSizeMapping(mapping) // 套用尺寸對應
+                .addService(googletag.pubads());
+
+        googletag.enableServices();
+      });
   </script>
   @endif
 @endsection
@@ -55,6 +65,7 @@
         {{-- main part --}}
         <div class="col-12 col-lg-8">
           @if (!$embed)
+
             {{-- Top buttons --}}
             <div class="row mb-3 sticky-top-rank-buttons">
               <div class="col-10">
@@ -92,6 +103,19 @@
             </div>
             <hr>
 
+            @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
+            <!-- /23307026516/rank_page_top -->
+            <div class="d-flex justify-content-center my-3 w-100 overflow-hidden">
+              <div id='div-gpt-ad-1782518224225-0' style='width: 100%; max-width: 100%; min-width: 300px; min-height: 31px; display: block;'>
+                <script>
+                  window.addEventListener('load', function() {
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1782518224225-0'); });
+                  });
+                </script>
+              </div>
+            </div>
+            @endif
+
             {{-- Title & Description --}}
             <div class="d-flex position-relative">
               <h1 class="break-all post-title">{{ $post->title }} - {{ __('Ranking') }}</h1>
@@ -107,6 +131,7 @@
               </form>
             </div>
 
+            @if(request('g'))
             <div class="download-fab" v-if="gameResult">
               <a href="{{ route('game.export', $post->serial).'?g='.request('g') }}" target="_blank" class="led-download-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
                 <div class="thumb-strip">
@@ -121,6 +146,7 @@
                 </span>
               </a>
             </div>
+            @endif
             <!-- Modal -->
             <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true"
               data-backdrop="static" data-keyboard="false">

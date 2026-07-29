@@ -61,7 +61,7 @@ export default {
     },
     handleDownload() {
         if (!this.generatedImage) return;
-        
+
         const dataUrl = this.generatedImage;
         const maxCount = this.topCount;
 
@@ -134,11 +134,18 @@ export default {
         this.topCount = maxCount;
         this.isGeneratingImage = true;
 
-        // Assume we have top 10 data: ranks = [ {rank:1,img:url,title:""}, ... ]
+        // 調整圖片讀取順序優先級：lowthumb_url -> mediumthumb_url -> thumb_url -> source_url -> imgur_url
+        const winner = this.gameResult.winner;
         const ranks = [
-          { rank: 1, img: this.gameResult.winner.thumb_url || this.gameResult.winner.imgur_url, title: this.gameResult.winner.title },
-          ...this.gameResult.data.map((r,i) => ({
-            rank: i+2, img: r.loser.thumb_url || r.loser.imgur_url, title: r.loser.title
+          {
+            rank: 1,
+            img: winner.lowthumb_url || winner.mediumthumb_url || winner.thumb_url || winner.source_url || winner.imgur_url,
+            title: winner.title
+          },
+          ...this.gameResult.data.map((r, i) => ({
+            rank: i + 2,
+            img: r.loser.lowthumb_url || r.loser.mediumthumb_url || r.loser.thumb_url || r.loser.source_url || r.loser.imgur_url,
+            title: r.loser.title
           })).slice(0, maxCount - 1)
         ];
 
@@ -348,7 +355,7 @@ export default {
           const r = ranks[i];
           rankingText += `#${r.rank} ${r.title}\n`;
         }
-        
+
         this.generatedImage = dataUrl;
         this.rankingText = rankingText;
         this.isGeneratingImage = false;

@@ -359,9 +359,12 @@ class CacheService
 
     static function isSkipAds()
     {
-        $anonymousId = session()->get('anonymous_id', 'unknown');
-        $key = 'skip_ads_' . $anonymousId;
-        return Cache::has($key);
+        // temporarily disable skip ads feature
+        return false;
+        
+        // $anonymousId = session()->get('anonymous_id', 'unknown');
+        // $key = 'skip_ads_' . $anonymousId;
+        // return Cache::has($key);
     }
 
     static function setSkipAds()
