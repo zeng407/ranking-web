@@ -15,6 +15,12 @@ mix.js('resources/js/app.js', 'public/js')
     .vue()
     .sass('resources/sass/app.scss', 'public/css');
 
+mix.webpackConfig({
+    output: {
+        chunkFilename: 'js/[name].[contenthash].js',
+    },
+});
+
 // Only include source maps when not in production
 if (!mix.inProduction()) {
     mix.sourceMaps();

@@ -16,8 +16,29 @@ window.Vue = require('vue').default;
  * Eg. ./components/ExampleComponent.vue -> <example-component></example-component>
  */
 
-const files = require.context('./', true, /\.vue$/i);
+const files = require.context(
+    './components',
+    true,
+    /^(?!\.\/(?:EditPost|Game|Rank)\.vue$).*\.vue$/i
+);
 files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
+
+const asyncComponent = loader => () => loader().then(module => module.default || module);
+
+Vue.component('game', asyncComponent(() => import(
+    /* webpackChunkName: "page-game" */
+    './components/Game.vue'
+)));
+
+Vue.component('edit-post', asyncComponent(() => import(
+    /* webpackChunkName: "page-edit-post" */
+    './components/EditPost.vue'
+)));
+
+Vue.component('rank', asyncComponent(() => import(
+    /* webpackChunkName: "page-rank" */
+    './components/Rank.vue'
+)));
 
 
 // Vue.component('example-component', require('./components/ExampleComponent.vue').default);

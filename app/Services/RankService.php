@@ -16,7 +16,6 @@ use App\Models\RankReport;
 use App\Models\RankReportHistory;
 use App\Services\Builders\RankReportHistoryBuilder;
 use DB;
-use Illuminate\Database\QueryException;
 
 class RankService
 {
@@ -321,6 +320,9 @@ class RankService
 
         // 取得現有的 Reports
         $existingReports = RankReport::where('post_id', $post->id)
+            ->whereHas('element', function ($query) {
+                $query->whereNull('elements.deleted_at');
+            })
             ->get()
             ->keyBy('element_id');
 
@@ -390,31 +392,38 @@ class RankService
         // ==========================================
         // 第二階段：寫入 (Transaction)
         // ==========================================
-        $deletedElementIds = \DB::table('elements')
-            ->join('post_elements', 'post_elements.element_id', '=', 'elements.id')
-            ->where('post_elements.post_id', $post->id)
-            ->whereNotNull('elements.deleted_at')
-            ->pluck('elements.id');
-
         $tTxStart = microtime(true);
 
-        if ($deletedElementIds->isNotEmpty()) {
-            RankReport::where('post_id', $post->id)
-                ->whereIn('element_id', $deletedElementIds)
-                ->update(['hidden' => true]);
-        }
+        DB::transaction(function () use ($post, $upsertData) {
+            if (!empty($upsertData)) {
+                $orderedUpsertData = $upsertData;
+                usort($orderedUpsertData, function ($a, $b) {
+                    return $a['element_id'] <=> $b['element_id'];
+                });
 
-        if (!empty($upsertData)) {
-            $orderedUpsertData = $upsertData;
-            usort($orderedUpsertData, function ($a, $b) {
-                return $a['element_id'] <=> $b['element_id'];
-            });
-
-            $chunks = array_chunk($orderedUpsertData, 200);
-            foreach ($chunks as $chunk) {
-                $this->upsertRankReportsWithRetry($chunk);
+                $chunks = array_chunk($orderedUpsertData, 200);
+                foreach ($chunks as $chunk) {
+                    RankReport::upsert(
+                        $chunk,
+                        ['post_id', 'element_id'],
+                        ['final_win_position', 'final_win_rate', 'win_position', 'win_rate', 'rank', 'updated_at']
+                    );
+                }
             }
-        }
+
+            $deletedElementIds = DB::table('elements')
+                ->join('rank_reports', 'rank_reports.element_id', '=', 'elements.id')
+                ->where('rank_reports.post_id', $post->id)
+                ->whereNotNull('elements.deleted_at')
+                ->distinct()
+                ->pluck('elements.id');
+
+            if ($deletedElementIds->isNotEmpty()) {
+                RankReport::where('post_id', $post->id)
+                    ->whereIn('element_id', $deletedElementIds)
+                    ->update(['hidden' => true]);
+            }
+        }, 3);
 
         $tTxEnd = microtime(true);
 
@@ -454,33 +463,4 @@ class RankService
         }
     }
 
-    /**
-     * Upsert rank reports with deadlock retries to reduce 1213/40001 failures.
-     */
-    private function upsertRankReportsWithRetry(array $chunk, int $maxAttempts = 3): void
-    {
-        $attempt = 0;
-        while ($attempt < $maxAttempts) {
-            try {
-                RankReport::upsert(
-                    $chunk,
-                    ['post_id', 'element_id'],
-                    ['final_win_position', 'final_win_rate', 'win_position', 'win_rate', 'rank', 'updated_at']
-                );
-                return;
-            } catch (QueryException $e) {
-                $code = (string) $e->getCode();
-                if (!in_array($code, ['40001', '1213'])) {
-                    throw $e;
-                }
-
-                $attempt++;
-                if ($attempt >= $maxAttempts) {
-                    throw $e;
-                }
-
-                usleep(random_int(100000, 400000));
-            }
-        }
-    }
 }

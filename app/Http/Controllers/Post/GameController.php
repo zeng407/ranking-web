@@ -105,6 +105,12 @@ class GameController extends Controller
         return view('game.rank', [
             'serial' => $post->serial,
             'post' => $post,
+            'rankIndexEndpoint' => route($post->isPublic()
+                ? 'api.rank.index'
+                : 'api.private.rank.index'),
+            'rankSearchEndpoint' => route($post->isPublic()
+                ? 'api.rank.search'
+                : 'api.private.rank.search'),
             'ogElement' => $this->getElementForOG($post),
             'reports' => $reports,
             'gameResult' => $gameResult,

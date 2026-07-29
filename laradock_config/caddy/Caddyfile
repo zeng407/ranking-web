@@ -20,6 +20,17 @@ http://2pick.app {
     php_fastcgi php-fpm:9000
     file_server
     encode zstd gzip
+    header -X-Powered-By
+
+    @immutableAssets {
+        path /js/* /css/*
+        query id=*
+    }
+
+    @hashedJsChunks path_regexp hashedJsChunks ^/js/[^/]+\.[0-9a-f]{8,64}\.js$
+
+    header @immutableAssets Cache-Control "public, max-age=31536000, immutable"
+    header @hashedJsChunks Cache-Control "public, max-age=31536000, immutable"
 }
 
 https://2pick.app {
@@ -28,6 +39,17 @@ https://2pick.app {
     file_server
     encode zstd gzip
     tls internal
+    header -X-Powered-By
+
+    @immutableAssets {
+        path /js/* /css/*
+        query id=*
+    }
+
+    @hashedJsChunks path_regexp hashedJsChunks ^/js/[^/]+\.[0-9a-f]{8,64}\.js$
+
+    header @immutableAssets Cache-Control "public, max-age=31536000, immutable"
+    header @hashedJsChunks Cache-Control "public, max-age=31536000, immutable"
 }
 
 # 所有其他存取返回 404

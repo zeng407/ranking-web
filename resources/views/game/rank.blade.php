@@ -38,7 +38,7 @@
   <rank inline-template
     post-serial="{{ $post->serial }}"
     comment-max-length="{{ config('setting.comment_max_length') }}"
-    search-endpoint="{{ route('api.rank.search') }}"
+    search-endpoint="{{ $rankSearchEndpoint }}"
     index-comment-endpoint="{{ route('api.public-post.comment.index', $post->serial) }}"
     create-comment-endpoint="{{ route('api.public-post.comment.create', $post->serial) }}"
     report-comment-endpoint="{{ route('api.public-post.comment.report', [$post->serial, '_comment_id']) }}"
@@ -275,7 +275,7 @@
                       <div v-show="showRankHistory" class="col-12" :class="{ 'col-xl-6': showMyTimeline }">
                         <rank-history-chart chart-id="{{ 'my-rank-history-chart-' . $gameResult['winner']['id'] }}"
                           element-id="{{ $gameResult['winner']['id'] }}" post-serial="{{ $post->serial }}"
-                          index-rank-endpoint="{{ route('api.rank.index') }}">
+                          index-rank-endpoint="{{ $rankIndexEndpoint }}">
                         </rank-history-chart>
                       </div>
 
@@ -551,7 +551,7 @@
                             <div class="col-12 col-md-6">
                               <rank-history-chart chart-id="{{ 'global-rank-history-chart-' . $rank->element->id }}"
                                 element-id="{{ $rank->element->id }}" post-serial="{{ $post->serial }}"
-                                index-rank-endpoint="{{ route('api.rank.index') }}">
+                                index-rank-endpoint="{{ $rankIndexEndpoint }}">
                               </rank-history-chart>
                             </div>
                           </div>
