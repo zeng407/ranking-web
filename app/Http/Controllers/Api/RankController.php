@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\RankReportTimeRange;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\PublicApiCacheHeaders;
 use App\Http\Resources\Rank\RankReportHistoryResource;
 use App\Http\Resources\Rank\RankReportResource;
 use App\Models\Element;
@@ -29,6 +30,7 @@ class RankController extends Controller
             'time' => ['required', 'array', 'in:'. implode(',',RankReportTimeRange::toArray())],
         ]);
         $post = $this->getPost($request->post_serial);
+        $request->attributes->set(PublicApiCacheHeaders::CACHEABLE_ATTRIBUTE, $post->isPublic());
         /** @see \App\Policies\PostPolicy::readRank() */
         $this->authorize('read-rank', $post);
 
@@ -62,6 +64,7 @@ class RankController extends Controller
             'keyword' => ['required', 'string', 'max:255'],
         ]);
         $post = $this->getPost($request->post_serial);
+        $request->attributes->set(PublicApiCacheHeaders::CACHEABLE_ATTRIBUTE, $post->isPublic());
         /** @see \App\Policies\PostPolicy::readRank() */
         $this->authorize('read-rank', $post);
 
