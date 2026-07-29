@@ -160,22 +160,40 @@ export default {
   },
   methods: {
     loadRankFromLocal() {
-      const key = `gamestate_${this.postSerial}`;
-      const savedData = localStorage.getItem(key);
+      // 本地完成的結果使用獨立 key，避免為了顯示排行榜而保留一局「未完成」的遊戲。
+      // gamestate 作為舊資料與進行中遊戲的相容 fallback。
+      const keys = [
+        `gameresult_${this.postSerial}`,
+        `gamestate_${this.postSerial}`,
+      ];
 
-      if (savedData) {
+      for (const key of keys) {
         try {
-            const parsedData = JSON.parse(savedData);
-            const elements = parsedData.localElements;
-            elements.sort((a, b) => b.local_win_count - a.local_win_count);
-            const top10 = elements.slice(0, 10);
-            this.localRanks = top10;
-            return top10;
+          const savedData = localStorage.getItem(key);
+          if (!savedData) continue;
+
+          const parsedData = JSON.parse(savedData);
+          if (!Array.isArray(parsedData.localElements)) continue;
+
+          // 有指定 game serial 時，不顯示同主題下其他遊戲留下的本地結果。
+          if (this.gameSerial
+            && parsedData.gameSerial
+            && String(parsedData.gameSerial) !== String(this.gameSerial)) {
+            continue;
+          }
+
+          const top10 = parsedData.localElements
+            .slice()
+            .sort((a, b) => Number(b.local_win_count || 0) - Number(a.local_win_count || 0))
+            .slice(0, 10);
+          this.localRanks = top10;
+          return top10;
         } catch (e) {
-            console.error('Failed to parse saved game state from localStorage:', e);
-            return false;
+          console.error(`Failed to parse local rank data from ${key}:`, e);
         }
       }
+
+      return false;
     },
     search(){
       const inputValue = this.keyword.trim();

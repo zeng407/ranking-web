@@ -279,6 +279,45 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     assert.equal(historyCleared, 1);
     assert.equal(rankOpened, 1);
     assert.equal(swalCalls.length, 0);
+
+    const savedResult = JSON.parse(localStorage.getItem('gameresult_post-serial'));
+    assert.equal(savedResult.gameSerial, 'game-serial');
+    assert.equal(savedResult.localOnlyAfterBatchConflict, true);
+    assert.deepEqual(savedResult.localElements, vm.localElements);
+  });
+
+  test('local game progress is kept when the dedicated rank result cannot be stored', t => {
+    t.mock.method(console, 'error', () => {});
+    const storage = createMemoryStorage();
+    const setItem = storage.setItem.bind(storage);
+    storage.setItem = (key, value) => {
+      if (key === 'gameresult_post-serial') {
+        throw new Error('storage quota exceeded');
+      }
+      setItem(key, value);
+    };
+    global.localStorage = storage;
+
+    let localStateCleared = 0;
+    const vm = createGameVm({
+      isLocalOnlyAfterBatchConflict: true,
+      localElements: [
+        { id: 1, local_eliminated: false, local_win_count: 1 },
+        { id: 2, local_eliminated: true, local_win_count: 0 },
+      ],
+    });
+    vm.recordMatchFromLastVote = () => {};
+    vm.clearLocalStorage = () => {
+      localStateCleared++;
+    };
+    vm.clearMatchHistory = () => {};
+    vm.showGameResult = () => {};
+
+    vm.saveToLocalStorage();
+    vm.finishLocalOnlyGame();
+
+    assert.equal(localStateCleared, 0);
+    assert.notEqual(localStorage.getItem('gamestate_post-serial'), null);
   });
 
   test('a game already in local-only mode opens ranking without another request', () => {

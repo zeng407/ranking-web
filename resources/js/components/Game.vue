@@ -718,9 +718,9 @@ export default {
     createGame() {
       if (this.creatingGame) return;
 
-      // 建立新遊戲前/後，直接刪除該主題的舊存檔
-      const key = `gamestate_${this.postSerial}`;
-      localStorage.removeItem(key);
+      // 建立新遊戲前，移除該主題的舊進度與上一局本地排行榜。
+      this.clearLocalStorage();
+      this.clearLocalRankResult();
 
       // 清空時間軸
       this.clearMatchHistory();
@@ -970,6 +970,33 @@ export default {
     clearLocalStorage() {
         const key = `gamestate_${this.postSerial}`;
         localStorage.removeItem(key);
+    },
+
+    saveLocalRankResult() {
+      if (!this.gameSerial || !Array.isArray(this.localElements)) {
+        return false;
+      }
+
+      const key = `gameresult_${this.postSerial}`;
+      const result = {
+        gameSerial: this.gameSerial,
+        localElements: this.localElements,
+        completedAt: Date.now(),
+        localOnlyAfterBatchConflict: true,
+      };
+
+      try {
+        localStorage.setItem(key, JSON.stringify(result));
+        return true;
+      } catch (error) {
+        console.error("Local rank result save failed", error);
+        return false;
+      }
+    },
+
+    clearLocalRankResult() {
+      const key = `gameresult_${this.postSerial}`;
+      localStorage.removeItem(key);
     },
 
     // 移植後端的 NextRound 計算邏輯
@@ -2112,7 +2139,10 @@ export default {
       this.pendingFinalBatchVote = false;
       this.recordMatchFromLastVote();
       this.$cookies.remove(this.postSerial);
-      this.clearLocalStorage();
+      // Rank.vue 需要這份本地結果。只有獨立結果保存成功後，才清掉可續玩的遊戲進度。
+      if (this.saveLocalRankResult()) {
+        this.clearLocalStorage();
+      }
       this.clearMatchHistory();
       this.showGameResult();
       return true;
