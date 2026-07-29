@@ -34,10 +34,13 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
+    - name: Run tests
+      run: npm test
     - run: npm run build --if-present
     - name: Run production script
       run: npm run production
     - name: Deploy
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: main
@@ -46,6 +49,5 @@ jobs:
         git-config-name: "github-actions[bot]"
         git-config-email: "github-actions[bot]@users.noreply.github.com"
         repository-name: zeng407/ranking-web-frontend
-
 
 
