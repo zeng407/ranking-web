@@ -68,7 +68,7 @@ class RankServiceTest extends TestCase
         $this->assertEquals(3, RankReport::where('post_id', $post->id)->count());
     }
 
-    public function test_create_rank_reports_ignores_existing_reports_for_detached_deleted_elements()
+    public function test_create_rank_reports_ignores_and_hides_reports_for_detached_deleted_elements()
     {
         Carbon::setTestNow(Carbon::parse('2024-01-01'));
 
@@ -77,10 +77,9 @@ class RankServiceTest extends TestCase
         $report = RankReport::create([
             'post_id' => $post->id,
             'element_id' => $element->id,
-            'rank' => 1,
+            'rank' => 99,
             'win_rate' => 50,
         ]);
-        $originalUpdatedAt = $report->updated_at->copy();
 
         $element->posts()->detach();
         $element->delete();
@@ -88,7 +87,10 @@ class RankServiceTest extends TestCase
         Carbon::setTestNow(Carbon::parse('2024-01-02'));
         app(RankService::class)->createRankReports($post);
 
-        $this->assertTrue($report->fresh()->updated_at->equalTo($originalUpdatedAt));
+        $report = $report->fresh();
+
+        $this->assertSame(99, $report->rank);
+        $this->assertTrue($report->hidden);
     }
 
     private function seedRankMetrics(Post $post, $elements): void
