@@ -20,6 +20,13 @@ http://2pick.app {
     php_fastcgi php-fpm:9000
     file_server
     encode zstd gzip
+
+    @immutableAssets {
+        path /js/* /css/*
+        query id=*
+    }
+
+    header @immutableAssets Cache-Control "public, max-age=31536000, immutable"
 }
 
 https://2pick.app {
@@ -28,6 +35,13 @@ https://2pick.app {
     file_server
     encode zstd gzip
     tls internal
+
+    @immutableAssets {
+        path /js/* /css/*
+        query id=*
+    }
+
+    header @immutableAssets Cache-Control "public, max-age=31536000, immutable"
 }
 
 # 所有其他存取返回 404
