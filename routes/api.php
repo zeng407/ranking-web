@@ -10,20 +10,22 @@ use App\Http\Controllers\Api\ElementController;
 use App\Http\Controllers\Api\GameController;
 use App\Http\Controllers\Api\PublicPostController;
 
-/** Tag */
-Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
-Route::get('tags/hot', [TagController::class, 'hot'])->name('api.tag.hot');
+Route::middleware('cache.public-api')->group(function () {
+    /** Tag */
+    Route::get('tags', [TagController::class, 'index'])->name('api.tag.index');
+    Route::get('tags/hot', [TagController::class, 'hot'])->name('api.tag.hot');
 
-/** Carousel */
-Route::get('carousel-items', [HomeCarouselController::class, 'index'])->name('api.carousel.index');
+    /** Carousel */
+    Route::get('carousel-items', [HomeCarouselController::class, 'index'])->name('api.carousel.index');
 
-/** Post */
-Route::get('posts', [PublicPostController::class, 'getPosts'])->name('api.public-post.index');
-Route::get('champions', [PublicPostController::class, 'getChampions'])->name('api.champion.index');
+    /** Post */
+    Route::get('posts', [PublicPostController::class, 'getPosts'])->name('api.public-post.index');
+    Route::get('champions', [PublicPostController::class, 'getChampions'])->name('api.champion.index');
 
-/** Rank */
-Route::get('rank', [RankController::class, 'getRank'])->name('api.rank.index');
-Route::get('rank/search', [RankController::class, 'searchRank'])->name('api.rank.search');
+    /** Rank */
+    Route::get('rank', [RankController::class, 'getRank'])->name('api.rank.index');
+    Route::get('rank/search', [RankController::class, 'searchRank'])->name('api.rank.search');
+});
 
 /** Game */
 Route::get('post/{post:serial}/game', [GameController::class, 'getSetting'])->name('api.game.setting');

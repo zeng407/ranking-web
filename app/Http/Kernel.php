@@ -68,6 +68,7 @@ class Kernel extends HttpKernel
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \App\Http\Middleware\ThrottleRequests::class,
+        'cache.public-api' => \App\Http\Middleware\PublicApiCacheHeaders::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'locale.prefix' => \App\Http\Middleware\LocalePrefixRoute::class,
         'admin' => \App\Http\Middleware\AdminRoute::class
