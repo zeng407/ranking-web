@@ -20,6 +20,7 @@ http://2pick.app {
     php_fastcgi php-fpm:9000
     file_server
     encode zstd gzip
+    header -X-Powered-By
 
     @immutableAssets {
         path /js/* /css/*
@@ -38,6 +39,7 @@ https://2pick.app {
     file_server
     encode zstd gzip
     tls internal
+    header -X-Powered-By
 
     @immutableAssets {
         path /js/* /css/*
