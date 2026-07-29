@@ -50,6 +50,12 @@ class Kernel extends HttpKernel
             Locale::class,
             RegisterAnomynousId::class,
         ],
+
+        'public-api' => [
+            \App\Http\Middleware\PublicApiCacheHeaders::class,
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
     ];
 
     /**
