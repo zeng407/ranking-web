@@ -46,7 +46,8 @@ class Handler extends ExceptionHandler
             return Response::json(['message' => __('Too Many Requests')], 429);
         }
 
-        if ($exception instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+        if ($exception instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+            && !$request->is('api/*')) {
             return redirect()->route('home');
         }
 

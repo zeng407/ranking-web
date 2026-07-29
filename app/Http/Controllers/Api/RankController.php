@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\RankReportTimeRange;
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\PublicApiCacheHeaders;
 use App\Http\Resources\Rank\RankReportHistoryResource;
 use App\Http\Resources\Rank\RankReportResource;
 use App\Models\Element;
@@ -24,15 +23,23 @@ class RankController extends Controller
 
     public function getRank(Request $request)
     {
+        return $this->rankResponse($request, false);
+    }
+
+    public function getPublicRank(Request $request)
+    {
+        return $this->rankResponse($request, true);
+    }
+
+    protected function rankResponse(Request $request, bool $publicOnly)
+    {
         $request->validate([
             'post_serial' => ['required', 'string', 'max:255'],
             'element_id' => ['required', 'integer'],
             'time' => ['required', 'array', 'in:'. implode(',',RankReportTimeRange::toArray())],
         ]);
         $post = $this->getPost($request->post_serial);
-        $request->attributes->set(PublicApiCacheHeaders::CACHEABLE_ATTRIBUTE, $post->isPublic());
-        /** @see \App\Policies\PostPolicy::readRank() */
-        $this->authorize('read-rank', $post);
+        $this->authorizeRank($post, $publicOnly);
 
         $result = [];
         $result['current'] = RankReportResource::make($this->rankService->getRankReportByElement($post, $this->getElement($request->element_id)));
@@ -59,18 +66,38 @@ class RankController extends Controller
 
     public function searchRank(Request $request)
     {
+        return $this->searchRankResponse($request, false);
+    }
+
+    public function searchPublicRank(Request $request)
+    {
+        return $this->searchRankResponse($request, true);
+    }
+
+    protected function searchRankResponse(Request $request, bool $publicOnly)
+    {
         $request->validate([
             'post_serial' => ['required', 'string', 'max:255'],
             'keyword' => ['required', 'string', 'max:255'],
         ]);
         $post = $this->getPost($request->post_serial);
-        $request->attributes->set(PublicApiCacheHeaders::CACHEABLE_ATTRIBUTE, $post->isPublic());
-        /** @see \App\Policies\PostPolicy::readRank() */
-        $this->authorize('read-rank', $post);
+        $this->authorizeRank($post, $publicOnly);
 
         $result = RankReportResource::collection($this->rankService->getRanksByElementTitle($post, $request->keyword));
 
         return $result;
+    }
+
+    protected function authorizeRank(Post $post, bool $publicOnly): void
+    {
+        if ($publicOnly) {
+            abort_unless($post->isPublic(), 404);
+
+            return;
+        }
+
+        /** @see \App\Policies\PostPolicy::readRank() */
+        $this->authorize('read-rank', $post);
     }
 
     protected function getPost($postSerial)
