@@ -346,6 +346,109 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     assert.deepEqual(saved.unsentVotes, [pendingVote(2, 3, 4)]);
   });
 
+  test('server-mode reload restores the host match history and keeps the history panel visible', () => {
+    const history = [{ id: 'server-history' }];
+    localStorage.setItem('gamestate_post-serial', JSON.stringify({
+      schemaVersion: 3,
+      localStateRevision: 1,
+      gameSerial: 'game-serial',
+      clientMode: false,
+    }));
+    localStorage.setItem('matchHistory_post-serial', JSON.stringify({
+      gameSerial: 'game-serial',
+      matches: history,
+    }));
+
+    const vm = createGameVm({
+      gameSerial: null,
+      showMatchHistory: false,
+      matchHistory: [],
+    });
+
+    assert.equal(vm.loadFromLocalStorage(), true);
+    assert.equal(vm.isClientMode, false);
+    assert.equal(vm.showMatchHistory, true);
+    assert.deepEqual(vm.matchHistory, history);
+  });
+
+  test('uses one 30-second ad refresh timer across game rounds', t => {
+    let intervalCallback;
+    let intervalDelay;
+    let clearIntervalValue;
+    let loadCount = 0;
+    let reloadCount = 0;
+
+    t.mock.method(global, 'setInterval', (callback, delay) => {
+      intervalCallback = callback;
+      intervalDelay = delay;
+      return 123;
+    });
+    t.mock.method(global, 'clearInterval', value => {
+      clearIntervalValue = value;
+    });
+
+    const vm = createGameVm({
+      game: { current_round: 1 },
+      $nextTick(callback) {
+        callback();
+      },
+    });
+    vm.loadGoogleAds = () => {
+      loadCount++;
+    };
+    vm.reloadGoogleAds = () => {
+      reloadCount++;
+    };
+    vm.needReloadAD = () => true;
+
+    vm.startAdRefreshTimer();
+    vm.startAdRefreshTimer();
+
+    assert.equal(intervalDelay, 30000);
+    assert.equal(loadCount, 1, 'The initial ad is loaded only once');
+    assert.equal(reloadCount, 0, 'Starting another round must not refresh the ad');
+
+    intervalCallback();
+    assert.equal(reloadCount, 1);
+    assert.equal(loadCount, 2);
+
+    vm.stopAdRefreshTimer();
+    assert.equal(clearIntervalValue, 123);
+    assert.equal(vm.adRefreshInterval, null);
+  });
+
+  test('submitting a room bet does not refresh ads', async () => {
+    global.axios = {
+      post() {
+        return Promise.resolve({});
+      },
+    };
+
+    let loadCount = 0;
+    let reloadCount = 0;
+    const vm = createGameVm({
+      gameRoomSerial: 'room-serial',
+      betEndpoint: '/api/game/room/_serial/bet',
+      game: {
+        current_round: 1,
+        of_round: 1,
+        remain_elements: 2,
+      },
+    });
+    vm.loadGoogleAds = () => {
+      loadCount++;
+    };
+    vm.reloadGoogleAds = () => {
+      reloadCount++;
+    };
+
+    vm.bet({ id: 1 }, { id: 2 });
+    await nextEventLoop();
+
+    assert.equal(loadCount, 0);
+    assert.equal(reloadCount, 0);
+  });
+
   test('votes after a 422 update local results but never enter the upload queue', () => {
     const vm = createGameVm({ isLocalOnlyAfterBatchConflict: true });
     let animationResponse;

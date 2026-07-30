@@ -14,6 +14,7 @@ const GAME_TAB_LEASE_VERSION = 1;
 const GAME_TAB_HEARTBEAT_MS = 5000;
 const GAME_TAB_LEASE_TTL_MS = 120000; // 容忍背景分頁 timer throttling；正常關閉會立即 release
 const GAME_TAB_MONITOR_MS = 5000;
+const AD_REFRESH_INTERVAL_MS = 30000;
 
 function createLocalWriterId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -48,6 +49,7 @@ export default {
 
   beforeDestroy() {
     this.stopTimer();
+    this.stopAdRefreshTimer();
     window.removeEventListener('beforeunload', this.handleBeforeUnload);
     this.teardownGameTabCoordination(true);
   },
@@ -106,6 +108,7 @@ export default {
       isHoverIn: false,
       showPopover: false,
       refreshAD: false,
+      adRefreshInterval: null,
       leftImageLoaded: false,
       rightImageLoaded: false,
       creatingGame: false,
@@ -1622,6 +1625,9 @@ export default {
         }
         if (savedClientMode === false) {
           this.isClientMode = false;
+          // Server mode 的時間軸獨立儲存在 matchHistory key。重整後必須在
+          // 取得 gameSerial 後載入，否則左欄會因 showMatchHistory=false 顯示廣告。
+          this.loadMatchHistory();
           console.log("Restored as Server Mode from localStorage");
           return true;
         }
@@ -2246,11 +2252,7 @@ export default {
           if (this.isMobileScreen) {
             $("#google-ad2").css("top", "0");
           }
-
-          if (this.needReloadAD()) {
-            this.reloadGoogleAds();
-          }
-          this.loadGoogleAds();
+          this.startAdRefreshTimer();
         });
     },
     // 更新遊戲數據 (核心同步樞紐)
@@ -2681,11 +2683,6 @@ export default {
             location.reload();
           });
         }
-      }).finally(() => {
-        if (this.needReloadAD()) {
-          this.reloadGoogleAds();
-        }
-        this.loadGoogleAds();
       });
     },
 
@@ -3565,6 +3562,30 @@ export default {
           } catch (e) { }
         }
       } catch (e) { }
+    },
+    startAdRefreshTimer() {
+      if (this.adRefreshInterval !== null) return;
+
+      // 第一個對戰畫面出現時只載入廣告，不做重新掛載；之後固定每 30 秒刷新。
+      const loadInitialAds = () => {
+        if (this.game) this.loadGoogleAds();
+      };
+      if (typeof this.$nextTick === 'function') {
+        this.$nextTick(loadInitialAds);
+      } else {
+        loadInitialAds();
+      }
+
+      this.adRefreshInterval = setInterval(() => {
+        if (!this.needReloadAD()) return;
+        this.reloadGoogleAds();
+        this.loadGoogleAds();
+      }, AD_REFRESH_INTERVAL_MS);
+    },
+    stopAdRefreshTimer() {
+      if (this.adRefreshInterval === null) return;
+      clearInterval(this.adRefreshInterval);
+      this.adRefreshInterval = null;
     },
     reloadGoogleAds() {
       $("#google-ad2-container").css("height", "340px").css("position", "relative");
