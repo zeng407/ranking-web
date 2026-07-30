@@ -139,6 +139,7 @@ function createGameVm(overrides = {}) {
 describe('Game.vue batch vote', { concurrency: false }, () => {
   beforeEach(() => {
     global.localStorage = createMemoryStorage();
+    global.sessionStorage = createMemoryStorage();
     global.axios = undefined;
     global.$ = () => ({ modal() {} });
     swalCalls.length = 0;
@@ -621,6 +622,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     const interruptedState = JSON.parse(localStorage.getItem('gamestate_post-serial'));
     assert.deepEqual(interruptedState.unsentVotes, [pendingVote(1, 1, 2)]);
     assert.deepEqual(interruptedState.inFlightBatch.votes, [pendingVote(1, 1, 2)]);
+    writer.releaseGameTabLease();
 
     const retryRequests = [];
     global.axios = {
@@ -807,5 +809,265 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
 
     assert.equal(saveCount, 1);
     assert.equal(postCount, 0);
+  });
+
+  test('the first active tab remains the only writer and a second tab is read-only', () => {
+    const owner = createGameVm();
+    owner.currentLocalMatch = {
+      left_id: 1,
+      right_id: 2,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      stage_start_count: 2,
+    };
+    assert.equal(owner.saveToLocalStorage(), true);
+
+    const follower = createGameVm({ gameSerial: null });
+    follower.handleAnimationAfterNextRound = () => {};
+    assert.equal(follower.loadFromLocalStorage(), true);
+    follower.resumeLocalGame();
+
+    const lease = JSON.parse(localStorage.getItem('gamelease_post-serial_game-serial'));
+    assert.equal(lease.ownerId, owner.localWriterId);
+    assert.equal(follower.isGameTabReadOnly, true);
+
+    const voteAccepted = follower.handleClientVote(
+      follower.localElements[0],
+      follower.localElements[1],
+      'left'
+    );
+    assert.equal(voteAccepted, false);
+    assert.deepEqual(follower.localVotes, []);
+
+    const canonical = JSON.parse(localStorage.getItem('gamestate_post-serial'));
+    assert.equal(canonical.writerId, owner.localWriterId);
+    assert.deepEqual(canonical.localVotes, []);
+  });
+
+  test('a read-only tab never retries the canonical outbox', async () => {
+    let postCount = 0;
+    global.axios = {
+      post() {
+        postCount++;
+        return Promise.resolve({ data: { status: 'processing', server_vote_count: 1 } });
+      },
+    };
+
+    const owner = createGameVm();
+    owner.localVoteSequence = 1;
+    owner.localVotes = [pendingVote(1, 1, 2)];
+    owner.unsentVotes = [pendingVote(1, 1, 2)];
+    owner.currentLocalMatch = {
+      left_id: 1,
+      right_id: 2,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      stage_start_count: 2,
+    };
+    assert.equal(owner.saveToLocalStorage(), true);
+
+    const follower = createGameVm({ gameSerial: null });
+    follower.handleAnimationAfterNextRound = () => {};
+    assert.equal(follower.loadFromLocalStorage(), true);
+    follower.resumeLocalGame();
+    await nextEventLoop();
+
+    assert.equal(follower.isGameTabReadOnly, true);
+    assert.equal(postCount, 0);
+    assert.deepEqual(follower.unsentVotes, [pendingVote(1, 1, 2)]);
+  });
+
+  test('a second tab cannot start a new game by deleting an active canonical game', () => {
+    let createRequests = 0;
+    global.axios = {
+      post() {
+        createRequests++;
+        return Promise.resolve({ data: { game_serial: 'new-game' } });
+      },
+    };
+
+    const owner = createGameVm();
+    owner.currentLocalMatch = {
+      left_id: 1,
+      right_id: 2,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      stage_start_count: 2,
+    };
+    assert.equal(owner.saveToLocalStorage(), true);
+
+    const follower = createGameVm({ createGameEndpoint: '/api/game' });
+    follower.createGame();
+
+    assert.equal(createRequests, 0);
+    assert.equal(follower.isGameTabReadOnly, true);
+    const canonical = JSON.parse(localStorage.getItem('gamestate_post-serial'));
+    assert.equal(canonical.writerId, owner.localWriterId);
+  });
+
+  test('explicit takeover fences the old tab and resumes the latest canonical snapshot', () => {
+    const owner = createGameVm();
+    owner.currentLocalMatch = {
+      left_id: 1,
+      right_id: 2,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      stage_start_count: 2,
+    };
+    assert.equal(owner.saveToLocalStorage(), true);
+    const ownerToken = owner.gameLeaseToken;
+
+    const follower = createGameVm({ gameSerial: null });
+    follower.handleAnimationAfterNextRound = () => {};
+    follower.resetTimer = () => {};
+    follower.startTimer = () => {};
+    assert.equal(follower.loadFromLocalStorage(), true);
+    follower.resumeLocalGame();
+    assert.equal(follower.isGameTabReadOnly, true);
+
+    assert.equal(follower.takeOverGameTab(true), true);
+    const lease = JSON.parse(localStorage.getItem('gamelease_post-serial_game-serial'));
+    assert.equal(lease.ownerId, follower.localWriterId);
+    assert.ok(lease.fencingToken > ownerToken);
+
+    owner.monitorGameTabLease();
+    assert.equal(owner.isGameTabReadOnly, true);
+    assert.equal(owner.handleClientVote(owner.localElements[0], owner.localElements[1]), false);
+
+    const canonical = JSON.parse(localStorage.getItem('gamestate_post-serial'));
+    assert.equal(canonical.writerId, follower.localWriterId);
+    assert.equal(canonical.writerLeaseToken, lease.fencingToken);
+  });
+
+  test('a stale heartbeat cannot reclaim the lease after a higher fencing token took over', () => {
+    const owner = createGameVm();
+    owner.currentLocalMatch = {
+      left_id: 1,
+      right_id: 2,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      stage_start_count: 2,
+    };
+    assert.equal(owner.saveToLocalStorage(), true);
+    const staleToken = owner.gameLeaseToken;
+
+    const follower = createGameVm({ gameSerial: null });
+    follower.handleAnimationAfterNextRound = () => {};
+    follower.resetTimer = () => {};
+    follower.startTimer = () => {};
+    assert.equal(follower.loadFromLocalStorage(), true);
+    assert.equal(follower.takeOverGameTab(true), true);
+    assert.ok(follower.gameLeaseToken > staleToken);
+
+    localStorage.setItem('gamelease_post-serial_game-serial', JSON.stringify({
+      schemaVersion: 1,
+      gameSerial: 'game-serial',
+      ownerId: owner.localWriterId,
+      fencingToken: staleToken,
+      heartbeatAt: Date.now(),
+      expiresAt: Date.now() + 120000,
+    }));
+    follower.handleGameTabStorageEvent({ key: 'gamelease_post-serial_game-serial' });
+
+    const restoredLease = JSON.parse(localStorage.getItem('gamelease_post-serial_game-serial'));
+    assert.equal(restoredLease.ownerId, follower.localWriterId);
+    assert.equal(restoredLease.fencingToken, follower.gameLeaseToken);
+    assert.equal(follower.isGameTabReadOnly, false);
+  });
+
+  test('an already-diverged old tab is preserved as a separate local-only branch', () => {
+    const owner = createGameVm();
+    owner.currentLocalMatch = {
+      left_id: 1,
+      right_id: 2,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      stage_start_count: 2,
+    };
+    assert.equal(owner.saveToLocalStorage(), true);
+
+    const follower = createGameVm({ gameSerial: null });
+    follower.handleAnimationAfterNextRound = () => {};
+    follower.resetTimer = () => {};
+    follower.startTimer = () => {};
+    assert.equal(follower.loadFromLocalStorage(), true);
+    assert.equal(follower.takeOverGameTab(true), true);
+
+    owner.localVoteSequence = 1;
+    owner.localVotes.push(pendingVote(1, 1, 2));
+    owner.unsentVotes.push(pendingVote(1, 1, 2));
+    owner.localElements[0].local_win_count = 1;
+    owner.localElements[1].local_eliminated = true;
+    owner.hasUnpersistedLocalProgress = true;
+    owner.handleGameTabLeaseLost(owner.readGameTabLease());
+
+    assert.notEqual(owner.localBranchId, null);
+    assert.equal(owner.isLocalOnlyAfterBatchConflict, true);
+    assert.equal(owner.isGameTabReadOnly, false);
+    assert.equal(owner.cloudSyncDisabledReason, 'multi_tab_divergence');
+
+    const branchKey = `gamebranch_post-serial_${owner.localBranchId}`;
+    const branch = JSON.parse(localStorage.getItem(branchKey));
+    assert.deepEqual(branch.localVotes, [pendingVote(1, 1, 2)]);
+    assert.deepEqual(branch.unsentVotes, [pendingVote(1, 1, 2)]);
+
+    const canonical = JSON.parse(localStorage.getItem('gamestate_post-serial'));
+    assert.equal(canonical.writerId, follower.localWriterId);
+    assert.deepEqual(canonical.localVotes, []);
+
+    localStorage.setItem('gameresult_post-serial', JSON.stringify({ marker: 'canonical-result' }));
+    assert.equal(owner.saveLocalRankResult(false), true);
+    const branchResultKey = `gameresult_post-serial_branch_${owner.localBranchId}`;
+    const branchResult = JSON.parse(localStorage.getItem(branchResultKey));
+    assert.deepEqual(branchResult.localVotes, [pendingVote(1, 1, 2)]);
+    assert.equal(
+      JSON.parse(localStorage.getItem('gameresult_post-serial')).marker,
+      'canonical-result'
+    );
+    assert.equal(
+      sessionStorage.getItem('gameresult_selection_post-serial'),
+      branchResultKey
+    );
+  });
+
+  test('a released lease can be acquired by a waiting tab without overwriting progress', () => {
+    const owner = createGameVm();
+    owner.localVoteSequence = 1;
+    owner.localVotes = [pendingVote(1, 1, 2)];
+    owner.currentLocalMatch = {
+      left_id: 1,
+      right_id: 2,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      stage_start_count: 2,
+    };
+    assert.equal(owner.saveToLocalStorage(), true);
+
+    const follower = createGameVm({ gameSerial: null });
+    follower.handleAnimationAfterNextRound = () => {};
+    follower.resetTimer = () => {};
+    follower.startTimer = () => {};
+    assert.equal(follower.loadFromLocalStorage(), true);
+    follower.resumeLocalGame();
+    assert.equal(follower.isGameTabReadOnly, true);
+
+    assert.equal(owner.releaseGameTabLease(), true);
+    assert.equal(follower.takeOverGameTab(false), true);
+    assert.deepEqual(follower.localVotes, [pendingVote(1, 1, 2)]);
+    assert.equal(follower.isGameTabReadOnly, false);
   });
 });

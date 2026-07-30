@@ -66,6 +66,24 @@
     get-game-elements-endpoint="{{ route('api.game.elements', '_serial') }}"
     batch-vote-endpoint="{{ route('api.game.batch-vote') }}" :props-enable-client-mode="true">
     <div class="container-fluid hide-scrollbar pt-2" v-cloak>
+      <div v-if="isGameVoteReadOnly" class="alert alert-warning shadow-sm position-sticky"
+        style="top: 0.5rem; z-index: 1050" role="alert">
+        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between">
+          <span>
+            <i class="fas fa-lock mr-1"></i>@{{ $t('game.multi_tab.read_only') }}
+          </span>
+          <button type="button" class="btn btn-sm btn-warning mt-2 mt-sm-0 ml-sm-3"
+            @click="takeOverGameTab(true)">
+            <i class="fas fa-right-to-bracket mr-1"></i>@{{ $t('game.multi_tab.take_over') }}
+          </button>
+        </div>
+      </div>
+
+      <div v-else-if="localBranchId" class="alert alert-info shadow-sm position-sticky"
+        style="top: 0.5rem; z-index: 1050" role="status">
+        <i class="fas fa-code-branch mr-1"></i>@{{ $t('game.multi_tab.local_branch') }}
+      </div>
+
       @if (
           !$post->is_censored &&
               config('services.google_ad.enabled') &&
@@ -342,7 +360,7 @@
                       <h1 class="my-1 game-element-title user-select-text">@{{ le.title }}</h1>
                     </div>
                     <button id="left-btn" class="btn btn-vote-left vote-button btn-block d-none d-sm-block"
-                      :disabled="isVoting" @click="leftWin">
+                      :disabled="isVoting || isGameVoteReadOnly" @click="leftWin">
                       <i class="fa-solid fa-2x fa-thumbs-up"></i>
                       <h3 class="d-inline-block m-0" v-if="showGameRoomVotes">
                         <I-Count-Up :end-val="leftVotes" :options="{ 'duration': 0.5 }"
@@ -361,7 +379,7 @@
                         </button>
                       </div>
                       <div class="col-9">
-                        <button class="btn btn-vote-left btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
+                        <button class="btn btn-vote-left btn-lg btn-block d-block d-sm-none" :disabled="isVoting || isGameVoteReadOnly"
                           @click="leftWin"><i class="fa-solid fa-thumbs-up"></i>
                           <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                             <I-Count-Up :end-val="leftVotes" :options="{ 'duration': 0.5 }"
@@ -374,7 +392,7 @@
                     </div>
 
                     <div v-else>
-                      <button class="btn btn-vote-left btn-block btn-lg d-block d-sm-none" :disabled="isVoting"
+                      <button class="btn btn-vote-left btn-block btn-lg d-block d-sm-none" :disabled="isVoting || isGameVoteReadOnly"
                         @click="leftWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                         <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                           <I-Count-Up :end-val="leftVotes" :options="{ 'duration': 0.5 }"
@@ -484,7 +502,7 @@
                       <h1 class="my-1 game-element-title user-select-text">@{{ re.title }}</h1>
                     </div>
                     <button id="right-btn" class="btn btn-vote-right vote-button btn-block d-none d-sm-block"
-                      :disabled="isVoting" @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
+                      :disabled="isVoting || isGameVoteReadOnly" @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                       <h3 class="d-inline-block m-0" v-if="showGameRoomVotes">
                         <I-Count-Up :end-val="rightVotes" :options="{ 'duration': 0.5 }"
                           :delay="0"></I-Count-Up>
@@ -502,7 +520,7 @@
                         </button>
                       </div>
                       <div class="col-9">
-                        <button class="btn btn-vote-right btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
+                        <button class="btn btn-vote-right btn-lg btn-block d-block d-sm-none" :disabled="isVoting || isGameVoteReadOnly"
                           @click="rightWin"><i class="fa-solid fa-thumbs-up"></i>
                           <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                             <I-Count-Up :end-val="rightVotes" :options="{ 'duration': 0.5 }"
@@ -514,7 +532,7 @@
                       </div>
                     </div>
                     <div v-else>
-                      <button class="btn btn-vote-right btn-lg btn-block d-block d-sm-none" :disabled="isVoting"
+                      <button class="btn btn-vote-right btn-lg btn-block d-block d-sm-none" :disabled="isVoting || isGameVoteReadOnly"
                         @click="rightWin"><i class="fa-solid fa-2x fa-thumbs-up"></i>
                         <p class="d-inline-block m-0" v-if="showGameRoomVotes">
                           <I-Count-Up :end-val="rightVotes" :options="{ 'duration': 0.5 }"
