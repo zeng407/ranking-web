@@ -162,10 +162,23 @@ export default {
     loadRankFromLocal() {
       // 本地完成的結果使用獨立 key，避免為了顯示排行榜而保留一局「未完成」的遊戲。
       // gamestate 作為舊資料與進行中遊戲的相容 fallback。
+      let selectedResultKey = null;
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          const candidateKey = sessionStorage.getItem(`gameresult_selection_${this.postSerial}`);
+          if (candidateKey && candidateKey.startsWith(`gameresult_${this.postSerial}_branch_`)) {
+            selectedResultKey = candidateKey;
+          }
+        }
+      } catch (e) {
+        selectedResultKey = null;
+      }
+
       const keys = [
+        selectedResultKey,
         `gameresult_${this.postSerial}`,
         `gamestate_${this.postSerial}`,
-      ];
+      ].filter((key, index, allKeys) => key && allKeys.indexOf(key) === index);
 
       for (const key of keys) {
         try {

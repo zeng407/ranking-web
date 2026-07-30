@@ -8,8 +8,12 @@ const MD_WIDTH_SIZE = 576;
 const MOBILE_HEIGHT = 700;
 const BATCH_VOTE_SAVE_INTERVAL = 10; // 每 10 票存一次
 const KEEP_VOTE_RECORD_COUNT = 128 // 保留最近 128 筆投票紀錄
-const LOCAL_GAME_STATE_VERSION = 2;
+const LOCAL_GAME_STATE_VERSION = 3;
 const BATCH_REQUEST_TIMEOUT_MS = 15000;
+const GAME_TAB_LEASE_VERSION = 1;
+const GAME_TAB_HEARTBEAT_MS = 5000;
+const GAME_TAB_LEASE_TTL_MS = 120000; // 容忍背景分頁 timer throttling；正常關閉會立即 release
+const GAME_TAB_MONITOR_MS = 5000;
 
 function createLocalWriterId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -39,11 +43,13 @@ export default {
 
     // 發動儲存 BatchVotes (離線模式)
     window.addEventListener('beforeunload', this.handleBeforeUnload);
+    this.setupGameTabCoordination();
   },
 
   beforeDestroy() {
     this.stopTimer();
     window.removeEventListener('beforeunload', this.handleBeforeUnload);
+    this.teardownGameTabCoordination(true);
   },
   components: {
     ICountUp
@@ -156,6 +162,18 @@ export default {
       localWriterId: createLocalWriterId(),
       localStateSchemaVersion: LOCAL_GAME_STATE_VERSION,
       localStateRevision: 0,
+      gameLeaseToken: 0,
+      gameLeaseOwnerId: null,
+      gameLeaseExpiresAt: 0,
+      gameLeaseHeartbeatTimer: null,
+      gameLeaseMonitorTimer: null,
+      gameTabChannel: null,
+      gameTabTakeoverTimer: null,
+      isGameTabReadOnly: false,
+      lastGameTabNoticeAt: 0,
+      hasUnpersistedLocalProgress: false,
+      localBranchId: null,
+      localBranchReason: null,
       localVoteSequence: 0,
       currentLocalMatch: null,
       clientState: {
@@ -331,6 +349,12 @@ export default {
     isFixedGameHeight() {
       return this.isMobileScreen && !this.isBetGameClient;
     },
+    isGameVoteReadOnly() {
+      return this.isGameTabReadOnly
+        && !this.localBranchId
+        && !this.isHostingGameRank
+        && !this.isBetGameClient;
+    },
   },
   methods: {
     formatThinkingTime(seconds) {
@@ -384,12 +408,499 @@ export default {
     changeSortRanks() {
       this.sortByTop = !this.sortByTop;
     },
-    handleBeforeUnload() {
-        if (!this.isClientMode) return;
+    shouldCoordinateGameTabs() {
+      return !!this.gameSerial
+        && !this.localBranchId
+        && !this.isHostingGameRank
+        && !this.isBetGameClient;
+    },
+    getCanonicalLocalGameStateKey() {
+      return `gamestate_${this.postSerial}`;
+    },
+    getLocalBranchStateKey(branchId = this.localBranchId) {
+      return branchId ? `gamebranch_${this.postSerial}_${branchId}` : null;
+    },
+    getLocalBranchSelectionKey() {
+      return `gamebranch_selection_${this.postSerial}`;
+    },
+    getLocalRankResultSelectionKey() {
+      return `gameresult_selection_${this.postSerial}`;
+    },
+    getSelectedLocalBranchId() {
+      try {
+        if (typeof sessionStorage === 'undefined') return null;
+        return sessionStorage.getItem(this.getLocalBranchSelectionKey());
+      } catch (error) {
+        return null;
+      }
+    },
+    selectLocalBranch(branchId) {
+      try {
+        if (typeof sessionStorage === 'undefined') return;
+        if (branchId) {
+          sessionStorage.setItem(this.getLocalBranchSelectionKey(), branchId);
+        } else {
+          sessionStorage.removeItem(this.getLocalBranchSelectionKey());
+        }
+      } catch (error) {
+        console.warn("Unable to select a local game branch.", error);
+      }
+    },
+    selectLocalRankResult(key) {
+      try {
+        if (typeof sessionStorage === 'undefined') return;
+        if (key) {
+          sessionStorage.setItem(this.getLocalRankResultSelectionKey(), key);
+        } else {
+          sessionStorage.removeItem(this.getLocalRankResultSelectionKey());
+        }
+      } catch (error) {
+        console.warn("Unable to select a local rank result.", error);
+      }
+    },
+    getGameTabLeaseKey(gameSerial = this.gameSerial) {
+      return gameSerial ? `gamelease_${this.postSerial}_${gameSerial}` : null;
+    },
+    parseLocalJson(rawValue) {
+      if (!rawValue) return null;
+      try {
+        return JSON.parse(rawValue);
+      } catch (error) {
+        return null;
+      }
+    },
+    readGameTabLease(gameSerial = this.gameSerial) {
+      const key = this.getGameTabLeaseKey(gameSerial);
+      if (!key) return null;
+      try {
+        return this.parseLocalJson(localStorage.getItem(key));
+      } catch (error) {
+        return null;
+      }
+    },
+    isGameTabLeaseActive(lease, now = Date.now()) {
+      return !!lease
+        && String(lease.gameSerial) === String(this.gameSerial)
+        && Number(lease.expiresAt || 0) > now;
+    },
+    getCanonicalSnapshotLeaseToken() {
+      try {
+        const snapshot = this.parseLocalJson(
+          localStorage.getItem(this.getCanonicalLocalGameStateKey())
+        );
+        if (!snapshot || String(snapshot.gameSerial) !== String(this.gameSerial)) {
+          return 0;
+        }
+        return Number(snapshot.writerLeaseToken || 0);
+      } catch (error) {
+        return 0;
+      }
+    },
+    getActiveForeignCanonicalGameLease() {
+      try {
+        const snapshot = this.parseLocalJson(
+          localStorage.getItem(this.getCanonicalLocalGameStateKey())
+        );
+        if (!snapshot || !snapshot.gameSerial) return null;
 
-        // beforeunload 不送 HTTP；無論目前有沒有待送票，都再保存
-        // 當前配對、本地賽程與 outbox，讓任意時點重整都可恢復。
+        const lease = this.readGameTabLease(snapshot.gameSerial);
+        if (lease
+          && String(lease.gameSerial) === String(snapshot.gameSerial)
+          && Number(lease.expiresAt || 0) > Date.now()
+          && lease.ownerId !== this.localWriterId) {
+          return lease;
+        }
+      } catch (error) {
+        return null;
+      }
+      return null;
+    },
+    ownsGameTabLease() {
+      if (!this.shouldCoordinateGameTabs()) return true;
+      const lease = this.readGameTabLease();
+      return this.isGameTabLeaseActive(lease)
+        && lease.ownerId === this.localWriterId
+        && Number(lease.fencingToken || 0) === Number(this.gameLeaseToken || 0);
+    },
+    acquireGameTabLease(force = false) {
+      if (!this.shouldCoordinateGameTabs()) return true;
+
+      const now = Date.now();
+      const currentLease = this.readGameTabLease();
+      const activeForeignLease = this.isGameTabLeaseActive(currentLease, now)
+        && currentLease.ownerId !== this.localWriterId;
+
+      if (activeForeignLease && !force) {
+        this.handleGameTabLeaseLost(currentLease);
+        return false;
+      }
+
+      const sameLease = this.isGameTabLeaseActive(currentLease, now)
+        && currentLease.ownerId === this.localWriterId
+        && Number(currentLease.fencingToken || 0) === Number(this.gameLeaseToken || 0);
+      const previousToken = Math.max(
+        Number(this.gameLeaseToken || 0),
+        Number(currentLease && currentLease.fencingToken || 0),
+        this.getCanonicalSnapshotLeaseToken()
+      );
+      const fencingToken = sameLease ? previousToken : previousToken + 1;
+      const lease = {
+        schemaVersion: GAME_TAB_LEASE_VERSION,
+        gameSerial: this.gameSerial,
+        ownerId: this.localWriterId,
+        fencingToken,
+        heartbeatAt: now,
+        expiresAt: now + GAME_TAB_LEASE_TTL_MS,
+      };
+
+      try {
+        localStorage.setItem(this.getGameTabLeaseKey(), JSON.stringify(lease));
+        const confirmedLease = this.readGameTabLease();
+        const acquired = !!confirmedLease
+          && confirmedLease.ownerId === this.localWriterId
+          && Number(confirmedLease.fencingToken || 0) === fencingToken;
+
+        if (!acquired) {
+          this.handleGameTabLeaseLost(confirmedLease);
+          return false;
+        }
+
+        this.gameLeaseToken = fencingToken;
+        this.gameLeaseOwnerId = this.localWriterId;
+        this.gameLeaseExpiresAt = lease.expiresAt;
+        this.isGameTabReadOnly = false;
+        this.startGameTabHeartbeat();
+        this.postGameTabMessage({
+          type: 'lease-acquired',
+          gameSerial: this.gameSerial,
+          ownerId: this.localWriterId,
+          fencingToken,
+        });
+        return true;
+      } catch (error) {
+        console.error("Unable to acquire the local game lease.", error);
+        return false;
+      }
+    },
+    refreshGameTabLease() {
+      if (!this.shouldCoordinateGameTabs() || !this.ownsGameTabLease()) {
+        this.stopGameTabHeartbeat();
+        return false;
+      }
+
+      const lease = this.readGameTabLease();
+      if (!lease
+        || lease.ownerId !== this.localWriterId
+        || Number(lease.fencingToken || 0) !== Number(this.gameLeaseToken || 0)) {
+        this.handleGameTabLeaseLost(lease);
+        return false;
+      }
+      const now = Date.now();
+      const refreshedLease = {
+        ...lease,
+        heartbeatAt: now,
+        expiresAt: now + GAME_TAB_LEASE_TTL_MS,
+      };
+
+      try {
+        localStorage.setItem(this.getGameTabLeaseKey(), JSON.stringify(refreshedLease));
+        const confirmedLease = this.readGameTabLease();
+        if (!confirmedLease
+          || confirmedLease.ownerId !== this.localWriterId
+          || Number(confirmedLease.fencingToken || 0) !== Number(this.gameLeaseToken || 0)) {
+          this.handleGameTabLeaseLost(confirmedLease);
+          return false;
+        }
+        this.gameLeaseExpiresAt = refreshedLease.expiresAt;
+        return true;
+      } catch (error) {
+        console.error("Unable to refresh the local game lease.", error);
+        return false;
+      }
+    },
+    startGameTabHeartbeat() {
+      if (this.gameLeaseHeartbeatTimer || typeof window === 'undefined') return;
+      this.gameLeaseHeartbeatTimer = window.setInterval(
+        () => this.refreshGameTabLease(),
+        GAME_TAB_HEARTBEAT_MS
+      );
+    },
+    stopGameTabHeartbeat() {
+      if (!this.gameLeaseHeartbeatTimer) return;
+      if (typeof window !== 'undefined') {
+        window.clearInterval(this.gameLeaseHeartbeatTimer);
+      } else {
+        clearInterval(this.gameLeaseHeartbeatTimer);
+      }
+      this.gameLeaseHeartbeatTimer = null;
+    },
+    releaseGameTabLease() {
+      this.stopGameTabHeartbeat();
+      if (!this.gameSerial || this.localBranchId) return false;
+
+      const lease = this.readGameTabLease();
+      const ownsLease = lease
+        && lease.ownerId === this.localWriterId
+        && Number(lease.fencingToken || 0) === Number(this.gameLeaseToken || 0);
+      if (!ownsLease) return false;
+
+      try {
+        localStorage.removeItem(this.getGameTabLeaseKey());
+        this.gameLeaseOwnerId = null;
+        this.gameLeaseExpiresAt = 0;
+        this.postGameTabMessage({
+          type: 'lease-released',
+          gameSerial: this.gameSerial,
+          ownerId: this.localWriterId,
+          fencingToken: this.gameLeaseToken,
+        });
+        return true;
+      } catch (error) {
+        console.error("Unable to release the local game lease.", error);
+        return false;
+      }
+    },
+    setupGameTabCoordination() {
+      if (typeof window === 'undefined') return;
+
+      window.addEventListener('storage', this.handleGameTabStorageEvent);
+      window.addEventListener('pagehide', this.handlePageHide);
+
+      if (typeof window.BroadcastChannel === 'function') {
+        this.gameTabChannel = new window.BroadcastChannel(`2pick-game-tabs:${this.postSerial}`);
+        this.gameTabChannel.addEventListener('message', this.handleGameTabBroadcast);
+      }
+
+      if (!this.gameLeaseMonitorTimer) {
+        this.gameLeaseMonitorTimer = window.setInterval(
+          () => this.monitorGameTabLease(),
+          GAME_TAB_MONITOR_MS
+        );
+      }
+    },
+    teardownGameTabCoordination(releaseLease = false) {
+      if (releaseLease) {
+        this.releaseGameTabLease();
+      } else {
+        this.stopGameTabHeartbeat();
+      }
+
+      if (this.gameTabTakeoverTimer) {
+        clearTimeout(this.gameTabTakeoverTimer);
+        this.gameTabTakeoverTimer = null;
+      }
+      if (this.gameLeaseMonitorTimer) {
+        clearInterval(this.gameLeaseMonitorTimer);
+        this.gameLeaseMonitorTimer = null;
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', this.handleGameTabStorageEvent);
+        window.removeEventListener('pagehide', this.handlePageHide);
+      }
+      if (this.gameTabChannel) {
+        this.gameTabChannel.removeEventListener('message', this.handleGameTabBroadcast);
+        this.gameTabChannel.close();
+        this.gameTabChannel = null;
+      }
+    },
+    postGameTabMessage(message) {
+      if (!this.gameTabChannel) return;
+      try {
+        this.gameTabChannel.postMessage(message);
+      } catch (error) {
+        console.warn("Unable to notify another game tab.", error);
+      }
+    },
+    handleGameTabBroadcast(event) {
+      const message = event && event.data ? event.data : null;
+      if (!message || String(message.gameSerial) !== String(this.gameSerial)) return;
+      if (message.ownerId === this.localWriterId) return;
+
+      if (message.type === 'lease-acquired') {
+        this.handleGameTabStorageEvent({ key: this.getGameTabLeaseKey() });
+      } else if (message.type === 'lease-released') {
+        const currentLease = this.readGameTabLease();
+        if (!this.isGameTabLeaseActive(currentLease)) {
+          this.queueAutomaticGameTabTakeover();
+        }
+      }
+    },
+    handleGameTabStorageEvent(event) {
+      if (!this.gameSerial || !event) return;
+      if (event.key !== this.getGameTabLeaseKey()) return;
+
+      // Storage/Broadcast events may be queued. Always inspect the current lease
+      // instead of trusting an older event payload that arrived after a takeover.
+      const lease = this.readGameTabLease();
+      if (this.isGameTabLeaseActive(lease) && lease.ownerId !== this.localWriterId) {
+        const incomingToken = Number(lease.fencingToken || 0);
+        const canonicalState = this.parseLocalJson(
+          localStorage.getItem(this.getCanonicalLocalGameStateKey())
+        );
+        const canonicalToken = Number(canonicalState && canonicalState.writerLeaseToken || 0);
+        const canonicalOwnedByThisTab = canonicalState
+          && canonicalState.writerId === this.localWriterId
+          && canonicalToken === Number(this.gameLeaseToken || 0);
+
+        // A heartbeat that started before takeover must not restore an older
+        // fencing token. Reassert the newer owner instead of stepping down.
+        if (incomingToken < Number(this.gameLeaseToken || 0)
+          || (incomingToken === Number(this.gameLeaseToken || 0) && canonicalOwnedByThisTab)) {
+          this.reassertGameTabLease();
+          return;
+        }
+        this.handleGameTabLeaseLost(lease);
+      } else if (!lease && this.isGameTabReadOnly) {
+        this.queueAutomaticGameTabTakeover();
+      }
+    },
+    reassertGameTabLease() {
+      if (!this.gameSerial || !this.gameLeaseToken || this.localBranchId) return false;
+      const now = Date.now();
+      const lease = {
+        schemaVersion: GAME_TAB_LEASE_VERSION,
+        gameSerial: this.gameSerial,
+        ownerId: this.localWriterId,
+        fencingToken: this.gameLeaseToken,
+        heartbeatAt: now,
+        expiresAt: now + GAME_TAB_LEASE_TTL_MS,
+      };
+      try {
+        localStorage.setItem(this.getGameTabLeaseKey(), JSON.stringify(lease));
+        this.gameLeaseOwnerId = this.localWriterId;
+        this.gameLeaseExpiresAt = lease.expiresAt;
+        this.isGameTabReadOnly = false;
+        this.startGameTabHeartbeat();
+        return true;
+      } catch (error) {
+        console.error("Unable to reassert the local game lease.", error);
+        return false;
+      }
+    },
+    handleGameTabLeaseLost(lease = null) {
+      if (this.localBranchId) return;
+
+      this.stopGameTabHeartbeat();
+      this.gameLeaseOwnerId = lease ? lease.ownerId : null;
+      this.gameLeaseExpiresAt = lease ? Number(lease.expiresAt || 0) : 0;
+      this.isGameTabReadOnly = true;
+      this.isVoting = false;
+
+      if (this.hasUnpersistedLocalProgress) {
+        this.forkCurrentLocalProgress('multi_tab_divergence');
+      }
+    },
+    monitorGameTabLease() {
+      if (!this.gameSerial || this.localBranchId || this.isHostingGameRank || this.isBetGameClient) {
+        return;
+      }
+
+      if (this.ownsGameTabLease()) {
+        if (this.gameLeaseExpiresAt - Date.now() < GAME_TAB_LEASE_TTL_MS / 2) {
+          this.refreshGameTabLease();
+        }
+        return;
+      }
+
+      const lease = this.readGameTabLease();
+      if (this.isGameTabLeaseActive(lease)) {
+        this.handleGameTabLeaseLost(lease);
+        return;
+      }
+
+      if (this.isGameTabReadOnly) {
+        this.queueAutomaticGameTabTakeover();
+      }
+    },
+    queueAutomaticGameTabTakeover() {
+      if (this.gameTabTakeoverTimer || !this.isGameTabReadOnly || this.localBranchId) return;
+      const delay = 50 + Math.floor(Math.random() * 200);
+      this.gameTabTakeoverTimer = setTimeout(() => {
+        this.gameTabTakeoverTimer = null;
+        this.takeOverGameTab(false);
+      }, delay);
+    },
+    takeOverGameTab(force = true) {
+      if (!this.gameSerial || this.localBranchId) return false;
+      if (!this.loadFromLocalStorage(true)) return false;
+      if (!this.acquireGameTabLease(force)) return false;
+
+      if (!this.claimLatestCanonicalGameState()) {
+        this.releaseGameTabLease();
+        this.isGameTabReadOnly = true;
+        return false;
+      }
+
+      this.isGameTabReadOnly = false;
+      this.hasUnpersistedLocalProgress = false;
+      if (this.isClientMode) {
+        this.resumeLocalGame(true);
+      } else {
+        this.nextRound(null);
+      }
+      this.resetTimer();
+      this.startTimer();
+      return true;
+    },
+    claimLatestCanonicalGameState(maxAttempts = 3) {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // 取得 fencing token 後重讀，涵蓋接管同時舊分頁剛完成的最後一次寫入。
+        if (!this.loadFromLocalStorage(true) || !this.ownsGameTabLease()) {
+          return false;
+        }
+        if (this.saveToLocalStorage()) {
+          return true;
+        }
+      }
+      return false;
+    },
+    ensureGameTabWriteAccess(showNotice = true) {
+      if (!this.shouldCoordinateGameTabs()) return true;
+      if (this.ownsGameTabLease() || this.acquireGameTabLease(false)) return true;
+      if (showNotice) this.notifyReadOnlyGameTab();
+      return false;
+    },
+    notifyReadOnlyGameTab() {
+      const now = Date.now();
+      if (now - this.lastGameTabNoticeAt < 3000) return;
+      this.lastGameTabNoticeAt = now;
+      Swal.fire({
+        icon: 'info',
+        toast: true,
+        position: 'top-end',
+        timer: 3000,
+        text: this.$t('game.multi_tab.read_only'),
+      });
+    },
+    forkCurrentLocalProgress(reason = 'multi_tab_divergence') {
+      if (this.localBranchId) return true;
+
+      this.stopGameTabHeartbeat();
+      this.localBranchId = `${this.gameSerial}-${this.localWriterId}`;
+      this.localBranchReason = reason;
+      this.isGameTabReadOnly = false;
+      this.isClientMode = true;
+      this.isLocalOnlyAfterBatchConflict = true;
+      this.cloudSyncDisabledReason = reason;
+      this.inFlightBatch = null;
+      this.recoveredInterruptedBatch = null;
+      this.pendingFinalBatchVote = false;
+      this.selectLocalBranch(this.localBranchId);
+      return this.saveToLocalStorage();
+    },
+    handlePageHide() {
+      if (this.isClientMode) {
         this.saveToLocalStorage();
+      }
+      this.releaseGameTabLease();
+    },
+    handleBeforeUnload() {
+        if (this.isClientMode) {
+          // beforeunload 不送 HTTP；無論目前有沒有待送票，都再保存
+          // 當前配對、本地賽程與 outbox，讓任意時點重整都可恢復。
+          this.saveToLocalStorage();
+        }
+        this.releaseGameTabLease();
     },
     loadGameSerialFromCookie() {
       return this.game_serial = this.$cookies.get(this.postSerial);
@@ -735,7 +1246,28 @@ export default {
       if (this.creatingGame) return;
 
       // 建立新遊戲前，移除該主題的舊進度與上一局本地排行榜。
-      this.clearLocalStorage(true);
+      const activeForeignLease = this.getActiveForeignCanonicalGameLease();
+      if (activeForeignLease) {
+        this.gameLeaseOwnerId = activeForeignLease.ownerId;
+        this.gameLeaseExpiresAt = Number(activeForeignLease.expiresAt || 0);
+        this.isGameTabReadOnly = true;
+        this.notifyReadOnlyGameTab();
+        return;
+      }
+      this.releaseGameTabLease();
+      const wasLocalBranch = !!this.localBranchId;
+      if (!this.clearLocalStorage(true)) {
+        this.notifyReadOnlyGameTab();
+        return;
+      }
+      if (wasLocalBranch) {
+        this.localBranchId = null;
+        this.localBranchReason = null;
+        this.selectLocalBranch(null);
+        if (!this.clearLocalStorage(true)) {
+          return;
+        }
+      }
       this.clearLocalRankResult();
 
       // 清空時間軸
@@ -759,8 +1291,9 @@ export default {
           if (this.isHostingGameRank || this.isClientMode === false) {
               // --- 多人模式 (Server Mode) ---
               this.isClientMode = false;
-              this.saveToLocalStorage();
-              this.nextRound(null, false);
+              if (this.saveToLocalStorage()) {
+                this.nextRound(null, false);
+              }
           } else {
               // --- 單人模式 (Client Mode) ---
               this.initClientSideGame();
@@ -791,6 +1324,12 @@ export default {
       this.existingElementIds.clear();
       this.localStateSchemaVersion = LOCAL_GAME_STATE_VERSION;
       this.localStateRevision = 0;
+      this.localBranchId = null;
+      this.localBranchReason = null;
+      this.isGameTabReadOnly = false;
+      this.hasUnpersistedLocalProgress = false;
+      this.selectLocalBranch(null);
+      this.selectLocalRankResult(null);
       this.localVoteSequence = 0;
       this.currentLocalMatch = null;
       this.inFlightBatch = null;
@@ -817,7 +1356,10 @@ export default {
             };
 
             this.updateStageConfig();
-            this.saveToLocalStorage();
+            if (!this.saveToLocalStorage()) {
+              this.isDataLoading = false;
+              return;
+            }
             this.nextLocalRound();
 
             // 啟動背景抓取剩餘資料
@@ -873,6 +1415,8 @@ export default {
     },
 
     fetchRemainingElements(retryCount = 0) {
+      if (this.isGameTabReadOnly && !this.localBranchId) return;
+
       // 檢查目標達成：數量已足夠
       if (this.localElements.length >= this.elementsCount) {
           console.log("All elements loaded successfully.");
@@ -891,6 +1435,7 @@ export default {
 
       axios.get(url, { params: { limit: requestLimit } })
           .then(res => {
+              if (!this.ensureGameTabWriteAccess(false)) return;
               const data = res.data.data;
 
               if (data && data.length > 0) {
@@ -917,8 +1462,11 @@ export default {
           });
     },
 
-    getLocalGameStateKey() {
-      return `gamestate_${this.postSerial}`;
+    getLocalGameStateKey(forceCanonical = false) {
+      if (!forceCanonical && this.localBranchId) {
+        return this.getLocalBranchStateKey();
+      }
+      return this.getCanonicalLocalGameStateKey();
     },
 
     normalizeStoredVote(vote, fallbackId) {
@@ -948,6 +1496,14 @@ export default {
       if (!this.gameSerial) return false;
 
       try {
+        const isBranchWrite = !!this.localBranchId;
+        if (!isBranchWrite && this.shouldCoordinateGameTabs()) {
+          const hasWriteLease = claimOwnership
+            ? this.acquireGameTabLease(true)
+            : this.ensureGameTabWriteAccess(false);
+          if (!hasWriteLease) return false;
+        }
+
         const storageKey = this.getLocalGameStateKey();
         const currentRawState = localStorage.getItem(storageKey);
         let currentStoredState = null;
@@ -967,10 +1523,13 @@ export default {
             && currentStoredState.writerId !== this.localWriterId;
           const storedRevision = Number(currentStoredState.localStateRevision || 0);
           const isNewerSnapshot = storedRevision > this.localStateRevision;
+          const storedLeaseToken = Number(currentStoredState.writerLeaseToken || 0);
+          const ownsNewerLease = !isBranchWrite
+            && Number(this.gameLeaseToken || 0) > storedLeaseToken;
 
-          // 新頁面恢復時會明確 claim ownership。舊頁面的延遲
-          // HTTP callback 之後再執行，不得覆寫新頁面已接管的 snapshot。
-          if (!claimOwnership && (ownedByAnotherPage || isNewerSnapshot)) {
+          // 即使取得新 lease，也必須先載入最新版 snapshot，不能用舊記憶體
+          // 覆蓋較新的本地進度。fencing token 只允許接管已載入的同一 revision。
+          if (isNewerSnapshot || (ownedByAnotherPage && !ownsNewerLease && !isBranchWrite)) {
             console.warn("Skipped stale local game write from an older page instance.");
             return false;
           }
@@ -983,8 +1542,11 @@ export default {
         const stateToSave = {
           schemaVersion: LOCAL_GAME_STATE_VERSION,
           writerId: this.localWriterId,
+          writerLeaseToken: isBranchWrite ? null : this.gameLeaseToken,
           localStateRevision: nextRevision,
           gameSerial: this.gameSerial,
+          localBranchId: this.localBranchId,
+          localBranchReason: this.localBranchReason,
           localElements: this.localElements,
           localVotes: this.localVotes,
           localVoteSequence: this.localVoteSequence,
@@ -1004,8 +1566,15 @@ export default {
           clientMode: this.isClientMode,
         };
 
+        if (!isBranchWrite && this.shouldCoordinateGameTabs() && !this.ownsGameTabLease()) {
+          console.warn("Skipped local game write after losing the tab lease.");
+          this.handleGameTabLeaseLost(this.readGameTabLease());
+          return false;
+        }
+
         localStorage.setItem(storageKey, JSON.stringify(stateToSave));
         this.localStateRevision = nextRevision;
+        this.hasUnpersistedLocalProgress = false;
         return true;
       } catch (error) {
         console.error("Storage save failed", error);
@@ -1015,10 +1584,25 @@ export default {
 
     // 只還原資料，不在這裡推進賽程或送 request。呼叫端完成所有欄位還原後，
     // 再透過 resumeLocalGame 恢復畫面，避免重整時 nextLocalRound 被執行兩次。
-    loadFromLocalStorage() {
+    loadFromLocalStorage(forceCanonical = false) {
       if (this.isHostingGameRank) return false;
 
-      const savedData = localStorage.getItem(this.getLocalGameStateKey());
+      if (forceCanonical) {
+        this.localBranchId = null;
+        this.localBranchReason = null;
+      } else if (!this.localBranchId) {
+        this.localBranchId = this.getSelectedLocalBranchId();
+      }
+
+      let storageKey = this.getLocalGameStateKey(forceCanonical);
+      let savedData = localStorage.getItem(storageKey);
+      if (!savedData && this.localBranchId && !forceCanonical) {
+        this.localBranchId = null;
+        this.localBranchReason = null;
+        this.selectLocalBranch(null);
+        storageKey = this.getCanonicalLocalGameStateKey();
+        savedData = localStorage.getItem(storageKey);
+      }
       if (!savedData) return false;
 
       try {
@@ -1029,6 +1613,13 @@ export default {
         this.localStateSchemaVersion = Number(parsed.schemaVersion || 1);
         this.localStateRevision = Number(parsed.localStateRevision || 0);
         this.gameSerial = parsed.gameSerial;
+        this.localBranchId = parsed.localBranchId || null;
+        this.localBranchReason = parsed.localBranchReason || null;
+        this.isGameTabReadOnly = false;
+        this.hasUnpersistedLocalProgress = false;
+        if (this.localBranchId) {
+          this.selectLocalBranch(this.localBranchId);
+        }
         if (savedClientMode === false) {
           this.isClientMode = false;
           console.log("Restored as Server Mode from localStorage");
@@ -1094,7 +1685,9 @@ export default {
           this.serverVoteCount = Math.max(0, this.localVotes.length - this.unsentVotes.length);
         }
 
-        this.isLocalOnlyAfterBatchConflict = parsed.localOnlyAfterBatchConflict === true;
+        this.isLocalOnlyAfterBatchConflict = this.localBranchId
+          ? true
+          : parsed.localOnlyAfterBatchConflict === true;
         this.cloudSyncDisabledReason = parsed.cloudSyncDisabledReason || null;
         this.currentLocalMatch = parsed.currentLocalMatch || null;
         this.matchHistory = Array.isArray(parsed.matchHistory)
@@ -1134,8 +1727,30 @@ export default {
       const storageKey = this.getLocalGameStateKey();
 
       if (force) {
-        localStorage.removeItem(storageKey);
-        return true;
+        try {
+          const savedState = this.parseLocalJson(localStorage.getItem(storageKey));
+          const savedGameSerial = savedState && savedState.gameSerial;
+          if (!this.localBranchId && savedGameSerial) {
+            const lease = this.readGameTabLease(savedGameSerial);
+            const activeForeignLease = lease
+              && String(lease.gameSerial) === String(savedGameSerial)
+              && Number(lease.expiresAt || 0) > Date.now()
+              && lease.ownerId !== this.localWriterId;
+            if (activeForeignLease) {
+              this.gameLeaseOwnerId = lease.ownerId;
+              this.gameLeaseExpiresAt = Number(lease.expiresAt || 0);
+              this.isGameTabReadOnly = true;
+              return false;
+            }
+          }
+
+          localStorage.removeItem(storageKey);
+          if (this.localBranchId) this.selectLocalBranch(null);
+          return true;
+        } catch (error) {
+          console.error("Local game cleanup failed", error);
+          return false;
+        }
       }
 
       try {
@@ -1146,7 +1761,8 @@ export default {
         const sameGame = !parsed.gameSerial
           || String(parsed.gameSerial) === String(this.gameSerial);
         const ownedByThisPage = !parsed.writerId
-          || parsed.writerId === this.localWriterId;
+          || parsed.writerId === this.localWriterId
+          || (this.localBranchId && parsed.localBranchId === this.localBranchId);
         const storedRevision = Number(parsed.localStateRevision || 0);
 
         if (!sameGame || !ownedByThisPage || storedRevision > this.localStateRevision) {
@@ -1155,6 +1771,7 @@ export default {
         }
 
         localStorage.removeItem(storageKey);
+        if (this.localBranchId) this.selectLocalBranch(null);
         return true;
       } catch (error) {
         console.error("Local game cleanup failed", error);
@@ -1167,11 +1784,24 @@ export default {
         return false;
       }
 
-      const key = `gameresult_${this.postSerial}`;
+      if (!this.localBranchId
+        && this.shouldCoordinateGameTabs()
+        && !this.ownsGameTabLease()) {
+        this.hasUnpersistedLocalProgress = true;
+        if (!this.forkCurrentLocalProgress('multi_tab_late_completion')) {
+          return false;
+        }
+      }
+
+      const key = this.localBranchId
+        ? `gameresult_${this.postSerial}_branch_${this.localBranchId}`
+        : `gameresult_${this.postSerial}`;
       const result = {
         schemaVersion: LOCAL_GAME_STATE_VERSION,
         writerId: this.localWriterId,
         gameSerial: this.gameSerial,
+        localBranchId: this.localBranchId,
+        localBranchReason: this.localBranchReason,
         localElements: this.localElements,
         localVotes: this.localVotes,
         unsentVotes: this.unsentVotes,
@@ -1186,6 +1816,7 @@ export default {
 
       try {
         localStorage.setItem(key, JSON.stringify(result));
+        this.selectLocalRankResult(this.localBranchId ? key : null);
         return true;
       } catch (error) {
         console.error("Local rank result save failed", error);
@@ -1196,6 +1827,7 @@ export default {
     clearLocalRankResult() {
       const key = `gameresult_${this.postSerial}`;
       localStorage.removeItem(key);
+      this.selectLocalRankResult(null);
     },
 
     // 移植後端的 NextRound 計算邏輯
@@ -1263,6 +1895,11 @@ export default {
         this.unsentVotes = [];
         this.localStateSchemaVersion = LOCAL_GAME_STATE_VERSION;
         this.localStateRevision = 0;
+        this.localBranchId = null;
+        this.localBranchReason = null;
+        this.isGameTabReadOnly = false;
+        this.hasUnpersistedLocalProgress = false;
+        this.selectLocalBranch(null);
         this.localVoteSequence = 0;
         this.currentLocalMatch = null;
         this.inFlightBatch = null;
@@ -1297,7 +1934,7 @@ export default {
 
     },
 
-    resumeLocalGame() {
+    resumeLocalGame(leaseAlreadyClaimed = false) {
       this.isClientMode = true;
       this.showMatchHistory = true;
 
@@ -1312,7 +1949,18 @@ export default {
       this.isBatchVoting = false;
       this.isCloudSaving = false;
       this.pendingFinalBatchVote = false;
-      this.saveToLocalStorage(true);
+
+      const canWriteGame = this.localBranchId || this.ensureGameTabWriteAccess(false);
+      if (!canWriteGame) {
+        this.restoreCurrentLocalMatch();
+        this.isDataLoading = false;
+        return;
+      }
+
+      if (!leaseAlreadyClaimed && !this.saveToLocalStorage()) {
+        this.isDataLoading = false;
+        return;
+      }
 
       if (this.localElements.length < this.elementsCount) {
         this.fetchRemainingElements();
@@ -1346,8 +1994,10 @@ export default {
         if (this.isClientMode) {
           this.resumeLocalGame();
         } else {
-          this.saveToLocalStorage(true);
-          this.nextRound(null);
+          if (this.ensureGameTabWriteAccess(false)) {
+            this.saveToLocalStorage();
+            this.nextRound(null);
+          }
         }
         $("#gameSettingPanel").modal("hide");
         this.resetTimer();
@@ -1370,8 +2020,9 @@ export default {
         }).then(response => {
           this.syncRemoteDataToLocal(response.data);
           this.currentLocalMatch = null;
-          this.saveToLocalStorage();
-          this.nextLocalRound();
+          if (this.saveToLocalStorage()) {
+            this.nextLocalRound();
+          }
         }).catch(error => {
           console.error("Failed to restore remote game", error);
           Swal.fire({
@@ -1464,6 +2115,7 @@ export default {
     },
 
     nextLocalRound() {
+        if (!this.ensureGameTabWriteAccess(false)) return;
         let activeElements = this.localElements.filter(e => !e.local_eliminated);
 
         if (activeElements.length < 2) {
@@ -1710,6 +2362,7 @@ export default {
       }
     },
     leftWin(event) {
+      if (!this.ensureGameTabWriteAccess()) return;
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
@@ -1829,6 +2482,7 @@ export default {
       }
     },
     rightWin(event) {
+      if (!this.ensureGameTabWriteAccess()) return;
       this.rememberedScrollPosition = document.documentElement.scrollTop;
       this.isVoting = true;
       let sendWinnerData = () => {
@@ -2036,6 +2690,7 @@ export default {
     },
 
     vote(winner, loser, winSide = 'left') {
+      if (!this.ensureGameTabWriteAccess()) return false;
       if (this.isLocalOnlyAfterBatchConflict) {
         this.handleClientVote(winner, loser, winSide);
       } else if (!this.isClientMode || this.isHostingGameRank) {
@@ -2047,10 +2702,12 @@ export default {
     },
 
     handleClientVote(winner, loser, winSide = 'left') {
+      if (!this.ensureGameTabWriteAccess()) return false;
       const winnerObj = this.localElements.find(e => e.id === winner.id);
       const loserObj = this.localElements.find(e => e.id === loser.id);
 
       if (winnerObj && loserObj) {
+          this.hasUnpersistedLocalProgress = true;
           winnerObj.local_win_count++;
           winnerObj.local_played++;
           loserObj.local_played++;
@@ -2074,7 +2731,10 @@ export default {
           this.recordMatchFromLastVote();
 
           // 所有本地運算與 outbox 先同步、原子地保存，之後才能進行動畫或 HTTP。
-          this.saveToLocalStorage();
+          const progressPersisted = this.saveToLocalStorage();
+          if (!progressPersisted && this.isGameTabReadOnly) {
+            this.forkCurrentLocalProgress('multi_tab_divergence');
+          }
 
           // 預先計算剩餘人數
           const currentActiveCount = this.localElements.filter(e => !e.local_eliminated).length;
@@ -2104,9 +2764,13 @@ export default {
           }
       };
       this.handleAnimationAfterVoted(mockRes);
+      return true;
     },
 
     sendPartialBatchVotes() {
+      if (this.isGameTabReadOnly && !this.localBranchId) {
+        return Promise.resolve(null);
+      }
       if (this.isLocalOnlyAfterBatchConflict || this.unsentVotes.length === 0) {
         return Promise.resolve(null);
       }
@@ -2115,6 +2779,9 @@ export default {
 
     // 送出最後一批；若雲端同步已停用，直接以本地結果完成。
     sendBatchVotes() {
+      if (this.isGameTabReadOnly && !this.localBranchId) {
+        return Promise.resolve(null);
+      }
       if (this.isLocalOnlyAfterBatchConflict) {
         this.finishLocalOnlyGame();
         return Promise.resolve(null);
@@ -2126,6 +2793,9 @@ export default {
      * 所有 batch vote 共用同一個送出流程，避免 partial/final request 互相超車。
      */
     submitBatchVotes(isFinalBatch) {
+      if (this.isGameTabReadOnly && !this.localBranchId) {
+        return Promise.resolve(null);
+      }
       if (this.isLocalOnlyAfterBatchConflict) {
         if (isFinalBatch) {
           this.finishLocalOnlyGame();
@@ -2155,6 +2825,15 @@ export default {
 
       return this.performBatchVote(isFinalBatch)
         .then(response => {
+          if (response && response.ignoredBecauseLeaseLost) {
+            finalBatchHandled = true;
+            this.pendingFinalBatchVote = false;
+            this.finishingGame = false;
+            this.isDataLoading = false;
+            this.isVoting = false;
+            return;
+          }
+
           this.batchVoteInterval = BATCH_VOTE_SAVE_INTERVAL;
 
           const shouldFinishGame = isFinalBatch || this.pendingFinalBatchVote;
@@ -2177,6 +2856,16 @@ export default {
           }
         })
         .catch(error => {
+          if (error && error.code === 'game_tab_lease_lost') {
+            finalBatchHandled = true;
+            this.pendingFinalBatchVote = false;
+            this.finishingGame = false;
+            this.isDataLoading = false;
+            this.isVoting = false;
+            this.handleGameTabLeaseLost(this.readGameTabLease());
+            return;
+          }
+
           const conflictReason = this.getCloudSyncStopReason(error);
           if (conflictReason) {
             const shouldFinishGame = isFinalBatch || this.pendingFinalBatchVote;
@@ -2258,7 +2947,9 @@ export default {
       if (!this.saveToLocalStorage()) {
         this.inFlightBatch = null;
         const storageError = new Error("Local game state could not be persisted before cloud sync.");
-        storageError.code = "local_state_save_failed";
+        storageError.code = this.isGameTabReadOnly
+          ? "game_tab_lease_lost"
+          : "local_state_save_failed";
         return Promise.reject(storageError);
       }
 
@@ -2272,11 +2963,18 @@ export default {
       }, {
         timeout: BATCH_REQUEST_TIMEOUT_MS,
       }).then(response => {
+        if (!this.localBranchId && !this.ownsGameTabLease()) {
+          this.handleGameTabLeaseLost(this.readGameTabLease());
+          return { ignoredBecauseLeaseLost: true };
+        }
         this.updateServerVoteCount(response.data.server_vote_count);
         this.acknowledgeSubmittedBatch(batch);
         this.saveToLocalStorage();
         return response;
       }).catch(error => {
+        if (error && error.code === "game_tab_lease_lost") {
+          throw error;
+        }
         // 明確失敗後請求已結束；in-flight 可清掉，但 outbox
         // 不動。若瀏覽器在 response 前重整，這段不會執行，
         // 已持久化的 in-flight 會在下次載入時恢復。
@@ -2485,6 +3183,12 @@ export default {
       }
     },
     handleSendVote(res) {
+      if (!this.localBranchId
+        && this.shouldCoordinateGameTabs()
+        && !this.ownsGameTabLease()) {
+        this.handleGameTabLeaseLost(this.readGameTabLease());
+        return;
+      }
       if(this.autoRefreshRoomInterval){
         this.autoRefreshRoomCounter = 0;
       }

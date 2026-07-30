@@ -117,6 +117,9 @@
     "game.saving_progress": "投票進行状況を保存中...",
     "game.no_record": "記録なし",
     "game.match_history" : "投票履歴",
+    "game.multi_tab.read_only": "この投票は別のタブで進行中です。進行状況を保護するため、このタブは読み取り専用です。",
+    "game.multi_tab.take_over": "このタブで続行",
+    "game.multi_tab.local_branch": "このタブの進行は分岐済みです。ローカルに保存され、サーバーには送信されません。",
 
     "game_room.invite_friends": "友達を招待",
     "game_room.online_players": "オンラインプレイヤー",

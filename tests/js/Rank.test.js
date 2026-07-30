@@ -35,6 +35,9 @@ function createMemoryStorage() {
     getItem(key) {
       return values.has(key) ? values.get(key) : null;
     },
+    removeItem(key) {
+      values.delete(key);
+    },
     setItem(key, value) {
       values.set(key, String(value));
     },
@@ -62,6 +65,7 @@ function createRankVm(overrides = {}) {
 describe('Rank.vue local results', { concurrency: false }, () => {
   beforeEach(() => {
     global.localStorage = createMemoryStorage();
+    global.sessionStorage = createMemoryStorage();
   });
 
   test('loads the dedicated completed result before the legacy game state', () => {
@@ -111,5 +115,26 @@ describe('Rank.vue local results', { concurrency: false }, () => {
 
     assert.equal(vm.loadRankFromLocal(), false);
     assert.deepEqual(vm.localRanks, []);
+  });
+
+  test('loads the branch result selected by the current tab without replacing the canonical result', () => {
+    const branchKey = 'gameresult_post-serial_branch_game-serial-tab-a';
+    localStorage.setItem('gameresult_post-serial', JSON.stringify({
+      gameSerial: 'game-serial',
+      localElements: [{ id: 1, local_win_count: 10 }],
+    }));
+    localStorage.setItem(branchKey, JSON.stringify({
+      gameSerial: 'game-serial',
+      localBranchId: 'game-serial-tab-a',
+      localElements: [{ id: 2, local_win_count: 20 }],
+    }));
+    sessionStorage.setItem('gameresult_selection_post-serial', branchKey);
+
+    const vm = createRankVm();
+    const ranks = vm.loadRankFromLocal();
+
+    assert.deepEqual(ranks.map(rank => rank.id), [2]);
+    const canonical = JSON.parse(localStorage.getItem('gameresult_post-serial'));
+    assert.deepEqual(canonical.localElements.map(element => element.id), [1]);
   });
 });

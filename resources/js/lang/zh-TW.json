@@ -122,6 +122,9 @@
     "game.saving_progress": "儲存投票進度中...",
     "game.no_record": "尚無紀錄",
     "game.match_history" : "投票紀錄",
+    "game.multi_tab.read_only": "此投票正在另一個分頁進行。為保護進度，本分頁目前只能檢視。",
+    "game.multi_tab.take_over": "改由此分頁繼續",
+    "game.multi_tab.local_branch": "此分頁的進度已產生分歧，將保留在本機完成，不再上傳伺服器。",
 
     "game_room.invite_friends": "邀請朋友加入遊戲",
     "game_room.online_players": "在線人數",
