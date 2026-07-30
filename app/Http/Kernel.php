@@ -23,6 +23,8 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        \App\Http\Middleware\PublicHtmlCacheHeaders::class,
+        \App\Http\Middleware\StripGuestSessionCookies::class,
     ];
 
     /**
@@ -75,6 +77,7 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \App\Http\Middleware\ThrottleRequests::class,
         'cache.public-api' => \App\Http\Middleware\PublicApiCacheHeaders::class,
+        'cache.public-html' => \App\Http\Middleware\MarkPublicHtmlCache::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'locale.prefix' => \App\Http\Middleware\LocalePrefixRoute::class,
         'admin' => \App\Http\Middleware\AdminRoute::class
