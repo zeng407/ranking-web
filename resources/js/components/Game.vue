@@ -8,6 +8,13 @@ const MD_WIDTH_SIZE = 576;
 const MOBILE_HEIGHT = 700;
 const BATCH_VOTE_SAVE_INTERVAL = 10; // 每 10 票存一次
 const KEEP_VOTE_RECORD_COUNT = 128 // 保留最近 128 筆投票紀錄
+const LOCAL_GAME_STATE_VERSION = 2;
+const BATCH_REQUEST_TIMEOUT_MS = 15000;
+
+function createLocalWriterId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default {
   beforeMount() {
     this.loadGameSerialFromCookie();
@@ -146,6 +153,11 @@ export default {
       localElements: [], // 儲存所有參賽者物件 { ...element, local_win_count: 0, local_eliminated: false }
       localVotes: [], // 儲存投票紀錄 [{winner_id, loser_id}, ...]
       existingElementIds: new Set(), // 已存在的元素 ID 集合 (用來避免重複加入)
+      localWriterId: createLocalWriterId(),
+      localStateSchemaVersion: LOCAL_GAME_STATE_VERSION,
+      localStateRevision: 0,
+      localVoteSequence: 0,
+      currentLocalMatch: null,
       clientState: {
           currentRound: 1,
           matchesPlayedInRound: 0,
@@ -158,8 +170,12 @@ export default {
       unsentVotes: [],       // 尚未同步到雲端的投票
       isCloudSaving: false,  // 是否正在儲存中
       isBatchVoting: false,  // 避免重複送出 batch vote
+      serverVoteCount: 0,   // 最後一次由 server 確認的 game round revision
+      inFlightBatch: null,  // 已開始傳送但尚未收到回應的 durable batch
+      recoveredInterruptedBatch: null,
       pendingFinalBatchVote: false, // Partial batch 完成後是否還需要送出最終結果
-      isLocalOnlyAfterBatchConflict: false, // Batch 422 後改為純本地完成，不再同步後端
+      isLocalOnlyAfterBatchConflict: false, // 雲端拒絕本地分支後，改為純本地完成
+      cloudSyncDisabledReason: null,
 
       // 計時器
       timerSeconds: 0,
@@ -369,11 +385,11 @@ export default {
       this.sortByTop = !this.sortByTop;
     },
     handleBeforeUnload() {
-        if (this.isClientMode && this.unsentVotes.length > 0) {
-            // beforeunload 中的非同步 HTTP 請求可能在離頁時被瀏覽器中斷。
-            // 投票在每回合都會儲存，這裡只再確保佇列已寫入，下次繼續時再送出。
-            this.saveToLocalStorage();
-        }
+        if (!this.isClientMode) return;
+
+        // beforeunload 不送 HTTP；無論目前有沒有待送票，都再保存
+        // 當前配對、本地賽程與 outbox，讓任意時點重整都可恢復。
+        this.saveToLocalStorage();
     },
     loadGameSerialFromCookie() {
       return this.game_serial = this.$cookies.get(this.postSerial);
@@ -719,7 +735,7 @@ export default {
       if (this.creatingGame) return;
 
       // 建立新遊戲前，移除該主題的舊進度與上一局本地排行榜。
-      this.clearLocalStorage();
+      this.clearLocalStorage(true);
       this.clearLocalRankResult();
 
       // 清空時間軸
@@ -735,6 +751,7 @@ export default {
         .post(this.createGameEndpoint, data)
         .then((res) => {
           this.gameSerial = res.data.game_serial;
+          this.serverVoteCount = Number(res.data.server_vote_count || 0);
           this.showMatchHistory = true;
           this.resetTimer();
           this.startTimer();
@@ -772,7 +789,14 @@ export default {
       this.unsentVotes = [];
       this.localElements = [];
       this.existingElementIds.clear();
+      this.localStateSchemaVersion = LOCAL_GAME_STATE_VERSION;
+      this.localStateRevision = 0;
+      this.localVoteSequence = 0;
+      this.currentLocalMatch = null;
+      this.inFlightBatch = null;
+      this.recoveredInterruptedBatch = null;
       this.isLocalOnlyAfterBatchConflict = false;
+      this.cloudSyncDisabledReason = null;
 
       const url = this.getGameElementsEndpoint.replace("_serial", this.gameSerial);
       const initialLimit = 32;
@@ -781,6 +805,7 @@ export default {
 
       axios.get(url, params)
         .then(res => {
+            this.updateServerVoteCount(res.data.server_vote_count);
             this.processNewElements(res.data.data);
 
             this.clientState = {
@@ -816,11 +841,11 @@ export default {
         newElements.forEach(e => {
             // 檢查 ID 是否已存在
             if (!this.existingElementIds.has(e.id)) {
-
                 // 加入 Set
                 this.existingElementIds.add(e.id);
 
-                // 格式化並加入 localElements
+                // Client mode 的本地賽程是唯一真相來源。背景 API 只補齊
+                // 尚未載入的參賽者內容，不得用遠端淘汰狀態改寫本地分支。
                 this.localElements.push({
                     ...e,
                     local_win_count: 0,
@@ -834,6 +859,17 @@ export default {
         });
 
         return addedCount;
+    },
+
+    isEnabledGameElementFlag(value) {
+      return value === true || value === 1 || value === "1";
+    },
+
+    updateServerVoteCount(value) {
+      const parsed = Number(value);
+      if (Number.isInteger(parsed) && parsed >= 0) {
+        this.serverVoteCount = parsed;
+      }
     },
 
     fetchRemainingElements(retryCount = 0) {
@@ -881,108 +917,271 @@ export default {
           });
     },
 
-    // 儲存狀態
-    saveToLocalStorage() {
-        if (!this.gameSerial) return;
-
-        const key = `gamestate_${this.postSerial}`;
-
-        const stateToSave = {
-            gameSerial: this.gameSerial,
-            localElements: this.localElements,
-            localVotes: this.localVotes,
-            unsentVotes: this.unsentVotes,
-            localOnlyAfterBatchConflict: this.isLocalOnlyAfterBatchConflict,
-            clientState: this.clientState,
-            existingElementIds: Array.from(this.existingElementIds),
-            elementsCount: this.elementsCount,
-
-            updatedAt: Date.now(),
-            clientMode: this.isClientMode
-        };
-        try {
-            localStorage.setItem(key, JSON.stringify(stateToSave));
-        } catch (e) {
-            console.error("Storage save failed", e);
-        }
+    getLocalGameStateKey() {
+      return `gamestate_${this.postSerial}`;
     },
 
-    // 讀取狀態
+    normalizeStoredVote(vote, fallbackId) {
+      if (!vote || vote.winner_id === undefined || vote.loser_id === undefined) {
+        return null;
+      }
+
+      return {
+        local_vote_id: vote.local_vote_id || fallbackId,
+        winner_id: vote.winner_id,
+        loser_id: vote.loser_id,
+      };
+    },
+
+    createLocalVote(winnerId, loserId) {
+      this.localVoteSequence += 1;
+      return {
+        local_vote_id: `${this.gameSerial}:${this.localVoteSequence}`,
+        winner_id: winnerId,
+        loser_id: loserId,
+      };
+    },
+
+    // localStorage 的單一 key 寫入是同步且原子的。每個會影響賽程的欄位都放在
+    // 同一份 versioned snapshot，避免重整時只恢復到一半的狀態。
+    saveToLocalStorage(claimOwnership = false) {
+      if (!this.gameSerial) return false;
+
+      try {
+        const storageKey = this.getLocalGameStateKey();
+        const currentRawState = localStorage.getItem(storageKey);
+        let currentStoredState = null;
+
+        if (currentRawState) {
+          currentStoredState = JSON.parse(currentRawState);
+        }
+
+        if (currentStoredState && currentStoredState.gameSerial) {
+          const sameGame = String(currentStoredState.gameSerial) === String(this.gameSerial);
+          if (!sameGame) {
+            console.warn("Skipped stale local game write for a different game serial.");
+            return false;
+          }
+
+          const ownedByAnotherPage = currentStoredState.writerId
+            && currentStoredState.writerId !== this.localWriterId;
+          const storedRevision = Number(currentStoredState.localStateRevision || 0);
+          const isNewerSnapshot = storedRevision > this.localStateRevision;
+
+          // 新頁面恢復時會明確 claim ownership。舊頁面的延遲
+          // HTTP callback 之後再執行，不得覆寫新頁面已接管的 snapshot。
+          if (!claimOwnership && (ownedByAnotherPage || isNewerSnapshot)) {
+            console.warn("Skipped stale local game write from an older page instance.");
+            return false;
+          }
+        }
+
+        const storedRevision = currentStoredState
+          ? Number(currentStoredState.localStateRevision || 0)
+          : 0;
+        const nextRevision = Math.max(this.localStateRevision, storedRevision) + 1;
+        const stateToSave = {
+          schemaVersion: LOCAL_GAME_STATE_VERSION,
+          writerId: this.localWriterId,
+          localStateRevision: nextRevision,
+          gameSerial: this.gameSerial,
+          localElements: this.localElements,
+          localVotes: this.localVotes,
+          localVoteSequence: this.localVoteSequence,
+          unsentVotes: this.unsentVotes,
+          inFlightBatch: this.inFlightBatch,
+          serverVoteCount: this.serverVoteCount,
+          localOnlyAfterBatchConflict: this.isLocalOnlyAfterBatchConflict,
+          cloudSyncDisabledReason: this.cloudSyncDisabledReason,
+          clientState: this.clientState,
+          currentLocalMatch: this.currentLocalMatch,
+          existingElementIds: Array.from(this.existingElementIds),
+          elementsCount: this.elementsCount,
+          matchHistory: this.matchHistory,
+          lastVotePair: this.lastVotePair,
+          batchVoteInterval: this.batchVoteInterval,
+          updatedAt: Date.now(),
+          clientMode: this.isClientMode,
+        };
+
+        localStorage.setItem(storageKey, JSON.stringify(stateToSave));
+        this.localStateRevision = nextRevision;
+        return true;
+      } catch (error) {
+        console.error("Storage save failed", error);
+        return false;
+      }
+    },
+
+    // 只還原資料，不在這裡推進賽程或送 request。呼叫端完成所有欄位還原後，
+    // 再透過 resumeLocalGame 恢復畫面，避免重整時 nextLocalRound 被執行兩次。
     loadFromLocalStorage() {
       if (this.isHostingGameRank) return false;
 
-      const key = `gamestate_${this.postSerial}`;
-      const savedData = localStorage.getItem(key);
+      const savedData = localStorage.getItem(this.getLocalGameStateKey());
+      if (!savedData) return false;
 
-      if (savedData) {
-          try {
-              const parsed = JSON.parse(savedData);
-              const savedClientMode = (parsed.clientMode !== undefined) ? parsed.clientMode : false;
-              if (savedClientMode === false) {
-                  this.gameSerial = parsed.gameSerial;
-                  this.isClientMode = false;
-                  console.log("Restored as Server Mode from localStorage");
-                  return true;
-              }
+      try {
+        const parsed = JSON.parse(savedData);
+        if (!parsed || !parsed.gameSerial) return false;
 
-              if (parsed.localElements && parsed.clientState) {
-                  this.gameSerial = parsed.gameSerial;
+        const savedClientMode = parsed.clientMode !== undefined ? parsed.clientMode : false;
+        this.localStateSchemaVersion = Number(parsed.schemaVersion || 1);
+        this.localStateRevision = Number(parsed.localStateRevision || 0);
+        this.gameSerial = parsed.gameSerial;
+        if (savedClientMode === false) {
+          this.isClientMode = false;
+          console.log("Restored as Server Mode from localStorage");
+          return true;
+        }
 
-                  this.localElements = parsed.localElements;
-                  this.localVotes = parsed.localVotes || [];
-                  this.clientState = parsed.clientState;
-                  this.unsentVotes = parsed.unsentVotes || [];
-                  this.isLocalOnlyAfterBatchConflict = parsed.localOnlyAfterBatchConflict === true;
+        if (!Array.isArray(parsed.localElements) || !parsed.clientState) {
+          return false;
+        }
 
-                  // 還原 Set
-                  if (parsed.existingElementIds) {
-                      this.existingElementIds = new Set(parsed.existingElementIds);
-                  } else {
-                      this.existingElementIds = new Set(this.localElements.map(e => e.id));
-                  }
+        this.isClientMode = true;
+        this.localElements = parsed.localElements;
+        this.clientState = parsed.clientState;
 
-                  // 還原人數設定
-                  if (parsed.elementsCount) {
-                      this.elementsCount = parsed.elementsCount;
-                  }
+        const rawLocalVotes = Array.isArray(parsed.localVotes) ? parsed.localVotes : [];
+        this.localVotes = rawLocalVotes
+          .map((vote, index) => this.normalizeStoredVote(
+            vote,
+            `${this.gameSerial}:${index + 1}`
+          ))
+          .filter(Boolean);
 
-                  // 舊存檔相容
-                  if (!this.clientState.stageStartCount) {
-                      if (this.clientState.stage === 1) {
-                          this.clientState.stageStartCount = this.elementsCount || this.localElements.length;
-                      } else {
-                          this.clientState.stageStartCount = this.localElements.filter(e => !e.local_eliminated).length;
-                      }
-                  }
+        const rawUnsentVotes = Array.isArray(parsed.unsentVotes) ? parsed.unsentVotes : [];
+        const unsentOffset = Math.max(0, this.localVotes.length - rawUnsentVotes.length);
+        this.unsentVotes = rawUnsentVotes
+          .map((vote, index) => {
+            const matchingLocalVote = this.localVotes[unsentOffset + index];
+            const fallbackId = matchingLocalVote
+              ? matchingLocalVote.local_vote_id
+              : `${this.gameSerial}:pending:${index + 1}`;
+            return this.normalizeStoredVote(vote, fallbackId);
+          })
+          .filter(Boolean);
 
-                  this.nextLocalRound();
-                  return true;
-              }
-          } catch (e) {
-              console.error("Failed to parse saved game state", e);
-              return false;
+        this.localVoteSequence = Math.max(
+          Number(parsed.localVoteSequence || 0),
+          this.localVotes.length
+        );
+
+        // in-flight votes remain in unsentVotes until a success response is
+        // durably acknowledged. Include the embedded copy as a recovery guard
+        // for records written by an interrupted older page instance.
+        const interruptedBatch = parsed.inFlightBatch || null;
+        if (interruptedBatch && Array.isArray(interruptedBatch.votes)) {
+          const knownVoteIds = new Set(this.unsentVotes.map(vote => vote.local_vote_id));
+          interruptedBatch.votes.forEach((vote, index) => {
+            const normalized = this.normalizeStoredVote(
+              vote,
+              `${this.gameSerial}:recovered:${index + 1}`
+            );
+            if (normalized && !knownVoteIds.has(normalized.local_vote_id)) {
+              this.unsentVotes.push(normalized);
+              knownVoteIds.add(normalized.local_vote_id);
+            }
+          });
+        }
+        this.recoveredInterruptedBatch = interruptedBatch;
+        this.inFlightBatch = null;
+
+        if (parsed.serverVoteCount !== undefined) {
+          this.updateServerVoteCount(parsed.serverVoteCount);
+        } else {
+          this.serverVoteCount = Math.max(0, this.localVotes.length - this.unsentVotes.length);
+        }
+
+        this.isLocalOnlyAfterBatchConflict = parsed.localOnlyAfterBatchConflict === true;
+        this.cloudSyncDisabledReason = parsed.cloudSyncDisabledReason || null;
+        this.currentLocalMatch = parsed.currentLocalMatch || null;
+        this.matchHistory = Array.isArray(parsed.matchHistory)
+          ? parsed.matchHistory.slice(0, KEEP_VOTE_RECORD_COUNT)
+          : [];
+        this.lastVotePair = parsed.lastVotePair || null;
+        this.batchVoteInterval = Number(parsed.batchVoteInterval || BATCH_VOTE_SAVE_INTERVAL);
+
+        this.existingElementIds = new Set(
+          Array.isArray(parsed.existingElementIds)
+            ? parsed.existingElementIds
+            : this.localElements.map(element => element.id)
+        );
+        if (parsed.elementsCount) {
+          this.elementsCount = parsed.elementsCount;
+        }
+
+        // 舊存檔相容
+        if (!this.clientState.stageStartCount) {
+          if (this.clientState.stage === 1) {
+            this.clientState.stageStartCount = this.elementsCount || this.localElements.length;
+          } else {
+            this.clientState.stageStartCount = this.localElements
+              .filter(element => !element.local_eliminated).length;
           }
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Failed to parse saved game state", error);
+        return false;
       }
-      return false;
     },
 
     // 清除 LocalStorage
-    clearLocalStorage() {
-        const key = `gamestate_${this.postSerial}`;
-        localStorage.removeItem(key);
+    clearLocalStorage(force = false) {
+      const storageKey = this.getLocalGameStateKey();
+
+      if (force) {
+        localStorage.removeItem(storageKey);
+        return true;
+      }
+
+      try {
+        const savedData = localStorage.getItem(storageKey);
+        if (!savedData) return true;
+
+        const parsed = JSON.parse(savedData);
+        const sameGame = !parsed.gameSerial
+          || String(parsed.gameSerial) === String(this.gameSerial);
+        const ownedByThisPage = !parsed.writerId
+          || parsed.writerId === this.localWriterId;
+        const storedRevision = Number(parsed.localStateRevision || 0);
+
+        if (!sameGame || !ownedByThisPage || storedRevision > this.localStateRevision) {
+          console.warn("Skipped stale local game cleanup from an older page instance.");
+          return false;
+        }
+
+        localStorage.removeItem(storageKey);
+        return true;
+      } catch (error) {
+        console.error("Local game cleanup failed", error);
+        return false;
+      }
     },
 
-    saveLocalRankResult() {
+    saveLocalRankResult(cloudSyncPending = false) {
       if (!this.gameSerial || !Array.isArray(this.localElements)) {
         return false;
       }
 
       const key = `gameresult_${this.postSerial}`;
       const result = {
+        schemaVersion: LOCAL_GAME_STATE_VERSION,
+        writerId: this.localWriterId,
         gameSerial: this.gameSerial,
         localElements: this.localElements,
+        localVotes: this.localVotes,
+        unsentVotes: this.unsentVotes,
+        inFlightBatch: this.inFlightBatch,
+        serverVoteCount: this.serverVoteCount,
+        matchHistory: this.matchHistory,
         completedAt: Date.now(),
-        localOnlyAfterBatchConflict: true,
+        localOnlyAfterBatchConflict: this.isLocalOnlyAfterBatchConflict,
+        cloudSyncPending: cloudSyncPending && !this.isLocalOnlyAfterBatchConflict,
+        cloudSyncDisabledReason: this.cloudSyncDisabledReason,
       };
 
       try {
@@ -1034,6 +1233,7 @@ export default {
         if (responseData.total_count) {
             this.elementsCount = responseData.total_count;
         }
+        this.updateServerVoteCount(responseData.server_vote_count);
 
         const remoteElements = responseData.data || [];
         this.localElements = [];
@@ -1041,8 +1241,8 @@ export default {
 
         remoteElements.forEach(e => {
             this.existingElementIds.add(e.id);
-            const isEliminated = (e.is_eliminated === 1 || e.is_eliminated === true);
-            const winCount = parseInt(e.win_count || 0);
+            const isEliminated = this.isEnabledGameElementFlag(e.is_eliminated);
+            const winCount = parseInt(e.win_count || 0, 10);
 
             // 計算 played 次數
             const playedCount = winCount + (isEliminated ? 1 : 0);
@@ -1053,7 +1253,7 @@ export default {
                 local_eliminated: isEliminated,
                 local_played: playedCount,
                 // 直接使用後端的 ready 狀態
-                local_is_ready: (e.is_ready === 1 || e.is_ready === true) && !isEliminated
+                local_is_ready: this.isEnabledGameElementFlag(e.is_ready) && !isEliminated
             };
 
             this.localElements.push(localEl);
@@ -1061,7 +1261,14 @@ export default {
 
         this.localVotes = [];
         this.unsentVotes = [];
+        this.localStateSchemaVersion = LOCAL_GAME_STATE_VERSION;
+        this.localStateRevision = 0;
+        this.localVoteSequence = 0;
+        this.currentLocalMatch = null;
+        this.inFlightBatch = null;
+        this.recoveredInterruptedBatch = null;
         this.isLocalOnlyAfterBatchConflict = false;
+        this.cloudSyncDisabledReason = null;
         let stage = 1;
         let matchesInStage = 0;
         let targetMatches = Math.ceil(this.elementsCount/2);
@@ -1090,215 +1297,98 @@ export default {
 
     },
 
-    // 繼續遊戲
-    continueGame() {
-      // 1. 取得本地與雲端資料
-      const localKey = `gamestate_${this.postSerial}`;
-      let localData = null;
-      try {
-        const localStr = localStorage.getItem(localKey);
-        if (localStr) {
-          localData = JSON.parse(localStr);
-          if (localData && localData.clientMode === false) {
-              this.isClientMode = false;
-              this.gameSerial = localData.gameSerial;
-              this.nextRound(null);
-              $("#gameSettingPanel").modal("hide");
-              return;
-          }
-        }
-      } catch (e) {
-        console.error("Local save parse error", e);
+    resumeLocalGame() {
+      this.isClientMode = true;
+      this.showMatchHistory = true;
+
+      // 新版 snapshot 已包含 history；只有舊存檔才回讀獨立 key。
+      if (this.localStateSchemaVersion < LOCAL_GAME_STATE_VERSION
+        && this.matchHistory.length === 0) {
+        this.loadMatchHistory();
       }
 
-      const remoteData = this.userLastGame; // 從 Props 取得後端資料
+      this.recoveredInterruptedBatch = null;
+      this.inFlightBatch = null;
+      this.isBatchVoting = false;
+      this.isCloudSaving = false;
+      this.pendingFinalBatchVote = false;
+      this.saveToLocalStorage(true);
 
-      // 定義: 恢復本地進度
-      const restoreLocal = () => {
-        if (this.loadFromLocalStorage()) {
-          this.fetchRemainingElements();
-          this.nextLocalRound();
+      if (this.localElements.length < this.elementsCount) {
+        this.fetchRemainingElements();
+      }
+
+      const activeCount = this.localElements.filter(element => !element.local_eliminated).length;
+      if (activeCount < 2) {
+        if (this.isLocalOnlyAfterBatchConflict) {
+          this.finishLocalOnlyGame();
         } else {
-          const cookieSerial = this.$cookies.get(this.postSerial);
-          if (cookieSerial) this.gameSerial = cookieSerial;
-          this.nextRound(null, false);
-        }
-        $("#gameSettingPanel").modal("hide");
-        this.loadMatchHistory();
-        this.resetTimer();
-        this.startTimer();
-      };
-
-      // 定義: 恢復雲端進度 (同步並轉為本地模式)
-      const restoreRemote = () => {
-
-        // 1. 設定基礎資訊
-        this.gameSerial = remoteData.serial;
-
-        this.isClientMode = true; // 切換為客戶端模式
-
-        // 2. 刪除舊的衝突資料
-        const key = `gamestate_${this.postSerial}`;
-        localStorage.removeItem(key);
-
-        // 3. 呼叫後端 API 取得該局的所有元素狀態
-        // 注意：這裡假設後端 API 支援回傳所有元素狀態 (包含已淘汰的)
-        // 通常使用 getGameElementsEndpoint，可能需要加上參數確保回傳全部資料
-        const url = this.getGameElementsEndpoint.replace("_serial", this.gameSerial);
-
-        // 為了取得完整狀態，我們將 limit 設為總數 (如果知道的話) 或一個足夠大的數字
-        // 或者依賴後端分頁 (這裡簡化為一次抓取，若資料量大建議分頁處理)
-        const params = {
-            params: {
-                limit: 1024, // 抓取足夠多的數量以確保同步所有元素
-                t: Date.now() // 避免快取
-            }
-        };
-
-        this.isDataLoading = true;
-        axios.get(url, params)
-          .then(res => {
-              // 4. 將後端資料轉換為本地格式
-              this.syncRemoteDataToLocal(res.data);
-
-              // 5. 存檔並開始
-              this.saveToLocalStorage();
-              this.nextLocalRound(); // 根據同步回來的狀態，自動計算下一組對戰
-          })
-          .catch(err => {
-              console.error("Failed to restore remote game", err);
-              Swal.fire({
-                  icon: 'error',
-                  title: 'Error',
-                  text: this.$t('An error occurred. Please try again later.')
-              });
-          })
-          .finally(() => {
-              this.isDataLoading = false;
-              this.loadMatchHistory();
-              this.resetTimer();
-              this.startTimer();
-          });
-
-        $("#gameSettingPanel").modal("hide");
-
-      };
-
-      // Case A & B (略 - 保持不變)
-      if (localData && !remoteData) { restoreLocal(); return; }
-      if (!localData && remoteData) { restoreRemote(); return; }
-
-      // Case C: 兩者都有 -> 進行比較
-      if (localData && remoteData) {
-        // C-1: Serial 相同 (同一場遊戲) -> 自動選擇進度較多者 (以剩餘人數少的為優)
-        if (localData.gameSerial === remoteData.serial) {
-           // Batch 422 後已明確選擇本地進度，重新載入時也不再被雲端狀態覆蓋。
-           if (localData.localOnlyAfterBatchConflict === true) {
-               restoreLocal();
-               return;
-           }
-
-           // 這裡邏輯微調：比較 "剩餘人數"，越少代表玩越久
-           // 如果沒有 remainElements 欄位，則回退比較票數 (localVotes vs vote_count)
-           const localRemain = localData.localElements.filter(e => !e.local_eliminated).length;
-           const remoteRemain = remoteData.element_count - (remoteData.vote_count || 0);
-
-           if (localRemain <= remoteRemain) {
-               restoreLocal();
-           } else {
-               restoreRemote();
-           }
-        }
-        // C-2: Serial 不同 (不同的兩場遊戲) -> 詢問使用者
-        else {
-          const t = this.$t.bind(this);
-
-          // --- 1. 計算本地數據 ---
-          // 人數
-          let localTotal = localData.elementsCount ? parseInt(localData.elementsCount) : '?';
-          if (localTotal === '?' && localData.clientState && localData.clientState.stageStartCount) {
-               localTotal = localData.clientState.stageStartCount;
-          }
-          let localRemain = localData.localElements.filter(e => !e.local_eliminated).length;
-          if (localRemain === '?' && localTotal !== '?') {
-              const localVotesCount = localData.localVotes ? localData.localVotes.length : 0;
-              localRemain = Math.max(1, localTotal - localVotesCount);
-          }
-
-          const localDate = localData.updatedAt ? new Date(localData.updatedAt).toLocaleString() : 'Unknown';
-
-          // --- 2. 計算雲端數據 ---
-          // 人數
-          const remoteTotal = remoteData.element_count ? parseInt(remoteData.element_count) : '?';
-          let remoteRemain = remoteData.element_count - (remoteData.vote_count || 0);
-          if (remoteRemain === '?' && remoteTotal !== '?') {
-               const remoteVotesCount = remoteData.vote_count || 0;
-               remoteRemain = Math.max(1, remoteTotal - remoteVotesCount);
-          }
-
-          const remoteDate = remoteData.updated_at ? new Date(remoteData.updated_at).toLocaleString() : 'Unknown';
-
-          Swal.fire({
-            title: t('conflict.title'),
-            html: `
-              <div class="text-left">
-                <p class="mb-3">${t('conflict.text')}</p>
-
-                <div class="card mb-2 border-primary">
-                  <div class="card-body p-2">
-                    <h6 class="card-title text-primary font-weight-bold">
-                      <i class="fas fa-mobile-alt mr-1"></i> ${t('conflict.local_record')}
-                    </h6>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge badge-primary p-2 text-wrap text-left" style="font-size: 0.9em; line-height: 1.4;">
-                           ${t('conflict.status', {
-                                total: localTotal,
-                                remain: localRemain
-                           })}
-                        </span>
-                    </div>
-                    <small class="text-muted d-block text-right mt-1">${localDate}</small>
-                  </div>
-                </div>
-
-                <div class="card border-success">
-                  <div class="card-body p-2">
-                    <h6 class="card-title text-success font-weight-bold">
-                      <i class="fas fa-cloud mr-1"></i> ${t('conflict.remote_record')}
-                    </h6>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge badge-success p-2 text-wrap text-left" style="font-size: 0.9em; line-height: 1.4;">
-                           ${t('conflict.status', {
-                                total: remoteTotal,
-                                remain: remoteRemain
-                           })}
-                        </span>
-                    </div>
-                    <small class="text-muted d-block text-right mt-1">${remoteDate}</small>
-                  </div>
-                </div>
-              </div>
-            `,
-            icon: 'question',
-            showDenyButton: true,
-            confirmButtonText: t('conflict.use_local'),
-            denyButtonText: t('conflict.use_remote'),
-            confirmButtonColor: '#007bff',
-            denyButtonColor: '#28a745',
-            allowOutsideClick: false,
-            showCloseButton: true,
-          }).then((result) => {
-            if (result.isConfirmed) {
-              restoreLocal();
-            } else if (result.isDenied) {
-              restoreRemote();
-            }
-          });
+          this.sendBatchVotes();
         }
         return;
       }
 
-      // Case D: 都沒有 (保持不變)
+      if (!this.restoreCurrentLocalMatch()) {
+        this.nextLocalRound();
+      }
+
+      // 重新整理前可能已有一批 request 到達伺服器，也可能尚未送達。
+      // outbox 仍保留同一批票，稍後以相同內容安全重送。
+      if (!this.isLocalOnlyAfterBatchConflict && this.unsentVotes.length > 0) {
+        setTimeout(() => this.sendPartialBatchVotes(), 0);
+      }
+    },
+
+    // 繼續遊戲時，只要存在可用的本地 snapshot 就永遠採用它；遠端進度
+    // 不得自動覆蓋本地分支。只有完全沒有本地資料時才以遠端建立起始 snapshot。
+    continueGame() {
+      if (this.loadFromLocalStorage()) {
+        if (this.isClientMode) {
+          this.resumeLocalGame();
+        } else {
+          this.saveToLocalStorage(true);
+          this.nextRound(null);
+        }
+        $("#gameSettingPanel").modal("hide");
+        this.resetTimer();
+        this.startTimer();
+        return;
+      }
+
+      const remoteData = this.userLastGame;
+      if (remoteData) {
+        this.gameSerial = remoteData.serial;
+        this.isClientMode = true;
+        const url = this.getGameElementsEndpoint.replace("_serial", this.gameSerial);
+
+        this.isDataLoading = true;
+        axios.get(url, {
+          params: {
+            limit: 1024,
+            t: Date.now(),
+          },
+        }).then(response => {
+          this.syncRemoteDataToLocal(response.data);
+          this.currentLocalMatch = null;
+          this.saveToLocalStorage();
+          this.nextLocalRound();
+        }).catch(error => {
+          console.error("Failed to restore remote game", error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: this.$t('An error occurred. Please try again later.'),
+          });
+        }).finally(() => {
+          this.isDataLoading = false;
+          this.resetTimer();
+          this.startTimer();
+        });
+
+        $("#gameSettingPanel").modal("hide");
+        return;
+      }
+
       const cookieSerial = this.$cookies.get(this.postSerial);
       if (cookieSerial) {
         this.gameSerial = cookieSerial;
@@ -1344,12 +1434,46 @@ export default {
       this.handleAnimationAfterNextRound(data.data, resetAnimation);
     },
 
+    restoreCurrentLocalMatch(resetAnimation = false) {
+        if (!this.currentLocalMatch) return false;
+
+        const left = this.localElements.find(element => {
+          return String(element.id) === String(this.currentLocalMatch.left_id)
+            && !element.local_eliminated;
+        });
+        const right = this.localElements.find(element => {
+          return String(element.id) === String(this.currentLocalMatch.right_id)
+            && !element.local_eliminated;
+        });
+
+        if (!left || !right || String(left.id) === String(right.id)) {
+          this.currentLocalMatch = null;
+          this.saveToLocalStorage();
+          return false;
+        }
+
+        this.handleAnimationAfterNextRound({
+          current_round: this.currentLocalMatch.current_round,
+          of_round: this.currentLocalMatch.of_round,
+          remain_elements: this.currentLocalMatch.remain_elements,
+          total_elements: this.currentLocalMatch.total_elements,
+          stage_start_count: this.currentLocalMatch.stage_start_count,
+          elements: [left, right],
+        }, resetAnimation);
+        return true;
+    },
+
     nextLocalRound() {
         let activeElements = this.localElements.filter(e => !e.local_eliminated);
 
         if (activeElements.length < 2) {
              this.sendBatchVotes();
              return;
+        }
+
+        // 重整只應恢復當時正在顯示的配對，不可重新抽選或重複推進 matchIndex。
+        if (this.restoreCurrentLocalMatch()) {
+            return;
         }
 
         let needTransition = false;
@@ -1416,6 +1540,17 @@ export default {
             stage_start_count: this.clientState.stageStartCount,
             elements: [el1, el2]
         };
+
+        this.currentLocalMatch = {
+            left_id: el1.id,
+            right_id: el2.id,
+            current_round: mockGameData.current_round,
+            of_round: mockGameData.of_round,
+            remain_elements: mockGameData.remain_elements,
+            total_elements: mockGameData.total_elements,
+            stage_start_count: mockGameData.stage_start_count,
+        };
+        this.saveToLocalStorage();
 
         this.handleAnimationAfterNextRound(mockGameData, true);
     },
@@ -1924,19 +2059,31 @@ export default {
           loserObj.local_is_ready = false;
           this.clientState.matchesInStage++;
 
-          this.localVotes.push({ winner_id: winner.id, loser_id: loser.id });
+          const localVote = this.createLocalVote(winner.id, loser.id);
+          this.localVotes.push(localVote);
           if (!this.isLocalOnlyAfterBatchConflict) {
-            this.unsentVotes.push({ winner_id: winner.id, loser_id: loser.id });
+            this.unsentVotes.push({ ...localVote });
           }
+
+          // 目前配對已完成。這個欄位必須在同一份 snapshot 中清除，否則
+          // 重整後會再次顯示剛投完的兩個選項。
+          this.currentLocalMatch = null;
 
           // 紀錄最後一筆投票，用於時間軸
           this.lastVotePair = { winner_id: winner.id, loser_id: loser.id, winSide: winSide };
+          this.recordMatchFromLastVote();
 
-          // 狀態改變後立即存檔
+          // 所有本地運算與 outbox 先同步、原子地保存，之後才能進行動畫或 HTTP。
           this.saveToLocalStorage();
 
           // 預先計算剩餘人數
           const currentActiveCount = this.localElements.filter(e => !e.local_eliminated).length;
+
+          // 最後一票先留下獨立結果，即使 final batch 尚未回應就重整或離頁，
+          // 排行榜仍可使用完整的本地結果。
+          if (currentActiveCount < 2) {
+            this.saveLocalRankResult(true);
+          }
 
           // 檢查是否需要觸發雲端備份
           // 只有在 "非最後一局" 的情況下才執行 Partial Batch Vote
@@ -1960,15 +2107,17 @@ export default {
     },
 
     sendPartialBatchVotes() {
-      if (this.isLocalOnlyAfterBatchConflict || this.unsentVotes.length === 0) return;
+      if (this.isLocalOnlyAfterBatchConflict || this.unsentVotes.length === 0) {
+        return Promise.resolve(null);
+      }
       return this.submitBatchVotes(false);
     },
 
-    // Batch send votes (Clear local storage after sync)
+    // 送出最後一批；若雲端同步已停用，直接以本地結果完成。
     sendBatchVotes() {
       if (this.isLocalOnlyAfterBatchConflict) {
         this.finishLocalOnlyGame();
-        return;
+        return Promise.resolve(null);
       }
       return this.submitBatchVotes(true);
     },
@@ -1981,7 +2130,7 @@ export default {
         if (isFinalBatch) {
           this.finishLocalOnlyGame();
         }
-        return;
+        return Promise.resolve(null);
       }
 
       if (this.isBatchVoting) {
@@ -1989,11 +2138,11 @@ export default {
           this.pendingFinalBatchVote = true;
           this.isDataLoading = true;
         }
-        return;
+        return Promise.resolve(null);
       }
 
       if (!isFinalBatch && this.unsentVotes.length === 0) {
-        return;
+        return Promise.resolve(null);
       }
 
       this.isBatchVoting = true;
@@ -2004,7 +2153,7 @@ export default {
 
       let finalBatchHandled = false;
 
-      return this.performBatchVote()
+      return this.performBatchVote(isFinalBatch)
         .then(response => {
           this.batchVoteInterval = BATCH_VOTE_SAVE_INTERVAL;
 
@@ -2028,11 +2177,13 @@ export default {
           }
         })
         .catch(error => {
-          if (error.response && error.response.status === 422) {
+          const conflictReason = this.getCloudSyncStopReason(error);
+          if (conflictReason) {
             const shouldFinishGame = isFinalBatch || this.pendingFinalBatchVote;
             finalBatchHandled = true;
-            this.switchToLocalOnlyAfterBatchConflict();
-            console.warn("Batch vote returned 422; continuing with local game state only.");
+            this.pendingFinalBatchVote = false;
+            console.warn("Cloud vote sync stopped; preserving the local game state.", conflictReason);
+            this.disableCloudSync(conflictReason);
 
             if (shouldFinishGame) {
               this.finishLocalOnlyGame();
@@ -2040,8 +2191,8 @@ export default {
             return;
           }
 
-          this.saveToLocalStorage();
           this.batchVoteInterval = (this.batchVoteInterval * 2) + 1;
+          this.saveToLocalStorage();
 
           const responseData = error.response ? error.response.data : null;
           console.error("Batch vote failed", responseData || error);
@@ -2052,7 +2203,8 @@ export default {
             this.isDataLoading = false;
             this.isVoting = false;
 
-            // 單純網路錯誤仍保留佇列重試；只有後端明確回覆 422 才切換為純本地模式。
+            // 單純網路錯誤仍保留佇列重試；後端明確拒絕這條
+            // 本地分支時，才停用雲端同步。
             Swal.fire({
               icon: "error",
               text: this.$t("An error occurred. Please try again later."),
@@ -2074,49 +2226,101 @@ export default {
     },
 
     /**
-     * 只送出當下佇列的快照；請求期間新增的投票仍保留在佇列中。
+     * 只送出當下 outbox 的快照。請求前先將這份 batch
+     * 持久化；只有成功 response 才會依 local_vote_id 確認並移除。
      */
-    performBatchVote() {
-      const votesToSend = this.unsentVotes.map(vote => ({
-        winner_id: vote.winner_id,
-        loser_id: vote.loser_id,
-      }));
+    performBatchVote(isFinalBatch = false) {
+      // 舊版 snapshot 沒有 local_vote_id，在第一次送出前補成穩定 ID。
+      this.unsentVotes = this.unsentVotes.map(vote => {
+        if (vote.local_vote_id) return vote;
+        this.localVoteSequence += 1;
+        return {
+          ...vote,
+          local_vote_id: `${this.gameSerial}:${this.localVoteSequence}`,
+        };
+      });
+
+      const votesToSend = this.unsentVotes.map(vote => ({ ...vote }));
       if (votesToSend.length === 0) {
         return Promise.resolve(null);
       }
 
-      return axios.post(this.batchVoteEndpoint, {
-        game_serial: this.gameSerial,
+      const batch = {
+        id: `${this.gameSerial}:batch:${this.localStateRevision + 1}:${votesToSend[0].local_vote_id}:${votesToSend[votesToSend.length - 1].local_vote_id}`,
+        vote_ids: votesToSend.map(vote => vote.local_vote_id),
         votes: votesToSend,
-      }).then(response => {
-        this.removeSubmittedVotes(votesToSend);
-        this.saveToLocalStorage();
-        return response;
-      });
-    },
+        expected_vote_count: this.serverVoteCount,
+        is_final: isFinalBatch,
+        started_at: Date.now(),
+      };
 
-    removeSubmittedVotes(submittedVotes) {
-      const isSameVote = (left, right) => left
-        && right
-        && String(left.winner_id) === String(right.winner_id)
-        && String(left.loser_id) === String(right.loser_id);
-      const queueStillHasSubmittedPrefix = submittedVotes.every((vote, index) => {
-        return isSameVote(this.unsentVotes[index], vote);
-      });
-
-      if (!queueStillHasSubmittedPrefix) {
-        // 佇列若被其他流程改過，寧可保留到下次重試，不要誤刪尚未送出的票。
-        console.warn("Batch vote queue changed while saving; keeping it for the next retry.");
-        return;
+      this.inFlightBatch = batch;
+      if (!this.saveToLocalStorage()) {
+        this.inFlightBatch = null;
+        const storageError = new Error("Local game state could not be persisted before cloud sync.");
+        storageError.code = "local_state_save_failed";
+        return Promise.reject(storageError);
       }
 
-      this.unsentVotes.splice(0, submittedVotes.length);
+      return axios.post(this.batchVoteEndpoint, {
+        game_serial: this.gameSerial,
+        expected_vote_count: batch.expected_vote_count,
+        votes: batch.votes.map(vote => ({
+          winner_id: vote.winner_id,
+          loser_id: vote.loser_id,
+        })),
+      }, {
+        timeout: BATCH_REQUEST_TIMEOUT_MS,
+      }).then(response => {
+        this.updateServerVoteCount(response.data.server_vote_count);
+        this.acknowledgeSubmittedBatch(batch);
+        this.saveToLocalStorage();
+        return response;
+      }).catch(error => {
+        // 明確失敗後請求已結束；in-flight 可清掉，但 outbox
+        // 不動。若瀏覽器在 response 前重整，這段不會執行，
+        // 已持久化的 in-flight 會在下次載入時恢復。
+        if (this.inFlightBatch && this.inFlightBatch.id === batch.id) {
+          this.inFlightBatch = null;
+          this.saveToLocalStorage();
+        }
+        throw error;
+      });
     },
 
-    switchToLocalOnlyAfterBatchConflict() {
+    acknowledgeSubmittedBatch(batch) {
+      const acknowledgedVoteIds = new Set(batch.vote_ids);
+      this.unsentVotes = this.unsentVotes.filter(vote => {
+        return !acknowledgedVoteIds.has(vote.local_vote_id);
+      });
+
+      if (this.inFlightBatch && this.inFlightBatch.id === batch.id) {
+        this.inFlightBatch = null;
+      }
+    },
+
+    getCloudSyncStopReason(error) {
+      if (error && error.code === "local_state_save_failed") {
+        return error.code;
+      }
+
+      const status = error && error.response ? error.response.status : null;
+      const isPermanentClientRejection = Number.isInteger(status)
+        && status >= 400
+        && status < 500
+        && ![408, 425, 429].includes(status);
+      if (!isPermanentClientRejection) return null;
+
+      const responseData = error.response.data || {};
+      return responseData.reason || responseData.code || `http_${status}`;
+    },
+
+    disableCloudSync(reason = "game_state_conflict") {
       this.isLocalOnlyAfterBatchConflict = true;
       this.isClientMode = true;
-      this.unsentVotes = [];
+      this.cloudSyncDisabledReason = reason;
+      this.inFlightBatch = null;
+      this.recoveredInterruptedBatch = null;
       this.pendingFinalBatchVote = false;
       this.saveToLocalStorage();
     },
@@ -2135,7 +2339,6 @@ export default {
 
       this.status = "end_game";
       this.finishingGame = true;
-      this.unsentVotes = [];
       this.pendingFinalBatchVote = false;
       this.recordMatchFromLastVote();
       this.$cookies.remove(this.postSerial);
@@ -2229,7 +2432,6 @@ export default {
             // final round
             this.isDataLoading = true;
             this.finishingGame = true;
-            this.clearMatchHistory();
           }
 
           if (!this.finishingGame) {
@@ -2292,7 +2494,12 @@ export default {
       this.status = res.data.status;
       if (this.status === "end_game") {
         this.$cookies.remove(this.postSerial);
-        this.clearLocalStorage();
+        // 先留下完整本地結果，再清理可續玩 snapshot。如果
+        // 專用結果寫入失敗，保留 snapshot 作為 Rank.vue fallback。
+        const canClearLocalGame = !this.isClientMode || this.saveLocalRankResult(false);
+        if (canClearLocalGame) {
+          this.clearLocalStorage();
+        }
         this.clearMatchHistory();
         this.showGameResult();
       } else {
@@ -2400,8 +2607,11 @@ export default {
         this.matchHistory.pop();
       }
 
-      // 儲存到 localStorage
-      this.saveMatchHistory();
+      // Client mode 會緊接著把 history 和賽程寫入同一份 atomic
+      // snapshot，不先寫獨立 key，避免只留下一半的投票狀態。
+      if (!this.isClientMode) {
+        this.saveMatchHistory();
+      }
 
       // 清空暫存
       this.lastVotePair = null;

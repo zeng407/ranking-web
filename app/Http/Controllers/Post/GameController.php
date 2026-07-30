@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Post;
 use App\Enums\RankReportTimeRange;
 use App\Helper\AccessTokenService;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\PublicHtmlCacheHeaders;
 use App\Http\Resources\Rank\RankReportHistoryResource;
 use App\Models\Element;
 use App\Models\Game;
@@ -49,6 +50,7 @@ class GameController extends Controller
     {
         $request->validate([
             'page' => 'nullable|numeric|min:1',
+            'tab' => 'nullable|integer|in:0,1,2',
         ]);
 
         $start = microtime(true);
@@ -61,6 +63,9 @@ class GameController extends Controller
         };
 
         $post = $this->getPostOrFail($request);
+        if (!$post->isPublic()) {
+            $request->attributes->set(PublicHtmlCacheHeaders::CACHEABLE_ATTRIBUTE, false);
+        }
         $mark('get_post');
 
         // we first check if user has access to the post

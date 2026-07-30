@@ -7,6 +7,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Post\AdController;
 use App\Http\Controllers\Post\PostController;
 use App\Http\Controllers\Post\GameController;
+use App\Http\Controllers\SessionContextController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,13 +32,20 @@ Auth::routes([
 
 Route::get('/lang/{locale}', [HomeController::class, 'lang'])->name('lang');
 
+Route::get('/session-context', SessionContextController::class)->name('session.context');
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/donate', [HomeController::class, 'donate'])->name('donate');
+Route::get('/', [HomeController::class, 'index'])
+    ->middleware('cache.public-html:home')
+    ->name('home');
+Route::get('/donate', [HomeController::class, 'donate'])
+    ->middleware('cache.public-html')
+    ->name('donate');
 
 // short url
 Route::get('g/{post:serial}', [GameController::class, 'show'])->name('game.show');;
-Route::get('r/{post:serial}', [GameController::class, 'rank'])->name('game.rank');
+Route::get('r/{post:serial}', [GameController::class, 'rank'])
+    ->middleware('cache.public-html:rank')
+    ->name('game.rank');
 Route::get('r/{post:serial}/access', [GameController::class, 'accessRank'])->name('game.rank-access');
 Route::get('r/{post:serial}/embed', [GameController::class, 'rankEmbed'])->name('game.rank-embed');
 Route::get('r/{post:serial}/export', [GameController::class, 'export'])->name('game.export');
@@ -101,8 +109,12 @@ Route::middleware('auth')->group(function () {
 });
 
 /** TOS */
-Route::get('tos', fn() => view_or("tos.".app()->getLocale(), 'tos.en'))->name('tos');
-Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en'))->name('privacy');
+Route::get('tos', fn() => view_or("tos.".app()->getLocale(), 'tos.en'))
+    ->middleware('cache.public-html')
+    ->name('tos');
+Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en'))
+    ->middleware('cache.public-html')
+    ->name('privacy');
 
 /** Game Room */
 Route::get('b/{gameRoom:serial}', [GameController::class, 'joinRoom'])->name('game.room.index');

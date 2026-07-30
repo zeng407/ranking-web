@@ -4,6 +4,7 @@
 namespace App\Services;
 
 
+use App\Exceptions\BatchVoteConflictException;
 use App\Helper\CacheService;
 use App\Helper\Locker;
 use App\Helper\SerialGenerator;
@@ -18,6 +19,7 @@ use App\Models\GameRoomUserBet;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserGameResult;
+use App\Services\Models\BatchVoteResult;
 use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -290,7 +292,7 @@ class GameService
     /**
      * 驗證批次投票
      */
-    private function validateBatchVotes(Game $game, array $votes)
+    private function validateBatchVotes(Game $game, array $votes, int $serverVoteCount)
     {
         $winnerIds = collect($votes)->pluck('winner_id');
         $loserIds = collect($votes)->pluck('loser_id');
@@ -341,16 +343,18 @@ class GameService
             $loserId = $vote['loser_id'];
 
             if (in_array($winnerId, $alreadyEliminated) || in_array($winnerId, $batchEliminated)) {
-                \Log::error("Winner already eliminated.", [
-                    'votes' => $votes,
-                ]);
-                throw new Exception("Game {$game->id} Winner {$winnerId} eliminated.");
+                throw new BatchVoteConflictException(
+                    BatchVoteConflictException::WINNER_ELIMINATED,
+                    $serverVoteCount,
+                    (int) $winnerId
+                );
             }
             if (in_array($loserId, $alreadyEliminated) || in_array($loserId, $batchEliminated)) {
-                \Log::error("Loser already eliminated.", [
-                    'votes' => $votes,
-                ]);
-                throw new Exception("Game {$game->id} Loser {$loserId} eliminated.");
+                throw new BatchVoteConflictException(
+                    BatchVoteConflictException::LOSER_ELIMINATED,
+                    $serverVoteCount,
+                    (int) $loserId
+                );
             }
             $batchEliminated[] = $loserId;
 
@@ -504,9 +508,106 @@ class GameService
     }
 
     /**
-     * @return Game1V1Round|null
+     * Remove exact retries while the game row is locked. For revision-aware
+     * clients, committed votes must be the exact prefix immediately following
+     * the client's revision; an unrelated historical pair must never make a
+     * stale branch look current.
+     *
+     * @return array{0: array, 1: int}
      */
-    public function batchUpdateGameRounds(Game $game, array $votes)
+    private function preparePendingBatchVotes(
+        Game $game,
+        array $votes,
+        ?int $expectedVoteCount,
+        int $serverVoteCount
+    ): array {
+        $normalizedVotes = [];
+        $seenPairs = [];
+
+        foreach ($votes as $vote) {
+            $winnerId = (int) $vote['winner_id'];
+            $loserId = (int) $vote['loser_id'];
+            $pairKey = "{$winnerId}:{$loserId}";
+
+            if (isset($seenPairs[$pairKey])) {
+                continue;
+            }
+
+            $seenPairs[$pairKey] = true;
+            $normalizedVotes[] = [
+                'winner_id' => $winnerId,
+                'loser_id' => $loserId,
+            ];
+        }
+
+        $persistedRounds = \DB::table('game_1v1_rounds')
+            ->where('game_id', $game->id)
+            ->orderBy('id')
+            ->get(['winner_id', 'loser_id']);
+
+        // Backward compatibility for a cached frontend that does not send a
+        // revision yet. Its former exact-pair idempotency behavior is retained.
+        if ($expectedVoteCount === null) {
+            $existingPairs = $persistedRounds
+                ->mapWithKeys(static function ($round) {
+                    return ["{$round->winner_id}:{$round->loser_id}" => true];
+                })
+                ->all();
+
+            $pendingVotes = array_values(array_filter(
+                $normalizedVotes,
+                static function (array $vote) use ($existingPairs): bool {
+                    return !isset($existingPairs["{$vote['winner_id']}:{$vote['loser_id']}"]);
+                }
+            ));
+
+            return [$pendingVotes, count($normalizedVotes) - count($pendingVotes)];
+        }
+
+        if ($expectedVoteCount > $serverVoteCount) {
+            throw new BatchVoteConflictException(
+                BatchVoteConflictException::REVISION_MISMATCH,
+                $serverVoteCount
+            );
+        }
+
+        $committedSinceExpectedRevision = $persistedRounds
+            ->slice($expectedVoteCount)
+            ->values();
+        $persistedDuplicateCount = $committedSinceExpectedRevision->count();
+
+        if ($persistedDuplicateCount > count($normalizedVotes)) {
+            throw new BatchVoteConflictException(
+                BatchVoteConflictException::REVISION_MISMATCH,
+                $serverVoteCount
+            );
+        }
+
+        foreach ($committedSinceExpectedRevision as $index => $round) {
+            $submittedVote = $normalizedVotes[$index];
+            if ((int) $round->winner_id !== $submittedVote['winner_id']
+                || (int) $round->loser_id !== $submittedVote['loser_id']) {
+                throw new BatchVoteConflictException(
+                    BatchVoteConflictException::REVISION_MISMATCH,
+                    $serverVoteCount
+                );
+            }
+        }
+
+        return [
+            array_slice($normalizedVotes, $persistedDuplicateCount),
+            $persistedDuplicateCount,
+        ];
+    }
+
+    /**
+     * @return BatchVoteResult
+     */
+    public function batchUpdateGameRounds(
+        Game $game,
+        array $votes,
+        ?int $expectedVoteCount = null
+    ): BatchVoteResult
     {
         $tStart = microtime(true);
         logger('batchUpdateGameRounds.start', [
@@ -530,14 +631,30 @@ class GameService
 
             // 驗證、讀取目前狀態與所有寫入必須位於同一把 lock 和 transaction 內。
             // transaction 的重試以整批為單位，避免 deadlock 後只重跑其中一條 SQL。
-            $lastCreatedRound = \DB::transaction(function () use ($game, $votes, $tStart, &$completionStats) {
+            $batchResult = \DB::transaction(function () use (
+                $game,
+                $votes,
+                $expectedVoteCount,
+                $tStart,
+                &$completionStats
+            ) {
                 // DB row lock 是 cache lock 到期時的第二層保護；後續驗證必須讀到最新提交狀態。
                 \DB::table('games')
                     ->where('id', $game->id)
                     ->lockForUpdate()
                     ->first();
 
-                $this->validateBatchVotes($game, $votes);
+                $serverVoteCount = (int) \DB::table('game_1v1_rounds')
+                    ->where('game_id', $game->id)
+                    ->count();
+                [$pendingVotes, $persistedDuplicateCount] = $this->preparePendingBatchVotes(
+                    $game,
+                    $votes,
+                    $expectedVoteCount,
+                    $serverVoteCount
+                );
+
+                $this->validateBatchVotes($game, $pendingVotes, $serverVoteCount);
 
                 $tAfterValidate = microtime(true);
                 logger('batchUpdateGameRounds.after_validate', [
@@ -605,7 +722,8 @@ class GameService
                     'remain' => $remain,
                     'match_index' => $matchIndex,
                     'matches_in_stage' => $matchesInStage,
-                    'votes_count' => count($votes),
+                    'votes_count' => count($pendingVotes),
+                    'duplicate_votes_count' => $persistedDuplicateCount,
                 ]);
 
                 // 準備批次寫入的陣列
@@ -619,7 +737,7 @@ class GameService
                 ];
 
                 // 先在記憶體中計算完整批次，確認無誤後再於同一 transaction 寫入。
-                foreach ($votes as $vote) {
+                foreach ($pendingVotes as $vote) {
                     $loopStart = microtime(true);
                     $winnerId = $vote['winner_id'];
                     $loserId = $vote['loser_id'];
@@ -752,19 +870,37 @@ class GameService
                 }
 
                 $completionStats = $stats;
-                return $lastCreatedRound;
+                if ($lastCreatedRound === null) {
+                    $lastCreatedRound = $lastRound;
+                }
+
+                return new BatchVoteResult(
+                    $lastCreatedRound,
+                    $pendingVotes,
+                    $serverVoteCount + $voteCountIncrement
+                );
             }, 3);
 
             logger('batchUpdateGameRounds.done', [
                 'game_id' => $game->id,
-                'votes_count' => count($votes),
+                'votes_count' => count($batchResult->acceptedVotes()),
+                'server_vote_count' => $batchResult->serverVoteCount(),
                 'winner_updates' => $completionStats['winner_updates'] ?? 0,
                 'loser_updates' => $completionStats['loser_updates'] ?? 0,
                 'ready_resets' => $completionStats['ready_resets'] ?? 0,
                 'total_ms' => round((microtime(true) - $tStart) * 1000, 2),
             ]);
-            return $lastCreatedRound;
+            return $batchResult;
 
+        } catch (BatchVoteConflictException $e) {
+            \Log::warning('batchUpdateGameRounds.conflict', [
+                'game_id' => $game->id,
+                'votes_count' => count($votes),
+                'reason' => $e->reason(),
+                'element_id' => $e->elementId(),
+                'server_vote_count' => $e->serverVoteCount(),
+            ]);
+            throw $e;
         } catch (\Throwable $e) {
             \Log::error('batchUpdateGameRounds.failed', [
                 'game_id' => $game->id,

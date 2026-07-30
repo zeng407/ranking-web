@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BatchVoteConflictException;
 use App\Events\GameElementVoted;
 use App\Events\GameComplete;
 use App\Events\RefreshGameCandidates;
@@ -89,11 +90,25 @@ class GameController extends Controller
         // 預設最大 1024，或使用使用者指定的 limit
         $limit = $request->input('limit', 1024);
 
-        $elements = $this->gameService->getGameElements($game, $limit);
+        // The element flags and revision must describe the same committed
+        // bracket. The shared game-row lock coordinates this snapshot with the
+        // exclusive lock used by batch voting.
+        [$elements, $serverVoteCount] = DB::transaction(function () use ($game, $limit) {
+            DB::table('games')
+                ->where('id', $game->id)
+                ->sharedLock()
+                ->first();
+
+            return [
+                $this->gameService->getGameElements($game, $limit),
+                $game->game_1v1_rounds()->count(),
+            ];
+        });
         $elements = GameElementResource::collection($elements);
         return response()->json([
             'game_serial' => $game->serial,
             'total_count' => $game->element_count, // 回傳該局總人數
+            'server_vote_count' => $serverVoteCount,
             'data' => $elements
         ]);
     }
@@ -141,6 +156,7 @@ class GameController extends Controller
 
         return response()->json([
             'game_serial' => $game->serial,
+            'server_vote_count' => 0,
             'data' => $elements
         ]);
     }
@@ -266,6 +282,7 @@ class GameController extends Controller
             'votes' => 'array|max:1023',
             'votes.*.winner_id' => 'required|integer|different:votes.*.loser_id',
             'votes.*.loser_id' => 'required|integer',
+            'expected_vote_count' => 'nullable|integer|min:0',
             'current_candidates' => 'nullable|array|size:2'
         ]);
 
@@ -276,41 +293,23 @@ class GameController extends Controller
         $this->authorize('play', $game);
 
         $lastGameRound = null;
+        $acceptedVotes = [];
+        $serverVoteCount = 0;
 
         try {
-            // 先去除重複的 winner/loser 組合，避免前端重試造成重複票
             $votes = $request->input('votes', []);
-            $uniqueVotes = [];
-            $seenPairs = [];
-
-            // 查 DB 已存在的回合，跳過已處理的組合
-            $existingPairs = DB::table('game_1v1_rounds')
-                ->where('game_id', $game->id)
-                ->select('winner_id', 'loser_id')
-                ->get()
-                ->map(function ($row) {
-                    return $row->winner_id . '-' . $row->loser_id;
-                })
-                ->flip();
-
-            foreach ($votes as $vote) {
-                $pairKey = $vote['winner_id'] . '-' . $vote['loser_id'];
-
-                // 已處理過 (DB 或本批次) 就跳過
-                if (isset($existingPairs[$pairKey]) || isset($seenPairs[$pairKey])) {
-                    continue;
-                }
-
-                $seenPairs[$pairKey] = true;
-                $uniqueVotes[] = $vote;
-            }
-
-            // 呼叫 Service 處理批次更新
-            $lastGameRound = $this->gameService->batchUpdateGameRounds($game, $uniqueVotes);
+            $batchResult = $this->gameService->batchUpdateGameRounds(
+                $game,
+                $votes,
+                $request->input('expected_vote_count')
+            );
+            $lastGameRound = $batchResult->lastRound();
+            $acceptedVotes = $batchResult->acceptedVotes();
+            $serverVoteCount = $batchResult->serverVoteCount();
 
             //收集所有變動過的 Element IDs
-            if (!empty($uniqueVotes)) {
-                $elementIds = collect($uniqueVotes)
+            if (!empty($acceptedVotes)) {
+                $elementIds = collect($acceptedVotes)
                     ->flatMap(function ($vote) {
                         return [$vote['winner_id'], $vote['loser_id']];
                     })
@@ -324,6 +323,12 @@ class GameController extends Controller
                 }
             }
 
+        } catch (BatchVoteConflictException $e) {
+            return response()->json([
+                'code' => 'game_state_conflict',
+                'reason' => $e->reason(),
+                'server_vote_count' => $e->serverVoteCount(),
+            ], 409);
         } catch (\Exception $e) {
             \Log::error('Batch vote failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Batch processing failed'], 422);
@@ -340,11 +345,21 @@ class GameController extends Controller
             }
 
             if ($lastGameRound) {
-                $anonymousId = session()->get('anonymous_id', 'unknown');
-                $game->update(['completed_at' => now()]);
-                $candidates = "{$lastGameRound->winner_id},{$lastGameRound->loser_id}";
-                // 觸發遊戲完成事件
-                event(new GameComplete($request->user(), $anonymousId, $lastGameRound, $candidates));
+                $completedAt = now();
+                $markedComplete = Game::query()
+                    ->whereKey($game->id)
+                    ->whereNull('completed_at')
+                    ->update(['completed_at' => $completedAt]) === 1;
+
+                if ($markedComplete) {
+                    $game->completed_at = $completedAt;
+                    $anonymousId = session()->get('anonymous_id', 'unknown');
+                    $candidates = "{$lastGameRound->winner_id},{$lastGameRound->loser_id}";
+                    // 只有成功將 completed_at 由 null 改掉的 request 可以觸發完成事件。
+                    event(new GameComplete($request->user(), $anonymousId, $lastGameRound, $candidates));
+                } else {
+                    $game->refresh();
+                }
             } else {
                 \Log::warning('Game complete but no lastGameRound found', ['game_id' => $game->id]);
             }
@@ -353,6 +368,7 @@ class GameController extends Controller
         $elements = $this->gameService->getCurrentElements($game);
         return response()->json([
             'status' => $this->getStatus($game),
+            'server_vote_count' => $serverVoteCount,
             'data' => GameRoundResource::make($game, $elements)
         ]);
     }

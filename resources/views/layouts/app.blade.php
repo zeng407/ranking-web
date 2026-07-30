@@ -68,7 +68,9 @@
 
   @yield('header')
   {{-- CSRF Token --}}
-  <meta name="csrf-token" content="{{ csrf_token() }}">
+  @if (!request()->attributes->get(\App\Http\Middleware\PublicHtmlCacheHeaders::ENABLED_ATTRIBUTE, false))
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+  @endif
 
   {{-- Scripts --}}
   <script src="{{ mix('js/app.js') }}" defer></script>
@@ -124,45 +126,22 @@
             </ul>
 
             {{-- Right Side Of Navbar --}}
-            <ul class="navbar-nav ml-auto">
-              @if (app()->getLocale() == 'zh_TW')
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ route('donate') }}">{{ __('Donate') }}</a>
-                </li>
-              @endif
-              {{-- Authentication Links --}}
-              @guest
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ route('login') }}">{{ __('Login & New Post') }}</a>
-                </li>
-              @else
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ route('post.index') }}">{{ __('My Votes') }}</a>
-                </li>
-                <li class="nav-item dropdown">
-                  <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                    <img src="{{ auth()->user()->avatar_url ?? asset('storage/default-avatar.webp') }}"
-                      class="rounded-circle" width="24" height="24" style="object-fit: cover"
-                      alt="{{ __('Avatar') }}">
-                    <span class="caret"></span>
-                  </a>
-                  <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="{{ route('profile.index') }}">
-                      {{ __('Profile') }}
-                    </a>
-                    <a class="dropdown-item" href="{{ route('logout') }}"
-                      onclick="event.preventDefault();document.getElementById('logout-form').submit();">
-                      {{ __('Logout') }}
-                    </a>
-
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                      @csrf
-                    </form>
-                  </div>
-                </li>
-              @endguest
-            </ul>
+            <navbar-auth
+              context-endpoint="{{ route('session.context', request()->route('locale') ? ['locale' => request()->route('locale')] : []) }}"
+              login-url="{{ route('login') }}"
+              posts-url="{{ route('post.index') }}"
+              profile-url="{{ route('profile.index') }}"
+              logout-url="{{ route('logout') }}"
+              donate-url="{{ route('donate') }}"
+              default-avatar-url="{{ asset('storage/default-avatar.webp') }}"
+              login-label="{{ __('Login & New Post') }}"
+              posts-label="{{ __('My Votes') }}"
+              profile-label="{{ __('Profile') }}"
+              logout-label="{{ __('Logout') }}"
+              donate-label="{{ __('Donate') }}"
+              avatar-alt="{{ __('Avatar') }}"
+              :show-donate="{{ app()->getLocale() == 'zh_TW' ? 'true' : 'false' }}">
+            </navbar-auth>
           </div>
 
         </div>
