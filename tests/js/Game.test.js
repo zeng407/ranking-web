@@ -585,27 +585,26 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     assert.equal(vm.status, 'end_game');
   });
 
-  test('reload restores the exact displayed pairing without advancing the bracket twice', () => {
+  test('reload refreshes the pairing without restoring the previous display', () => {
     const writer = createGameVm();
-    let originallyDisplayedPair;
-    writer.handleAnimationAfterNextRound = game => {
-      originallyDisplayedPair = game.elements.map(element => element.id);
-    };
+    writer.handleAnimationAfterNextRound = () => {};
     writer.nextLocalRound();
     const matchIndexBeforeReload = writer.clientState.matchIndex;
     writer.disableCloudSync('winner_eliminated');
+    writer.releaseGameTabLease();
 
     const reader = createGameVm({
       gameSerial: null,
       isLocalOnlyAfterBatchConflict: false,
     });
     let nextLocalRoundCalls = 0;
-    let restoredPair;
+    let restoreCalls = 0;
     reader.nextLocalRound = () => {
       nextLocalRoundCalls++;
     };
-    reader.handleAnimationAfterNextRound = game => {
-      restoredPair = game.elements.map(element => element.id);
+    reader.restoreCurrentLocalMatch = () => {
+      restoreCalls++;
+      return true;
     };
 
     assert.equal(reader.loadFromLocalStorage(), true);
@@ -614,11 +613,74 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     assert.equal(reader.isClientMode, true);
     assert.equal(nextLocalRoundCalls, 0, 'Loading data must not advance the bracket');
 
-    reader.resumeLocalGame();
+    reader.resumeLocalGame(false, true);
 
-    assert.deepEqual(restoredPair, originallyDisplayedPair);
+    assert.equal(restoreCalls, 0, 'A page refresh must not restore the saved pairing');
+    assert.equal(nextLocalRoundCalls, 1, 'A page refresh must draw a new pairing');
     assert.equal(reader.clientState.matchIndex, matchIndexBeforeReload);
-    assert.equal(nextLocalRoundCalls, 0, 'A saved pairing must be rendered, not redrawn');
+  });
+
+  test('reload can redraw from every unplayed candidate without advancing progress', t => {
+    const localElements = [
+      { id: 1, local_eliminated: false, local_is_ready: true, local_played: 0, local_win_count: 0 },
+      { id: 2, local_eliminated: false, local_is_ready: true, local_played: 0, local_win_count: 0 },
+      { id: 3, local_eliminated: false, local_is_ready: true, local_played: 5, local_win_count: 5 },
+      { id: 4, local_eliminated: false, local_is_ready: true, local_played: 5, local_win_count: 5 },
+      { id: 5, local_eliminated: false, local_is_ready: false, local_played: 1, local_win_count: 1 },
+      { id: 6, local_eliminated: true, local_is_ready: false, local_played: 1, local_win_count: 0 },
+    ];
+    const clientState = {
+      stage: 2,
+      matchIndex: 2,
+      stageStartCount: 6,
+      matchesInStage: 1,
+      targetMatches: 3,
+    };
+    const writer = createGameVm({
+      elementsCount: 6,
+      localElements: jsonClone(localElements),
+      clientState: { ...clientState },
+      currentLocalMatch: {
+        left_id: 1,
+        right_id: 2,
+        current_round: 2,
+        of_round: 3,
+        remain_elements: 5,
+        total_elements: 6,
+        stage_start_count: 6,
+      },
+    });
+    writer.existingElementIds = new Set(localElements.map(element => element.id));
+    assert.equal(writer.saveToLocalStorage(), true);
+    writer.releaseGameTabLease();
+
+    const reader = createGameVm({ gameSerial: null });
+    let displayedPair = null;
+    reader.handleAnimationAfterNextRound = game => {
+      displayedPair = game.elements.map(element => element.id);
+    };
+    reader.fetchRemainingElements = () => {};
+
+    assert.equal(reader.loadFromLocalStorage(), true);
+    t.mock.method(Math, 'random', () => 0);
+    reader.resumeLocalGame(false, true);
+
+    assert.deepEqual(displayedPair, [2, 3]);
+    assert.equal(reader.clientState.matchIndex, clientState.matchIndex);
+    assert.equal(reader.clientState.matchesInStage, clientState.matchesInStage);
+    assert.deepEqual(reader.localVotes, []);
+    assert.deepEqual(
+      reader.localElements.map(element => element.local_is_ready),
+      localElements.map(element => element.local_is_ready)
+    );
+
+    const saved = JSON.parse(localStorage.getItem('gamestate_post-serial'));
+    assert.deepEqual(
+      [saved.currentLocalMatch.left_id, saved.currentLocalMatch.right_id],
+      displayedPair
+    );
+    assert.equal(saved.clientState.matchIndex, clientState.matchIndex);
+    assert.equal(saved.clientState.matchesInStage, clientState.matchesInStage);
   });
 
   test('continueGame always chooses a valid local snapshot over different cloud progress', () => {
@@ -651,6 +713,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
       stage_start_count: 2,
     };
     writer.disableCloudSync('revision_mismatch');
+    writer.releaseGameTabLease();
 
     let remoteGetCount = 0;
     global.axios = {
@@ -667,9 +730,9 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
         vote_count: 999,
       },
     });
-    let restoredPair;
-    reader.handleAnimationAfterNextRound = game => {
-      restoredPair = game.elements.map(element => element.id);
+    let nextLocalRoundCalls = 0;
+    reader.nextLocalRound = () => {
+      nextLocalRoundCalls++;
     };
     reader.resetTimer = () => {};
     reader.startTimer = () => {};
@@ -678,7 +741,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
 
     assert.equal(remoteGetCount, 0);
     assert.equal(reader.localElements[0].local_win_count, 7);
-    assert.deepEqual(restoredPair, [1, 2]);
+    assert.equal(nextLocalRoundCalls, 1);
     assert.equal(reader.cloudSyncDisabledReason, 'revision_mismatch');
   });
 

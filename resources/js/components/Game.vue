@@ -1940,7 +1940,7 @@ export default {
 
     },
 
-    resumeLocalGame(leaseAlreadyClaimed = false) {
+    resumeLocalGame(leaseAlreadyClaimed = false, refreshCurrentMatch = false) {
       this.isClientMode = true;
       this.showMatchHistory = true;
 
@@ -1968,6 +1968,23 @@ export default {
         return;
       }
 
+      let refreshMatchOptions = null;
+      if (refreshCurrentMatch) {
+        // Page refresh should show a newly randomized pairing instead of
+        // restoring the pair that was visible before the reload. This only
+        // replaces an unvoted display: it must not advance matchIndex or any
+        // other durable tournament progress.
+        const isReplacingDisplayedMatch = !!this.currentLocalMatch;
+        this.currentLocalMatch = null;
+        // Keep the previous displayed match in durable storage until the new
+        // pairing is selected and saved. A crash during redraw can therefore
+        // never leave a half-written snapshot or lose the recoverable match.
+        refreshMatchOptions = {
+          randomizeReadyCandidates: true,
+          preserveMatchIndex: isReplacingDisplayedMatch,
+        };
+      }
+
       if (this.localElements.length < this.elementsCount) {
         this.fetchRemainingElements();
       }
@@ -1982,7 +1999,9 @@ export default {
         return;
       }
 
-      if (!this.restoreCurrentLocalMatch()) {
+      if (refreshCurrentMatch) {
+        this.nextLocalRound(refreshMatchOptions);
+      } else if (!this.restoreCurrentLocalMatch()) {
         this.nextLocalRound();
       }
 
@@ -1998,7 +2017,7 @@ export default {
     continueGame() {
       if (this.loadFromLocalStorage()) {
         if (this.isClientMode) {
-          this.resumeLocalGame();
+          this.resumeLocalGame(false, true);
         } else {
           if (this.ensureGameTabWriteAccess(false)) {
             this.saveToLocalStorage();
@@ -2120,7 +2139,18 @@ export default {
         return true;
     },
 
-    nextLocalRound() {
+    shuffleLocalMatchCandidates(elements) {
+        const shuffled = elements.slice();
+        for (let index = shuffled.length - 1; index > 0; index--) {
+            const randomIndex = Math.floor(Math.random() * (index + 1));
+            [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+        }
+        return shuffled;
+    },
+
+    nextLocalRound(options = {}) {
+        const randomizeReadyCandidates = options.randomizeReadyCandidates === true;
+        const preserveMatchIndex = options.preserveMatchIndex === true;
         if (!this.ensureGameTabWriteAccess(false)) return;
         let activeElements = this.localElements.filter(e => !e.local_eliminated);
 
@@ -2129,7 +2159,7 @@ export default {
              return;
         }
 
-        // 重整只應恢復當時正在顯示的配對，不可重新抽選或重複推進 matchIndex。
+        // 沒有已保存的配對時才建立下一個隨機對戰。
         if (this.restoreCurrentLocalMatch()) {
             return;
         }
@@ -2154,41 +2184,49 @@ export default {
             });
             this.updateStageConfig();
             this.saveToLocalStorage();
-            this.nextLocalRound();
+            this.nextLocalRound({ randomizeReadyCandidates });
             return;
         }
 
         let el1, el2;
         let readyElements = activeElements.filter(e => e.local_is_ready);
 
-        if (this.clientState.stage === 2) {
-            readyElements.sort((a, b) => {
-                if (a.local_played !== b.local_played) return a.local_played - b.local_played;
-                return 0.5 - Math.random();
-            });
+        if (randomizeReadyCandidates || this.clientState.stage !== 2) {
+            // A reload may draw any candidate who has not fought in this
+            // stage. Fisher-Yates avoids the bias of sort(() => random).
+            readyElements = this.shuffleLocalMatchCandidates(readyElements);
+        } else {
+            // Normal stage-2 progression keeps the existing fairness rule;
+            // shuffle first so candidates with the same played count are
+            // still selected uniformly.
+            readyElements = this.shuffleLocalMatchCandidates(readyElements)
+                .sort((a, b) => a.local_played - b.local_played);
+        }
+
+        if (readyElements.length >= 2) {
             el1 = readyElements[0];
             el2 = readyElements[1];
-        } else {
-            readyElements.sort(() => 0.5 - Math.random());
-            if (readyElements.length >= 2) {
-                el1 = readyElements[0];
-                el2 = readyElements[1];
-            } else if (readyElements.length === 1) {
-                el1 = readyElements[0];
-                const notReadyElements = activeElements.filter(e => !e.local_is_ready);
-                if (notReadyElements.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * notReadyElements.length);
-                    el2 = notReadyElements[randomIndex];
-                } else {
-                    this.sendBatchVotes();
-                    return;
-                }
+        } else if (readyElements.length === 1) {
+            el1 = readyElements[0];
+            const notReadyElements = this.shuffleLocalMatchCandidates(
+                activeElements.filter(e => !e.local_is_ready)
+            );
+            if (notReadyElements.length > 0) {
+                el2 = notReadyElements[0];
+            } else {
+                this.sendBatchVotes();
+                return;
             }
+        } else {
+            this.sendBatchVotes();
+            return;
         }
 
         const eliminatedCount = this.localElements.filter(e => e.local_eliminated).length;
         const realRemainCount = this.elementsCount - eliminatedCount;
-        this.clientState.matchIndex++;
+        if (!preserveMatchIndex) {
+            this.clientState.matchIndex++;
+        }
         const currentMatchInStage = this.clientState.matchesInStage + 1;
         const mockGameData = {
             current_round: currentMatchInStage,
