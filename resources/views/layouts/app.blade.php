@@ -91,7 +91,7 @@
         <div class="container-fluid">
           <div class="d-flex justify-content-start">
             {{-- logo --}}
-            <a class="navbar-brand" href="{{ route('home') }}" title="{{ config('app.short_name') }}">
+            <a class="navbar-brand" href="{{ locale_aware_path('/') }}" title="{{ config('app.short_name') }}">
               <img src="{{ asset('storage/logo.png') }}" class="d-inline-block align-top home-logo"
                 alt="{{ config('app.short_name') }}">
             </a>
@@ -99,7 +99,7 @@
             <ul class="navbar-nav mr-auto">
               <li class="nav-item d-none d-md-block">
                 <h1 class="font-size-large m-0">
-                  <a class="nav-link" href="{{ route('home') }}"
+                  <a class="nav-link" href="{{ locale_aware_path('/') }}"
                     title="{{ __('home.posts') }}">{{ __('home.posts') }}</a>
                 </h1>
               </li>
@@ -127,12 +127,12 @@
 
             {{-- Right Side Of Navbar --}}
             <navbar-auth
-              context-endpoint="{{ route('session.context', request()->route('locale') ? ['locale' => request()->route('locale')] : []) }}"
-              login-url="{{ route('login') }}"
+              context-endpoint="{{ route('session.context', request()->route('locale') ? ['locale' => app()->getLocale()] : []) }}"
+              login-url="{{ locale_aware_path('/login') }}"
               posts-url="{{ route('post.index') }}"
               profile-url="{{ route('profile.index') }}"
               logout-url="{{ route('logout') }}"
-              donate-url="{{ route('donate') }}"
+              donate-url="{{ locale_aware_path('/donate') }}"
               default-avatar-url="{{ asset('storage/default-avatar.webp') }}"
               login-label="{{ __('Login & New Post') }}"
               posts-label="{{ __('My Votes') }}"

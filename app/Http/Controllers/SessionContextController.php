@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Middleware\StripGuestSessionCookies;
+use App\Services\Auth\GoAccessTokenService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class SessionContextController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request, GoAccessTokenService $goAccessTokenService)
     {
         $validated = $request->validate([
             'locale' => ['nullable', 'string', Rule::in(config('app.locales'))],
@@ -23,11 +24,13 @@ class SessionContextController extends Controller
         }
 
         $user = $request->user();
+        $apiToken = $user ? $goAccessTokenService->issue($user) : null;
 
         return response()->json([
             'authenticated' => $user !== null,
             'csrf_token' => csrf_token(),
             'locale' => app()->getLocale(),
+            'api_token' => $apiToken,
             'user' => $user ? [
                 'avatar_url' => $user->avatar_url,
             ] : null,

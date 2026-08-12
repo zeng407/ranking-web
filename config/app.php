@@ -93,11 +93,23 @@ return [
     // Set the default locale
     'locale' => 'zh_TW',
 
+    // Unlike app.locale, this value is not mutated by App::setLocale().
+    // It defines the permanent language contract for unprefixed public URLs.
+    'default_public_locale' => 'zh_TW',
+
     // Add locales to the list
     'locales' => [
         'en',
         'zh_TW',
         'ja'
+    ],
+
+    // Public URL segments stay lowercase and use BCP 47-style hyphens.
+    // Application locale keys remain unchanged for existing translation files.
+    'locale_url_prefixes' => [
+        'zh_TW' => 'zh-tw',
+        'en' => 'en',
+        'ja' => 'ja',
     ],
 
     /*

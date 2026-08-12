@@ -14,6 +14,7 @@ class PublicHtmlRoutesTest extends TestCase
         $this->assertNotNull($rankRoute);
         $this->assertContains('cache.public-html:home', $homeRoute->gatherMiddleware());
         $this->assertContains('cache.public-html:rank', $rankRoute->gatherMiddleware());
+        $this->assertContains('locale.default', $homeRoute->gatherMiddleware());
     }
 
     public function test_static_information_routes_use_public_html_cache(): void
@@ -21,12 +22,9 @@ class PublicHtmlRoutesTest extends TestCase
         $routes = collect(app('router')->getRoutes()->getRoutes());
 
         foreach ([
-            'donate',
-            'tos',
-            'privacy',
-            'lang/{locale}/donate',
-            'lang/{locale}/tos',
-            'lang/{locale}/privacy',
+            '{locale}/donate',
+            '{locale}/tos',
+            '{locale}/privacy',
         ] as $uri) {
             $route = $routes->first(fn ($route) => $route->uri() === $uri);
 

@@ -8,6 +8,8 @@ use App\Http\Controllers\Post\AdController;
 use App\Http\Controllers\Post\PostController;
 use App\Http\Controllers\Post\GameController;
 use App\Http\Controllers\SessionContextController;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,16 +32,29 @@ Auth::routes([
     'confirm' => false,
 ]);
 
-Route::get('/lang/{locale}', [HomeController::class, 'lang'])->name('lang');
+Route::get('/lang/{legacyLocale}/{path?}', function (Request $request, string $legacyLocale, string $path = '') {
+    $localeMap = [
+        'zh_TW' => 'zh-tw',
+        'en' => 'en',
+        'ja' => 'ja',
+    ];
+
+    abort_unless(isset($localeMap[$legacyLocale]), 404);
+
+    $target = '/' . $localeMap[$legacyLocale] . '/' . ltrim($path, '/');
+    if ($query = $request->getQueryString()) {
+        $target .= '?' . $query;
+    }
+
+    return new RedirectResponse($target, 301);
+})->where('path', '.*')->name('locale.legacy');
 
 Route::get('/session-context', SessionContextController::class)->name('session.context');
 
 Route::get('/', [HomeController::class, 'index'])
-    ->middleware('cache.public-html:home')
+    ->middleware(['locale.default', 'cache.public-html:home'])
     ->name('home');
-Route::get('/donate', [HomeController::class, 'donate'])
-    ->middleware('cache.public-html')
-    ->name('donate');
+Route::redirect('/donate', '/zh-tw/donate', 301)->name('donate');
 
 // short url
 Route::get('g/{post:serial}', [GameController::class, 'show'])->name('game.show');;
@@ -109,12 +124,8 @@ Route::middleware('auth')->group(function () {
 });
 
 /** TOS */
-Route::get('tos', fn() => view_or("tos.".app()->getLocale(), 'tos.en'))
-    ->middleware('cache.public-html')
-    ->name('tos');
-Route::get('privacy', fn() => view_or("privacy.".app()->getLocale(), 'privacy.en'))
-    ->middleware('cache.public-html')
-    ->name('privacy');
+Route::redirect('tos', '/zh-tw/tos', 301)->name('tos');
+Route::redirect('privacy', '/zh-tw/privacy', 301)->name('privacy');
 
 /** Game Room */
 Route::get('b/{gameRoom:serial}', [GameController::class, 'joinRoom'])->name('game.room.index');

@@ -18,14 +18,19 @@ class LocalePrefixRoute
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($locale = $request->route('locale')) {
-            // validate locale
-            if (in_array($locale, config('app.locales'))) {
-                Session::put('locale', $locale);
-                App::setLocale($locale);
-            }else{
+        if ($urlLocale = $request->route('locale')) {
+            $locale = array_search(
+                strtolower($urlLocale),
+                config('app.locale_url_prefixes'),
+                true
+            );
+
+            if ($locale === false) {
                 return redirect()->route('home');
             }
+
+            Session::put('locale', $locale);
+            App::setLocale($locale);
         }
         return $next($request);
     }

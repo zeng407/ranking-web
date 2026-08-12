@@ -43,7 +43,7 @@
 
 @section('search')
   {{-- search --}}
-  <form class="form-inline my-2 my-lg-0" action="{{ route('home') }}">
+  <form class="form-inline my-2 my-lg-0" action="{{ locale_aware_path('/') }}">
     <input id="keyword-input" class="mr-sm-2 search-bar" type="search" placeholder="{{ __('Search') }}"
       value="{{ Request::get('k') }}" name="k" aria-label="Search">
     <button class="btn btn btn-outline-secondary border-0 my-2 my-sm-0 ml-1 ml-sm-0" type="submit"

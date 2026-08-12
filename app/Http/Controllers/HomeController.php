@@ -54,10 +54,4 @@ class HomeController extends Controller
         return CacheService::rememberPosts($request, $sort);
     }
 
-    public function lang(Request $request, $locale)
-    {
-        session()->put('locale', $locale);
-        app()->setLocale($locale);
-        return $this->index($request);
-    }
 }

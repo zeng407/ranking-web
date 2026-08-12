@@ -1,11 +1,8 @@
 @php
   $queryParams = request()->query();
   $langPostfixURL = $langPostfixURL ?? '';
-  if($queryParams){
-    $postFix = $langPostfixURL . '?' . http_build_query(request()->query());
-  }else{
-    $postFix = $langPostfixURL;
-  }
+  $postFix = trim($langPostfixURL, '/');
+  $queryString = $queryParams ? '?' . http_build_query($queryParams) : '';
 
 @endphp
 
@@ -17,9 +14,9 @@
           <i class="fas fa-globe-asia"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownLangButton">
-          <a class="dropdown-item" href="{{'/lang/zh_TW/'. $postFix}}">{{ __('Chinese') }} (Chinese)</a>
-          <a class="dropdown-item" href="{{'/lang/ja/'. $postFix}}">{{__('Japanese')}} (Japanese)</a>
-          <a class="dropdown-item" href="{{'/lang/en/'. $postFix}}">{{__('English')}} (English)</a>
+          <a class="dropdown-item" href="{{ localized_path('zh_TW', $postFix) . $queryString }}">{{ __('Chinese') }} (Chinese)</a>
+          <a class="dropdown-item" href="{{ localized_path('ja', $postFix) . $queryString }}">{{__('Japanese')}} (Japanese)</a>
+          <a class="dropdown-item" href="{{ localized_path('en', $postFix) . $queryString }}">{{__('English')}} (English)</a>
         </div>
       </li>
     </ul>

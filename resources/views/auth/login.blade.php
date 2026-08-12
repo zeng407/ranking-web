@@ -193,7 +193,7 @@
             <div class="col-12">
                 {{-- TOS --}}
                 <div class="text-align-webkit-center mt-3">
-                    <p class=" font-size-small">{!! __('login.tos', ['tos' => route('tos'), 'privacy' => route('privacy')]) !!}</p>
+                    <p class=" font-size-small">{!! __('login.tos', ['tos' => locale_aware_path('/tos'), 'privacy' => locale_aware_path('/privacy')]) !!}</p>
                 </div>
             </div>
         </div>

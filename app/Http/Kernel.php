@@ -80,6 +80,7 @@ class Kernel extends HttpKernel
         'cache.public-html' => \App\Http\Middleware\MarkPublicHtmlCache::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'locale.prefix' => \App\Http\Middleware\LocalePrefixRoute::class,
+        'locale.default' => \App\Http\Middleware\DefaultLocaleRoute::class,
         'admin' => \App\Http\Middleware\AdminRoute::class
     ];
 }

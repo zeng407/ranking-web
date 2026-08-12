@@ -158,8 +158,37 @@ if (!function_exists('url_path_without_locale')) {
     function url_path_without_locale()
     {
         $path = request()->path();
-        $path = preg_replace('#^lang/[^/]+/#', '', $path);
+        $path = preg_replace('#^(?:lang/(?:zh_TW|en|ja)|zh-tw|en|ja)(?:/|$)#', '', $path);
         return $path;
+    }
+}
+
+if (!function_exists('locale_url_prefix')) {
+    function locale_url_prefix($locale)
+    {
+        return config("app.locale_url_prefixes.{$locale}", config('app.locale_url_prefixes.zh_TW'));
+    }
+}
+
+if (!function_exists('localized_path')) {
+    function localized_path($locale, $path = '')
+    {
+        $prefix = locale_url_prefix($locale);
+        $path = trim($path, '/');
+
+        return '/' . $prefix . '/' . ($path ? $path : '');
+    }
+}
+
+if (!function_exists('locale_aware_path')) {
+    function locale_aware_path($path = '')
+    {
+        if (!request()->route('locale')) {
+            $path = trim($path, '/');
+            return '/' . ($path ? $path : '');
+        }
+
+        return localized_path(app()->getLocale(), $path);
     }
 }
 

@@ -69,7 +69,7 @@
             {{-- Top buttons --}}
             <div class="row mb-3 sticky-top-rank-buttons">
               <div class="col-10">
-                <a class="btn btn-outline-dark btn-sm m-1" href="{{ route('home') }}">
+                <a class="btn btn-outline-dark btn-sm m-1" href="{{ locale_aware_path('/') }}">
                   <h5 class="m-0"><i class="fa-solid fa-home"></i>&nbsp;{{ __('rank.return_home') }}</h5>
                 </a>
                 <a class="btn btn-outline-dark btn-sm m-1" href={{ route('game.show', $post->serial) }}>
