@@ -25,3 +25,8 @@ _ide_helper.php
 _ide_helper_models.php
 public/sitemap.xml
 !public/ads.txt
+/refactor-plans/
+/frontend/node_modules/
+/frontend/dist/
+/backend/bin/
+/backend/coverage.out
