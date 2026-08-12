@@ -1,0 +1,314 @@
+/*
+ * The back office's own stylesheet.
+ *
+ * The public SPA's main.css is not imported: it is five thousand lines describing pages
+ * this bundle does not have, and pulling it in would make the gated download an order of
+ * magnitude larger than the screens need. The tokens below are copied deliberately — the
+ * same palette, so the back office looks like the product, without the dependency.
+ */
+
+:root {
+  --bg: #f7f5f0;
+  --surface: #fffdf9;
+  --surface-strong: #ffffff;
+  --text: #171615;
+  --text-soft: #67635e;
+  --text-faint: #918b83;
+  --border: rgb(29 27 24 / 12%);
+  --border-strong: rgb(29 27 24 / 22%);
+  --accent: #ff5a36;
+  --accent-hover: #e94522;
+  --danger: #c92a2a;
+  --ok: #2b8a3e;
+  --radius: 0.75rem;
+  color: var(--text);
+  background: var(--bg);
+  font-family: Inter, "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+}
+
+:root[data-theme="dark"] {
+  --bg: #11100f;
+  --surface: #1b1a18;
+  --surface-strong: #24221f;
+  --text: #f5f2ec;
+  --text-soft: #b5afa6;
+  --text-faint: #817b73;
+  --border: rgb(255 255 255 / 11%);
+  --border-strong: rgb(255 255 255 / 20%);
+  --accent: #ff704f;
+  --accent-hover: #ff876c;
+  --danger: #ff8787;
+  --ok: #69db7c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+}
+
+.admin-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.admin-brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.admin-nav a {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  color: var(--text-soft);
+  text-decoration: none;
+}
+
+.admin-nav a:hover {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.admin-nav a.router-link-active {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.admin-main {
+  flex: 1;
+  width: 100%;
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.admin-title {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.admin-card {
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.admin-card + .admin-card {
+  margin-top: 1rem;
+}
+
+table.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.admin-table th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table-scroll {
+  overflow-x: auto;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="search"],
+input[type="url"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--surface-strong);
+}
+
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+label.admin-field {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+label.admin-field > span {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+label.admin-check {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+label.admin-check input {
+  width: auto;
+}
+
+.admin-button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  cursor: pointer;
+}
+
+.admin-button:hover:not(:disabled) {
+  border-color: var(--text);
+}
+
+.admin-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+.admin-button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.admin-button.danger {
+  border-color: transparent;
+  background: var(--danger);
+  color: #fff;
+}
+
+.admin-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.admin-note {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.admin-alert {
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+
+.admin-alert.error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.admin-alert.ok {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+
+.admin-pager {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.admin-thumb {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  background: var(--surface-strong);
+}
+
+/* The drag handle is the only draggable part, so selecting a title does not start a drag. */
+.admin-drag-handle {
+  cursor: grab;
+  user-select: none;
+  color: var(--text-faint);
+}
+
+tr.dragging {
+  opacity: 0.5;
+}

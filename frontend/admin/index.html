@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Never indexed, and never linked from a public page. The gate already refuses a
+         request without a pass; this keeps a crawler that somehow gets one from listing it. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <title>2pick 後台</title>
+    <script>
+      try {
+        const savedTheme = localStorage.getItem('2pick-theme')
+        const theme = savedTheme === 'light' || savedTheme === 'dark'
+          ? savedTheme
+          : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+      } catch (_) {}
+    </script>
+  </head>
+  <body>
+    <div id="admin"></div>
+    <script type="module" src="../src/admin/main.ts"></script>
+  </body>
+</html>

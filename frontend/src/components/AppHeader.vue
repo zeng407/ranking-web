@@ -22,7 +22,8 @@ const accountMenuOpen = ref(false)
 const headerElement = ref<HTMLElement | null>(null)
 const locale = computed(() => normalizeLocale(route.params.locale))
 const { theme, toggleTheme } = useTheme()
-const { authenticated, user, loading, refreshAuthState, signOut } = useAuth()
+const { authenticated, user, loading, isAdmin, refreshAuthState, enterAdminConsole, signOut } = useAuth()
+const adminEntryFailed = ref(false)
 
 const canonicalPath = computed(() => pathWithoutLocale(route.path))
 
@@ -54,6 +55,15 @@ function toggleLocaleMenu(): void {
 function toggleAccountMenu(): void {
   localeMenuOpen.value = false
   accountMenuOpen.value = !accountMenuOpen.value
+}
+
+/**
+ * Leaves for the back office, which is a separate bundle rather than a route: the pass
+ * cookie is minted first, and the navigation is a full page load.
+ */
+async function handleAdminConsole(): Promise<void> {
+  adminEntryFailed.value = !(await enterAdminConsole())
+  if (!adminEntryFailed.value) closeDropdowns()
 }
 
 async function handleLogout(): Promise<void> {
@@ -197,9 +207,21 @@ watch(() => route.fullPath, () => {
             >
               {{ translate(locale, 'accountTitle') }}
             </RouterLink>
+            <button
+              v-if="isAdmin"
+              class="dropdown-item"
+              type="button"
+              role="menuitem"
+              @click="handleAdminConsole"
+            >
+              {{ translate(locale, 'adminConsole') }}
+            </button>
             <button class="dropdown-item" type="button" role="menuitem" @click="handleLogout">
               {{ translate(locale, 'logout') }}
             </button>
+            <p v-if="adminEntryFailed" class="dropdown-item" role="none">
+              {{ translate(locale, 'adminConsoleUnavailable') }}
+            </p>
           </div>
         </div>
 

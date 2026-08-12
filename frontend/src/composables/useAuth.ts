@@ -1,7 +1,13 @@
 import { readonly, ref } from 'vue'
 
+import { getAdminService } from '../services/admin'
 import { logout as submitLogout, type AuthOutcome } from '../services/auth'
 import { fetchProfile, getCachedSession, refreshSession, type SessionUser } from '../services/session'
+
+/** App\Enums\Role::ADMIN, the slug the API checks. */
+const ADMIN_ROLE = 'admin'
+/** Where Go mounts the gated bundle, and the Path of the pass cookie. */
+const ADMIN_CONSOLE_PATH = '/admin/'
 
 /**
  * Auth state is module-level so the header, the login page and any future account view
@@ -18,6 +24,18 @@ import { fetchProfile, getCachedSession, refreshSession, type SessionUser } from
 const authenticated = ref(false)
 const user = ref<SessionUser | null>(null)
 const loading = ref(true)
+/**
+ * Whether this account holds the moderator role, read from the token's own claims.
+ *
+ * Only ever used to decide whether to OFFER the back office. Every admin endpoint checks
+ * the role itself, and the bundle is served only against a pass the server mints, so a
+ * client that flips this gains nothing but a link that answers 403.
+ */
+const isAdmin = ref(false)
+
+function readRoles(): string[] {
+  return getCachedSession()?.roles ?? []
+}
 
 export async function refreshAuthState(_locale?: string, force = false): Promise<void> {
   loading.value = true
@@ -28,12 +46,14 @@ export async function refreshAuthState(_locale?: string, force = false): Promise
     // token on every view.
     if (!force && getCachedSession()) {
       authenticated.value = true
+      isAdmin.value = readRoles().includes(ADMIN_ROLE)
       if (!user.value) user.value = await fetchProfile()
       return
     }
 
     const session = await refreshSession()
     authenticated.value = session !== null
+    isAdmin.value = session?.roles.includes(ADMIN_ROLE) ?? false
     user.value = session ? await fetchProfile() : null
   } finally {
     loading.value = false
@@ -43,10 +63,30 @@ export async function refreshAuthState(_locale?: string, force = false): Promise
 /** Called after a sign-in, when the token is already in hand. */
 export async function adoptSignedInState(): Promise<void> {
   authenticated.value = true
+  isAdmin.value = readRoles().includes(ADMIN_ROLE)
   user.value = await fetchProfile()
 }
 
+/**
+ * Takes a moderator to the back office.
+ *
+ * Two steps, in this order: mint the pass cookie, then leave with a FULL page load. The
+ * back office is a separate bundle served by the Go process, not a route of this router, so
+ * a router push would land on this app's catch-all instead.
+ */
+export async function enterAdminConsole(): Promise<boolean> {
+  const outcome = await getAdminService().grantAssetPass()
+  if (!outcome.ok) return false
+  window.location.href = ADMIN_CONSOLE_PATH
+  return true
+}
+
 async function signOut(): Promise<AuthOutcome> {
+  // Dropped before the sign-out, while there is still a token to authorize it. The pass
+  // expires within the hour on its own, so this is hygiene on a shared machine rather than
+  // what stops a revoked moderator — and a failure here must not block signing out.
+  if (isAdmin.value) await getAdminService().revokeAssetPass()
+
   const outcome = await submitLogout()
 
   // Cleared whatever the server said: the local session is gone either way, and leaving
@@ -54,6 +94,7 @@ async function signOut(): Promise<AuthOutcome> {
   // server-side row.
   authenticated.value = false
   user.value = null
+  isAdmin.value = false
 
   return outcome
 }
@@ -63,8 +104,10 @@ export function useAuth() {
     authenticated: readonly(authenticated),
     user: readonly(user),
     loading: readonly(loading),
+    isAdmin: readonly(isAdmin),
     refreshAuthState,
     adoptSignedInState,
+    enterAdminConsole,
     signOut,
   }
 }

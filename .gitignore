@@ -28,5 +28,6 @@ public/sitemap.xml
 /refactor-plans/
 /frontend/node_modules/
 /frontend/dist/
+/frontend/admin-dist/
 /backend/bin/
 /backend/coverage.out

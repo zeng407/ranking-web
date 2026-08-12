@@ -13,9 +13,19 @@ const legacyProxy = Object.fromEntries(
   legacyAuthPaths.map((path) => [path, { target: legacyTarget, changeOrigin: false }]),
 )
 
+const goTarget = process.env.FRONTEND_API_PROXY_TARGET ?? 'http://localhost:8080'
+
 const apiProxy = {
   '/api/v1': {
-    target: process.env.FRONTEND_API_PROXY_TARGET ?? 'http://localhost:8080',
+    target: goTarget,
+    changeOrigin: false,
+  },
+  // The back office bundle, which Go serves from ADMIN_ASSET_DIR behind the pass cookie.
+  // Proxied rather than served here so a full-page navigation from this dev server lands on
+  // the real gate — a 403 for a browser without a pass, exactly as in production. The admin
+  // sources themselves are developed against `npm run dev:admin` on port 5174.
+  '/admin': {
+    target: goTarget,
     changeOrigin: false,
   },
 }

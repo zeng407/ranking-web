@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
+    "build:admin": "vue-tsc --noEmit && vite build --config vite.admin.config.ts",
+    "dev:admin": "vite --config vite.admin.config.ts",
+    "preview:admin": "vite preview --config vite.admin.config.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
