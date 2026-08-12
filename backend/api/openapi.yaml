@@ -1,0 +1,2282 @@
+openapi: 3.1.0
+info:
+  title: 2pick migration API
+  version: 0.1.0
+  description: >-
+    Contract shared by the Laravel identity bridge and the versioned Go API.
+    Existing /api routes remain owned by Laravel until their individual cutover.
+servers:
+  - url: https://2pick.app
+  - url: http://localhost
+tags:
+  - name: Laravel auth bridge
+  - name: Go system
+  - name: Go auth
+  - name: Go public content
+  - name: Go gameplay
+  - name: Go comments
+paths:
+  /session-context:
+    get:
+      operationId: getSessionContext
+      tags: [Laravel auth bridge]
+      summary: Resolve the current Laravel session and optionally issue a Go API token
+      parameters:
+        - in: query
+          name: locale
+          schema:
+            type: string
+            enum: [zh_TW, en, ja]
+      responses:
+        "200":
+          description: Private session context; this response must never be cached
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionContext"
+  /login:
+    get:
+      operationId: getLoginPage
+      tags: [Laravel auth bridge]
+      summary: Login page, rendered by the SPA rather than Laravel
+      description: >-
+        GET is served by the frontend, which renders its own login and
+        registration page. Only the POST below reaches Laravel, so this path is
+        routed by method at the edge.
+      responses:
+        "200":
+          description: SPA document
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      operationId: submitLogin
+      tags: [Laravel auth bridge]
+      summary: Authenticate against the Laravel session
+      description: >-
+        Requires the CSRF token from /session-context in X-CSRF-TOKEN, and
+        X-Requested-With so Laravel answers with JSON instead of a redirect.
+        Laravel regenerates the session on success, invalidating the token the
+        caller used.
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, maxLength: 50 }
+                password: { type: string }
+                remember: { type: boolean, default: false }
+      responses:
+        "204":
+          description: Session established; no body
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "419":
+          description: CSRF token expired; refresh /session-context and retry
+  /register:
+    post:
+      operationId: submitRegistration
+      tags: [Laravel auth bridge]
+      summary: Create an account and start a Laravel session
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation]
+              properties:
+                name: { type: string, maxLength: 20 }
+                email: { type: string, format: email, maxLength: 50 }
+                password: { type: string, minLength: 8 }
+                password_confirmation: { type: string, minLength: 8 }
+      responses:
+        "201":
+          description: Account created and signed in
+        "204":
+          description: Account created and signed in; no body
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+  /logout:
+    post:
+      operationId: submitLogout
+      tags: [Laravel auth bridge]
+      summary: Invalidate the Laravel session
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204":
+          description: Session invalidated; no body
+        "419":
+          description: CSRF token expired; refresh /session-context and retry
+  /password/reset:
+    get:
+      operationId: getPasswordResetPage
+      tags: [Laravel auth bridge]
+      summary: Password reset request form, still rendered by Laravel
+      responses:
+        "200":
+          description: Blade document
+          content:
+            text/html:
+              schema:
+                type: string
+  /auth/google/redirect:
+    get:
+      operationId: redirectToGoogle
+      tags: [Laravel auth bridge]
+      summary: Begin the Google OAuth handshake
+      description: >-
+        A full page navigation, not a fetch. Must be same-origin with the SPA so
+        the session created by the callback is visible to it.
+      responses:
+        "302":
+          description: Redirect to Google's consent screen
+  /health/live:
+    get:
+      operationId: getLiveness
+      tags: [Go system]
+      responses:
+        "200":
+          description: Process is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusEnvelope"
+  /health/ready:
+    get:
+      operationId: getReadiness
+      tags: [Go system]
+      responses:
+        "200":
+          description: Process is ready to receive traffic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusEnvelope"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/v1/system/info:
+    get:
+      operationId: getSystemInfo
+      tags: [Go system]
+      responses:
+        "200":
+          description: Versioned public Go API information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemInfoEnvelope"
+  /api/v1/auth/me:
+    get:
+      operationId: getGoIdentity
+      tags: [Go auth]
+      summary: Verify a token and return its identity, with the account behind it
+      description: >
+        The `user` object replaces the `user` half of Laravel's /session-context, which is
+        what the SPA read to draw its own account. Present whenever this process can reach
+        the database; without one the endpoint stays a pure token check. has_password and
+        linked_google drive the profile page: 82% of accounts have no password, and
+        offering them "change password" instead of "set a password" is the difference
+        between a working form and one that can never succeed.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The token's claims, plus the account they name when available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityEnvelope"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/v1/auth/login:
+    post:
+      operationId: goLogin
+      tags: [Go auth]
+      summary: Exchange an address and password for a session
+      description: >
+        The access token is in the body; the refresh token is NOT — it is set as an
+        httpOnly cookie so script cannot read it, and the CSRF value the client must
+        echo back is set as a readable cookie alongside it. Every failure answers 401
+        with the same code, deliberately: distinguishing an unknown address from a wrong
+        password turns this into an account enumeration oracle.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, maxLength: 255 }
+                password: { type: string, maxLength: 72 }
+      responses:
+        "200":
+          description: A new session. Sets the 2pick_refresh and 2pick_csrf cookies.
+          headers:
+            Set-Cookie:
+              description: 2pick_refresh (httpOnly) and 2pick_csrf (readable)
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrantEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/auth/register:
+    post:
+      operationId: goRegister
+      tags: [Go auth]
+      summary: Create a password account and sign it in
+      description: >
+        Moved off Laravel because it needed no mail: the User model does not implement
+        MustVerifyEmail, so registration was only ever a validator, an insert and a
+        login. Signing in on success matches what the RegistersUsers trait did.
+
+        A refused sign-up answers 422 with per-field machine codes in `data.errors`
+        (required, too_long, too_short, invalid_email, taken, mismatch) rather than with
+        sentences: this API has no message catalogue and the client serves three
+        languages.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation]
+              properties:
+                name: { type: string, maxLength: 20, description: Counted in runes, not bytes }
+                email: { type: string, maxLength: 50 }
+                password: { type: string, minLength: 8, maxLength: 72 }
+                password_confirmation: { type: string }
+      responses:
+        "200":
+          description: The account was created and is signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrantEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: Per-field validation codes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/auth/refresh:
+    post:
+      operationId: goRefreshSession
+      tags: [Go auth]
+      summary: Rotate the session
+      description: >
+        Reads the refresh token from the 2pick_refresh cookie and requires the CSRF value
+        in X-CSRF-Token. The presented token is consumed and a new one issued in the same
+        family; presenting a token that was already consumed revokes the whole family,
+        because there is no way to tell the attacker's copy from the victim's.
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: A rotated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrantEnvelope"
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/auth/logout:
+    post:
+      operationId: goLogout
+      tags: [Go auth]
+      summary: Revoke the session family
+      description: >
+        Requires X-CSRF-Token when a session cookie is present. Succeeds even when the
+        token is already unknown to the server, so a client can always escape a broken
+        session.
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          schema: { type: string }
+      responses:
+        "204": { description: The session is gone and the cookies are cleared }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/auth/oauth/google/start:
+    get:
+      operationId: startGoogleSignIn
+      tags: [Go auth]
+      summary: Redirect the browser to Google
+      description: >
+        A 302, because the browser navigates here directly. return_to is checked against
+        the allowed origins when the flow starts and remembered server-side; a target
+        outside the list is replaced with the default rather than refused.
+      parameters:
+        - in: query
+          name: return_to
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect to Google's consent screen }
+        "500": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/auth/oauth/google/callback:
+    get:
+      operationId: completeGoogleSignIn
+      tags: [Go auth]
+      summary: Finish the Google flow
+      description: >
+        EVERY outcome is a 302, including the failures: this is reached by a top-level
+        navigation, so the caller is looking at a page rather than at a JSON body. The
+        result is reported as ?auth=signed-in|registered|linked|failed, with ?reason= on
+        a failure. No token ever appears in the redirect URL — the session arrives as
+        cookies on this response, and the client calls /api/v1/auth/refresh to obtain an
+        access token.
+      parameters:
+        - { in: query, name: state, schema: { type: string } }
+        - { in: query, name: code, schema: { type: string } }
+        - { in: query, name: error, schema: { type: string } }
+      responses:
+        "302":
+          description: Redirect back to the SPA, with the session cookies on success
+          headers:
+            Set-Cookie:
+              description: Set on a login, cleared on a failure, absent on a link
+              schema: { type: string }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/auth/oauth/google/connect:
+    post:
+      operationId: connectGoogleAccount
+      tags: [Go auth]
+      summary: Start linking a Google account to the caller's account
+      description: >
+        Answers with a URL instead of redirecting, and is POST rather than GET, because
+        linking has to know who is asking — which needs an Authorization header, and a
+        browser cannot put one on a top-level navigation. The client reads the URL and
+        navigates itself.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: return_to
+          schema: { type: string }
+      responses:
+        "200":
+          description: The URL to navigate to
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorization_url: { type: string }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "500": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/posts:
+    get:
+      operationId: listPublicPosts
+      tags: [Go public content]
+      parameters:
+        - { in: query, name: sort_by, schema: { type: string, enum: [hot, new], default: hot } }
+        - { in: query, name: range, schema: { type: string, enum: [all, year, month, week, day], default: week } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: per_page, schema: { type: integer, minimum: 1, maximum: 15, default: 15 } }
+        - { in: query, name: k, schema: { type: string, maxLength: 255 } }
+      responses:
+        "200":
+          description: Paginated public voting cards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostsEnvelope"
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/profile:
+    get:
+      operationId: goAccountProfile
+      tags: [Go account]
+      summary: The settings view of the signed-in account
+      description: >
+        Wider than /api/v1/auth/me, which is drawn on every page and deliberately carries
+        no address. This is read by one page the account holder opened on purpose.
+
+        has_password is false for the 11,040 production accounts that signed in through
+        Google and hold an empty password column; it decides which of the two verbs on
+        /api/v1/account/password the form uses.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountEnvelope"
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+    put:
+      operationId: goChangeAccountName
+      tags: [Go account]
+      summary: Rename the account
+      description: >
+        At most one change per calendar day in Asia/Taipei, from
+        config/setting.php's name_change_duration. The limit is enforced in the UPDATE's
+        WHERE clause rather than by reading the row first, so two simultaneous requests
+        cannot both pass it; a refusal is 422 with the code name_change_too_soon.
+
+        Submitting the name the account already has is a success that writes nothing,
+        which is what the original did — the settings form posts the field whether or not
+        it changed.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 20
+                  description: Counted in runes, not bytes. Trimmed before validation.
+      responses:
+        "200":
+          description: The account as it now stands
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: "Per-field codes: required, too_long, name_change_too_soon"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/avatar:
+    post:
+      operationId: goUploadAccountAvatar
+      tags: [Go account]
+      summary: Replace the account's avatar
+      description: >
+        One multipart part named avatar, at most 4 MiB, and PNG, JPEG, GIF or WebP as
+        determined from the leading bytes — never from the request's Content-Type, which
+        the uploader chooses.
+
+        Laravel declared both of those rules and ran neither: the validator was attached
+        to a field named avatar_url while the file arrived as avatar, so `sometimes`
+        skipped it and any file of any type was stored and served back under an image URL.
+
+        The previous object is left in the bucket, as the original left it.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [avatar]
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: The stored URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [avatar_url]
+                    properties:
+                      avatar_url: { type: string, format: uri }
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: "Per-field codes: required, too_large, unsupported_image"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/password:
+    put:
+      operationId: goChangeAccountPassword
+      tags: [Go account]
+      summary: Replace the password, proving the current one
+      description: >
+        EVERY OTHER SESSION ENDS. The reason to change a password is that the old one may
+        be known to someone else, and a refresh token issued while it was is what that
+        someone would still be holding. The response carries a fresh grant and new session
+        cookies, so the caller is not signed out of the page they are on.
+
+        There is no password_confirmation: a typo check belongs in the form, and this API
+        has no message catalogue to explain a mismatch in three languages.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 8, maxLength: 72 }
+      responses:
+        "200":
+          description: The password was changed and a new session issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrantEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: >
+            Per-field codes: required, too_short, too_long on new_password; incorrect or
+            no_password_set on current_password.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+    post:
+      operationId: goSetInitialAccountPassword
+      tags: [Go account]
+      summary: Give an account with no password its first one
+      description: >
+        For the 11,040 accounts whose password column is empty because they signed in
+        through Google. Refused with password_already_set when one is set: that case has
+        to prove the current password, or a stolen access token would be enough to take
+        the account over.
+
+        Unlike PUT, this revokes nothing. There was no password to have leaked, so
+        signing the account out of its other devices would cost the holder something and
+        buy nothing.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password]
+              properties:
+                new_password: { type: string, minLength: 8, maxLength: 72 }
+      responses:
+        "200":
+          description: The password was set and a new session issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrantEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: "Per-field codes: required, too_short, too_long, password_already_set"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/posts:
+    get:
+      operationId: goListMyPosts
+      tags: [Go editor]
+      summary: The caller's own posts
+      description: >
+        Ownership is part of every statement in this group rather than a check before it,
+        so a serial that is not the caller's does not resolve at all. That is also why a
+        stranger's post answers 404 and never 403: a 403 would confirm the serial exists.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+      responses:
+        "200":
+          description: One page of posts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyPostListEnvelope"
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+    post:
+      operationId: goCreatePost
+      tags: [Go editor]
+      summary: Create a post
+      description: >
+        A password post must carry its password here: there is no stored one to fall back
+        on. The password is hashed with SHA-256, not bcrypt, because that is what the
+        column holds and the game and rank pages still compare against it through Laravel.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDraft"
+      responses:
+        "201":
+          description: The post was created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [serial]
+                    properties:
+                      serial: { type: string, minLength: 8, maxLength: 8 }
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: "Per-field codes: required, too_long, invalid_policy, too_many"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/posts/{serial}:
+    parameters:
+      - { in: path, name: serial, required: true, schema: { type: string, minLength: 8, maxLength: 8 } }
+    get:
+      operationId: goShowMyPost
+      tags: [Go editor]
+      summary: One of the caller's posts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyPostEnvelope"
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+    put:
+      operationId: goUpdatePost
+      tags: [Go editor]
+      summary: Rewrite a post's metadata, policy and tags
+      description: >
+        THE PASSWORD RULES ARE THE ORIGINAL'S. A post that stays password-protected keeps
+        its stored password when none is sent, so editing a title does not silently open
+        the door; a post that leaves the password policy has its password erased, so
+        switching back later cannot revive one the author has forgotten. Turning a post
+        into a password post with nothing stored and nothing sent is refused.
+
+        `tags` absent leaves the tags alone; `tags: []` clears them.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDraft"
+      responses:
+        "200":
+          description: The post as it now stands
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyPostEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+          description: Per-field codes
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+    delete:
+      operationId: goDeletePost
+      tags: [Go editor]
+      summary: Delete a post, its elements and its rank reports
+      description: >
+        Soft-deletes the post and its elements, detaches its tags and removes its rank
+        reports, in one transaction — the original did those as three separate effects
+        that could half-apply. The rebuild of the rank report is queued afterwards.
+
+        The account password confirms the deletion, IN THE BODY rather than the query
+        string, which would reach the access log and the browser's history. It is required
+        only when the account has a password: the original ran password_verify against a
+        column that is an empty string for the 11,040 accounts created through Google, and
+        an empty hash never verifies, so none of them could ever delete a post.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: Required when the account has a password.
+      responses:
+        "204": { description: Deleted }
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: "Per-field codes on password: required, incorrect"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/posts/{serial}/elements:
+    get:
+      operationId: goListPostElements
+      tags: [Go editor]
+      summary: One page of a post's elements
+      description: >
+        `page` and `per_page` are independent, which the original's were not: it read the
+        page number out of the per_page key, so asking for 50 per page asked for page 50
+        and a caller who sent per_page could never see the first page.
+
+        Each element carries its rank IN THIS POST. An element can belong to several
+        posts and its rank is per post, so reading it by element alone would show a
+        standing from somewhere else.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: per_page, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }
+        - in: query
+          name: title
+          description: Substring match. Wildcards in the term are matched as text.
+          schema: { type: string }
+        - { in: query, name: sort_by, schema: { type: string, enum: [id, title], default: id } }
+        - { in: query, name: sort_dir, schema: { type: string, enum: [asc, desc], default: desc } }
+      responses:
+        "200":
+          description: One page of elements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostElementListEnvelope"
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/posts/{serial}/elements/uploads:
+    post:
+      operationId: goUploadPostElement
+      tags: [Go editor]
+      summary: Add an uploaded image or video to a post
+      description: >
+        One multipart part named file, at most 4 MiB, and PNG, JPEG, GIF, BMP, WebP, AVI,
+        MP4 or MPEG — the set Laravel's mimetypes rule allowed, no wider.
+
+        THE TYPE AND THE STORED EXTENSION BOTH COME FROM THE BYTES. A file called
+        holiday.png that is really a video is stored under a .mp4 key with a video content
+        type and written as a video element; taking the extension from the name would
+        leave the browser refusing to play it and the thumbnail job trying to read it as a
+        picture.
+
+        A video queues its thumbnail immediately, which is what MakeVideoThumbnail did on
+        VideoElementCreated. An image does not: ImageElementCreated had no listeners, and
+        the make-thumbnails schedule sweeps images up.
+
+        Uploads are budgeted per account at 30 MiB or 50 files a minute. A refused
+        request — wrong type, too large, post full — does not spend any of it.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201":
+          description: The element was added
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [id, source_url, thumb_url, title, type]
+                    properties:
+                      id: { type: integer, format: int64 }
+                      source_url: { type: string }
+                      thumb_url: { type: string }
+                      title: { type: string }
+                      type: { type: string, enum: [image, video] }
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: >
+            Per-field codes on file: required, too_large, unsupported_media, post_full,
+            rate_limited.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/posts/{serial}/elements/urls:
+    post:
+      operationId: goAddPostElementsByURL
+      tags: [Go editor]
+      summary: Add media to a post from a list of URLs
+      description: >
+        The list is the original's format: comma-separated, each entry optionally
+        "url title" split on the first space. A YouTube embed is the WHOLE field rather
+        than one entry — it is a block of HTML full of spaces, so the splitter would tear
+        it apart, and the original checked the entire input for one before splitting.
+
+        Recognised without touching the network: YouTube (watch, youtu.be, shorts, embed,
+        music. and any other *.youtube.com host), Bilibili, Twitch, and any URL ending
+        .jpg, .png or .gif. Anything else is settled with one HEAD, which reports both the
+        type and the size — so a link that is too large is refused without downloading it.
+
+        Images and Bilibili previews are copied into this site's storage; the bytes are
+        sniffed after the download, because a URL that answered image/png to the HEAD can
+        serve anything at all to the GET. A direct video file is linked rather than copied,
+        which is what the 2,205 rows with video_source=url hold.
+
+        Twitch is recognised and reported unavailable: 42 elements a year and no
+        credentials in this deployment. Imgur is not recognised at all — 0 rows, removed
+        from the project.
+      security:
+        - bearerAuth: []
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [urls]
+              properties:
+                urls:
+                  type: string
+                  description: >
+                    Comma-separated, each entry optionally "url title". At most 100 URLs.
+      responses:
+        "201":
+          description: Every URL became an element
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddedElementsEnvelope"
+        "207":
+          description: >
+            Some URLs became elements and some did not, which is the ordinary outcome of a
+            pasted list. `failed` names each one and why: unrecognised, unavailable,
+            too_large or post_full.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddedElementsEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: "Per-field codes on urls: required, too_many"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/account/elements/{elementID}:
+    parameters:
+      - { in: path, name: elementID, required: true, schema: { type: integer, format: int64 } }
+    put:
+      operationId: goUpdateElement
+      tags: [Go editor]
+      summary: Rename an element or move a video's trim points
+      description: >
+        Every field is optional and an absent one is left alone, which is what makes a
+        sent zero different from an omission. A trim whose end is at or before its start
+        is refused: the original stored it and the player then showed an element nobody
+        could see.
+
+        Replacing an element's media is not here — that is the ingestion path, which is
+        still Laravel's.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 100 }
+                video_start_second: { type: integer, minimum: 0 }
+                video_end_second: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: The element as it now stands
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostElementEnvelope"
+        "400": { $ref: "#/components/responses/ErrorResponse" }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422":
+          description: "Per-field codes: too_long, invalid_range"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldErrorsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+    delete:
+      operationId: goDeleteElement
+      tags: [Go editor]
+      summary: Remove an element from its posts
+      description: >
+        Detaches it from every post, soft-deletes it and removes its rank reports, then
+        queues a rebuild for each post it was ranked in — an element can belong to more
+        than one.
+      security:
+        - bearerAuth: []
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/tags:
+    get:
+      operationId: listPublicTags
+      tags: [Go public content]
+      parameters:
+        - { in: query, name: keyword, schema: { type: string, maxLength: 30 } }
+      responses:
+        "200":
+          description: Tags used by public posts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagsEnvelope"
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/tags/hot:
+    get:
+      operationId: listHotTags
+      tags: [Go public content]
+      responses:
+        "200":
+          description: Hot tag names mapped to matching public post counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HotTagsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/carousel-items:
+    get:
+      operationId: listCarouselItems
+      tags: [Go public content]
+      responses:
+        "200":
+          description: Active homepage highlights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarouselEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/champions:
+    get:
+      operationId: listRecentChampions
+      tags: [Go public content]
+      responses:
+        "200":
+          description: Five recent results from public posts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChampionsEnvelope"
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/ranks:
+    get:
+      operationId: listPublicRanks
+      tags: [Go public content]
+      parameters:
+        - { in: query, name: post_serial, required: true, schema: { type: string, maxLength: 255 } }
+        - { in: query, name: group, schema: { type: string, enum: [cumulative, recent_1000], default: cumulative } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: per_page, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated cumulative or recent-one-thousand-vote rankings for a public vote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RanksPageEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/rank/search:
+    get:
+      operationId: searchPublicRanks
+      tags: [Go public content]
+      parameters:
+        - { in: query, name: post_serial, required: true, schema: { type: string, maxLength: 255 } }
+        - { in: query, name: keyword, required: true, schema: { type: string, maxLength: 255 } }
+      responses:
+        "200":
+          description: Up to ten matching current ranks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankSearchEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/rank:
+    get:
+      operationId: getPublicRank
+      tags: [Go public content]
+      parameters:
+        - { in: query, name: post_serial, required: true, schema: { type: string, maxLength: 255 } }
+        - { in: query, name: element_id, required: true, schema: { type: integer, minimum: 1 } }
+        - in: query
+          name: time
+          required: true
+          schema:
+            type: array
+            minItems: 1
+            uniqueItems: true
+            items: { type: string, enum: [week, month, year, all, thousand_votes] }
+          style: form
+          explode: true
+      responses:
+        "200":
+          description: Both current ranking groups and requested history series for one element
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankDetailsEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/game-posts/{serial}:
+    get:
+      operationId: getPublicGameDefinition
+      tags: [Go gameplay]
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      responses:
+        "200":
+          description: Public game title, description and selectable element limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameDefinitionEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/game-rooms:
+    post:
+      operationId: openGameRoom
+      tags: [Go gameplay]
+      summary: Open the room for a game, or return the one already running
+      description: >
+        Idempotent, so the host's page may call it on every load. 201 means this call
+        opened the room and 200 means it was already open — the only way a host can tell
+        the two apart. A unique index on game_rooms.game_id makes a concurrent second call
+        return the first call's room; without it, production ended up with two games whose
+        second room was unreachable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_serial]
+              properties:
+                game_serial: { type: string, maxLength: 255 }
+                current_candidates:
+                  description: >
+                    The pair already on screen when the room is opened. Laravel's createRoom
+                    took the same parameter: a host opens the room mid-game, and without this
+                    the first participants are shown the match that was last decided. Ignored
+                    unless it names two elements of that game that are still in play.
+                  type: array
+                  minItems: 2
+                  maxItems: 2
+                  items: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: The room was already open
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameRoomEnvelope" }
+        "201":
+          description: The room was opened by this call
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameRoomEnvelope" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/game-rooms/{serial}:
+    get:
+      operationId: getGameRoomState
+      tags: [Go gameplay]
+      summary: Join a room and read everything needed to draw it
+      description: >
+        One call in place of Laravel's getRoom, getRoomVotes and getRoomUser: three round
+        trips before the page could draw, each able to observe a different moment and each
+        racing to create the participant row.
+
+        anonymous_id is REQUIRED. Laravel defaulted it to the literal "unknown", which put
+        every visitor without a session onto one participant row — shared score, shared
+        wagers. Identity in a room is the browser id; an access token, when present, is
+        recorded on the row for audit but never required.
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+        - in: query
+          name: anonymous_id
+          required: true
+          schema: { type: string, maxLength: 255 }
+        - in: query
+          name: game_serial
+          description: Checked when supplied, so a stale link cannot silently join another game's room.
+          schema: { type: string, maxLength: 255 }
+      responses:
+        "200":
+          description: The caller's player, the round's votes, their last wager and the standings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameRoomEnvelope" }
+        "403": { $ref: "#/components/responses/ErrorResponse" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/game-rooms/{serial}/leaderboard:
+    get:
+      operationId: getGameRoomLeaderboard
+      tags: [Go gameplay]
+      summary: The standings, for clients with no working websocket
+      description: >
+        The live path is the Soketi broadcast the worker publishes after each settlement.
+        This exists so a blocked websocket degrades to a stale-but-moving leaderboard
+        rather than a frozen one. It does not join the room, so it needs no anonymous id.
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      responses:
+        "200":
+          description: Current standings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameRoomLeaderboardEnvelope" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/game-rooms/{serial}/bets:
+    post:
+      operationId: placeGameRoomBet
+      tags: [Go gameplay]
+      summary: Wager on the round in progress
+      description: >
+        Replaces the caller's previous wager on the same round rather than adding one: an
+        upsert against the unique index added in migration 00011. Without that index a
+        double-clicked vote inserted twice, both copies settled, and the round was counted
+        twice — which is what happened to thirteen rounds in production.
+
+        Changing a vote clears its outcome, so the settlement pass decides the new pick
+        rather than scoring it with the old result.
+
+        THE ROUND NUMBERS ARE NOT SENT. game_1v1_rounds records COMPLETED matches, so the
+        one in progress is a bracket calculation — of_round is fixed when a bracket starts,
+        which is why a row can read "30 of 32" with 34 elements left. A participant is
+        watching somebody else's game and has none of that state, so the server derives the
+        numbers and also checks the pick is the pairing on screen; a stale page would
+        otherwise record a wager the settlement could never resolve.
+
+        409 no_round_in_progress when the host has put up nothing yet, and 409 stale_pairing
+        when the pairing has moved on. 409 rather than 422 because the request is well
+        formed and a retry will work.
+
+        204 because nothing is decided yet: the outcome arrives on the room's channel when
+        the host advances the round.
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [anonymous_id, winner_id, loser_id]
+              properties:
+                anonymous_id: { type: string, maxLength: 255 }
+                winner_id: { type: integer, minimum: 1 }
+                loser_id: { type: integer, minimum: 1 }
+      responses:
+        "204": { description: The wager is recorded }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "409": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/game-rooms/{serial}/player:
+    put:
+      operationId: renameGameRoomPlayer
+      tags: [Go gameplay]
+      summary: Change the caller's display name in a room
+      description: >
+        Rate limited to one change per thirty seconds, because a rename is broadcast to
+        everyone in the room. The name is capped at ten characters counted in RUNES: the
+        column is utf8mb4 and these names are mostly Chinese, so a byte limit would reject
+        the longest name the old form allowed.
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [anonymous_id, nickname]
+              properties:
+                anonymous_id: { type: string, maxLength: 255 }
+                nickname: { type: string, maxLength: 10 }
+      responses:
+        "200":
+          description: The player, with the stored name
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameRoomPlayerEnvelope" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "429": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/posts/{serial}/comments:
+    get:
+      operationId: listComments
+      tags: [Go comments]
+      security: [{}, { bearerAuth: [] }]
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: anonymous_id, schema: { type: string, maxLength: 255 } }
+      responses:
+        "200":
+          description: Private comment page with the current viewer profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommentsPageEnvelope" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+    post:
+      operationId: createComment
+      tags: [Go comments]
+      security: [{}, { bearerAuth: [] }]
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, anonymous_id]
+              properties:
+                content: { type: string, minLength: 1, maxLength: 200 }
+                anonymous: { type: boolean, default: false }
+                anonymous_id: { type: string, maxLength: 255 }
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommentEnvelope" }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "429": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/posts/{serial}/comments/{commentID}/report:
+    post:
+      operationId: reportComment
+      tags: [Go comments]
+      security: [{}, { bearerAuth: [] }]
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+        - { in: path, name: commentID, required: true, schema: { type: integer, minimum: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 200 }
+                anonymous_id: { type: string, maxLength: 255 }
+      responses:
+        "201": { description: Report accepted }
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/games:
+    post:
+      operationId: createPublicGame
+      tags: [Go gameplay]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [post_serial, element_count]
+              properties:
+                post_serial: { type: string, maxLength: 255 }
+                element_count: { type: integer, minimum: 2, maximum: 1024 }
+      responses:
+        "201":
+          description: Newly created game and its randomly selected elements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameSessionEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/games/{serial}/votes/batch:
+    post:
+      operationId: submitPublicGameVotes
+      tags: [Go gameplay]
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_vote_count, votes]
+              properties:
+                expected_vote_count: { type: integer, minimum: 0 }
+                anonymous_id: { type: string, maxLength: 128 }
+                votes:
+                  type: array
+                  minItems: 1
+                  maxItems: 128
+                  items: { $ref: "#/components/schemas/GameVote" }
+                current_candidates:
+                  description: >
+                    The pair the client is displaying AFTER these votes, sent only while
+                    hosting a game room.
+
+                    games.candidates means "the pair on screen". In Laravel the server knew
+                    it, because the host's client asked for each next pair; the Go client
+                    plays its bracket locally and batch-submits, so it has to say. Without
+                    this the column ends up holding the pair just ELIMINATED and the room
+                    shows its participants a match that is already decided.
+
+                    Ignored unless it names two elements of the game that are still in play:
+                    the votes in the same request are valid regardless, and losing real
+                    progress over a display hint would be worse.
+                  type: array
+                  minItems: 2
+                  maxItems: 2
+                  items: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Accepted revision and completion state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchVoteEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "409": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/games/{serial}/elements:
+    get:
+      operationId: resumePublicGame
+      tags: [Go gameplay]
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      responses:
+        "200":
+          description: Full selected candidate list used to hydrate an interrupted local snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameSessionEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+  /api/v1/games/{serial}/result:
+    get:
+      operationId: getGameResult
+      tags: [Go gameplay]
+      summary: The finished game's standings
+      description: >
+        Answered privately rather than cached: a game serial is a share capability, so a
+        shared result must not land in a broader CDN cache key, and global_rank moves as
+        other people play.
+      parameters:
+        - { in: path, name: serial, required: true, schema: { type: string, maxLength: 255 } }
+      responses:
+        "200":
+          description: The per-element standings for one completed game
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameResultEnvelope"
+        "404": { $ref: "#/components/responses/ErrorResponse" }
+        "409": { $ref: "#/components/responses/ErrorResponse" }
+        "422": { $ref: "#/components/responses/ErrorResponse" }
+        "503": { $ref: "#/components/responses/ErrorResponse" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Ed25519 JWT
+  parameters:
+    RequestedWith:
+      in: header
+      name: X-Requested-With
+      required: true
+      description: Must be XMLHttpRequest so Laravel returns JSON, not a redirect.
+      schema:
+        type: string
+        const: XMLHttpRequest
+    CsrfToken:
+      in: header
+      name: X-CSRF-TOKEN
+      required: true
+      description: The csrf_token most recently returned by /session-context.
+      schema:
+        type: string
+  responses:
+    ErrorResponse:
+      description: API error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    ValidationErrorResponse:
+      description: Laravel validation failure
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message, errors]
+            properties:
+              message:
+                type: string
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+  schemas:
+    FieldErrorsEnvelope:
+      type: object
+      required: [data, error]
+      properties:
+        data:
+          type: object
+          required: [errors]
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+                  enum: [required, too_long, too_short, invalid_email, taken, mismatch]
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, enum: [validation_failed] }
+            message: { type: string }
+        meta:
+          $ref: "#/components/schemas/Meta"
+    GameRoomEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [serial, game_serial]
+              properties:
+                serial: { type: string }
+                game_serial: { type: string }
+                player:
+                  oneOf:
+                    - $ref: "#/components/schemas/GameRoomPlayer"
+                    - type: "null"
+                votes:
+                  description: >
+                    Null when no pairing is in progress, so a client can tell that apart
+                    from "nobody has voted yet".
+                  oneOf:
+                    - $ref: "#/components/schemas/GameRoomVotes"
+                    - type: "null"
+                latest_bet:
+                  description: The caller's own last wager, for rehydrating a reloaded page.
+                  oneOf:
+                    - $ref: "#/components/schemas/GameRoomBet"
+                    - type: "null"
+                leaderboard:
+                  oneOf:
+                    - $ref: "#/components/schemas/GameRoomLeaderboard"
+                    - type: "null"
+    GameRoomPlayerEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/GameRoomPlayer" }
+    GameRoomLeaderboardEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/GameRoomLeaderboard" }
+    AccountEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Account"
+    Account:
+      type: object
+      required: [name, email, avatar_url, has_password, google_linked]
+      properties:
+        name: { type: string }
+        email:
+          type: string
+          description: >
+            Read-only here. The original's settings form had an address field but its
+            controller never accepted one, so an address has never been changeable.
+        avatar_url:
+          type: string
+          description: >
+            "" when the account has none, which the client replaces with the default
+            asset. 11,060 production accounts hold a Google URL rather than one of ours.
+        has_password:
+          type: boolean
+          description: >
+            False for an account whose password column is empty. Decides whether the form
+            offers PUT (change) or POST (set the first one) on /api/v1/account/password.
+        google_linked: { type: boolean }
+        name_change_allowed_at:
+          type: string
+          format: date-time
+          description: >
+            Absent when the name may be changed now. Present as the moment the limit
+            lifts, so a client can say when rather than only that it cannot.
+    AddedElementsEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [added, failed]
+          properties:
+            added:
+              type: array
+              items:
+                type: object
+                required: [id, source_url, thumb_url, title, type]
+                properties:
+                  id: { type: integer, format: int64 }
+                  source_url: { type: string }
+                  thumb_url: { type: string }
+                  title: { type: string }
+                  type: { type: string, enum: [image, video] }
+            failed:
+              type: array
+              items:
+                type: object
+                required: [url, reason]
+                properties:
+                  url: { type: string }
+                  reason:
+                    type: string
+                    enum: [unrecognised, unavailable, too_large, post_full]
+    MyPostListEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [posts, total, page, per_page]
+          properties:
+            posts:
+              type: array
+              items: { $ref: "#/components/schemas/MyPost" }
+            total: { type: integer }
+            page: { type: integer }
+            per_page: { type: integer }
+    MyPostEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/MyPost"
+    MyPost:
+      type: object
+      required: [serial, title, description, access_policy, has_password, tags, play_count, this_week_play_count, last_week_play_count]
+      properties:
+        serial: { type: string }
+        title: { type: string, maxLength: 50 }
+        description: { type: string, maxLength: 300 }
+        access_policy: { type: string, enum: [private, public, password] }
+        has_password:
+          type: boolean
+          description: >
+            Whether a password is set, never what it is. The Blade editor read the column
+            server-side to choose between "set a password" and "change it"; a client
+            cannot, and the hash must not leave the server.
+        tags:
+          type: array
+          maxItems: 5
+          items: { type: string, maxLength: 15 }
+        play_count: { type: integer }
+        this_week_play_count: { type: integer }
+        last_week_play_count: { type: integer }
+        created_at: { type: string, format: date-time }
+    PostDraft:
+      type: object
+      required: [title, description, access_policy]
+      properties:
+        title: { type: string, maxLength: 50, description: Counted in runes. Trimmed. }
+        description: { type: string, maxLength: 300 }
+        access_policy: { type: string, enum: [private, public, password] }
+        password:
+          type: string
+          description: >
+            The post's door code, not a credential. Required when creating a password
+            post; on update, omitting it keeps the stored one.
+        tags:
+          type: array
+          maxItems: 5
+          items: { type: string, maxLength: 15 }
+          description: Absent leaves the tags alone; an empty list clears them.
+    PostElementListEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [elements, total, page, per_page]
+          properties:
+            elements:
+              type: array
+              items: { $ref: "#/components/schemas/PostElement" }
+            total: { type: integer }
+            page: { type: integer }
+            per_page: { type: integer }
+    PostElementEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/PostElement"
+    PostElement:
+      type: object
+      required: [id, source_url, thumb_url, title, type]
+      properties:
+        id: { type: integer, format: int64 }
+        source_url: { type: string }
+        thumb_url: { type: string }
+        mediumthumb_url: { type: string }
+        lowthumb_url: { type: string }
+        title: { type: string, maxLength: 100 }
+        type: { type: string, enum: [image, video] }
+        video_source: { type: string }
+        video_id: { type: string }
+        video_duration_second: { type: integer, nullable: true }
+        video_start_second: { type: integer, nullable: true }
+        video_end_second: { type: integer, nullable: true }
+        created_at: { type: string, format: date-time }
+        rank:
+          nullable: true
+          description: The element's standing in THIS post, or null if nobody has voted.
+          type: object
+          properties:
+            rank: { type: integer }
+            win_rate: { type: number }
+            final_win_rate: { type: number }
+    GameRoomLeaderboard:
+      description: >
+        The same payload the worker broadcasts on the room's Soketi channel, so a client
+        can apply a poll result and a live event through one code path.
+      type: object
+      required: [total_users, top_10, bottom_10]
+      properties:
+        total_users: { type: integer }
+        top_10:
+          description: Best first.
+          type: array
+          items: { $ref: "#/components/schemas/GameRoomBroadcastPlayer" }
+        bottom_10:
+          description: >
+            WORST first. The PHP used orderByDesc('rank')->limit(10), so the array starts
+            at last place; reversing it would silently flip the order the UI renders.
+          type: array
+          items: { $ref: "#/components/schemas/GameRoomBroadcastPlayer" }
+    GameRoomBroadcastPlayer:
+      description: >
+        Carries user_id rather than player_id, because that is the field name
+        GameRoomUserResource used and the broadcast payload has to stay byte-compatible
+        with what the existing UI reads. The value is the same digest.
+      type: object
+      required: [user_id, name, score, rank, accuracy, total_played, total_correct, combo]
+      properties:
+        user_id: { type: string }
+        name: { type: string }
+        score: { type: integer }
+        rank: { type: integer }
+        accuracy: { type: string }
+        total_played: { type: integer }
+        total_correct: { type: integer }
+        combo:
+          type: integer
+          description: >
+            The streak the player's next wager will ride on: the number of consecutive
+            correct picks ending at their newest settled wager, or 0 if that wager lost.
+            Derived from the outcomes, so it does not depend on how quickly the wagers
+            were placed or on the order settlements arrived.
+    GameRoomPlayer:
+      type: object
+      required: [player_id, name, score, rank, accuracy, total_played, total_correct, combo]
+      properties:
+        player_id:
+          type: string
+          description: A digest of the row id and the browser id, never the row id itself.
+        name: { type: string }
+        score: { type: integer }
+        rank: { type: integer }
+        accuracy:
+          type: string
+          description: >
+            A STRING, not a number: the client interpolates it into a percentage label, and
+            a float renders as 63.489999999999995.
+        total_played: { type: integer }
+        total_correct: { type: integer }
+        combo:
+          type: integer
+          description: >
+            The streak the player's next wager will ride on: the number of consecutive
+            correct picks ending at their newest settled wager, or 0 if that wager lost.
+            Derived from the outcomes, so it does not depend on how quickly the wagers
+            were placed or on the order settlements arrived.
+    GameRoomVotes:
+      type: object
+      required: [first_candidate, second_candidate, first_candidate_votes, second_candidate_votes, remain_elements, total_votes]
+      properties:
+        first_candidate: { type: integer }
+        second_candidate: { type: integer }
+        first_candidate_votes: { type: integer }
+        second_candidate_votes: { type: integer }
+        remain_elements: { type: integer }
+        total_votes: { type: integer }
+    GameRoomBet:
+      type: object
+      required: [winner_id, loser_id, current_round, of_round, remain_elements]
+      properties:
+        winner_id: { type: integer }
+        loser_id: { type: integer }
+        current_round: { type: integer }
+        of_round: { type: integer }
+        remain_elements: { type: integer }
+    GrantEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Grant"
+        meta:
+          $ref: "#/components/schemas/Meta"
+    Grant:
+      type: object
+      required: [access_token, token_type, expires_in, csrf_token, user_id, roles]
+      properties:
+        access_token:
+          type: string
+          description: The Ed25519 at+jwt. Short-lived, so script is allowed to hold it.
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Seconds. Between 60 and 900; 300 by default.
+        csrf_token:
+          type: string
+          description: >
+            Also set as the readable 2pick_csrf cookie. Must be echoed in X-CSRF-Token on
+            refresh and logout. The refresh token itself is never in this body.
+        user_id:
+          type: string
+        roles:
+          type: array
+          items: { type: string }
+    SessionContext:
+      type: object
+      required: [authenticated, csrf_token, locale, api_token, user]
+      properties:
+        authenticated:
+          type: boolean
+        csrf_token:
+          type: string
+        locale:
+          type: string
+          enum: [zh_TW, en, ja]
+        api_token:
+          oneOf:
+            - $ref: "#/components/schemas/ApiToken"
+            - type: "null"
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/NavbarUser"
+            - type: "null"
+    ApiToken:
+      type: object
+      required: [access_token, token_type, expires_in, expires_at]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          const: Bearer
+        expires_in:
+          type: integer
+          minimum: 60
+          maximum: 900
+        expires_at:
+          type: integer
+          description: Unix timestamp
+    NavbarUser:
+      type: object
+      required: [avatar_url]
+      properties:
+        avatar_url:
+          type: [string, "null"]
+          format: uri
+    StatusEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  const: ok
+    SystemInfoEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [service, version, commit, environment, time]
+              properties:
+                service: { type: string }
+                version: { type: string }
+                commit: { type: string }
+                environment: { type: string }
+                time: { type: string, format: date-time }
+    IdentityEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [subject, roles, expires_at]
+              properties:
+                subject:
+                  type: string
+                roles:
+                  type: array
+                  items: { type: string }
+                expires_at:
+                  type: string
+                  format: date-time
+                user:
+                  description: >
+                    Absent when this process cannot reach the database. Replaces the
+                    `user` half of Laravel's /session-context.
+                  type: object
+                  required: [user_id, name, avatar_url, has_password, linked_google]
+                  properties:
+                    user_id: { type: string }
+                    name: { type: string }
+                    avatar_url: { type: [string, "null"] }
+                    has_password:
+                      type: boolean
+                      description: False for the 82% of accounts that signed up through Google.
+                    linked_google: { type: boolean }
+    PostElement:
+      type: object
+      required: [id, url, url2, title, type, video_source, previewable]
+      properties:
+        id: { type: [integer, "null"] }
+        url: { type: [string, "null"], format: uri }
+        url2: { type: [string, "null"], format: uri }
+        title: { type: [string, "null"] }
+        type: { type: [string, "null"] }
+        video_source: { type: [string, "null"] }
+        previewable: { type: boolean }
+    PublicPost:
+      type: object
+      required: [title, serial, is_private, description, element1, element2, created_at, updated_at, play_count, elements_count, tags, is_censored]
+      properties:
+        title: { type: string }
+        serial: { type: string }
+        is_private: { type: boolean }
+        description: { type: string }
+        element1: { $ref: "#/components/schemas/PostElement" }
+        element2: { $ref: "#/components/schemas/PostElement" }
+        created_at: { type: string }
+        updated_at: { type: string }
+        play_count: { type: integer }
+        elements_count: { type: integer }
+        tags:
+          type: array
+          items: { type: string }
+        is_censored: { type: integer }
+    PostsEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [items, group, page, per_page, total, total_pages]
+              properties:
+                items: { type: array, items: { $ref: "#/components/schemas/PublicPost" } }
+                page: { type: integer }
+                per_page: { type: integer }
+                total: { type: integer }
+                total_pages: { type: integer }
+    TagsEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                required: [name, count]
+                properties:
+                  name: { type: string }
+                  count: { type: integer }
+    HotTagsEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              additionalProperties: { type: integer }
+    CarouselEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { type: object, additionalProperties: true }
+    ChampionsEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { type: object, additionalProperties: true }
+    RankReport:
+      type: object
+      required: [rank, win_rate, date, element]
+      properties:
+        rank: { type: [integer, "null"] }
+        win_rate: { type: string }
+        date: { type: string, format: date }
+        element: { type: object, additionalProperties: true }
+    RankSearchEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/RankReport" }
+    RanksPageEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [items, page, per_page, total, total_pages]
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/RankReport" }
+                group: { type: string, enum: [cumulative, recent_1000] }
+                page: { type: integer }
+                per_page: { type: integer }
+                total: { type: integer }
+                total_pages: { type: integer }
+    RankDetailsEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [current, groups, history]
+              properties:
+                current:
+                  oneOf:
+                    - $ref: "#/components/schemas/RankReport"
+                    - type: "null"
+                groups:
+                  type: object
+                  required: [cumulative, recent_1000]
+                  properties:
+                    cumulative:
+                      oneOf:
+                        - $ref: "#/components/schemas/RankReport"
+                        - type: "null"
+                    recent_1000:
+                      oneOf:
+                        - $ref: "#/components/schemas/RankReport"
+                        - type: "null"
+                history:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+    Comment:
+      type: object
+      required: [id, content, created_at, edited_at, nickname, avatar_url, champions]
+      properties:
+        id: { type: integer }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+        edited_at: { type: [string, "null"], format: date-time }
+        nickname: { type: string }
+        avatar_url: { type: [string, "null"], format: uri }
+        champions: { type: array, items: { type: string } }
+    CommentProfile:
+      type: object
+      required: [nickname, avatar_url, champions, is_auth]
+      properties:
+        nickname: { type: string }
+        avatar_url: { type: [string, "null"], format: uri }
+        champions: { type: array, items: { type: string } }
+        is_auth: { type: boolean }
+    CommentEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/Comment" }
+    CommentsPageEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [items, page, per_page, total, total_pages, profile]
+              properties:
+                items: { type: array, items: { $ref: "#/components/schemas/Comment" } }
+                page: { type: integer }
+                per_page: { type: integer }
+                total: { type: integer }
+                total_pages: { type: integer }
+                profile: { $ref: "#/components/schemas/CommentProfile" }
+    GameDefinition:
+      type: object
+      required: [title, serial, description, is_censored, elements_count, max_elements, element1, element2]
+      properties:
+        title: { type: string }
+        serial: { type: string }
+        description: { type: string }
+        is_censored: { type: boolean }
+        elements_count: { type: integer }
+        max_elements: { type: integer, maximum: 1024 }
+        element1:
+          description: >-
+            Preview option shown before the game starts, so the page can paint
+            content on first load. Null when no preview is available.
+          oneOf:
+            - $ref: "#/components/schemas/PostElement"
+            - type: "null"
+        element2:
+          description: Second preview option; null when unavailable.
+          oneOf:
+            - $ref: "#/components/schemas/PostElement"
+            - type: "null"
+    GameElement:
+      type: object
+      required: [id, title, type]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        type: { type: string }
+        source_url: { type: [string, "null"] }
+        thumb_url: { type: [string, "null"] }
+        mediumthumb_url: { type: [string, "null"] }
+        lowthumb_url: { type: [string, "null"] }
+        video_start_second: { type: [integer, "null"] }
+        video_end_second: { type: [integer, "null"] }
+        video_source: { type: [string, "null"] }
+        video_id: { type: [string, "null"] }
+        video_duration_second: { type: [integer, "null"] }
+    GameVote:
+      type: object
+      required: [winner_id, loser_id]
+      properties:
+        winner_id: { type: integer, minimum: 1 }
+        loser_id: { type: integer, minimum: 1 }
+    GameDefinitionEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/GameDefinition" }
+    GameResultEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [game_serial, post_serial, items]
+              properties:
+                game_serial: { type: string }
+                post_serial: { type: string }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [rank, win_count, global_rank, element]
+                    properties:
+                      rank: { type: integer, minimum: 1 }
+                      win_count: { type: integer, minimum: 0 }
+                      global_rank:
+                        description: >
+                          Null until the element has a rank across all games. Nullable
+                          rather than zero, so "not ranked yet" is distinguishable from
+                          a real position.
+                        oneOf:
+                          - { type: integer, minimum: 1 }
+                          - { type: "null" }
+                      element: { $ref: "#/components/schemas/GameElement" }
+    GameSessionEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [game_serial, server_vote_count, post, elements]
+              properties:
+                game_serial: { type: string, format: uuid }
+                server_vote_count: { type: integer, minimum: 0 }
+                post: { $ref: "#/components/schemas/GameDefinition" }
+                elements:
+                  type: array
+                  items: { $ref: "#/components/schemas/GameElement" }
+    BatchVoteEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [status, server_vote_count, complete]
+              properties:
+                status: { type: string, enum: [processing, end_game] }
+                server_vote_count: { type: integer, minimum: 0 }
+                complete: { type: boolean }
+    SuccessEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data: {}
+        meta:
+          $ref: "#/components/schemas/Meta"
+    ErrorEnvelope:
+      type: object
+      required: [error, meta]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+        meta:
+          $ref: "#/components/schemas/Meta"
+    Meta:
+      type: object
+      required: [request_id]
+      properties:
+        request_id:
+          type: string
