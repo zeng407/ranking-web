@@ -103,18 +103,6 @@ class ImgurElementHandler implements InterfaceElementHandler
                 'title' => $array['title'],
             ]);
 
-            $image = $array['image'];
-            if($element->imgur_image) {
-                $element->imgur_image->delete();
-            }
-            $element->imgur_image()->create([
-                'image_id' => $image['id'],
-                'imgur_album_id' => null,
-                'title' => $image['title'],
-                'description' => $image['description'],
-                'delete_hash' => null,
-                'link' => $image['link'],
-            ]);
 
             event(new ImageElementCreated($element, $post));
         } catch (\Exception $exception) {

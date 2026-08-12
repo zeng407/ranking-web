@@ -43,11 +43,6 @@ class PostService
 
         $post->post_policy()->updateOrCreate(data_get($data, 'policy', []));
 
-        $post->imgur_album()->create([
-            'title' => $post->title,
-            'description' => $post->description
-        ]);
-
         event(new PostCreated($post));
 
         return $post;

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Traits\HasImgurImage;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +17,6 @@ class Element extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    use HasImgurImage;
 
 
     /**
@@ -41,8 +39,6 @@ class Element extends Model
         'video_end_second'
     ];
 
-    protected $with = ['imgur_image'];
-
     public function posts()
     {
         return $this->belongsToMany(
@@ -58,11 +54,6 @@ class Element extends Model
         return $this->hasMany(RankReport::class);
     }
 
-    public function element_issues()
-    {
-        return $this->hasMany(ElementIssue::class);
-    }
-
     public function getLowThumbUrl()
     {
         return $this->lowthumb_url ?: $this->thumb_url;
@@ -76,11 +67,6 @@ class Element extends Model
     public function getDefaultThumbUrl()
     {
         return $this->thumb_url;
-    }
-
-    public function getImgurUrl()
-    {
-        return $this->imgur_image?->link;
     }
 
 }

@@ -2,8 +2,17 @@
 
 namespace App\Services;
 
-use App\Models\ImgurAlbum;
-use App\Models\ImgurImage;
+// Read-only client for the Imgur API.
+//
+// The upload side is gone: nothing mirrors images to Imgur any more, and the
+// imgur_images and imgur_albums tables are no longer written. What remains is
+// resolving a user-submitted imgur gallery or page URL into a real image, which is
+// still a supported way to add an element — the image is then stored in our own
+// bucket like any other.
+//
+// The read endpoints still need a valid access token, which is why
+// `refresh:token imgur` is still scheduled.
+
 use Http;
 use Cache;
 
@@ -15,75 +24,10 @@ class ImgurService implements InterfaceOauthService
         return Http::baseUrl('https://api.imgur.com/3/');
     }
 
-    public function getAccountInfo(string $username)
-    {
-        $client = $this->getClient();
-        $client->withHeaders([
-            'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
-        ]);
-        $res = $client->get('account/' . $username);
-        return json_decode($res->getBody()->getContents(), true);
-    }
 
-    public function createAlbum(string $title, string $description)
-    {
-        $client = $this->getClient();
-        $client->withHeaders([
-            'Authorization' => 'Bearer ' . $this->getAccessToken(),
-        ]);
-        $res = $client->post('album', [
-            'title' => $title,
-            'description' => $description,
-        ]);
 
-        return json_decode($res->getBody()->getContents(), true);
-    }
 
-    public function deleteAlbum(string $albumId)
-    {
-        $client = $this->getClient();
-        $client->withHeaders([
-            'Authorization' => 'Bearer ' . $this->getAccessToken(),
-        ]);
-        $res = $client->delete('album/' . $albumId);
-        $res = json_decode($res->getBody()->getContents(), true);
-        if ($res['success']) {
-            ImgurAlbum::where('album_id', $albumId)->delete();
-        }
-        return $res;
-    }
 
-    public function uploadImage(string $imgUrl, ?string $title, ?string $description, ?string $albumId)
-    {
-        $client = $this->getClient();
-        $client->withHeaders([
-            // 'Authorization' => 'Bearer ' . $this->getAccessToken(),
-            'Authorization' => 'Client-ID ' . config('services.imgur.client_id'),
-        ]);
-        $res = $client->post('image', [
-            'image' => $imgUrl,
-            'title' => $title,
-            'description' => $description,
-            'album' => $albumId,
-            'type' => 'URL',
-        ]);
-
-        return json_decode($res->getBody()->getContents(), true);
-    }
-
-    public function deleteImage(string $imageId)
-    {
-        $client = $this->getClient();
-        $client->withHeaders([
-            'Authorization' => 'Bearer ' . $this->getAccessToken(),
-        ]);
-        $res = $client->delete('image/' . $imageId);
-        $res = json_decode($res->getBody()->getContents(), true);
-        if ($res['success']) {
-            ImgurImage::where('image_id', $imageId)->delete();
-        }
-        return $res;
-    }
 
     public function parseGalleryAlbumId(string $url)
     {

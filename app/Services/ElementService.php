@@ -4,15 +4,14 @@
 namespace App\Services;
 
 
-use App\Enums\ElementIssueType;
 use App\Models\Element;
 use App\Models\Post;
 use App\Repositories\ElementRepository;
 use App\Services\ElementHandlers\BilibiliElementHandler;
 use App\Services\ElementHandlers\GfyElementHandler;
 use App\Services\ElementHandlers\ImageElementHandler;
-use App\Services\ElementHandlers\ImageFileElementHandler;
 use App\Services\ElementHandlers\ImgurElementHandler;
+use App\Services\ElementHandlers\ImageFileElementHandler;
 use App\Services\ElementHandlers\TwitchElementHandler;
 use App\Services\ElementHandlers\UploadedFileAdaptor;
 use App\Services\ElementHandlers\VideoFileElementHandler;
@@ -109,16 +108,6 @@ class ElementService
         $element->delete();
 
         event(new ElementDeleted($element));
-    }
-
-    public function reportImgureImageRemoved(Element $element)
-    {
-        $element->element_issues()->firstOrCreate([
-            'type' => ElementIssueType::IMGUR_IMAGE_REMOVED,
-            'resolved_at' => null,
-        ],[
-            'type' => ElementIssueType::IMGUR_IMAGE_REMOVED,
-        ]);
     }
 
 }

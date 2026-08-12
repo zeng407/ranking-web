@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Enums\PostAccessPolicy;
 use App\Enums\TrendTimeRange;
-use App\Models\Traits\HasImgurAlbum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,7 +14,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Post extends Model
 {
-    use HasImgurAlbum;
     use HasFactory;
     use SoftDeletes;
 

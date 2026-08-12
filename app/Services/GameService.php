@@ -104,7 +104,6 @@ class GameService
 
         // append data
         if($winner){
-            $winner->imgur_url = $winner->imgur_image?->link;
         }
 
         return $winner;
@@ -280,7 +279,6 @@ class GameService
     public function getGameElements(Game $game, int $limit)
     {
         return $game->elements()
-            ->with('imgur_image')
             ->withPivot(['win_count', 'is_eliminated', 'is_ready'])
             // 排序邏輯：未淘汰的優先，然後按勝場數排序 (可依需求調整)
             ->orderByPivot('is_eliminated', 'asc') // 活著的在前面

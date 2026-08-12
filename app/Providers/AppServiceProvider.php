@@ -5,8 +5,6 @@ namespace App\Providers;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Element;
-use App\Models\ImgurAlbum;
-use App\Models\ImgurImage;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -41,8 +39,6 @@ class AppServiceProvider extends ServiceProvider
             'post' => Post::class,
             'element' => Element::class,
             'user' => User::class,
-            'imgur_image' => ImgurImage::class,
-            'imgur_album' => ImgurAlbum::class,
         ]);
 
         if (config('app.force_https')) {

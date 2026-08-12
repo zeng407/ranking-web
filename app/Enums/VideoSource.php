@@ -11,7 +11,6 @@ enum VideoSource: string
     const BILIBILI_VIDEO = 'bilibili_video';
     const URL = 'url';
     const GFYCAT = 'gfycat';
-    const IMGUR = 'imgur';
     const TWITCH_VIDEO = 'twitch_video';
     const TWITCH_CLIP = 'twitch_clip';
 }

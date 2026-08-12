@@ -51,7 +51,6 @@ class MakeElementImageThumb extends Command
         $counter = 0;
         Element::where(function ($query) {
             $query->where('type', ElementType::IMAGE)
-                ->orWhere('video_source', VideoSource::IMGUR)
                 ->orWhere('video_source', VideoSource::URL);
         })
             ->whereHas('posts')

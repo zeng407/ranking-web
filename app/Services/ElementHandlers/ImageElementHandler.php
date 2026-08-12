@@ -47,9 +47,6 @@ class ImageElementHandler implements InterfaceElementHandler
         $originalElement = $post->elements()
             ->where('source_url', $params['old_source_url'] ?? $sourceUrl)
             ->first();
-        if($originalElement && $originalElement->thumb_url !== $array['thumb_url'] && $originalElement->imgur_image){
-            $originalElement->imgur_image->delete();
-        }
 
         // find old_element and delete files
         if ($params['old_source_url'] ?? null) {

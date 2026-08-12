@@ -5,7 +5,6 @@ namespace App\Console;
 use App\Enums\TrendTimeRange;
 use App\Helper\CacheService;
 use App\ScheduleExecutor\ElementScheduleExecutor;
-use App\ScheduleExecutor\ImgurScheduleExecutor;
 use App\ScheduleExecutor\PostTrendScheduleExecutor;
 use App\ScheduleExecutor\PublicPostScheduleExecutor;
 use App\ScheduleExecutor\RankReportScheduleExecutor;
@@ -55,19 +54,11 @@ class Kernel extends ConsoleKernel
             app(RankReportScheduleExecutor::class)->removeOutdateRankReportHistory();
         })->name('Remove Outdate Rank Report History')->dailyAt('05:30')->withoutOverlapping(120);
 
-        if(config('services.imgur.enabled')){
-            $schedule->call(function(){
-                app(ImgurScheduleExecutor::class)->createImage(5);
-            })->name('Upload Imgur Images')->everyTenMinutes()->withoutOverlapping(60);
-        }
 
         $schedule->call(function(){
             app(ElementScheduleExecutor::class)->removeDeletedFiles(1000);
         })->name('Remove Unused Images')->hourly()->withoutOverlapping(60);
 
-        $schedule->call(function(){
-            app(ImgurScheduleExecutor::class)->updateRemovedImage(1000);
-        })->name('Update Removed Imgur Images')->hourlyAt(30)->withoutOverlapping(120);
 
         $schedule->call(function(){
             app(ThumbnailExecutor::class)->makeElementThumbnails(300);
@@ -75,8 +66,17 @@ class Kernel extends ConsoleKernel
 
 
         if(config('services.twitch.auto_refresh_token')){
-            $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily()->withoutOverlapping(120);;
-            $schedule->command('refresh:token imgur')->name('Refresh Twitch Token')->daily()->withoutOverlapping(120);;
+            $schedule->command('refresh:token twitch')->name('Refresh Twitch Token')->daily()->withoutOverlapping(120);
+        }
+
+        // The Imgur read API still needs a valid token: a submitted imgur gallery
+        // URL is resolved through it. Only the mirror upload is gone.
+        //
+        // The name is distinct from the Twitch entry on purpose. Both used to be
+        // registered as 'Refresh Twitch Token', which made them share one
+        // withoutOverlapping mutex and block each other.
+        if(config('services.imgur.enabled')){
+            $schedule->command('refresh:token imgur')->name('Refresh Imgur Token')->daily()->withoutOverlapping(120);
         }
 
         $schedule->command('sitemap:generate')->name('Generate Sitemap')->dailyAt('05:20')->withoutOverlapping(120);;

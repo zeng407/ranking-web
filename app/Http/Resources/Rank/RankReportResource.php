@@ -29,7 +29,6 @@ class RankReportResource extends JsonResource
                 'source_url' => $this->element->source_url,
                 'video_source' => $this->element->video_source,
                 'thumb_url' => $this->element->thumb_url,
-                'imgur_url' => $this->element->imgur_url,
                 'lowthumb_url' => $this->element->lowthumb_url,
                 'mediumthumb_url' => $this->element->mediumthumb_url,
             ]

@@ -109,6 +109,7 @@ class ElementSourceGuess
         return false;
     }
 
+
     public function guessImgurUrl(string $url)
     {
         try {

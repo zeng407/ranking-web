@@ -136,13 +136,6 @@ class PostTest extends TestCase
 
         /** @var Post $post */
         $post = $user->posts()->first();
-        $post->imgur_album()->create([
-            'album_id' => 'anyid',
-            'deletehash' => 'anydeletehash',
-            'title' => 'anytitle',
-            'description' => 'anydescription',
-        ]);
-
         $file = UploadedFile::fake()->image('random_image.jpg');
         $data = [
             'post_serial' => $post->serial,

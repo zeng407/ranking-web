@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\ImgurService;
 use App\Services\InterfaceOauthService;
+use App\Services\ImgurService;
 use App\Services\TwitchService;
 use Illuminate\Console\Command;
 
@@ -24,8 +24,8 @@ class RefreshAccessToken extends Command
     protected $description = 'Refresh the access token for the third party service';
 
     protected $services = [
-        'twitch' => TwitchService::class,
         'imgur' => ImgurService::class,
+        'twitch' => TwitchService::class,
     ];
     /**
      * Create a new command instance.
