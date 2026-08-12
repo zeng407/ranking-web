@@ -1,0 +1,346 @@
+name: ranking-web
+
+# One Compose project spread over two files.
+#
+# `include` pulls in the Sail file, so a single
+# `docker compose -f compose.separated.yml up -d` starts everything and there is
+# no second environment to keep in sync. Services migrate from that file to this
+# one as the Go stack takes them over; because it is one project they can talk to
+# each other by service name throughout, whichever file they currently live in.
+#
+# The project name is deliberately `ranking-web`, matching what Sail's file
+# defaulted to from its directory. Compose prefixes volume names with the project,
+# so any other name would resolve `sail-mysql` to a new, empty volume instead of
+# the existing `ranking-web_sail-mysql` that holds the 56.6 GB restored dump.
+include:
+  - docker-compose.yml
+
+# Shared database settings. All three Go processes that touch MySQL read the same
+# instance, so the connection details are defined once here.
+x-database-env: &database-env
+  # `mysql` is the Sail service, reachable by name because both files are one
+  # project. It used to be host.docker.internal:3306 through the published port,
+  # which worked but meant the traffic left and re-entered the Docker network.
+  # Production should point these values at the read-only RDS endpoint/user
+  # instead.
+  #
+  # The database is rk_db_restore_20260729, the restored production dump, not
+  # `rk-db`. `rk-db` is legacy: its schema is identical by column signature, but
+  # its game tables hold only a sliver of the data (67 games and 224 rounds
+  # against 959,022 and 50,701,427), so nothing about ranking can be validated
+  # against it.
+  DB_HOST: ${GO_DB_HOST:-mysql}
+  DB_PORT: ${GO_DB_PORT:-3306}
+  DB_DATABASE: ${DB_DATABASE:-rk_db_restore_20260729}
+  DB_USERNAME: ${DB_USERNAME:-root}
+  DB_PASSWORD: ${DB_PASSWORD:-}
+  DB_MAX_OPEN_CONNS: ${GO_DB_MAX_OPEN_CONNS:-20}
+  DB_MAX_IDLE_CONNS: ${GO_DB_MAX_IDLE_CONNS:-10}
+  DB_CONN_MAX_LIFETIME: 3m
+  DB_CONN_MAX_IDLE_TIME: 1m
+
+# ONE Redis, shared with Laravel. This stack used to run its own, for isolation
+# of the queues, and that turned out to break more than it protected: every
+# feature that shares a cache key with Laravel silently did nothing, because the
+# two sides were writing to different instances.
+#
+#   public_post_fresh      both sides rebuilt the listing independently
+#   need_fresh_post_rank   only Laravel sets it, so the Go sweep saw no posts
+#   game_bet_rank          the game room invalidated a key in the wrong Redis
+#   post_resource_*        same
+#
+# The isolation was never the load-bearing part: the key prefixes already keep
+# the namespaces apart (`2pick:go:queue:` here, `queues:` for Laravel), which is
+# what the schedule cutover relies on anyway.
+#
+# Consequence to know about: `down -v` now drops both sides' queues at once.
+# The object store. Shared because two services write to it: the worker for
+# thumbnails, and the api for uploaded avatars. Local development points at the Sail
+# MinIO; production uses the same AWS_* names Laravel already reads.
+x-storage-env: &storage-env
+  AWS_BUCKET: ${GO_AWS_BUCKET:-media-test}
+  AWS_URL: ${GO_AWS_URL:-https://file.test.local}
+  AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+  AWS_ENDPOINT: ${GO_AWS_ENDPOINT:-http://minio:9000}
+  AWS_USE_PATH_STYLE_ENDPOINT: ${GO_AWS_USE_PATH_STYLE_ENDPOINT:-true}
+  AWS_ACCESS_KEY_ID: ${GO_AWS_ACCESS_KEY_ID:-sail}
+  AWS_SECRET_ACCESS_KEY: ${GO_AWS_SECRET_ACCESS_KEY:-password}
+  # Reads video metadata when an author pastes a YouTube link. Unset leaves those URLs
+  # reporting themselves unavailable while every other source still imports.
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+
+x-redis-env: &redis-env
+  REDIS_ADDR: redis:6379
+  REDIS_PASSWORD: ${GO_REDIS_PASSWORD:-}
+  REDIS_DB: ${GO_REDIS_DB:-0}
+
+services:
+  backend:
+    build:
+      context: ./backend
+      args:
+        VERSION: local
+        COMMIT: development
+        CMD: api
+    environment:
+      <<: [*database-env, *redis-env, *storage-env]
+      APP_ENV: local
+      HTTP_ADDR: :8080
+      ALLOWED_ORIGINS: http://localhost:4173,http://localhost:5173
+      SHUTDOWN_TIMEOUT: 10s
+      GO_AUTH_PUBLIC_KEY: ${GO_AUTH_PUBLIC_KEY:-}
+      # The private half. Set, the Go API can log a user in itself; unset, it only
+      # verifies tokens Laravel issued and the /auth endpoints answer 503. Both sides
+      # read the same GO_AUTH_PRIVATE_KEY, so a token from either verifies against the
+      # one public key — which is what lets login move without ending live sessions.
+      GO_AUTH_PRIVATE_KEY: ${GO_AUTH_PRIVATE_KEY:-}
+      GO_AUTH_REFRESH_TTL: ${GO_AUTH_REFRESH_TTL:-720h}
+      GO_AUTH_ISSUER: ${GO_AUTH_ISSUER:-http://localhost}
+      GO_AUTH_AUDIENCE: ${GO_AUTH_AUDIENCE:-2pick-go-api}
+      GO_AUTH_MAX_TOKEN_TTL: 10m
+      GO_AUTH_CLOCK_SKEW: 30s
+      # Google sign-in. GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET come from the same
+      # .env Laravel reads, so both stacks can run the flow during the transition —
+      # Google allows several redirect URIs on one client.
+      #
+      # THIS variable is the switch, not the client id: the id and secret are in every
+      # environment file already because Socialite needs them, so treating their
+      # presence as intent would turn OAuth on everywhere. Unset, the endpoints answer
+      # 503. The value must match a URI registered in the console byte for byte.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GO_OAUTH_GOOGLE_REDIRECT_URL: ${GO_OAUTH_GOOGLE_REDIRECT_URL:-}
+    networks:
+      - sail
+    ports:
+      - "8080:8080"
+    init: true
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      args:
+        VERSION: local
+        COMMIT: development
+        CMD: worker
+      # ffmpeg is required for video thumbnails (D4), so the worker cannot use
+      # the scratch image the api and scheduler ship on.
+      target: media
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      <<: [*database-env, *redis-env, *storage-env]
+      APP_ENV: local
+      # Longer than the api's: shutdown has to let an in-flight job finish.
+      SHUTDOWN_TIMEOUT: 30s
+      WORKER_HEALTH_ADDR: :8081
+      WORKER_CONCURRENCY: ${GO_WORKER_CONCURRENCY:-4}
+      # Consumption priority, highest first. rank_report_history is the queue the
+      # Laravel history jobs declare with onQueue(), so a worker that omits it
+      # leaves those messages sitting untouched. Ordered after default so the long
+      # history builds do not delay ordinary work, and before low so cache warming
+      # does not delay them.
+      # media is last before low: ffmpeg work and S3 uploads are the slowest jobs,
+      # so they must not sit in front of ranking.
+      # game_room is second: a player watching the leaderboard notices a delay that
+      # a rank report never will, and the work is three statements, so it cannot
+      # starve anything behind it.
+      WORKER_QUEUES: ${GO_WORKER_QUEUES:-high,game_room,default,rank_report_history,media,low}
+      # Local only. The SSRF block refuses private addresses, which makes a
+      # fixture served from a container unfetchable, so nothing could exercise the
+      # media path locally without it. NEVER set this in production: it restores
+      # the SSRF primitive the block exists to remove. The worker logs a warning
+      # whenever it is set.
+      MEDIA_ALLOW_PRIVATE_SOURCES: ${GO_MEDIA_ALLOW_PRIVATE_SOURCES:-false}
+      # Laravel's full cache key prefix, "{slug(APP_NAME)}_database_{slug(APP_NAME)}_cache:".
+      # Two things read keys Laravel also uses: the element rank memo, and the
+      # need_fresh_post_rank flag that only Laravel's UpdatePostRank listener sets.
+      # Left empty, the rank history sweep finds no flagged posts and the worker
+      # logs a warning.
+      LARAVEL_CACHE_PREFIX: ${GO_LARAVEL_CACHE_PREFIX:-}
+      # Sitemap. The file is written into the same bucket, so enabling the schedule
+      # requires that bucket to be what serves the frontend; otherwise the file
+      # lands somewhere nothing reads. Unset SITEMAP_BASE_URL leaves the handler
+      # unregistered.
+      SITEMAP_BASE_URL: ${GO_SITEMAP_BASE_URL:-}
+      SITEMAP_OBJECT_KEY: ${GO_SITEMAP_OBJECT_KEY:-sitemap.xml}
+      SITEMAP_HOME_IMAGE_URL: ${GO_SITEMAP_HOME_IMAGE_URL:-}
+      # Soketi, for the game room leaderboard broadcasts. Same PUSHER_* names
+      # Laravel reads, so one .env drives both. Unset, the game room handlers stay
+      # unregistered: recomputing standings no browser will see is worse than a
+      # visible dead letter.
+      #
+      # Running more than one Soketi instance additionally requires
+      # SOKETI_ADAPTER_DRIVER=redis on the Soketi side. Without it a broadcast only
+      # reaches clients connected to the instance that received it, the publish still
+      # returns 200, and nothing is logged. See compose.soketi-scaling.yml.
+      PUSHER_APP_ID: ${GO_PUSHER_APP_ID:-}
+      PUSHER_APP_KEY: ${GO_PUSHER_APP_KEY:-}
+      PUSHER_APP_SECRET: ${GO_PUSHER_APP_SECRET:-}
+      PUSHER_HOST: ${GO_PUSHER_HOST:-soketi}
+      PUSHER_PORT: ${GO_PUSHER_PORT:-6001}
+      PUSHER_SCHEME: ${GO_PUSHER_SCHEME:-http}
+      PUSHER_APP_CLUSTER: ${GO_PUSHER_APP_CLUSTER:-}
+      # Pacing for the public post listing refresh.
+      #
+      # Off (the default) shares Laravel's public_post_fresh flag: the listing rebuilds
+      # when a post changes and otherwise at most every ten minutes, which is what the
+      # PHP does today. On removes the debounce, so a run starts again as soon as the
+      # previous one finishes and the only thing pacing the work is the overlap lock.
+      #
+      # A full pass now covers every qualifying post rather than the newest 2,000, and
+      # measured 3.7s for 2,194 posts locally, so continuous mode is affordable.
+      PUBLIC_POST_CONTINUOUS: ${GO_PUBLIC_POST_CONTINUOUS:-false}
+      # Must stay within Laravel's redis queue retry_after of 90s.
+      WORKER_JOB_TIMEOUT: 90s
+    networks:
+      - sail
+    ports:
+      - "8081:8081"
+    init: true
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: ./backend
+      args:
+        VERSION: local
+        COMMIT: development
+        CMD: scheduler
+    depends_on:
+      redis:
+        condition: service_healthy
+    # No database settings: the scheduler only enqueues, so it holds no DB
+    # handle. A schedule that needs to read rows does that work in a job.
+    environment:
+      <<: *redis-env
+      APP_ENV: local
+      SHUTDOWN_TIMEOUT: 10s
+      SCHEDULER_HEALTH_ADDR: :8082
+      # Mirrors config/app.php 'timezone'. The container default is UTC, which
+      # would silently shift every cron entry by eight hours.
+      SCHEDULER_TIMEZONE: ${GO_SCHEDULER_TIMEZONE:-Asia/Taipei}
+      # One flag per entry, all off by default. Turning one on REQUIRES first
+      # disabling the matching entry in app/Console/Kernel.php: running both
+      # would double-count trends and double-write public posts.
+      SCHEDULE_POST_TREND_ALL: ${SCHEDULE_POST_TREND_ALL:-false}
+      SCHEDULE_POST_TREND_MONTH: ${SCHEDULE_POST_TREND_MONTH:-false}
+      SCHEDULE_POST_TREND_WEEK: ${SCHEDULE_POST_TREND_WEEK:-false}
+      SCHEDULE_POST_TREND_DAY: ${SCHEDULE_POST_TREND_DAY:-false}
+      SCHEDULE_UPDATE_PUBLIC_POSTS: ${SCHEDULE_UPDATE_PUBLIC_POSTS:-false}
+      # cachePosts is deliberately not ported: it warms Laravel's own response
+      # cache, and the Go posts endpoint holds no server-side cache to warm. See
+      # the note in internal/scheduling/schedule.go.
+      SCHEDULE_MAKE_THUMBNAILS: ${SCHEDULE_MAKE_THUMBNAILS:-false}
+      SCHEDULE_REMOVE_UNUSED_IMAGES: ${SCHEDULE_REMOVE_UNUSED_IMAGES:-false}
+      SCHEDULE_MAKE_RANK_REPORT_HISTORY: ${SCHEDULE_MAKE_RANK_REPORT_HISTORY:-false}
+      SCHEDULE_REMOVE_OUTDATE_RANK_REPORT_HISTORY: ${SCHEDULE_REMOVE_OUTDATE_RANK_REPORT_HISTORY:-false}
+      SCHEDULE_GENERATE_SITEMAP: ${SCHEDULE_GENERATE_SITEMAP:-false}
+    networks:
+      - sail
+    ports:
+      - "8082:8082"
+    init: true
+    restart: unless-stopped
+
+  # ---- moved out of docker-compose.yml ----
+  #
+  # Definitions are unchanged apart from the appendonly flag on redis, so the
+  # existing ranking-web_sail-redis and ranking-web_sail-minio volumes are reused
+  # and nothing had to be migrated.
+  redis:
+    image: 'redis:alpine'
+    # appendonly was not set while this stack ran its own Redis; keeping it means
+    # the Go queue survives a restart rather than being silently dropped.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+      - 'sail-redis:/data'
+    networks:
+      - sail
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: 'minio/minio:latest'
+    ports:
+      - '${FORWARD_MINIO_PORT:-9000}:9000'
+      - '${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900'
+    environment:
+      MINIO_ROOT_USER: sail
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - 'sail-minio:/data/minio'
+    networks:
+      - sail
+    command: 'minio server /data/minio --console-address ":8900"'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      retries: 3
+      timeout: 5s
+
+  # The bucket has to exist before anything writes to it, and nothing was creating it:
+  # an avatar upload against a fresh stack failed with NoSuchBucket, and the media jobs
+  # would have too. One shot, idempotent, and it exits — so `up` does not wait on it.
+  minio-init:
+    image: 'minio/mc:latest'
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - sail
+    entrypoint: >
+      sh -c "mc alias set local http://minio:9000 sail password &&
+             mc mb --ignore-existing local/${GO_AWS_BUCKET:-media-test}"
+    restart: 'no'
+
+  soketi:
+    image: 'quay.io/soketi/soketi:latest-16-alpine'
+    environment:
+      SOKETI_DEBUG: '${SOKETI_DEBUG:-1}'
+      SOKETI_METRICS_SERVER_PORT: '9601'
+      SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID}'
+      SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY}'
+      SOKETI_DEFAULT_APP_SECRET: '${PUSHER_APP_SECRET}'
+      # Still no adapter, so this is single-instance only. Scaling past one
+      # replica requires SOKETI_ADAPTER_DRIVER=redis or broadcasts reach only the
+      # clients connected to the instance that received them, while the publish
+      # still returns 200. Measured in compose.soketi-scaling.yml.
+    ports:
+      - '${PUSHER_PORT:-6001}:6001'
+      - '${PUSHER_METRICS_PORT:-9601}:9601'
+    networks:
+      - sail
+
+  selenium:
+    image: seleniarm/standalone-chromium
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - '/dev/shm:/dev/shm'
+    networks:
+      - sail
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    networks:
+      - sail
+    ports:
+      - "4173:80"
+    restart: unless-stopped
+
+volumes:
+  sail-redis:
+    driver: local
+  sail-minio:
+    driver: local

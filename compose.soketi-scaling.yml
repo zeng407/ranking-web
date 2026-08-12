@@ -1,0 +1,77 @@
+name: 2pick-soketi-scaling
+
+# A harness for one question: what breaks when Soketi runs more than one instance.
+#
+# The answer matters because the current docker-compose.yml sets no adapter at all,
+# so Soketi defaults to `local` and each instance knows only its own connections. A
+# second instance then makes broadcasts land on whichever node received the HTTP
+# call, and clients on the other node silently receive nothing — no error, no log,
+# just half the users watching a frozen screen.
+#
+# Two instances are started against one Redis. SOKETI_ADAPTER_DRIVER is a variable
+# so the same file can run the control case:
+#
+#   # broken on purpose: reproduces the silent failure
+#   SOKETI_ADAPTER_DRIVER=local docker compose -f compose.soketi-scaling.yml up -d
+#
+#   # the fix
+#   docker compose -f compose.soketi-scaling.yml up -d
+#
+# The app credentials are fixed test values. This stack talks to nothing else, so it
+# does not touch the Sail Redis, the Sail Soketi, or any database.
+
+x-soketi-env: &soketi-env
+  # `local` is the default and is what makes a second instance silently wrong.
+  SOKETI_ADAPTER_DRIVER: ${SOKETI_ADAPTER_DRIVER:-redis}
+  SOKETI_DB_REDIS_HOST: soketi-redis
+  SOKETI_DB_REDIS_PORT: 6379
+  # Both instances must share the app credentials, otherwise the publish is
+  # rejected before adapter behaviour is even reached.
+  SOKETI_DEFAULT_APP_ID: scaling-test
+  SOKETI_DEFAULT_APP_KEY: scaling-test-key
+  SOKETI_DEFAULT_APP_SECRET: scaling-test-secret
+  # Raised well above the default so a burst in a large room is not throttled
+  # during the test and mistaken for an adapter failure.
+  SOKETI_DEFAULT_APP_MAX_BACKEND_EVENTS_PER_SEC: 10000
+  SOKETI_METRICS_ENABLED: "true"
+  SOKETI_METRICS_SERVER_PORT: 9601
+  SOKETI_DEBUG: ${SOKETI_DEBUG:-0}
+
+services:
+  soketi-redis:
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  # The healthcheck is not decoration. Soketi can die on a malformed client frame
+  # (an uncaught TypeError in ws-handler), and a dead instance answers with
+  # "connection refused" — which reads like a firewall problem, not like the crash
+  # it actually is. Failing the healthcheck names the real cause.
+  soketi-a:
+    image: quay.io/soketi/soketi:latest-16-alpine
+    depends_on:
+      soketi-redis:
+        condition: service_healthy
+    environment: *soketi-env
+    ports:
+      - "6011:6001"
+      - "9611:9601"
+    healthcheck: &soketi-healthcheck
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:6001"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  soketi-b:
+    image: quay.io/soketi/soketi:latest-16-alpine
+    depends_on:
+      soketi-redis:
+        condition: service_healthy
+    environment: *soketi-env
+    ports:
+      - "6012:6001"
+      - "9612:9601"
+    healthcheck: *soketi-healthcheck
