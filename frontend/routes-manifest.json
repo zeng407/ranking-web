@@ -1,0 +1,44 @@
+{
+  "version": 3,
+  "fallbackOrigin": "laravel",
+  "frontendRoutes": [
+    "/",
+    "/hot",
+    "/new",
+    "/g/*",
+    "/zh-tw/",
+    "/zh-tw/hot",
+    "/zh-tw/new",
+    "/zh-tw/g/*",
+    "/zh-tw/donate",
+    "/zh-tw/tos",
+    "/zh-tw/privacy",
+    "/en/",
+    "/en/hot",
+    "/en/new",
+    "/en/g/*",
+    "/en/donate",
+    "/en/tos",
+    "/en/privacy",
+    "/ja/",
+    "/ja/hot",
+    "/ja/new",
+    "/ja/g/*",
+    "/ja/donate",
+    "/ja/tos",
+    "/ja/privacy"
+  ],
+  "permanentRedirects": {
+    "/donate": "/zh-tw/donate",
+    "/tos": "/zh-tw/tos",
+    "/privacy": "/zh-tw/privacy",
+    "/lang/zh_TW/*": "/zh-tw/*",
+    "/lang/en/*": "/en/*",
+    "/lang/ja/*": "/ja/*"
+  },
+  "cachePolicy": {
+    "html": "public, max-age=0",
+    "assets": "public, max-age=31536000, immutable",
+    "runtimeConfig": "no-store"
+  }
+}
