@@ -67,6 +67,10 @@ var ErrPostNotFound = errors.New("ingest: post not found")
 // ErrNotConfigured means the process has no object store to put media in.
 var ErrNotConfigured = errors.New("ingest: not configured")
 
+// ErrElementNotFound is also what a caller who does not own the element gets: the same
+// answer for "no such element" and "not yours", so the reply reveals no ids.
+var ErrElementNotFound = errors.New("ingest: element not found")
+
 // NewElement is one row about to be written.
 type NewElement struct {
 	PostID int64
@@ -102,6 +106,27 @@ type Store interface {
 	PostForOwner(ctx context.Context, userID int64, serial string) (postID int64, elements int, err error)
 	// CreateElement writes the row and attaches it to the post, in one transaction.
 	CreateElement(ctx context.Context, element NewElement) (Stored, error)
+	// ElementForOwner resolves an element the user owns through one of their posts and
+	// answers with that post's serial (the object key directory) and the element's
+	// current title, which replacing the media keeps. ErrElementNotFound when it is not
+	// theirs.
+	ElementForOwner(ctx context.Context, userID, elementID int64) (serial, title string, err error)
+	// ReplaceElementMedia overwrites one element's media columns in place.
+	ReplaceElementMedia(ctx context.Context, elementID int64, media ReplacementMedia) error
+}
+
+// ReplacementMedia is the new file behind an element that already exists. Everything a
+// medium implies is in here so the store can write these columns and clear the others: an
+// element that was a YouTube video and is now an uploaded image must keep no trace of the
+// video it was.
+type ReplacementMedia struct {
+	Path      string
+	SourceURL string
+	ThumbURL  string
+	Type      string
+
+	// VideoSource is empty for an image, which is how the video columns get cleared.
+	VideoSource string
 }
 
 // ObjectStore writes the media this site keeps a copy of.
@@ -260,6 +285,83 @@ func (service *Service) Upload(
 	if kind.Type == TypeVideo && service.thumbs != nil {
 		if err := service.thumbs.VideoThumbnail(ctx, stored.ID); err != nil {
 			// The element exists and is usable; the sweep will catch the thumbnail.
+			return stored, nil
+		}
+	}
+	return stored, nil
+}
+
+// ReplaceMedia swaps the file behind an element the caller owns, keeping its title, its
+// place in every post it is on, and every vote it has already collected.
+//
+// One request, where Laravel took two: its POST .../upload stored the object, cached the
+// path under a sha256 of itself for ten minutes and answered with that `path_id`, which a
+// following PUT redeemed. The cache existed to let the old editor preview the new file
+// before committing to it, which a SPA does from the File object with
+// URL.createObjectURL and no server round trip at all. Dropping it removes the ten-minute
+// window in which an abandoned preview left an object with no row pointing at it.
+//
+// The old object is left where it is, as Laravel left it: the same is true of deleting an
+// element, and the storage sweep is what reclaims both.
+func (service *Service) ReplaceMedia(
+	ctx context.Context, userID, elementID int64, fileName string, content []byte,
+) (Stored, error) {
+	if len(content) == 0 {
+		return Stored{}, invalid("file", CodeRequired)
+	}
+	if len(content) > MaxFileBytes {
+		return Stored{}, invalid("file", CodeTooLarge)
+	}
+
+	// The type comes from the bytes here too, and the extension in the key comes from the
+	// same sniff. See Upload.
+	kind, ok := SniffUpload(content)
+	if !ok {
+		return Stored{}, invalid("file", CodeUnsupportedMedia)
+	}
+
+	serial, title, err := service.store.ElementForOwner(ctx, userID, elementID)
+	if err != nil {
+		return Stored{}, err
+	}
+	// No MaxElements check: a replacement adds no element to the post.
+
+	if service.limiter != nil {
+		allowed, err := service.limiter.Allow(ctx, userID, len(content))
+		if err != nil {
+			return Stored{}, err
+		}
+		if !allowed {
+			return Stored{}, invalid("file", CodeRateLimited)
+		}
+	}
+
+	key := service.keyName(serial, kind.Extension)
+	url, err := service.objects.Put(ctx, key, content, kind.ContentType)
+	if err != nil {
+		return Stored{}, fmt.Errorf("ingest: store replacement: %w", err)
+	}
+
+	media := ReplacementMedia{
+		Path:      key,
+		SourceURL: url,
+		// Its own thumbnail until the thumbnail job replaces it, as on a new upload.
+		ThumbURL: url,
+		Type:     kind.Type,
+	}
+	if kind.Type == TypeVideo {
+		media.VideoSource = VideoSourceFile
+	}
+	if err := service.store.ReplaceElementMedia(ctx, elementID, media); err != nil {
+		return Stored{}, err
+	}
+
+	stored := Stored{
+		ID: elementID, SourceURL: url, ThumbURL: url, Title: title, Type: kind.Type,
+	}
+	if kind.Type == TypeVideo && service.thumbs != nil {
+		if err := service.thumbs.VideoThumbnail(ctx, elementID); err != nil {
+			// The element is usable; the sweep will catch the thumbnail.
 			return stored, nil
 		}
 	}

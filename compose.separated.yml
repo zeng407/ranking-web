@@ -109,6 +109,18 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GO_OAUTH_GOOGLE_REDIRECT_URL: ${GO_OAUTH_GOOGLE_REDIRECT_URL:-}
+      # The back office writes three keys Laravel also reads: the announcement, the
+      # per-user role cache a ban has to invalidate, and the carousel cache. Left empty,
+      # a ban keeps looking unbanned to Blade for up to an hour and the announcement is
+      # written where nothing reads it. The api logs a warning when it is unset.
+      LARAVEL_CACHE_PREFIX: ${GO_LARAVEL_CACHE_PREFIX:-}
+      # The built admin bundle, served only to a request carrying a pass minted by
+      # POST /api/v1/admin/assets/grant.
+      #
+      # THIS DIRECTORY MUST NOT BE INSIDE THE PUBLIC DOCUMENT ROOT: whatever the web
+      # server serves directly is served without the pass, which is the whole gate.
+      # Unset leaves /admin/ a 404, which is the right state until the bundle exists.
+      ADMIN_ASSET_DIR: ${GO_ADMIN_ASSET_DIR:-}
     networks:
       - sail
     ports:

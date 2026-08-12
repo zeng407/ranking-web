@@ -17,6 +17,14 @@ type memoryStore struct {
 	created   []NewElement
 	createErr error
 	nextID    int64
+
+	serial     string
+	title      string
+	elementErr error
+
+	replaced    []ReplacementMedia
+	replacedIDs []int64
+	replaceErr  error
 }
 
 func (store *memoryStore) PostForOwner(_ context.Context, _ int64, _ string) (int64, int, error) {
@@ -36,6 +44,24 @@ func (store *memoryStore) CreateElement(_ context.Context, element NewElement) (
 		ID: store.nextID, SourceURL: element.SourceURL, ThumbURL: element.ThumbURL,
 		Title: element.Title, Type: element.Type,
 	}, nil
+}
+
+func (store *memoryStore) ElementForOwner(_ context.Context, _, _ int64) (string, string, error) {
+	if store.elementErr != nil {
+		return "", "", store.elementErr
+	}
+	return store.serial, store.title, nil
+}
+
+func (store *memoryStore) ReplaceElementMedia(
+	_ context.Context, elementID int64, media ReplacementMedia,
+) error {
+	if store.replaceErr != nil {
+		return store.replaceErr
+	}
+	store.replaced = append(store.replaced, media)
+	store.replacedIDs = append(store.replacedIDs, elementID)
+	return nil
 }
 
 type memoryObjects struct {
@@ -88,7 +114,7 @@ type harness struct {
 
 func newHarness(t *testing.T) *harness {
 	t.Helper()
-	store := &memoryStore{postID: 42}
+	store := &memoryStore{postID: 42, serial: "abcdefgh", title: "the title it keeps"}
 	objects := &memoryObjects{}
 	thumbs := &memoryThumbs{}
 	limiter := &memoryLimiter{allow: true}
@@ -381,6 +407,162 @@ func TestTitleFromFileName(t *testing.T) {
 				t.Errorf("got %q, want %q", got, want)
 			}
 		})
+	}
+}
+
+func TestReplaceMediaSwapsTheFileAndKeepsTheTitle(t *testing.T) {
+	harness := newHarness(t)
+
+	stored, err := harness.service.ReplaceMedia(context.Background(), 7, 91, "holiday.PNG", png(64))
+	if err != nil {
+		t.Fatalf("ReplaceMedia() error = %v", err)
+	}
+	if stored.ID != 91 {
+		t.Errorf("id = %d, want the element that was replaced", stored.ID)
+	}
+	// The title belongs to the author, not to the file: they may well have renamed it
+	// after uploading, and Laravel's path_id branch left it alone too.
+	if stored.Title != "the title it keeps" {
+		t.Errorf("title = %q, want the element's own title", stored.Title)
+	}
+	if harness.objects.keys[0] != "abcdefgh/fixed.png" {
+		t.Errorf("key = %q, want it under the post's serial", harness.objects.keys[0])
+	}
+	if len(harness.store.replacedIDs) != 1 || harness.store.replacedIDs[0] != 91 {
+		t.Fatalf("replaced %v, want [91]", harness.store.replacedIDs)
+	}
+	written := harness.store.replaced[0]
+	if written.Path != "abcdefgh/fixed.png" || written.Type != TypeImage {
+		t.Errorf("wrote %+v", written)
+	}
+	if written.ThumbURL != written.SourceURL {
+		t.Errorf("thumb = %q, source = %q", written.ThumbURL, written.SourceURL)
+	}
+	// An image carries no video source, which is what clears the video columns.
+	if written.VideoSource != "" {
+		t.Errorf("video source = %q, want none on an image", written.VideoSource)
+	}
+	if len(harness.store.created) != 0 {
+		t.Errorf("a replacement created %d elements", len(harness.store.created))
+	}
+}
+
+func TestReplacingWithAVideoRecordsTheFileSourceAndQueuesAThumbnail(t *testing.T) {
+	harness := newHarness(t)
+
+	if _, err := harness.service.ReplaceMedia(
+		context.Background(), 7, 91, "clip.mp4", mp4()); err != nil {
+		t.Fatalf("ReplaceMedia() error = %v", err)
+	}
+
+	written := harness.store.replaced[0]
+	if written.Type != TypeVideo || written.VideoSource != VideoSourceFile {
+		t.Errorf("wrote %+v, want a video file", written)
+	}
+	if harness.objects.keys[0] != "abcdefgh/fixed.mp4" {
+		t.Errorf("key = %q, want the sniffed extension", harness.objects.keys[0])
+	}
+	if len(harness.thumbs.queued) != 1 || harness.thumbs.queued[0] != 91 {
+		t.Errorf("queued %v, want [91]", harness.thumbs.queued)
+	}
+}
+
+// A replacement adds no element, so the cap that stops a post growing must not stop an
+// author fixing a file on a post that is already full.
+func TestAFullPostCanStillHaveItsMediaReplaced(t *testing.T) {
+	harness := newHarness(t)
+	harness.store.elements = MaxElements
+
+	if _, err := harness.service.ReplaceMedia(
+		context.Background(), 7, 91, "a.png", png(32)); err != nil {
+		t.Fatalf("ReplaceMedia() error = %v", err)
+	}
+	if len(harness.store.replaced) != 1 {
+		t.Error("the media was not replaced")
+	}
+}
+
+func TestReplacingSomeoneElsesMediaIsNotFound(t *testing.T) {
+	harness := newHarness(t)
+	harness.store.elementErr = ErrElementNotFound
+
+	_, err := harness.service.ReplaceMedia(context.Background(), 7, 91, "a.png", png(32))
+	if !errors.Is(err, ErrElementNotFound) {
+		t.Fatalf("error = %v, want ErrElementNotFound", err)
+	}
+	if len(harness.objects.keys) != 0 {
+		t.Errorf("stored %v for an element that is not theirs", harness.objects.keys)
+	}
+}
+
+func TestReplaceMediaRefusesWhatItCannotServe(t *testing.T) {
+	cases := []struct {
+		name    string
+		content []byte
+		want    string
+	}{
+		{"empty", nil, CodeRequired},
+		{"too large", png(MaxFileBytes + 1), CodeTooLarge},
+		{"not media", []byte("<!doctype html><p>hello"), CodeUnsupportedMedia},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			harness := newHarness(t)
+
+			_, err := harness.service.ReplaceMedia(
+				context.Background(), 7, 91, "a.png", testCase.content)
+			if got := codeFor(t, err, "file"); got != testCase.want {
+				t.Errorf("code = %q, want %q", got, testCase.want)
+			}
+			if len(harness.store.replaced) != 0 {
+				t.Error("a refused file was written anyway")
+			}
+			if len(harness.limiter.calls) != 0 {
+				t.Error("a refused file spent the minute's budget")
+			}
+		})
+	}
+}
+
+func TestReplaceMediaRefusesOverTheRateLimit(t *testing.T) {
+	harness := newHarness(t)
+	harness.limiter.allow = false
+
+	_, err := harness.service.ReplaceMedia(context.Background(), 7, 91, "a.png", png(32))
+	if got := codeFor(t, err, "file"); got != CodeRateLimited {
+		t.Errorf("code = %q, want %q", got, CodeRateLimited)
+	}
+	if len(harness.objects.keys) != 0 {
+		t.Errorf("stored %v past the limit", harness.objects.keys)
+	}
+}
+
+// The row still points at the old file, which is still there: a bucket failure leaves the
+// element exactly as it was rather than pointing at nothing.
+func TestNothingIsReplacedWhenTheBucketRefuses(t *testing.T) {
+	harness := newHarness(t)
+	harness.objects.putErr = errors.New("the bucket is unreachable")
+
+	if _, err := harness.service.ReplaceMedia(
+		context.Background(), 7, 91, "a.png", png(32)); err == nil {
+		t.Fatal("ReplaceMedia() error = nil, want the bucket's")
+	}
+	if len(harness.store.replaced) != 0 {
+		t.Error("the columns were rewritten without a file behind them")
+	}
+}
+
+// The element is already pointing at the new file by then.
+func TestAFailedThumbnailQueueDoesNotFailAReplacement(t *testing.T) {
+	harness := newHarness(t)
+	harness.thumbs.err = errors.New("redis is down")
+
+	stored, err := harness.service.ReplaceMedia(context.Background(), 7, 91, "a.mp4", mp4())
+	if err != nil {
+		t.Fatalf("ReplaceMedia() error = %v", err)
+	}
+	if stored.Type != TypeVideo {
+		t.Errorf("type = %q, want video", stored.Type)
 	}
 }
 

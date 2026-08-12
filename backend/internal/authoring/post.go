@@ -308,6 +308,25 @@ func (service *Service) DeletePost(
 	return nil
 }
 
+// DeletePostAsModerator removes somebody else's post without asking for a password.
+//
+// The account password proves the caller is the owner, and a moderator is not: they have
+// no owner's password to type, and their own would prove nothing about this post. The
+// authorization is the admin role, checked at the HTTP boundary before the request ever
+// reaches here — see internal/admin. Everything else about the deletion is identical,
+// which is the reason this lives beside DeletePost instead of being reimplemented over
+// there: one cascade, one rank refresh.
+func (service *Service) DeletePostAsModerator(
+	ctx context.Context, userID int64, serial string,
+) error {
+	postID, err := service.posts.DeletePost(ctx, userID, serial)
+	if err != nil {
+		return err
+	}
+	service.refreshRank(ctx, postID)
+	return nil
+}
+
 // refreshRank queues the recomputation a deletion invalidates.
 //
 // Failures are swallowed on purpose: the rows are already gone, and refusing the request

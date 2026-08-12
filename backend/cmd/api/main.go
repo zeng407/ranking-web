@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"2pick.app/backend/internal/admin"
 	"2pick.app/backend/internal/auth"
 	"2pick.app/backend/internal/authoring"
 	"2pick.app/backend/internal/comments"
@@ -94,9 +95,13 @@ func main() {
 		defer redisClient.Close()
 	}
 
+	// Read once and shared: every key this process writes into Laravel's cache — the rank
+	// freshness flag, the role and carousel invalidations, the announcement — has to carry
+	// the same prefix, and a second os.Getenv would be a second chance to disagree.
+	laravelCachePrefix := os.Getenv("LARAVEL_CACHE_PREFIX")
+
 	var rankFreshness ranking.FreshnessStore
 	if redisClient != nil {
-		laravelCachePrefix := os.Getenv("LARAVEL_CACHE_PREFIX")
 		store, err := ranking.NewRedisFreshness(redisClient, laravelCachePrefix)
 		if err != nil {
 			logger.Error("rank_freshness_configuration_error", "error", err)
@@ -105,7 +110,8 @@ func main() {
 		rankFreshness = store
 		if laravelCachePrefix == "" {
 			logger.Warn("laravel_cache_prefix_unset",
-				"effect", "the freshness flag is written under a prefix Laravel does not read",
+				"effect", "the freshness flag, the role and carousel invalidations and the announcement "+
+					"are all written under a prefix Laravel does not read",
 				"fix", "set LARAVEL_CACHE_PREFIX to Laravel's full cache key prefix")
 		}
 		logger.Info("rank_freshness_enabled", "redis", configuration.Redis.Addr, "prefix", laravelCachePrefix)
@@ -286,6 +292,9 @@ func main() {
 	// The post editor. Needs the database; the rank refresher it queues work through is
 	// optional, and without it a deletion leaves a stale report for the daily schedule
 	// to correct rather than refusing to delete.
+	// postEditor is the same object as authoringService, kept at its concrete type because
+	// the moderation service delegates to methods the httpapi interface does not name.
+	var postEditor *authoring.Service
 	var authoringService httpapi.AuthoringService
 	if database != nil {
 		repository := authoring.NewMySQLRepository(database)
@@ -315,8 +324,34 @@ func main() {
 			logger.Error("authoring_service_configuration_error", "error", err)
 			os.Exit(1)
 		}
+		postEditor = service
 		authoringService = service
 		logger.Info("post_editor_enabled", "queues_rank_refresh", options.Ranks != nil)
+	}
+
+	// Reading a URL somebody pasted: what the page at it says, and what the YouTube API
+	// says about a video id. Shared by media imports and by the home carousel, which
+	// resolves a slide's title and preview the same way — one fetcher means one set of
+	// private-address refusals and one connection pool.
+	//
+	// Neither needs the database or the object store, so both are built here rather than
+	// inside the import block.
+	urlFetcher := media.NewFetcher()
+	pageScraper, err := ingest.NewPageScraper(urlFetcher)
+	if err != nil {
+		logger.Error("ingest_page_scraper_configuration_error", "error", err)
+		os.Exit(1)
+	}
+	var youtubeLookup ingest.YouTubeLookup
+	if configuration.YouTubeAPIKey != "" {
+		youtube, err := ingest.NewYouTubeAPI(configuration.YouTubeAPIKey)
+		if err != nil {
+			logger.Error("ingest_youtube_configuration_error", "error", err)
+			os.Exit(1)
+		}
+		youtubeLookup = youtube
+	} else {
+		logger.Warn("youtube_imports_disabled", "reason", "YOUTUBE_API_KEY is not set")
 	}
 
 	// Adding media to a post. Needs the object store as well as the database, so it is
@@ -338,30 +373,15 @@ func main() {
 			logger.Error("ingest_object_store_configuration_error", "error", err)
 			os.Exit(1)
 		}
-		fetcher := media.NewFetcher()
-		scraper, err := ingest.NewPageScraper(fetcher)
-		if err != nil {
-			logger.Error("ingest_page_scraper_configuration_error", "error", err)
-			os.Exit(1)
-		}
 		options := ingest.ServiceOptions{
 			Store:   ingest.NewMySQLStore(database),
 			Objects: objects,
 			// The URL side. The fetcher and the prober both refuse private addresses,
 			// which is what makes it safe to point them at a URL an author pasted.
-			Fetcher: fetcher,
+			Fetcher: urlFetcher,
 			Prober:  ingest.NewHeadProber(),
-			Pages:   scraper,
-		}
-		if configuration.YouTubeAPIKey != "" {
-			youtube, err := ingest.NewYouTubeAPI(configuration.YouTubeAPIKey)
-			if err != nil {
-				logger.Error("ingest_youtube_configuration_error", "error", err)
-				os.Exit(1)
-			}
-			options.YouTube = youtube
-		} else {
-			logger.Warn("youtube_imports_disabled", "reason", "YOUTUBE_API_KEY is not set")
+			Pages:   pageScraper,
+			YouTube: youtubeLookup,
 		}
 		if redisClient != nil {
 			transport, err := queue.NewRedisTransport(redisClient, queue.DefaultKeyPrefix)
@@ -439,6 +459,74 @@ func main() {
 			"effect", "password-protected posts are not readable through this API")
 	}
 
+	// The moderation back office. Needs the database and the post editor it delegates to,
+	// so it is off exactly when the editor is; everything else it uses is optional and
+	// degrades on its own terms — see admin.ServiceOptions.
+	var adminService httpapi.AdminService
+	if database != nil && postEditor != nil {
+		repository := admin.NewMySQLRepository(database)
+		options := admin.ServiceOptions{
+			Authoring: postEditor,
+			Store:     repository,
+			// The carousel resolves a slide's video the way an element does. No object
+			// store is involved: the preview stays hotlinked.
+			Videos: admin.NewIngestVideos(youtubeLookup, pageScraper),
+		}
+		if authService != nil {
+			options.Sessions = authService
+		}
+		if redisClient != nil {
+			roleCache, err := admin.NewRedisRoleCache(redisClient, laravelCachePrefix)
+			if err != nil {
+				logger.Error("admin_role_cache_configuration_error", "error", err)
+				os.Exit(1)
+			}
+			carouselCache, err := admin.NewRedisCarouselCache(redisClient, laravelCachePrefix)
+			if err != nil {
+				logger.Error("admin_carousel_cache_configuration_error", "error", err)
+				os.Exit(1)
+			}
+			announcements, err := admin.NewRedisAnnouncements(redisClient, laravelCachePrefix)
+			if err != nil {
+				logger.Error("admin_announcement_store_configuration_error", "error", err)
+				os.Exit(1)
+			}
+			options.RoleCache = roleCache
+			options.CarouselCache = carouselCache
+			options.Announcements = announcements
+		} else {
+			// Worth a warning: the announcement endpoints are the only admin screen that
+			// stops working without Redis, and a ban stays invisible to the Blade pages
+			// for as long as their cached role list lives.
+			logger.Warn("admin_announcements_disabled",
+				"reason", "REDIS_ADDR is not configured",
+				"effect", "the announcement endpoints answer 503 and a ban does not clear Laravel's role cache")
+		}
+		service, err := admin.NewService(options)
+		if err != nil {
+			logger.Error("admin_service_configuration_error", "error", err)
+			os.Exit(1)
+		}
+		adminService = service
+		logger.Info("admin_api_enabled",
+			"revokes_sessions", options.Sessions != nil,
+			"clears_laravel_cache", options.RoleCache != nil,
+			"resolves_youtube_slides", youtubeLookup != nil)
+	}
+
+	// The back office's own files. Served by this process behind the admin role, never
+	// from the public document root — see httpapi.serveAdminAsset. Both halves are needed:
+	// the directory to read, and the signing key the pass cookie is stamped with.
+	var adminAssetKey []byte
+	if len(configuration.Auth.PrivateKey) > 0 {
+		// Guarded because ed25519.PrivateKey.Seed panics on an empty key.
+		adminAssetKey = httpapi.AdminAssetKey(configuration.Auth.PrivateKey.Seed())
+	}
+	// httpapi.New warns when the directory is set but the key is not.
+	if configuration.AdminAssetDir != "" && len(adminAssetKey) > 0 {
+		logger.Info("admin_assets_enabled", "directory", configuration.AdminAssetDir)
+	}
+
 	handler := httpapi.New(httpapi.Options{
 		ServiceName:       "ranking-api",
 		Version:           version,
@@ -462,6 +550,9 @@ func main() {
 		GameRoomReader:    gameRoomReader,
 		GameRoomBoard:     gameRoomBoard,
 		GameRoomAnnouncer: gameRoomAnnouncer,
+		Admin:             adminService,
+		AdminAssetDir:     configuration.AdminAssetDir,
+		AdminAssetKey:     adminAssetKey,
 	})
 
 	server := &http.Server{

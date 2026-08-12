@@ -40,6 +40,16 @@ type Options struct {
 	// Ingest adds media to a post. Optional, and separately so: an api with no object
 	// store still edits posts, it just cannot take an upload.
 	Ingest IngestService
+	// Admin is the moderation back office. Optional: without it every /api/v1/admin
+	// endpoint answers 503, which is the state before the back office moved off Laravel.
+	Admin AdminService
+	// AdminAssetDir holds the built admin bundle, which must NOT be on the public origin
+	// — see admin_assets.go. Empty leaves /admin/ a 404 and the grant endpoints with it.
+	AdminAssetDir string
+	// AdminAssetKey signs the pass that gates that directory. Required for it to be
+	// served at all; deriving it from the token signing key keeps it out of the
+	// environment. Empty has the same effect as an empty AdminAssetDir.
+	AdminAssetKey []byte
 	// PostAccess checks a protected post's door code. Optional: without it the access
 	// endpoint answers 503 and password posts stay invisible, which is how the API
 	// behaved before this existed — that is, it fails closed.
@@ -106,6 +116,12 @@ type api struct {
 	// ingest adds media to a post. Separate from authoring because it needs the object
 	// store, which a process may be started without.
 	ingest IngestService
+	// admin is the moderation back office. Reachable only from behind requireAdmin.
+	admin AdminService
+	// The gated admin bundle. Both are needed together; either one empty means the
+	// bundle is not served by this process.
+	adminAssetDir string
+	adminAssetKey []byte
 	// postAccess checks a protected post's door code. Nil leaves every caller with the
 	// public view.
 	postAccess PostAccessService
@@ -186,6 +202,18 @@ func New(options Options) http.Handler {
 		authoring:     options.Authoring,
 		ingest:        options.Ingest,
 		postAccess:    options.PostAccess,
+		admin:         options.Admin,
+		adminAssetDir: strings.TrimSpace(options.AdminAssetDir),
+		adminAssetKey: options.AdminAssetKey,
+	}
+
+	if server.adminAssetDir != "" && len(server.adminAssetKey) == 0 {
+		// Loud, because the symptom is a back office that cannot be opened at all: the
+		// directory is mounted, every pass fails to verify, and /admin/ answers 403 to a
+		// moderator who is signed in correctly.
+		options.Logger.Warn("admin_asset_key_unset",
+			"effect", "the admin bundle is configured but no pass can be signed, so /admin/ answers 403 to everyone",
+			"fix", "configure GO_AUTH_PRIVATE_KEY for the api process, which is what the pass key is derived from")
 	}
 
 	if options.GameRooms != nil && options.GameRoomAnnouncer == nil {
@@ -240,10 +268,36 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("/api/v1/account/posts/{serial}/elements",
 		method(http.MethodGet, server.requireAuth(server.listPostElements)))
 	mux.HandleFunc("/api/v1/account/elements/{elementID}", server.requireAuth(server.accountElement))
+	mux.HandleFunc("/api/v1/account/elements/{elementID}/media",
+		method(http.MethodPut, server.requireAuth(server.replaceElementMedia)))
 	mux.HandleFunc("/api/v1/account/posts/{serial}/elements/uploads",
 		method(http.MethodPost, server.requireAuth(server.uploadPostElement)))
 	mux.HandleFunc("/api/v1/account/posts/{serial}/elements/urls",
 		method(http.MethodPost, server.requireAuth(server.addPostElementsByURL)))
+	// The moderation back office. EVERY ROUTE HERE GOES THROUGH requireAdmin, which is the
+	// only thing standing between a signed-in account and somebody else's post: the service
+	// underneath acts across owners and does not check the caller. See admin.go.
+	mux.HandleFunc("/api/v1/admin/posts", method(http.MethodGet, server.requireAdmin(server.adminPosts)))
+	mux.HandleFunc("/api/v1/admin/posts/{serial}", server.requireAdmin(server.adminPost))
+	mux.HandleFunc("/api/v1/admin/posts/{serial}/elements",
+		method(http.MethodGet, server.requireAdmin(server.adminPostElements)))
+	mux.HandleFunc("/api/v1/admin/elements/{elementID}", server.requireAdmin(server.adminElement))
+	mux.HandleFunc("/api/v1/admin/users", method(http.MethodGet, server.requireAdmin(server.adminUsers)))
+	mux.HandleFunc("/api/v1/admin/users/{userID}/ban", method(http.MethodPut, server.requireAdmin(server.banUser)))
+	mux.HandleFunc("/api/v1/admin/users/{userID}/unban", method(http.MethodPut, server.requireAdmin(server.unbanUser)))
+	mux.HandleFunc("/api/v1/admin/carousel-items", server.requireAdmin(server.adminCarouselItems))
+	mux.HandleFunc("/api/v1/admin/carousel-items/reorder",
+		method(http.MethodPut, server.requireAdmin(server.reorderCarouselItems)))
+	mux.HandleFunc("/api/v1/admin/carousel-items/{itemID}", server.requireAdmin(server.adminCarouselItem))
+	mux.HandleFunc("/api/v1/admin/announcement", server.requireAdmin(server.adminAnnouncement))
+	// The bundle's own files. The grant is authenticated like any other admin endpoint;
+	// the files themselves are gated by the pass it writes, because a browser cannot put a
+	// bearer token on a navigation or a <script src>. See admin_assets.go.
+	mux.HandleFunc("/api/v1/admin/assets/grant",
+		method(http.MethodPost, server.requireAdmin(server.adminAssetGrant)))
+	mux.HandleFunc("/api/v1/admin/assets/revoke",
+		method(http.MethodPost, server.requireAdmin(server.adminAssetRevoke)))
+	mux.HandleFunc(adminAssetPrefix, server.serveAdminAsset)
 	mux.HandleFunc("/api/v1/tags", method(http.MethodGet, server.tags))
 	mux.HandleFunc("/api/v1/tags/hot", method(http.MethodGet, server.hotTags))
 	mux.HandleFunc("/api/v1/carousel-items", method(http.MethodGet, server.carouselItems))

@@ -172,6 +172,13 @@ type Config struct {
 	YouTubeAPIKey string
 	Realtime      RealtimeConfig
 	GoogleOAuth   GoogleOAuthConfig
+	// AdminAssetDir is the directory the back office's own build sits in.
+	//
+	// IT MUST NOT BE INSIDE THE PUBLIC DOCUMENT ROOT. The files are served by this
+	// process, to a request that proves the admin role, and by nothing else — see
+	// httpapi.serveAdminAsset. Empty leaves /admin/ answering 404, which is what a
+	// deployment that does not host the back office should do.
+	AdminAssetDir string
 }
 
 // GoogleOAuthConfig is the Google sign-in client.
@@ -274,6 +281,7 @@ func Load() (Config, error) {
 		YouTubeAPIKey: strings.TrimSpace(os.Getenv("YOUTUBE_API_KEY")),
 		Realtime:      realtime,
 		GoogleOAuth:   googleOAuth,
+		AdminAssetDir: strings.TrimSpace(os.Getenv("ADMIN_ASSET_DIR")),
 	}, nil
 }
 

@@ -93,6 +93,67 @@ func (store *MySQLStore) CreateElement(ctx context.Context, element NewElement) 
 	}, nil
 }
 
+// elementForOwnerQuery is the ownership predicate of internal/authoring, plus the serial
+// the object key needs. An element can sit on more than one of the owner's posts; the
+// lowest post id wins so the same element always keys under the same directory.
+const elementForOwnerQuery = `
+	SELECT p.serial, e.title
+	  FROM post_elements AS pe
+	  JOIN posts AS p ON p.id = pe.post_id AND p.deleted_at IS NULL
+	  JOIN elements AS e ON e.id = pe.element_id AND e.deleted_at IS NULL
+	 WHERE pe.element_id = ? AND p.user_id = ?
+	 ORDER BY p.id
+	 LIMIT 1`
+
+func (store *MySQLStore) ElementForOwner(
+	ctx context.Context, userID, elementID int64,
+) (string, string, error) {
+	var serial, title string
+	err := store.database.QueryRowContext(ctx, elementForOwnerQuery, elementID, userID).
+		Scan(&serial, &title)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", ErrElementNotFound
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("ingest: resolve element %d: %w", elementID, err)
+	}
+	return serial, title, nil
+}
+
+// ReplaceElementMedia points one element at a new file.
+//
+// The columns cleared here are the ones Laravel's `path_id` branch cleared: everything that
+// described the old medium. Leaving video_id or video_start_second behind on an element
+// that is now an image would have the players read a video that is no longer there.
+func (store *MySQLStore) ReplaceElementMedia(
+	ctx context.Context, elementID int64, media ReplacementMedia,
+) error {
+	result, err := store.database.ExecContext(ctx,
+		`UPDATE elements
+		    SET path = ?, source_url = ?, thumb_url = ?, type = ?,
+		        mediumthumb_url = NULL, lowthumb_url = NULL,
+		        video_source = ?, video_id = NULL, video_duration_second = NULL,
+		        video_start_second = NULL, video_end_second = NULL,
+		        updated_at = ?
+		  WHERE id = ? AND deleted_at IS NULL`,
+		nullable(media.Path), media.SourceURL, media.ThumbURL, media.Type,
+		nullable(media.VideoSource), store.now(), elementID)
+	if err != nil {
+		return fmt.Errorf("ingest: replace element %d media: %w", elementID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("ingest: replace element %d media: %w", elementID, err)
+	}
+	if affected == 0 {
+		// Deleted between the ownership read and this statement. MySQL reports no
+		// affected row for an update that changes nothing too, which cannot happen here:
+		// the key carries a fresh uuid, so path and source_url always differ.
+		return ErrElementNotFound
+	}
+	return nil
+}
+
 // nullable writes NULL for an empty string, which is what the columns hold for "there is
 // none" — video_source on an image, path on a remote video.
 func nullable(value string) any {

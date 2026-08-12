@@ -15,6 +15,7 @@ import (
 type IngestService interface {
 	Upload(ctx context.Context, userID int64, serial, fileName string, content []byte) (ingest.Stored, error)
 	AddURLs(ctx context.Context, userID int64, serial, list string) (ingest.BatchResult, error)
+	ReplaceMedia(ctx context.Context, userID, elementID int64, fileName string, content []byte) (ingest.Stored, error)
 }
 
 // maxUploadRequestBytes bounds the whole multipart body: the file plus its part headers.
@@ -44,34 +45,81 @@ func (a *api) uploadPostElement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxUploadRequestBytes)
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		writeError(w, r, http.StatusBadRequest, "invalid_upload",
-			"a multipart form with one file part named file is required")
-		return
-	}
-	defer file.Close()
-
-	if header.Size > ingest.MaxFileBytes {
-		// Refused before reading, on the size the part declares.
-		writeFieldErrors(w, r, map[string][]string{"file": {ingest.CodeTooLarge}})
-		return
-	}
-	// One byte past the limit, so a part that lied about its size is still caught.
-	content, err := io.ReadAll(io.LimitReader(file, ingest.MaxFileBytes+1))
-	if err != nil {
-		writeError(w, r, http.StatusBadRequest, "invalid_upload", "the upload could not be read")
+	fileName, content, ok := readUploadedFile(w, r)
+	if !ok {
 		return
 	}
 
-	stored, err := a.ingest.Upload(r.Context(), userID, r.PathValue("serial"), header.Filename, content)
+	stored, err := a.ingest.Upload(r.Context(), userID, r.PathValue("serial"), fileName, content)
 	if err != nil {
 		a.writeIngestError(w, r, err)
 		return
 	}
 
 	writePrivateJSON(w, r, http.StatusCreated, uploadedElementResponse{
+		ID: stored.ID, SourceURL: stored.SourceURL, ThumbURL: stored.ThumbURL,
+		Title: stored.Title, Type: stored.Type,
+	})
+}
+
+// readUploadedFile pulls the one file part named file out of a multipart body.
+func readUploadedFile(w http.ResponseWriter, r *http.Request) (string, []byte, bool) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadRequestBytes)
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_upload",
+			"a multipart form with one file part named file is required")
+		return "", nil, false
+	}
+	defer file.Close()
+
+	if header.Size > ingest.MaxFileBytes {
+		// Refused before reading, on the size the part declares.
+		writeFieldErrors(w, r, map[string][]string{"file": {ingest.CodeTooLarge}})
+		return "", nil, false
+	}
+	// One byte past the limit, so a part that lied about its size is still caught.
+	content, err := io.ReadAll(io.LimitReader(file, ingest.MaxFileBytes+1))
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_upload", "the upload could not be read")
+		return "", nil, false
+	}
+	return header.Filename, content, true
+}
+
+// replaceElementMedia swaps the file behind an element without disturbing anything else
+// about it — its title, its place in the post, and its votes all stay.
+//
+// Laravel needed two requests for this (POST .../upload for a `path_id`, then PUT with it);
+// see ingest.Service.ReplaceMedia for why one is enough here. 200, not 201: no element is
+// created.
+func (a *api) replaceElementMedia(w http.ResponseWriter, r *http.Request) {
+	if a.ingest == nil {
+		writeError(w, r, http.StatusServiceUnavailable, "uploads_not_configured",
+			"media uploads are not configured on this server")
+		return
+	}
+	userID, ok := a.callerUserID(w, r)
+	if !ok {
+		return
+	}
+	elementID, ok := editorElementID(w, r)
+	if !ok {
+		return
+	}
+
+	fileName, content, ok := readUploadedFile(w, r)
+	if !ok {
+		return
+	}
+
+	stored, err := a.ingest.ReplaceMedia(r.Context(), userID, elementID, fileName, content)
+	if err != nil {
+		a.writeIngestError(w, r, err)
+		return
+	}
+
+	writePrivateJSON(w, r, http.StatusOK, uploadedElementResponse{
 		ID: stored.ID, SourceURL: stored.SourceURL, ThumbURL: stored.ThumbURL,
 		Title: stored.Title, Type: stored.Type,
 	})
@@ -162,7 +210,7 @@ func (a *api) writeIngestError(w http.ResponseWriter, r *http.Request, err error
 		writeFieldErrors(w, r, invalid.Fields)
 		return
 	}
-	if errors.Is(err, ingest.ErrPostNotFound) {
+	if errors.Is(err, ingest.ErrPostNotFound) || errors.Is(err, ingest.ErrElementNotFound) {
 		writeError(w, r, http.StatusNotFound, "not_found", "resource not found")
 		return
 	}

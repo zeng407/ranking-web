@@ -29,6 +29,9 @@ type fakeIngest struct {
 	urlCalls int
 	urlErr   error
 	batch    ingest.BatchResult
+
+	replaceCalls  int
+	lastElementID int64
 }
 
 func (service *fakeIngest) AddURLs(
@@ -53,6 +56,17 @@ func (service *fakeIngest) Upload(
 	return service.stored, nil
 }
 
+func (service *fakeIngest) ReplaceMedia(
+	_ context.Context, _, elementID int64, fileName string, content []byte,
+) (ingest.Stored, error) {
+	service.replaceCalls++
+	service.lastElementID, service.lastName, service.lastBody = elementID, fileName, content
+	if service.err != nil {
+		return ingest.Stored{}, service.err
+	}
+	return service.stored, nil
+}
+
 func newFakeIngest() *fakeIngest {
 	return &fakeIngest{stored: ingest.Stored{
 		ID: 5, SourceURL: "https://file.2pick.test/abcdefgh/a.png",
@@ -71,6 +85,19 @@ func ingestHandler(service IngestService) http.Handler {
 
 func upload(t *testing.T, fieldName, fileName string, content []byte) *http.Request {
 	t.Helper()
+	return multipartRequest(t, http.MethodPost,
+		"/api/v1/account/posts/abcdefgh/elements/uploads", fieldName, fileName, content)
+}
+
+func replacement(t *testing.T, target, fileName string, content []byte) *http.Request {
+	t.Helper()
+	return multipartRequest(t, http.MethodPut, target, "file", fileName, content)
+}
+
+func multipartRequest(
+	t *testing.T, verb, target, fieldName, fileName string, content []byte,
+) *http.Request {
+	t.Helper()
 	body := &bytes.Buffer{}
 	form := multipart.NewWriter(body)
 	part, err := form.CreateFormFile(fieldName, fileName)
@@ -83,8 +110,7 @@ func upload(t *testing.T, fieldName, fileName string, content []byte) *http.Requ
 	if err := form.Close(); err != nil {
 		t.Fatalf("close the form: %v", err)
 	}
-	request := httptest.NewRequest(http.MethodPost,
-		"/api/v1/account/posts/abcdefgh/elements/uploads", body)
+	request := httptest.NewRequest(verb, target, body)
 	request.Header.Set("Content-Type", form.FormDataContentType())
 	request.Header.Set("Authorization", "Bearer token")
 	return request
@@ -343,5 +369,162 @@ func TestOnlyPostUploadsAnElement(t *testing.T) {
 
 	if response.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("status = %d, want 405", response.Code)
+	}
+}
+
+const replaceTarget = "/api/v1/account/elements/91/media"
+
+func TestReplacingAnElementsMediaAnswers200WithIt(t *testing.T) {
+	service := newFakeIngest()
+	response := httptest.NewRecorder()
+
+	ingestHandler(service).ServeHTTP(response,
+		replacement(t, replaceTarget, "holiday.png", []byte("\x89PNG\r\n\x1a\nbody")))
+
+	// 200, not 201: the element already existed and keeps its id.
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	if service.replaceCalls != 1 {
+		t.Fatalf("the service saw %d replacements, want 1", service.replaceCalls)
+	}
+	if service.lastElementID != 91 {
+		t.Errorf("element = %d, want 91", service.lastElementID)
+	}
+	if service.lastName != "holiday.png" {
+		t.Errorf("file name = %q", service.lastName)
+	}
+	if string(service.lastBody) != "\x89PNG\r\n\x1a\nbody" {
+		t.Errorf("bytes = %q", service.lastBody)
+	}
+	if service.calls != 0 {
+		t.Errorf("a replacement went to Upload %d times", service.calls)
+	}
+
+	var envelope struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if envelope.Data["id"] != float64(5) || envelope.Data["source_url"] == "" {
+		t.Errorf("data = %v", envelope.Data)
+	}
+	if got := response.Header().Get("Cache-Control"); got != "private, no-store" {
+		t.Errorf("Cache-Control = %q", got)
+	}
+}
+
+// The element's own endpoint answers 404 for an element that is not the caller's, and this
+// one must not answer differently: a 403 would confirm the id exists.
+func TestReplacingSomeoneElsesMediaIs404(t *testing.T) {
+	service := newFakeIngest()
+	service.err = ingest.ErrElementNotFound
+	response := httptest.NewRecorder()
+
+	ingestHandler(service).ServeHTTP(response, replacement(t, replaceTarget, "a.png", []byte("\x89PNG\r\n\x1a\n")))
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404; body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestReplacingMediaRequiresABearerToken(t *testing.T) {
+	service := newFakeIngest()
+	response := httptest.NewRecorder()
+	request := replacement(t, replaceTarget, "a.png", []byte("\x89PNG\r\n\x1a\n"))
+	request.Header.Del("Authorization")
+
+	ingestHandler(service).ServeHTTP(response, request)
+
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", response.Code)
+	}
+	if service.replaceCalls != 0 {
+		t.Error("the service ran for an anonymous request")
+	}
+}
+
+func TestAnUnusableElementIDIs404WithoutReachingTheService(t *testing.T) {
+	for _, id := range []string{"0", "-1", "abc"} {
+		t.Run(id, func(t *testing.T) {
+			service := newFakeIngest()
+			response := httptest.NewRecorder()
+
+			ingestHandler(service).ServeHTTP(response,
+				replacement(t, "/api/v1/account/elements/"+id+"/media", "a.png", []byte("\x89PNG\r\n\x1a\n")))
+
+			if response.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404", response.Code)
+			}
+			if service.replaceCalls != 0 {
+				t.Error("the service ran on an id that cannot exist")
+			}
+		})
+	}
+}
+
+func TestTheServicesFieldCodesReachTheClientOnAReplacement(t *testing.T) {
+	service := newFakeIngest()
+	service.err = &ingest.ErrInvalid{Fields: map[string][]string{"file": {ingest.CodeRateLimited}}}
+	response := httptest.NewRecorder()
+
+	ingestHandler(service).ServeHTTP(response, replacement(t, replaceTarget, "a.png", []byte("\x89PNG\r\n\x1a\n")))
+
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422; body = %s", response.Code, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), ingest.CodeRateLimited) {
+		t.Errorf("body = %s", response.Body.String())
+	}
+}
+
+func TestReplacingMediaWithoutAnObjectStoreIs503(t *testing.T) {
+	response := httptest.NewRecorder()
+
+	ingestHandler(nil).ServeHTTP(response, replacement(t, replaceTarget, "a.png", []byte("\x89PNG\r\n\x1a\n")))
+
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503; body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestOnlyPUTReplacesMedia(t *testing.T) {
+	for _, verb := range []string{http.MethodGet, http.MethodPost, http.MethodDelete} {
+		t.Run(verb, func(t *testing.T) {
+			service := newFakeIngest()
+			response := httptest.NewRecorder()
+			request := httptest.NewRequest(verb, replaceTarget, nil)
+			request.Header.Set("Authorization", "Bearer token")
+
+			ingestHandler(service).ServeHTTP(response, request)
+
+			if response.Code != http.StatusMethodNotAllowed {
+				t.Fatalf("status = %d, want 405", response.Code)
+			}
+			if response.Header().Get("Allow") == "" {
+				t.Error("no Allow header")
+			}
+			if service.replaceCalls != 0 {
+				t.Error("the service ran on the wrong method")
+			}
+		})
+	}
+}
+
+// The element route and the media route are distinct: PUT on the element edits its title,
+// PUT on .../media swaps the file.
+func TestTheMediaRouteIsNotTheElementRoute(t *testing.T) {
+	service := newFakeIngest()
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/api/v1/account/elements/91",
+		strings.NewReader(`{"title":"a"}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer token")
+
+	ingestHandler(service).ServeHTTP(response, request)
+
+	if service.replaceCalls != 0 {
+		t.Error("editing an element reached the media replacement")
 	}
 }
