@@ -58,3 +58,11 @@ window.__APP_CONFIG__ = Object.freeze({
 - `/app-config.js`：`no-store`。
 
 正式環境建議讓 `apiBaseUrl` 保持 `/api/v1`，由 Cloudflare path routing 導向 Go API。這能維持同源 cookie 與 CSRF，不需要把 credentialed CORS 設成 `*`。
+
+## 後台（admin console）
+
+後台是另一份 build：`npm run build:admin`，輸出 `admin-dist/`，開發用 `npm run dev:admin`（port 5174）。
+
+它**不會**、也不可以出現在公開的 `dist/` 裡：同一次 build 的 code splitting 會把後台的 chunk 放進公開目錄，訪客直接抓得到，而 Go 的權限閘門擋不到不是它 serve 的檔案。因此公開 router 不含任何 `/admin` route。
+
+部署方式、edge 路由與上線後要驗的事寫在 [`docs/admin-console-deployment.md`](../docs/admin-console-deployment.md)。

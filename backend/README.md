@@ -93,3 +93,11 @@ docker compose -f compose.separated.yml up --build -d
 curl http://localhost:8080/health/ready
 curl 'http://localhost:8080/api/v1/posts?sort_by=hot&range=week&page=1'
 ```
+
+## 後台靜態檔
+
+`ADMIN_ASSET_DIR` 指到的目錄由這個 process 自己 serve，而且只 serve 給帶著簽章 pass cookie 的請求（`POST /api/v1/admin/assets/grant` 發出，來源金鑰由 `GO_AUTH_PRIVATE_KEY` 推導，所以輪替私鑰會讓已發出的 pass 失效）。
+
+**這個目錄不能在任何 web server 直接對外的 document root 底下** —— web server 讀得到的檔案就是不帶 pass 也拿得到的檔案。沒設定時 `/admin/` 與 grant 端點都回 404。
+
+完整部署與驗收步驟見 [`docs/admin-console-deployment.md`](../docs/admin-console-deployment.md)。
