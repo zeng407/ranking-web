@@ -512,6 +512,31 @@ describe('GameView restart regression', () => {
 		wrapper.unmount()
 	})
 
+	it('restores a shared personal result from the legacy s parameter', async () => {
+		routeMock.name = 'rank-localized'
+		routeMock.query = { s: 'legacy-shared-game' }
+		serviceMocks.definition.mockResolvedValue(definition)
+		serviceMocks.result.mockResolvedValue({
+			game_serial: 'legacy-shared-game',
+			post_serial: 'post-1',
+			items: [{
+				rank: 1,
+				win_count: 1,
+				global_rank: 3,
+				element: { ...session('legacy-shared-game', '舊連結').elements[0], id: 1 },
+			}],
+		})
+		const wrapper = mount(GameView, {
+			global: {
+				stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } },
+			},
+		})
+		await flushPromises()
+
+		expect(serviceMocks.result).toHaveBeenCalledWith('legacy-shared-game')
+		wrapper.unmount()
+	})
+
 	it('shows no-data labels instead of #0 or #- in ranking summaries', async () => {
 		routeMock.name = 'rank-localized'
 		serviceMocks.definition.mockResolvedValue(definition)

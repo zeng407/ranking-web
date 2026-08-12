@@ -65,7 +65,17 @@ const router = useRouter()
 const locale = computed(() => normalizeLocale(route.params.locale))
 const postSerial = computed(() => String(route.params.serial || ''))
 const rankOnly = computed(() => String(route.name || '').startsWith('rank'))
-const resultGameSerial = computed(() => typeof route.query.g === 'string' ? route.query.g.trim() : '')
+/**
+ * Which finished game's personal ranking this page is showing.
+ *
+ * `g` is what this client writes; `s` is the same serial under the name the Blade share
+ * button used, and links carrying it are already in circulation. Both are read so a shared
+ * result keeps resolving to a result rather than to the community ranking.
+ */
+const resultGameSerial = computed(() => {
+	const named = typeof route.query.g === 'string' ? route.query.g : route.query.s
+	return typeof named === 'string' ? named.trim() : ''
+})
 const service = createGameplayService()
 const publicContentService = createPublicContentService()
 const writerId = randomId()
