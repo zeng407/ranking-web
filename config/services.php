@@ -73,17 +73,6 @@ return [
         'redirect' => '/auth/google/callback',
     ],
 
-    // Short-lived identity bridge used while authenticated APIs move to Go.
-    // Laravel owns the Ed25519 private key; the Go API only receives the
-    // matching public key.
-    'go_auth' => [
-        'private_key' => env('GO_AUTH_PRIVATE_KEY', ''),
-        'key_id' => env('GO_AUTH_KEY_ID', 'primary'),
-        'issuer' => env('GO_AUTH_ISSUER', env('APP_URL', 'http://localhost')),
-        'audience' => env('GO_AUTH_AUDIENCE', '2pick-go-api'),
-        'ttl_seconds' => (int) env('GO_AUTH_TOKEN_TTL', 300),
-    ],
-
     'twitch' => [
         'auto_refresh_token' => env('TWITCH_AUTO_REFRESH_TOKEN', false),
         'client_id' => env('TWITCH_CLIENT_ID'),

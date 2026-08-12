@@ -7,7 +7,6 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Post\AdController;
 use App\Http\Controllers\Post\PostController;
 use App\Http\Controllers\Post\GameController;
-use App\Http\Controllers\SessionContextController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -48,8 +47,6 @@ Route::get('/lang/{legacyLocale}/{path?}', function (Request $request, string $l
 
     return new RedirectResponse($target, 301);
 })->where('path', '.*')->name('locale.legacy');
-
-Route::get('/session-context', SessionContextController::class)->name('session.context');
 
 Route::get('/', [HomeController::class, 'index'])
     ->middleware(['locale.default', 'cache.public-html:home'])

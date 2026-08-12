@@ -126,12 +126,14 @@
             </ul>
 
             {{-- Right Side Of Navbar --}}
+            {{-- The account pages this links to are served by the SPA against the Go
+                 session, which is also where this navbar now reads its signed-in state.
+                 The Laravel routes of the same name read a PHP session that a visitor
+                 who signed in through the SPA does not have. --}}
             <navbar-auth
-              context-endpoint="{{ route('session.context', request()->route('locale') ? ['locale' => app()->getLocale()] : []) }}"
               login-url="{{ locale_aware_path('/login') }}"
-              posts-url="{{ route('post.index') }}"
-              profile-url="{{ route('profile.index') }}"
-              logout-url="{{ route('logout') }}"
+              posts-url="{{ locale_aware_path('/account/posts') }}"
+              profile-url="{{ locale_aware_path('/account') }}"
               donate-url="{{ locale_aware_path('/donate') }}"
               default-avatar-url="{{ asset('storage/default-avatar.webp') }}"
               login-label="{{ __('Login & New Post') }}"

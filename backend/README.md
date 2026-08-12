@@ -1,6 +1,6 @@
 # 2pick Go backend
 
-這是新 API 的獨立 Go service。它不會直接取代 Laravel；遷移期間由 edge 依 path 將 `/api/v1/*` 導向此服務，舊 `/api/*`、`/session-context`、登入與尚未搬遷的功能仍由 Laravel 提供。
+這是新 API 的獨立 Go service。它不會直接取代 Laravel；遷移期間由 edge 依 path 將 `/api/v1/*` 導向此服務，舊 `/api/*` 與尚未搬遷的功能仍由 Laravel 提供；session 與登入已由此服務接手（`/api/v1/auth/*`）。
 
 ## 已提供的 endpoints
 
@@ -24,25 +24,42 @@
 所有 JSON response 都使用 `{ data, meta }` 或 `{ error, meta }` envelope，並回傳 `X-Request-ID`。
 完整 request/response 定義位於 [`api/openapi.yaml`](api/openapi.yaml)。
 
-## Laravel 身份橋接
+## Session 金鑰
 
-遷移期間 Laravel 繼續負責登入、註冊、Google OAuth、密碼重設與 session。登入使用者呼叫 `/session-context` 時，Laravel 可額外簽發 5 分鐘的 Ed25519 token；Go 只驗證簽章，不讀取或解密 Laravel session cookie。
+登入、註冊、Google OAuth 與 session 由此服務負責（`/api/v1/auth/*`）。Laravel 已不再簽發身份 token，也不參與 session；Go 用同一組 Ed25519 金鑰簽發並驗證自己的 access token。
 
 先產生一組金鑰（以下命令會把私鑰顯示在本機終端，請勿貼到 log 或提交 Git）：
 
 ```bash
-./vendor/bin/sail php -r '$p=sodium_crypto_sign_keypair(); echo "GO_AUTH_PRIVATE_KEY=".base64_encode(sodium_crypto_sign_secretkey($p)).PHP_EOL."GO_AUTH_PUBLIC_KEY=".base64_encode(sodium_crypto_sign_publickey($p)).PHP_EOL;'
+docker run --rm golang:1.26.5-alpine sh -c 'cd "$(mktemp -d)" && cat > main.go <<"EOF" && go mod init keygen >/dev/null && go run .
+package main
+
+import (
+	"crypto/ed25519"
+	"encoding/base64"
+	"fmt"
+)
+
+func main() {
+	publicKey, privateKey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("GO_AUTH_PRIVATE_KEY=" + base64.StdEncoding.EncodeToString(privateKey))
+	fmt.Println("GO_AUTH_PUBLIC_KEY=" + base64.StdEncoding.EncodeToString(publicKey))
+}
+EOF
+'
 ```
 
 設定方式：
 
-- Laravel/AWS Secrets Manager：`GO_AUTH_PRIVATE_KEY`。
-- Go service：`GO_AUTH_PUBLIC_KEY`。
+- Go service：`GO_AUTH_PRIVATE_KEY` 與 `GO_AUTH_PUBLIC_KEY`（production 由 AWS Secrets Manager 提供）。
 - 兩邊必須一致：`GO_AUTH_ISSUER` 與 `GO_AUTH_AUDIENCE`。
-- 私鑰未設定時，`/session-context` 保持原本功能並回傳 `api_token: null`。
+- 私鑰未設定時，此服務無法簽發 session，登入會失敗；受密碼保護的貼文也維持不可見（fail closed）。
 - 前端只把 access token 放在記憶體並使用 `Authorization: Bearer ...`；不可寫入 `localStorage`、cookie 或 log。
 
-本機的 root `.env` 可同時放置兩把 key；`compose.separated.yml` 只會把公鑰傳進 Go container。production 必須分開管理 secret，且 Cloudflare 不得 cache `/session-context` 與 `/api/v1/auth/*`。
+本機的 root `.env` 可同時放置兩把 key。production 必須以 secret 管理私鑰，且 Cloudflare 不得 cache `/api/v1/auth/*`。
 
 ## 本機執行
 

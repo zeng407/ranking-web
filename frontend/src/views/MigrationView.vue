@@ -10,7 +10,6 @@
       <div><code>/assets/*</code><span>靜態 S3／CloudFront</span></div>
       <div><code>/api/v1/*</code><span>新版 Go API</span></div>
       <div><code>/api/*</code><span>遷移期間仍由 Laravel 提供</span></div>
-      <div><code>/session-context</code><span>Laravel session/private response</span></div>
       <div><code>尚未遷移的頁面</code><span>Laravel Blade</span></div>
     </div>
   </section>

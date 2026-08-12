@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Session\Middleware\StartSession;
 use Tests\TestCase;
 
 class PublicHtmlRoutesTest extends TestCase
@@ -31,20 +30,5 @@ class PublicHtmlRoutesTest extends TestCase
             $this->assertNotNull($route, "Missing route: {$uri}");
             $this->assertContains('cache.public-html', $route->gatherMiddleware(), $uri);
         }
-    }
-
-    public function test_session_context_route_is_not_publicly_cacheable(): void
-    {
-        $route = app('router')->getRoutes()->getByName('session.context');
-
-        $this->assertNotNull($route);
-        $this->assertSame('session-context', $route->uri());
-        $this->assertContains('web', $route->gatherMiddleware());
-        $this->assertNotContains('api', $route->gatherMiddleware());
-        $this->assertNotContains('cache.public-html', $route->gatherMiddleware());
-        $this->assertNotContains('public-api', $route->gatherMiddleware());
-
-        $resolvedMiddleware = app('router')->gatherRouteMiddleware($route);
-        $this->assertContains(StartSession::class, $resolvedMiddleware);
     }
 }

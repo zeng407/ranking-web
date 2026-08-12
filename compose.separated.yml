@@ -89,10 +89,9 @@ services:
       ALLOWED_ORIGINS: http://localhost:4173,http://localhost:5173
       SHUTDOWN_TIMEOUT: 10s
       GO_AUTH_PUBLIC_KEY: ${GO_AUTH_PUBLIC_KEY:-}
-      # The private half. Set, the Go API can log a user in itself; unset, it only
-      # verifies tokens Laravel issued and the /auth endpoints answer 503. Both sides
-      # read the same GO_AUTH_PRIVATE_KEY, so a token from either verifies against the
-      # one public key — which is what lets login move without ending live sessions.
+      # The private half, and the only signer left: Laravel no longer issues identity
+      # tokens. Unset, the /auth endpoints answer 503 and password-protected posts stay
+      # invisible, which is the intended fail-closed behaviour rather than a fallback.
       GO_AUTH_PRIVATE_KEY: ${GO_AUTH_PRIVATE_KEY:-}
       GO_AUTH_REFRESH_TTL: ${GO_AUTH_REFRESH_TTL:-720h}
       GO_AUTH_ISSUER: ${GO_AUTH_ISSUER:-http://localhost}

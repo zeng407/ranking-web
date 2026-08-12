@@ -7,7 +7,7 @@ const legacyTarget = process.env.FRONTEND_LEGACY_PROXY_TARGET ?? 'http://localho
 // than pointed at another origin: the session cookie and CSRF token are only
 // valid on the origin that issued them, and Google OAuth must return to the
 // same origin for the new session to be visible to the SPA.
-const legacyAuthPaths = ['/session-context', '/register', '/logout', '/password', '/auth']
+const legacyAuthPaths = ['/register', '/logout', '/password', '/auth']
 
 const legacyProxy = Object.fromEntries(
   legacyAuthPaths.map((path) => [path, { target: legacyTarget, changeOrigin: false }]),
