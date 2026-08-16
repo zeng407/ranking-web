@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 
 import { describeFailure } from '../failures'
-import { getAdminService, type Announcement } from '../../services/admin'
+import { getAdminService, type AdminService, type Announcement } from '../../services/admin'
 
 /**
  * The site-wide announcement.
@@ -12,7 +12,8 @@ import { getAdminService, type Announcement } from '../../services/admin'
  * Absent is the normal state, so an empty form is not an error.
  */
 
-const admin = getAdminService()
+const properties = defineProps<{ service?: AdminService }>()
+const admin = properties.service ?? getAdminService()
 
 const current = ref<Announcement | null>(null)
 const form = ref({ content: '', image_url: '', keep_minutes: 60 })

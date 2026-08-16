@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue'
 import { describeFailure } from '../failures'
 import {
   getAdminService,
+  type AdminService,
   type AdminPost,
   type AdminPostDetail,
   type AdminPostEdit,
@@ -18,7 +19,8 @@ import type { AccessPolicy } from '../../services/editor'
  * author wrote — sending an edit with empty fields would erase them.
  */
 
-const admin = getAdminService()
+const properties = defineProps<{ service?: AdminService }>()
+const admin = properties.service ?? getAdminService()
 
 const posts = ref<AdminPost[]>([])
 const total = ref(0)

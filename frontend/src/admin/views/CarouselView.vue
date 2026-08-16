@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue'
 import { describeFailure } from '../failures'
 import {
   getAdminService,
+  type AdminService,
   movedOrder,
   type CarouselDraft,
   type CarouselItem,
@@ -20,7 +21,8 @@ import {
  * the answer rather than from what the drag produced locally.
  */
 
-const admin = getAdminService()
+const properties = defineProps<{ service?: AdminService }>()
+const admin = properties.service ?? getAdminService()
 
 const items = ref<CarouselItem[]>([])
 const loading = ref(false)
@@ -136,9 +138,10 @@ async function dropOn(index: number): Promise<void> {
   const outcome = await admin.reorderCarouselItems(movedOrder(items.value, from, index))
   saving.value = false
   if (!outcome.ok) {
-    error.value = describeFailure(outcome)
     // Reloaded rather than left as the drag showed it: the stored order is the truth.
+    // The message is set afterwards because load() clears it on the way in.
     await load()
+    error.value = describeFailure(outcome)
     return
   }
   items.value = outcome.value

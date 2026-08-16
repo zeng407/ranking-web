@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { describeFailure } from '../failures'
-import { getAdminService } from '../../services/admin'
+import { getAdminService, type AdminService } from '../../services/admin'
 import type { PostElement } from '../../services/editor'
 
 /**
@@ -15,7 +15,8 @@ import type { PostElement } from '../../services/editor'
  */
 
 const route = useRoute()
-const admin = getAdminService()
+const properties = defineProps<{ service?: AdminService }>()
+const admin = properties.service ?? getAdminService()
 const serial = String(route.params.serial || '')
 
 const elements = ref<PostElement[]>([])

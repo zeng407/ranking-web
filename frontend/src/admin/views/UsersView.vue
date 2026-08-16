@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 
 import { describeFailure } from '../failures'
-import { getAdminService, type AdminUser } from '../../services/admin'
+import { getAdminService, type AdminService, type AdminUser } from '../../services/admin'
 
 /**
  * Accounts, and the ban.
@@ -13,7 +13,8 @@ import { getAdminService, type AdminUser } from '../../services/admin'
  * be stale by the time it is clicked.
  */
 
-const admin = getAdminService()
+const properties = defineProps<{ service?: AdminService }>()
+const admin = properties.service ?? getAdminService()
 
 const users = ref<AdminUser[]>([])
 const total = ref(0)
