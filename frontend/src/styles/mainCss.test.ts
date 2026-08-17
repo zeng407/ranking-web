@@ -163,19 +163,25 @@ describe('game setup layout', () => {
 })
 
 describe('game setup option previews', () => {
-  it('sizes the preview frames from the viewport height so the setup screen needs no scrolling', () => {
+  it('gives both options one capped square frame that fits the picture whole', () => {
     const preview = rule('.game-preview')
     const media = rule('.game-preview-media')
+    const picture = rule('.game-preview-media img,\n.game-preview-media video')
 
-    // A fixed portrait frame (aspect-ratio: 2 / 3) made the two previews taller
+    // One frame size for the pair, so a portrait and a landscape option are the
+    // same box rather than one filling it and the other rendering 81px wide.
+    expect(preview).toMatch(/--game-preview-size:\s*clamp\([^)]*\)/)
+    expect(preview).toContain('grid-template-columns: repeat(2, minmax(0, var(--game-preview-size)))')
+    expect(media).toMatch(/aspect-ratio:\s*1/)
+    // A fixed portrait frame (aspect-ratio: 2 / 3) once made the previews taller
     // than the viewport on a laptop, pushing the count options and the start
-    // button below the fold. Frame height must stay viewport-bound instead.
-    expect(media).not.toMatch(/aspect-ratio\s*:/)
-    expect(media).toContain('height: var(--game-preview-height)')
-    expect(preview).toMatch(/--game-preview-height:\s*clamp\([^)]*vh[^)]*\)/)
-    // Frame width follows frame height, so a wide window grows the artwork
-    // rather than the blurred backdrop beside it.
-    expect(preview).toMatch(/max-width:\s*min\(100%,\s*calc\(.*var\(--game-preview-height\)/)
+    // button below the fold. A square frame off a capped width cannot: the clamp
+    // ceiling is the frame's height too.
+    expect(preview).toMatch(/--game-preview-size:\s*clamp\([^)]*,\s*[\d.]+rem\)/)
+    // Never cropped: the picture is fitted inside the frame and the blurred copy
+    // behind it fills what is left over.
+    expect(picture).toContain('object-fit: contain')
+    expect(rule('.game-preview-backdrop')).toMatch(/filter:\s*blur\(/)
   })
 })
 
