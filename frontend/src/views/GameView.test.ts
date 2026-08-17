@@ -1022,6 +1022,7 @@ describe('GameView option preview and sharing', () => {
   })
 
   it('keeps exactly one chart-slot box while a selection reloads', async () => {
+    vi.useFakeTimers()
     routeMock.name = 'rank-localized'
     serviceMocks.definition.mockResolvedValue(definition)
     const element = {
@@ -1043,7 +1044,21 @@ describe('GameView option preview and sharing', () => {
     // The loading state used to render alongside the empty state, stacking two
     // 240px placeholders and swinging the card 243px on every pagination click.
     expect(wrapper.findAll('.game-trend-slot')).toHaveLength(1)
+    // A read that has barely started shows no spinner and no "no data" note: a
+    // cached read returns inside this window, and flashing either one and back
+    // again is what made switching selections look like tearing.
+    expect(wrapper.find('.game-trend-loader').exists()).toBe(false)
+    expect(wrapper.get('.game-trend-slot').text()).toBe('')
+
+    // The standing comes off the selected row, so it and its bar stay put for
+    // the whole read instead of blanking and moving the card twice per click.
+    expect(wrapper.get('.game-selected-group-ranks').text()).toContain('#2')
+    expect(wrapper.find('.game-selected-group-ranks .game-winrate-bar').exists()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(260)
+    expect(wrapper.findAll('.game-trend-slot')).toHaveLength(1)
     expect(wrapper.find('.game-trend-loader').exists()).toBe(true)
+    expect(wrapper.get('.game-selected-group-ranks').text()).toContain('#2')
 
     resolveDetails({
       current: report,
@@ -1055,6 +1070,7 @@ describe('GameView option preview and sharing', () => {
     expect(wrapper.findAll('.game-trend-slot')).toHaveLength(1)
     expect(wrapper.find('.game-trend-chart').exists()).toBe(true)
     wrapper.unmount()
+    vi.useRealTimers()
   })
 })
 

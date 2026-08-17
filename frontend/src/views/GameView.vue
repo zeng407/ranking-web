@@ -112,6 +112,14 @@ const selectedCommunityRank = ref<RankReport | null>(null)
 const rankDetails = ref<RankDetails | null>(null)
 const zoomedRank = ref<RankReport | null>(null)
 const trendLoading = ref(false)
+/**
+ * Whether the wait has lasted long enough to be worth showing. A cached details
+ * read comes back in a few frames, and swapping the chart for a spinner and back
+ * again in that time reads as the card tearing rather than as loading.
+ */
+const trendLoaderVisible = ref(false)
+const trendLoaderDelay = 220
+let trendLoaderTimer: number | undefined
 const trendError = ref(false)
 const controlsOpen = ref(false)
 const restartDialog = ref<HTMLDialogElement | null>(null)
@@ -276,7 +284,16 @@ const historyChartRankLimit = 5
 const trendPoints = computed<RankHistoryPoint[]>(() => (
 	rankDetails.value?.history.all ?? []
 ).filter((point) => positiveRank(point.rank) !== null))
-const cumulativeSelectedRank = computed(() => rankDetails.value?.groups?.cumulative ?? rankDetails.value?.current ?? null)
+/**
+ * The standing shown above the chart. The selected list row carries it already,
+ * so it is read from there first: taking it from the details response instead
+ * blanked the number and dropped the win-rate bar for as long as the read took,
+ * which moved everything under it twice per click.
+ */
+const cumulativeSelectedRank = computed(() => selectedCommunityRank.value
+  ?? rankDetails.value?.groups?.cumulative
+  ?? rankDetails.value?.current
+  ?? null)
 const trendCoordinates = computed(() => rankTrendCoordinates(trendPoints.value))
 const trendPolyline = computed(() => rankTrendPolyline(trendCoordinates.value))
 const trendPointRadius = computed(() => rankTrendPointRadius(trendCoordinates.value.length))
@@ -414,6 +431,7 @@ onBeforeUnmount(() => {
   if (animationTimer) window.clearTimeout(animationTimer)
   if (videoHoverTimer) window.clearTimeout(videoHoverTimer)
   if (shareCopiedTimer) window.clearTimeout(shareCopiedTimer)
+  if (trendLoaderTimer) window.clearTimeout(trendLoaderTimer)
   cancelRestartHold()
   stopAllCandidateMedia()
   releaseLease()
@@ -825,10 +843,18 @@ function fullSizeRankImage(report: RankReport): string | null {
 async function selectCommunityRank(report: RankReport): Promise<void> {
   selectedCommunityRank.value = report
   stopRankVideo()
-  rankDetails.value = null
   trendLoading.value = true
   trendError.value = false
   const requestVersion = ++trendRequestVersion
+  // The old chart stays up until the wait is long enough to admit to, and is
+  // only then replaced by the loader; a fast read swaps one chart straight for
+  // the next with nothing collapsing in between.
+  if (trendLoaderTimer) window.clearTimeout(trendLoaderTimer)
+  trendLoaderTimer = window.setTimeout(() => {
+    if (requestVersion !== trendRequestVersion) return
+    rankDetails.value = null
+    trendLoaderVisible.value = true
+  }, trendLoaderDelay)
   try {
     const details = await publicContentService.rank(
       postSerial.value,
@@ -839,9 +865,17 @@ async function selectCommunityRank(report: RankReport): Promise<void> {
       rankDetails.value = details
     }
   } catch {
-    if (requestVersion === trendRequestVersion) trendError.value = true
+    if (requestVersion === trendRequestVersion) {
+      rankDetails.value = null
+      trendError.value = true
+    }
   } finally {
-    if (requestVersion === trendRequestVersion) trendLoading.value = false
+    if (requestVersion === trendRequestVersion) {
+      if (trendLoaderTimer) window.clearTimeout(trendLoaderTimer)
+      trendLoaderTimer = undefined
+      trendLoaderVisible.value = false
+      trendLoading.value = false
+    }
   }
 }
 
@@ -1844,7 +1878,7 @@ function preferredRankImage(report: RankReport): string | null {
                    the chart states rendered two 240px placeholders at once and
                    swung the card 243px on every pagination click. -->
               <template v-if="selectedRankIsCharted">
-                <div v-if="trendLoading" class="game-trend-slot game-trend-state" aria-busy="true">
+                <div v-if="trendLoaderVisible" class="game-trend-slot game-trend-state" aria-busy="true">
                 <span class="game-trend-loader" aria-hidden="true"></span>
                 <span class="sr-only">{{ t('gameTrendLoading') }}</span>
                 </div>
@@ -1852,8 +1886,8 @@ function preferredRankImage(report: RankReport): string | null {
                 <span>{{ t('gameTrendError') }}</span>
                 <button v-if="selectedCommunityRank" type="button" @click="selectCommunityRank(selectedCommunityRank)">{{ t('retry') }}</button>
                 </div>
-                <p v-else-if="!trendCoordinates.length" class="game-trend-slot game-trend-state">{{ t('gameTrendEmpty') }}</p>
-                <div v-else class="game-trend-slot game-trend-chart-wrap">
+                <p v-else-if="!trendCoordinates.length && !trendLoading" class="game-trend-slot game-trend-state">{{ t('gameTrendEmpty') }}</p>
+                <div v-else-if="trendCoordinates.length" class="game-trend-slot game-trend-chart-wrap">
                 <svg class="game-trend-chart" :viewBox="`0 0 ${trendChart.width} ${trendChart.height}`" role="img" :aria-label="t('gameRankTrend')">
                   <line v-for="y in trendChart.gridlines" :key="y" :x1="trendChart.paddingX" :y1="y" :x2="trendChart.width - trendChart.paddingX" :y2="y" />
                   <!-- Fixed scale, so the labels are constants and every chart on
@@ -1874,6 +1908,10 @@ function preferredRankImage(report: RankReport): string | null {
                 </svg>
                 <div class="game-trend-dates"><span>{{ trendFirstDate }}</span><span>{{ trendLastDate }}</span></div>
                 </div>
+                <!-- A read too quick for the loader and with nothing to draw yet:
+                     the slot holds its height and says nothing, rather than
+                     flashing "no data" at a chart that is one frame away. -->
+                <div v-else class="game-trend-slot" aria-hidden="true"></div>
               </template>
             </section>
 
