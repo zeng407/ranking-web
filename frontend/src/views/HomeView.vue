@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import AdSlot from '../components/AdSlot.vue'
 import { localizedPath, normalizeLocale, translate } from '../i18n'
 import {
   carouselYoutubeEmbedURL,
@@ -36,6 +37,8 @@ const loadError = ref(false)
 const loadMoreError = ref(false)
 const activeCarouselIndex = ref(0)
 const searchInput = ref(activeKeyword.value)
+// One in-feed ad card per six vote cards.
+const feedAdEvery = 6
 let requestVersion = 0
 let extrasRequestStarted = false
 let lastLoadedRequestKey: string | null = null
@@ -46,6 +49,31 @@ const contentHeading = computed(() => activeKeyword.value
   : translate(locale.value, sort.value === 'new' ? 'latestPicks' : 'popularPicks'))
 const activeCarouselItem = computed(() => carouselItems.value[activeCarouselIndex.value] ?? null)
 const hasMorePosts = computed(() => postsPage.value.page < postsPage.value.total_pages)
+
+/**
+ * The card indexes an in-feed ad follows.
+ *
+ * Every sixth card, except that AdSense allows neither ads on nor ads beside adult
+ * content: a position whose card or following card is censored slides further down the
+ * feed, and is dropped when the loaded feed runs out of clean neighbours.
+ */
+const feedAdPositions = computed<Set<number>>(() => {
+  const items = postsPage.value.items
+  const positions = new Set<number>()
+  let anchor = feedAdEvery - 1
+  while (anchor < items.length - 1) {
+    let index = anchor
+    const censored = (at: number): boolean => (items[at]?.is_censored ?? 0) > 0
+    while (index < items.length - 1 && (censored(index) || censored(index + 1))) {
+      index++
+    }
+    if (index >= items.length - 1) break
+    positions.add(index)
+    anchor = index + feedAdEvery
+  }
+  return positions
+})
+
 interface ChampionMarqueeItem extends Champion {
   winner: ChampionElement | null
   loser: ChampionElement | null
@@ -302,6 +330,8 @@ function showNextCarouselItem(): void {
     </div>
       </section>
 
+      <AdSlot name="homeRail" shape="rectangle" :locale="locale" />
+
       <section v-if="champions.length" class="champion-marquee-section" :aria-label="translate(locale, 'recentChampions')">
     <div class="champion-marquee-heading">
       <p class="eyebrow">{{ translate(locale, 'justFinishedEyebrow') }}</p>
@@ -346,6 +376,8 @@ function showNextCarouselItem(): void {
       </div>
     </div>
       </section>
+
+      <AdSlot name="homeRailBottom" shape="vertical" :locale="locale" />
     </aside>
 
     <section
@@ -396,6 +428,8 @@ function showNextCarouselItem(): void {
       >#{{ tag.name }}</button>
     </div>
 
+    <AdSlot name="homeTop" shape="horizontal" :locale="locale" />
+
     <div v-if="loading" class="content-state">
       <span class="loading-dot" aria-hidden="true" />
       {{ translate(locale, 'loadingVotes') }}
@@ -406,11 +440,8 @@ function showNextCarouselItem(): void {
     </div>
     <template v-else-if="postsPage.items.length">
       <div class="vote-grid">
-        <article
-          v-for="post in postsPage.items"
-          :key="post.serial"
-          class="vote-card"
-        >
+        <template v-for="(post, index) in postsPage.items" :key="post.serial">
+        <article class="vote-card">
         <RouterLink class="vote-card-main" :to="gameURL(post.serial)">
           <div class="vote-card-media" :class="{ 'is-censored': post.is_censored > 0 }">
             <div>
@@ -457,12 +488,15 @@ function showNextCarouselItem(): void {
           </RouterLink>
         </div>
         </article>
+        <AdSlot v-if="feedAdPositions.has(index)" name="homeFeed" shape="card" :locale="locale" />
+        </template>
       </div>
       <div class="load-more-posts">
         <button v-if="hasMorePosts" type="button" :disabled="loadingMore" @click="loadMorePosts">
           {{ translate(locale, loadingMore ? 'loadingMore' : loadMoreError ? 'retry' : 'loadMore') }}
         </button>
       </div>
+      <AdSlot name="homeFooter" shape="horizontal" :locale="locale" />
     </template>
     <div v-else class="content-state">{{ translate(locale, 'noVotes') }}</div>
     </section>

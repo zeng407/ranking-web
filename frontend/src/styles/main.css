@@ -900,6 +900,64 @@ h2 {
   gap: 1rem;
 }
 
+/* Ad slots. Each one reserves its height before the unit loads, because an ad that
+   grows after the fact pushes away whatever the reader was looking at, and each one
+   is labelled so it is never read as a vote card. */
+.ad-slot {
+  display: grid;
+  min-width: 0;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  gap: 0.3rem;
+  align-content: start;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-strong);
+}
+
+.ad-slot-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.ad-slot .adsbygoogle {
+  display: block;
+  width: 100%;
+}
+
+.ad-slot-horizontal {
+  min-height: 7.5rem;
+}
+
+/* One cell of the vote feed, so the row it joins keeps its shape. */
+.ad-slot-card {
+  min-height: 20rem;
+  margin: 0;
+}
+
+.ad-slot-rectangle {
+  min-height: 17rem;
+}
+
+.ad-slot-vertical {
+  display: none;
+}
+
+@media (min-width: 921px) {
+  /* Only while the discovery rail is a column of its own: stacked into a phone
+     layout, a 600px unit is a wall between the reader and the votes. */
+  .ad-slot-vertical {
+    display: grid;
+    min-height: 38rem;
+  }
+}
+
+.game-community-ad {
+  margin: 0.4rem 0;
+}
+
 .vote-card {
   display: flex;
   min-width: 0;

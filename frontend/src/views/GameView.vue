@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import AdSlot from '../components/AdSlot.vue'
 import CommentSection from '../components/CommentSection.vue'
 import RankingExportDialog from '../components/RankingExportDialog.vue'
 import {
@@ -81,6 +82,13 @@ const service = createGameplayService()
 const publicContentService = createPublicContentService()
 const writerId = randomId()
 const definition = ref<GameDefinition | null>(null)
+/**
+ * Ads are off for an 18+ post, on both its game and its ranking page: AdSense does
+ * not allow its units on adult content, and the penalty is the whole account.
+ */
+const adsAllowed = computed(() => definition.value !== null && !definition.value.is_censored)
+// The ranking row an in-content ad follows, counted from zero.
+const rankAdAfterRow = 9
 const snapshot = ref<LocalGameSnapshot | null>(null)
 const serverResult = ref<GameResult | null>(null)
 const selectedCount = ref(32)
@@ -1800,6 +1808,7 @@ function preferredRankImage(report: RankReport): string | null {
           </div>
         </div>
       </div>
+      <AdSlot v-if="adsAllowed" name="gameResult" shape="horizontal" :locale="locale" />
     </template>
 
     <section
@@ -2016,7 +2025,8 @@ function preferredRankImage(report: RankReport): string | null {
             </section>
 
             <ol class="game-community-list">
-              <li v-for="(report, index) in communityRanks.items" :key="report.element.id" :class="{ active: selectedCommunityRank?.element.id === report.element.id }">
+              <template v-for="(report, index) in communityRanks.items" :key="report.element.id">
+              <li :class="{ active: selectedCommunityRank?.element.id === report.element.id }">
                 <div class="game-community-row">
                   <span class="game-community-position">{{ positiveRank(report.rank) ?? ((communityRanks.page - 1) * communityRanks.per_page + index + 1) }}</span>
                   <!-- The picture is its own control: the row selects the element,
@@ -2048,6 +2058,10 @@ function preferredRankImage(report: RankReport): string | null {
                   </button>
                 </div>
               </li>
+              <li v-if="adsAllowed && index === rankAdAfterRow" class="game-community-ad">
+                <AdSlot name="rankList" shape="horizontal" :locale="locale" />
+              </li>
+              </template>
             </ol>
           </div>
           <span v-if="communityLoading && communityRanks.items.length" class="game-ranking-update-indicator" role="status">

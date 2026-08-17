@@ -1239,3 +1239,88 @@ describe('GameView door code', () => {
     expect(unlockMocks.unlockPost).not.toHaveBeenCalled()
   })
 })
+
+describe('GameView ad slots', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    sessionStorage.clear()
+    routeMock.name = 'rank-localized'
+    routeMock.params = { locale: 'zh-tw', serial: 'post-1' }
+    routeMock.query = {}
+    window.__APP_CONFIG__ = {
+      apiBaseUrl: '/api/v1',
+      ads: { publisherId: 'ca-pub-1', slots: { rankList: '10', gameResult: '11' } },
+    } as Window['__APP_CONFIG__']
+    // Never fires, so no test loads the real tag.
+    vi.stubGlobal('IntersectionObserver', class {
+      observe(): void {}
+      disconnect(): void {}
+      unobserve(): void {}
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    window.__APP_CONFIG__ = undefined
+    document.body.innerHTML = ''
+  })
+
+  function reports(count: number) {
+    return Array.from({ length: count }, (_, index) => ({
+      rank: index + 1,
+      win_rate: '50.0',
+      date: '2026-08-04',
+      element: {
+        id: index + 1,
+        title: `選項 ${index + 1}`,
+        type: 'image',
+        source_url: `https://cdn.test/${index + 1}.webp`,
+        thumb_url: null,
+        lowthumb_url: null,
+        mediumthumb_url: null,
+        video_id: null,
+        video_source: null,
+      },
+    }))
+  }
+
+  async function mountRankPage(gameDefinition: GameDefinition, rows: number): Promise<VueWrapper> {
+    serviceMocks.definition.mockResolvedValue(gameDefinition)
+    const items = reports(rows)
+    serviceMocks.ranks.mockResolvedValue({
+      items, group: 'cumulative', page: 1, per_page: 20, total: items.length, total_pages: 1,
+    })
+    const wrapper = mount(GameView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } } },
+    })
+    await flushPromises()
+    return wrapper
+  }
+
+  it('breaks the ranking list after the tenth row', async () => {
+    const wrapper = await mountRankPage(definition, 14)
+
+    const rows = wrapper.findAll('.game-community-list > li')
+    expect(rows[10]!.classes()).toContain('game-community-ad')
+    expect(rows[10]!.find('.ad-slot').exists()).toBe(true)
+    expect(wrapper.findAll('.game-community-ad')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('leaves a short list unbroken', async () => {
+    const wrapper = await mountRankPage(definition, 6)
+
+    expect(wrapper.findAll('.game-community-ad')).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it('shows no ad at all on an 18+ post', async () => {
+    // AdSense does not allow its units on adult content, and the penalty is the
+    // whole account, so a censored post carries no slot on either of its pages.
+    const wrapper = await mountRankPage({ ...definition, is_censored: true }, 14)
+
+    expect(wrapper.findAll('.ad-slot')).toHaveLength(0)
+    wrapper.unmount()
+  })
+})

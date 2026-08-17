@@ -296,3 +296,22 @@ describe('home vote-card alignment', () => {
     expect(copy).toContain('height: 8.5rem')
   })
 })
+
+describe('ad slots', () => {
+  it('reserves each slot height before the unit arrives', () => {
+    // An ad that grows after it loads pushes away whatever the reader was
+    // looking at, so every shape carries a floor.
+    expect(rule('.ad-slot-horizontal')).toContain('min-height: 7.5rem')
+    expect(rule('.ad-slot-rectangle')).toContain('min-height: 17rem')
+    expect(rule('.ad-slot-card')).toContain('min-height: 20rem')
+    expect(rule('.ad-slot ')).toContain('border: 1px solid var(--border)')
+  })
+
+  it('keeps the tall unit to the wide layout', () => {
+    // Stacked into one column a 600px unit is a wall between reader and votes.
+    expect(rule('.ad-slot-vertical')).toContain('display: none')
+    const wide = css.slice(css.indexOf('@media (min-width: 921px)'))
+    expect(wide).toContain('.ad-slot-vertical')
+    expect(wide.slice(0, wide.indexOf('}', wide.indexOf('.ad-slot-vertical')))).toContain('min-height: 38rem')
+  })
+})

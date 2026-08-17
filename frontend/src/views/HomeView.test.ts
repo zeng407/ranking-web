@@ -302,3 +302,101 @@ describe('HomeView regression behavior', () => {
     wrapper.unmount()
   })
 })
+
+describe('HomeView ad slots', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.route.path = '/zh-tw/'
+    mocks.route.params = { locale: 'zh-tw' }
+    mocks.route.query = {}
+    mocks.route.meta = { viewKey: 'home' }
+    mocks.hotTags.mockResolvedValue({})
+    mocks.carouselItems.mockResolvedValue([])
+    mocks.champions.mockResolvedValue([])
+    window.__APP_CONFIG__ = {
+      apiBaseUrl: '/api/v1',
+      ads: {
+        publisherId: 'ca-pub-1',
+        slots: {
+          homeTop: '1', homeRail: '2', homeRailBottom: '3', homeFeed: '4', homeFooter: '5',
+        },
+      },
+    } as Window['__APP_CONFIG__']
+    // Never fires, so no test loads the real tag.
+    vi.stubGlobal('IntersectionObserver', class {
+      observe(): void {}
+      disconnect(): void {}
+      unobserve(): void {}
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    window.__APP_CONFIG__ = undefined
+    document.body.innerHTML = ''
+  })
+
+  function feed(count: number, censored: number[] = []): PublicPost[] {
+    return Array.from({ length: count }, (_, index) => ({
+      ...post(`post-${index + 1}`, `投票 ${index + 1}`),
+      is_censored: censored.includes(index) ? 1 : 0,
+    }))
+  }
+
+  it('puts one ad card after every sixth vote card', async () => {
+    mocks.posts.mockResolvedValue(page(feed(14)))
+    const wrapper = await mountHome()
+
+    const cells = wrapper.findAll('.vote-grid > *')
+    const adCells = cells.map((cell, index) => ({ cell, index })).filter(({ cell }) => cell.classes('ad-slot'))
+
+    expect(adCells).toHaveLength(2)
+    // After the sixth and the twelfth card, the ad cell itself shifting the count.
+    expect(adCells.map(({ index }) => index)).toEqual([6, 13])
+    expect(cells[5]!.find('h3').text()).toBe('投票 6')
+    wrapper.unmount()
+  })
+
+  it('slides the ad card past an 18+ card instead of sitting beside one', async () => {
+    // AdSense allows neither ads on nor ads beside adult content, so the position
+    // after card 6 is unusable while cards 6 and 7 are censored.
+    mocks.posts.mockResolvedValue(page(feed(14, [5, 6])))
+    const wrapper = await mountHome()
+
+    const cells = wrapper.findAll('.vote-grid > *')
+    const adIndexes = cells
+      .map((cell, index) => ({ cell, index }))
+      .filter(({ cell }) => cell.classes('ad-slot'))
+      .map(({ index }) => index)
+
+    // First clean pair is cards 8 and 9, so the ad follows card 8.
+    expect(adIndexes[0]).toBe(8)
+    expect(cells[7]!.find('h3').text()).toBe('投票 8')
+    wrapper.unmount()
+  })
+
+  it('drops the ad card when the tail of the feed is all 18+', async () => {
+    mocks.posts.mockResolvedValue(page(feed(8, [5, 6, 7])))
+    const wrapper = await mountHome()
+
+    expect(wrapper.findAll('.vote-grid > .ad-slot')).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it('carries the rail, banner and footer positions', async () => {
+    mocks.posts.mockResolvedValue(page(feed(3)))
+    const wrapper = await mountHome()
+
+    expect(wrapper.findAll('.home-discovery-rail > .ad-slot')).toHaveLength(2)
+    expect(wrapper.find('.ad-slot-vertical').exists()).toBe(true)
+    // The banner above the grid and the one under the load-more control.
+    const mainColumn = wrapper.findAll('.public-content-section > .ad-slot')
+    expect(mainColumn).toHaveLength(2)
+    expect(wrapper.findAll('.ad-slot-horizontal')).toHaveLength(2)
+    const children = [...wrapper.get('.public-content-section').element.children]
+    const grid = children.findIndex((child) => child.classList.contains('vote-grid'))
+    expect(children.findIndex((child) => child.classList.contains('ad-slot'))).toBeLessThan(grid)
+    expect(children.filter((child) => child.classList.contains('ad-slot')).length).toBe(2)
+    wrapper.unmount()
+  })
+})
