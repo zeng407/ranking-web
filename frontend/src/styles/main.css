@@ -4470,7 +4470,7 @@ button.game-sync-indicator {
 .game-community-open {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto 1.1rem;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 0.7rem;
   padding: 0.35rem 0;
@@ -4487,8 +4487,8 @@ button.game-sync-indicator {
 }
 
 .game-community-title .game-winrate-bar {
-  margin-top: 0.3rem;
-  max-width: 13rem;
+  margin-top: 0.35rem;
+  max-width: 26rem;
 }
 
 .game-community-title strong,
@@ -4496,31 +4496,6 @@ button.game-sync-indicator {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* The thousand-vote standing, on the same row as the all-time one: the two
-   tables were separate lists before, which meant comparing an element with
-   itself across two pages. */
-.game-community-recent {
-  display: grid;
-  min-width: 4.5rem;
-  padding-left: 0.7rem;
-  border-left: 1px solid var(--border);
-  color: var(--text-faint);
-  font-size: 0.6rem;
-  justify-items: end;
-  text-align: right;
-}
-
-.game-community-recent strong {
-  color: var(--accent);
-  font-size: 1rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.game-community-recent strong.is-empty {
-  color: var(--text-faint);
-  font-size: 0.7rem;
 }
 
 .game-community-thumb {
@@ -5295,28 +5270,6 @@ button.game-sync-indicator {
   .game-community-thumb {
     width: 3.6rem;
     height: 3.6rem;
-  }
-
-  .game-community-open {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  /* The chart glyph is decoration the row cannot afford here; it would push the
-     recent standing onto a line of its own. */
-  .game-community-open > svg {
-    display: none;
-  }
-
-  .game-community-recent {
-    grid-column: 1 / -1;
-    padding-left: 0;
-    border-left: 0;
-    justify-items: start;
-    text-align: left;
-  }
-
-  .game-community-recent strong {
-    font-size: 0.85rem;
   }
 
   .game-result-loading-ranking {

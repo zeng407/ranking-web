@@ -662,7 +662,7 @@ describe('GameView restart regression', () => {
     scrollTo.mockRestore()
   })
 
-  it('shows the all-time and thousand-vote standings on one row and opens the picture', async () => {
+  it('shows one all-time standing per row and opens the picture', async () => {
     routeMock.name = 'rank-localized'
     serviceMocks.definition.mockResolvedValue(definition)
     const report = {
@@ -706,15 +706,13 @@ describe('GameView restart regression', () => {
     })
     await flushPromises()
 
-    // One table, one request: the recent standing rides along on the cumulative
-    // row instead of being a second list with its own paging.
+    // One table, one request, one standing: the thousand-vote figures are not
+    // shown anywhere, so a row is a title, its place and its win rate.
     expect(serviceMocks.ranks).toHaveBeenLastCalledWith('post-1', 1, 20)
     expect(wrapper.find('.game-ranking-group-tabs').exists()).toBe(false)
     expect(wrapper.get('.game-community-position').text()).toBe('1')
-    expect(wrapper.get('.game-community-recent').text()).toContain('#7')
-    expect(wrapper.get('.game-community-recent').text()).toContain('61.5')
-    // The card shows the cumulative standing only: the recent one is a column of
-    // the list below, not a second box that looks like a tab.
+    expect(wrapper.find('.game-community-recent').exists()).toBe(false)
+    expect(wrapper.get('.game-community-list').text()).not.toContain('最近一千筆')
     expect(wrapper.get('.game-selected-group-ranks').text()).toContain('累積排名#1')
     expect(wrapper.get('.game-selected-group-ranks').text()).not.toContain('最近一千筆')
     // The win rate is also drawn, against the absolute 0-100% scale.
@@ -730,35 +728,6 @@ describe('GameView restart regression', () => {
     expect(wrapper.get('.game-rank-zoom img').attributes('src')).toBe('https://cdn.test/full.jpg')
     await wrapper.get('.game-rank-zoom-close').trigger('click')
     expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
-    wrapper.unmount()
-  })
-
-  it('leaves the recent column empty rather than inventing a standing', async () => {
-    routeMock.name = 'rank-localized'
-    serviceMocks.definition.mockResolvedValue(definition)
-    const element = {
-      id: 1, title: '排名選項', type: 'image', video_id: null, source_url: null,
-      video_source: null, thumb_url: null, lowthumb_url: null, mediumthumb_url: null,
-    }
-    // The latest thousand-vote snapshot did not place this element. It still has
-    // an all-time rank, so the row stays; only the recent half is blank.
-    const report = { rank: 3, win_rate: '75.0', date: '2026-08-04', element }
-    serviceMocks.ranks.mockResolvedValue({
-      items: [report], group: 'cumulative', page: 1, per_page: 20, total: 1, total_pages: 1,
-    })
-    serviceMocks.rank.mockResolvedValue({
-      current: report,
-      groups: { cumulative: report, recent_1000: null },
-      history: { all: [{ rank: 3, win_rate: '75.0', date: '2026-08-04' }], thousand_votes: [] },
-    })
-
-    const wrapper = mount(GameView, {
-      global: { stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } } },
-    })
-    await flushPromises()
-
-    expect(wrapper.get('.game-community-position').text()).toBe('3')
-    expect(wrapper.get('.game-community-recent').text()).toContain('尚無資料')
     wrapper.unmount()
   })
 

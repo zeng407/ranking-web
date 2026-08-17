@@ -1907,17 +1907,6 @@ function preferredRankImage(report: RankReport): string | null {
                         <span :style="{ width: winRateBarWidth(report.win_rate) }"></span>
                       </span>
                     </span>
-                    <!-- Both standings on one row: the number on the left is the
-                         all-time place, this is the same element over the last
-                         thousand votes. An element the latest snapshot left out
-                         keeps its cumulative place and shows no recent one. -->
-                    <span class="game-community-recent">
-                      <small>{{ t('gameRecentThousandRanking') }}</small>
-                      <strong v-if="report.recent">{{ rankLabel(report.recent.rank) }}</strong>
-                      <strong v-else class="is-empty">{{ t('gameNoRankData') }}</strong>
-                      <small v-if="report.recent">{{ t('gameWinRate', { rate: report.recent.win_rate }) }}</small>
-                    </span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V9M10 18V5M16 18v-7M22 18H2" /></svg>
                   </button>
                 </div>
               </li>
