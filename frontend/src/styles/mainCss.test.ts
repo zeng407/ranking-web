@@ -163,7 +163,7 @@ describe('game setup layout', () => {
 })
 
 describe('game setup option previews', () => {
-  it('gives both options one capped square frame that fits the picture whole', () => {
+  it('gives both options one capped portrait frame that fits the picture whole', () => {
     const preview = rule('.game-preview')
     const media = rule('.game-preview-media')
     const picture = rule('.game-preview-media img,\n.game-preview-media video')
@@ -172,15 +172,19 @@ describe('game setup option previews', () => {
     // same box rather than one filling it and the other rendering 81px wide.
     expect(preview).toMatch(/--game-preview-size:\s*clamp\([^)]*\)/)
     expect(preview).toContain('grid-template-columns: repeat(2, minmax(0, var(--game-preview-size)))')
-    expect(media).toMatch(/aspect-ratio:\s*1/)
-    // A fixed portrait frame (aspect-ratio: 2 / 3) once made the previews taller
-    // than the viewport on a laptop, pushing the count options and the start
-    // button below the fold. A square frame off a capped width cannot: the clamp
-    // ceiling is the frame's height too.
+    // Portrait, because most option artwork is a standing product shot.
+    expect(media).toMatch(/aspect-ratio:\s*3\s*\/\s*4/)
+    // A taller frame (aspect-ratio: 2 / 3) once pushed the count options and the
+    // start button below the fold on a laptop. The clamp ceiling bounds the
+    // frame's height too, so 3:4 off a capped width stays above it.
     expect(preview).toMatch(/--game-preview-size:\s*clamp\([^)]*,\s*[\d.]+rem\)/)
     // Never cropped: the picture is fitted inside the frame and the blurred copy
-    // behind it fills what is left over.
+    // behind it fills what is left over. It is positioned against the frame's own
+    // aspect-ratio box, because height: 100% on a grid child would resolve to auto
+    // and let a tall picture overflow.
     expect(picture).toContain('object-fit: contain')
+    expect(picture).toContain('position: absolute')
+    expect(picture).toContain('inset: 0')
     expect(rule('.game-preview-backdrop')).toMatch(/filter:\s*blur\(/)
   })
 })

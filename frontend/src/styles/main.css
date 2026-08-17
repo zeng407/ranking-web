@@ -2906,7 +2906,7 @@ h2 {
      however tall or wide the two pictures happen to be. The landscape frame it
      replaced was 190px tall at a desktop height, which left a 300x700 portrait
      rendering 81px wide: contained, but too small to make out. */
-  --game-preview-size: clamp(8.5rem, 17vw, 14rem);
+  --game-preview-size: clamp(9rem, 18vw, 15rem);
   --game-preview-gap: clamp(0.6rem, 2vw, 1.1rem);
 
   display: grid;
@@ -2925,11 +2925,12 @@ h2 {
   position: relative;
   display: grid;
   overflow: hidden;
-  /* Square, because a preview has to hold portrait and landscape artwork equally
-     well without either one being cropped; the whole picture is fitted inside and
-     the blurred copy behind it fills whatever is left over. */
+  /* Portrait, because most option artwork is a standing product shot: a 3:4 frame
+     lets those fill nearly the whole height, while a square or landscape picture
+     still fits whole with the blurred copy behind it filling what is left over.
+     Neither orientation is ever cropped. */
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   border: 1px solid var(--border);
   border-radius: 1.1rem;
   place-items: center;
@@ -2947,9 +2948,13 @@ h2 {
   transform: scale(1.15);
 }
 
+/* Absolute, so the picture measures itself against the frame's own aspect-ratio box.
+   As a grid child, height: 100% would resolve against an indefinite row height,
+   fall back to auto, and let a tall picture overflow and be cropped instead. */
 .game-preview-media img,
 .game-preview-media video {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
