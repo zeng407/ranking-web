@@ -508,8 +508,8 @@ describe('GameView restart regression', () => {
 
 		expect(serviceMocks.result).toHaveBeenCalledWith('shared-game')
 		expect(wrapper.get('.game-result-tabs').text()).toContain('我的排名')
-		expect(wrapper.get('.game-personal-ranking').text()).toContain('全站排名 #7')
-		expect(wrapper.get('.game-personal-ranking').text()).toContain('全站排名 尚無資料')
+		expect(wrapper.get('.game-personal-ranking').text()).toContain('其他人的排名 #7')
+		expect(wrapper.get('.game-personal-ranking').text()).toContain('其他人的排名 尚無資料')
 		expect(wrapper.get('.game-personal-ranking').text()).not.toContain('#0')
 		expect(wrapper.get('.game-personal-ranking').text()).not.toContain('—')
 		// The picture is what was ranked: the top three are picture-first cards, the
