@@ -1038,7 +1038,9 @@ describe('GameView option preview and sharing', () => {
     // announcing a section that is not rendered.
     expect(wrapper.find('.game-trend-chart').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('趨勢')
-    expect(wrapper.find('.game-trend-slot').exists()).toBe(true)
+    // No chart means no reserved box either: nothing is going to arrive to fill
+    // it, and a blank 9.75rem panel under the picture reads as a broken card.
+    expect(wrapper.find('.game-trend-slot').exists()).toBe(false)
     expect(wrapper.get('.game-community-open').text()).toContain('31.0')
     wrapper.unmount()
   })

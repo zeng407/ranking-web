@@ -1839,17 +1839,17 @@ function preferredRankImage(report: RankReport): string | null {
               <!-- One chain for the chart slot. Splitting the loading states from
                    the chart states rendered two 240px placeholders at once and
                    swung the card 243px on every pagination click. -->
-              <div v-if="!selectedRankIsCharted" class="game-trend-slot" aria-hidden="true"></div>
-              <div v-else-if="trendLoading" class="game-trend-slot game-trend-state" aria-busy="true">
+              <template v-if="selectedRankIsCharted">
+                <div v-if="trendLoading" class="game-trend-slot game-trend-state" aria-busy="true">
                 <span class="game-trend-loader" aria-hidden="true"></span>
                 <span class="sr-only">{{ t('gameTrendLoading') }}</span>
-              </div>
-              <div v-else-if="trendError" class="game-trend-slot game-trend-state">
+                </div>
+                <div v-else-if="trendError" class="game-trend-slot game-trend-state">
                 <span>{{ t('gameTrendError') }}</span>
                 <button v-if="selectedCommunityRank" type="button" @click="selectCommunityRank(selectedCommunityRank)">{{ t('retry') }}</button>
-              </div>
-              <p v-else-if="!trendCoordinates.length" class="game-trend-slot game-trend-state">{{ t('gameTrendEmpty') }}</p>
-              <div v-else class="game-trend-slot game-trend-chart-wrap">
+                </div>
+                <p v-else-if="!trendCoordinates.length" class="game-trend-slot game-trend-state">{{ t('gameTrendEmpty') }}</p>
+                <div v-else class="game-trend-slot game-trend-chart-wrap">
                 <svg class="game-trend-chart" :viewBox="`0 0 ${trendChart.width} ${trendChart.height}`" role="img" :aria-label="t('gameRankTrend')">
                   <line v-for="y in trendChart.gridlines" :key="y" :x1="trendChart.paddingX" :y1="y" :x2="trendChart.width - trendChart.paddingX" :y2="y" />
                   <!-- Fixed scale, so the labels are constants and every chart on
@@ -1869,7 +1869,8 @@ function preferredRankImage(report: RankReport): string | null {
                   </circle>
                 </svg>
                 <div class="game-trend-dates"><span>{{ trendFirstDate }}</span><span>{{ trendLastDate }}</span></div>
-              </div>
+                </div>
+              </template>
             </section>
 
             <ol class="game-community-list">

@@ -4535,16 +4535,22 @@ button.game-sync-indicator {
   position: fixed;
   z-index: 60;
   inset: 0;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 1rem;
   padding: clamp(1rem, 4vw, 3rem);
-  place-content: center;
-  justify-items: center;
   background: rgb(0 0 0 / 78%);
   cursor: zoom-out;
 }
 
+/* Sized against the viewport, not the box: the page's global img rule caps
+   width at 100% of the parent, which in an auto-sized centring box resolves
+   back to the image's own box and rendered every zoom at thumbnail size. */
 .game-rank-zoom img {
+  width: auto;
+  height: auto;
   max-width: min(92vw, 60rem);
   max-height: 78vh;
   border-radius: 0.9rem;
@@ -5240,8 +5246,19 @@ button.game-sync-indicator {
     gap: 0.5rem;
   }
 
+  .game-community-thumb {
+    width: 3.6rem;
+    height: 3.6rem;
+  }
+
   .game-community-open {
-    grid-template-columns: minmax(0, 1fr) 1.1rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The chart glyph is decoration the row cannot afford here; it would push the
+     recent standing onto a line of its own. */
+  .game-community-open > svg {
+    display: none;
   }
 
   .game-community-recent {
