@@ -249,6 +249,8 @@ describe('ranking row thumbnails', () => {
     // 0.7rem gap read as the number and the picture being one box.
     expect(row).toContain('grid-template-columns: 2rem 7rem minmax(0, 1fr)')
     expect(row).toContain('gap: 1rem')
+    // The picture was also 9px off the row's own top and bottom borders.
+    expect(row).toContain('padding: 0.9rem 1rem')
     expect(thumb).toContain('width: 7rem')
     expect(thumb).toMatch(/aspect-ratio:\s*4\s*\/\s*3/)
     expect(thumb).not.toMatch(/height:/)

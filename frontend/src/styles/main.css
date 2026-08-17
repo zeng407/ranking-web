@@ -4595,9 +4595,10 @@ button.game-sync-indicator {
   min-width: 0;
   grid-template-columns: 2rem 7rem minmax(0, 1fr);
   align-items: center;
-  /* The rank number and the picture were reading as one box. */
+  /* The rank number, the picture and the row's own frame were reading as one
+     box: the picture sat 9px off the top and bottom borders. */
   gap: 1rem;
-  padding: 0.5rem 0.8rem;
+  padding: 0.9rem 1rem;
 }
 
 .game-community-position {
@@ -5514,6 +5515,7 @@ button.game-sync-indicator {
   .game-community-row {
     grid-template-columns: 1.6rem 5.2rem minmax(0, 1fr);
     gap: 0.7rem;
+    padding: 0.7rem 0.75rem;
   }
 
   .game-community-thumb {
