@@ -203,6 +203,13 @@ const personalResultItems = computed(() => {
   }))
 })
 const hasPersonalResult = computed(() => personalResultItems.value.length > 0)
+/**
+ * The player's own top three, shown as picture-first cards: the thing they ranked
+ * is the picture, not the row of text beside it. Everything below stays a compact
+ * two-column list so a ten-place ranking still reads at a glance.
+ */
+const personalPodiumItems = computed(() => personalResultItems.value.slice(0, 3))
+const personalRestItems = computed(() => personalResultItems.value.slice(3))
 const rankingExportItems = computed<RankingExportItem[]>(() => personalResultItems.value.map((item) => ({
 	rank: item.rank,
 	title: item.element.title,
@@ -1322,7 +1329,11 @@ function randomId(): string {
  */
 function candidateBackdrop(element: LocalGameElement): string | null {
   if (youtubeEmbedURL(element) || (element.type === 'video' && element.source_url)) return null
-  const image = preferredGameImage(element)
+  return imageBackdrop(preferredGameImage(element))
+}
+
+/** A `background-image` value for the blurred copy behind a contained picture. */
+function imageBackdrop(image: string | null): string | null {
   return image ? `url("${image.replace(/"/g, '%22')}")` : null
 }
 
@@ -1790,16 +1801,44 @@ function preferredRankImage(report: RankReport): string | null {
             {{ t('gameCommunityRanking') }}
           </button>
       </div>
-		<ol v-if="hasPersonalResult && resultTab === 'mine'" class="game-personal-ranking">
-			<li v-for="item in personalResultItems" :key="item.element.id">
-				<span>{{ item.rank }}</span>
-				<img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
-				<div>
-					<strong>{{ item.element.title }}</strong>
-					<small>{{ t('gameWins', { count: item.win_count }) }} · {{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
-				</div>
+		<div v-if="hasPersonalResult && resultTab === 'mine'" class="game-personal-ranking">
+			<div v-if="personalPodiumItems.length" class="game-personal-podium">
+				<article v-for="item in personalPodiumItems" :key="item.element.id" class="game-personal-hero">
+					<span class="game-personal-rank">{{ item.rank }}</span>
+					<div class="game-personal-media">
+						<div
+							v-if="imageBackdrop(preferredGameImage(item.element))"
+							class="game-personal-backdrop"
+							:style="{ backgroundImage: imageBackdrop(preferredGameImage(item.element)) || '' }"
+							aria-hidden="true"
+						></div>
+						<img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
+					</div>
+					<div class="game-personal-meta">
+						<strong>{{ item.element.title }}</strong>
+						<small>{{ t('gameWins', { count: item.win_count }) }} · {{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
+					</div>
+				</article>
+			</div>
+			<ol v-if="personalRestItems.length" class="game-personal-rest">
+				<li v-for="item in personalRestItems" :key="item.element.id">
+					<span>{{ item.rank }}</span>
+					<div class="game-personal-media">
+						<div
+							v-if="imageBackdrop(preferredGameImage(item.element))"
+							class="game-personal-backdrop"
+							:style="{ backgroundImage: imageBackdrop(preferredGameImage(item.element)) || '' }"
+							aria-hidden="true"
+						></div>
+						<img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
+					</div>
+					<div>
+						<strong>{{ item.element.title }}</strong>
+						<small>{{ t('gameWins', { count: item.win_count }) }} · {{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
+					</div>
 				</li>
-      </ol>
+			</ol>
+		</div>
       <div v-else class="game-community-ranking" role="tabpanel">
           <p v-if="communityLoading && !communityRanks.items.length" class="game-ranking-state">{{ t('gameCommunityLoading') }}</p>
           <div v-else-if="communityError && !communityRanks.items.length" class="game-ranking-state">

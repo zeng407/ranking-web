@@ -4051,6 +4051,108 @@ button.game-sync-indicator {
   white-space: nowrap;
 }
 
+/* My ranking. What was ranked is the picture, so the player's top three get a
+   picture-first card and everything below stays a compact two-column list. The
+   old row put a 4rem square crop of the picture beside the title, which cut a
+   standing bottle down to its middle. */
+.game-personal-ranking {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.game-personal-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.game-personal-hero {
+  position: relative;
+  margin: 0;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  background: var(--surface);
+}
+
+.game-personal-rank {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1;
+  padding: 0.15rem 0.6rem;
+  border-radius: 0.7rem;
+  color: #fff;
+  background: var(--accent);
+  font-size: 1.05rem;
+  font-weight: 850;
+}
+
+.game-personal-media {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: var(--surface-strong);
+}
+
+.game-personal-hero .game-personal-media {
+  width: 100%;
+  margin-bottom: 0.6rem;
+  aspect-ratio: 4 / 5;
+}
+
+/* Fills whatever the picture's aspect ratio leaves over, as in the vote arena. */
+.game-personal-backdrop {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(20px) saturate(140%);
+  opacity: 0.45;
+  transform: scale(1.15);
+}
+
+.game-personal-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.game-personal-meta {
+  padding: 0 0.3rem 0.25rem;
+  text-align: center;
+}
+
+.game-personal-meta strong,
+.game-personal-meta small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-personal-meta strong {
+  font-size: 1.05rem;
+}
+
+.game-personal-meta small {
+  color: var(--text-faint);
+  font-size: 0.82rem;
+}
+
+.game-personal-rest li {
+  grid-template-columns: 2.2rem 3rem 1fr;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.9rem;
+}
+
+.game-personal-rest .game-personal-media {
+  width: 3rem;
+  aspect-ratio: 1;
+}
+
 .game-community-ranking {
   position: relative;
   min-width: 0;
@@ -5282,6 +5384,23 @@ button.game-sync-indicator {
 
   .game-ranking ol {
     grid-template-columns: 1fr;
+  }
+
+  /* Three hero cards across a phone leave about 100px each, which is smaller
+     than the thumbnail this layout replaced. #1 takes the whole width and #2
+     and #3 share the row below it. */
+  .game-personal-podium {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .game-personal-hero:first-child {
+    grid-column: 1 / -1;
+  }
+
+  /* Full width, so 4:5 would be 555px tall on a 500px viewport and push #2 and
+     #3 off screen entirely. */
+  .game-personal-hero:first-child .game-personal-media {
+    aspect-ratio: 4 / 3;
   }
 
   /* Narrow rows drop the recent standing's own column and stack it under the

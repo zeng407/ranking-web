@@ -207,6 +207,27 @@ describe('game setup option previews', () => {
   })
 })
 
+describe('my ranking layout', () => {
+  it('makes the picture the main object instead of a cropped square', () => {
+    const hero = rule('.game-personal-hero .game-personal-media')
+    const picture = rule('.game-personal-media img')
+
+    // The player ranked pictures, so the top three get a picture-first card.
+    expect(rule('.game-personal-podium')).toContain('repeat(3, minmax(0, 1fr))')
+    expect(hero).toMatch(/aspect-ratio:\s*4\s*\/\s*5/)
+    // Never cropped, as on the setup previews and in the vote arena: contained
+    // against the frame's own box, with a blurred copy filling the rest.
+    expect(picture).toContain('object-fit: contain')
+    expect(picture).toContain('position: absolute')
+    expect(picture).toContain('inset: 0')
+    expect(rule('.game-personal-media')).toContain('position: relative')
+    expect(rule('.game-personal-backdrop')).toMatch(/filter:\s*blur\(/)
+    // Three cards across a 390px viewport would be smaller than the 4rem
+    // thumbnail this layout replaced.
+    expect(css).toMatch(/@media \(max-width: 640px\)[\s\S]*?\.game-personal-podium \{[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/)
+  })
+})
+
 describe('home vote-card alignment', () => {
   it('reserves equal content space and pins every action row to the bottom', () => {
     const card = rule('.vote-card')

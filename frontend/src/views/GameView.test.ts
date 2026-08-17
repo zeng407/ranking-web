@@ -478,9 +478,9 @@ describe('GameView restart regression', () => {
 		serviceMocks.result.mockResolvedValue({
 			game_serial: 'shared-game',
 			post_serial: 'post-1',
-			items: [1, 2, 3].map((rank) => ({
+			items: [1, 2, 3, 4, 5].map((rank) => ({
 				rank,
-				win_count: 4 - rank,
+				win_count: 6 - rank,
 				global_rank: rank === 1 ? 7 : rank === 2 ? 0 : null,
 				element: {
 					...session('shared-game', '分享結果').elements[(rank - 1) % 2],
@@ -512,6 +512,18 @@ describe('GameView restart regression', () => {
 		expect(wrapper.get('.game-personal-ranking').text()).toContain('全站排名 尚無資料')
 		expect(wrapper.get('.game-personal-ranking').text()).not.toContain('#0')
 		expect(wrapper.get('.game-personal-ranking').text()).not.toContain('—')
+		// The picture is what was ranked: the top three are picture-first cards, the
+		// rest a compact list, and every picture carries a blurred copy of itself so
+		// it can be contained rather than cropped to a square.
+		expect(wrapper.findAll('.game-personal-hero')).toHaveLength(3)
+		expect(wrapper.findAll('.game-personal-rest li')).toHaveLength(2)
+		const pictures = wrapper.findAll('.game-personal-media img')
+		const backdrops = wrapper.findAll('.game-personal-backdrop')
+		expect(pictures).toHaveLength(5)
+		expect(backdrops).toHaveLength(5)
+		backdrops.forEach((backdrop, index) => {
+			expect(backdrop.attributes('style')).toContain(pictures[index]!.attributes('src'))
+		})
 
 		await wrapper.get('.game-share-result').trigger('click')
 		expect(share).toHaveBeenCalledWith(expect.objectContaining({
