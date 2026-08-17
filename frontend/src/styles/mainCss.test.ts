@@ -255,6 +255,17 @@ describe('ranking row thumbnails', () => {
     expect(thumb).toMatch(/aspect-ratio:\s*4\s*\/\s*3/)
     expect(thumb).not.toMatch(/height:/)
   })
+
+  it('gives the selected rank video the same room as a picture', () => {
+    const video = rule('\n.game-rank-video')
+
+    // A 7.5rem strip read as a cropped band glued to the card above it.
+    expect(video).toMatch(/aspect-ratio:\s*16\s*\/\s*9/)
+    expect(video).toContain('margin: 0.9rem 0 1rem')
+    expect(video).not.toMatch(/height:\s*7\.5rem/)
+    // One box before and after the click, so playing does not resize the card.
+    expect(css).not.toContain('.game-rank-video.is-playing')
+  })
 })
 
 describe('ranking video player', () => {

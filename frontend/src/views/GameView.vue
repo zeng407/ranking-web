@@ -1949,7 +1949,6 @@ function preferredRankImage(report: RankReport): string | null {
               <figure
                 v-if="selectedCommunityRank && rankVideoEmbedURL(selectedCommunityRank)"
                 class="game-rank-video"
-                :class="{ 'is-playing': playingRankVideoID === selectedCommunityRank.element.id }"
               >
                 <iframe
                   v-if="playingRankVideoID === selectedCommunityRank.element.id"

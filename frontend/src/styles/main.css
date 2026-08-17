@@ -4427,24 +4427,21 @@ button.game-sync-indicator {
 /* Video entries in the ranking: a still with a play control, swapped for the
    real player only once the viewer clicks, so opening a ranking does not pull an
    embed for every row. */
-/* Full card width as a shallow strip. A 22rem 16:9 box left a 328px hole beside
-   it inside a 728px card; the preview only needs to say "this is a video", so it
-   spends width instead of height and crops to a banner. Playing swaps it to a
-   real 16:9 frame, which is when the height is worth spending. */
+/* A full-width 16:9 frame, the same box before and after the click. As a 7.5rem
+   strip the still was a cropped band pressed against the card above it: the
+   element it ranks deserves the same room as a picture, so it takes the same top
+   margin as .game-rank-figure and keeps the video's own shape. The cap stops a
+   wide card from pushing the trend chart off the screen. */
 .game-rank-video {
   position: relative;
   width: 100%;
-  height: 7.5rem;
-  margin: 0 0 1rem;
+  aspect-ratio: 16 / 9;
+  max-height: clamp(11rem, 30vh, 19rem);
+  margin: 0.9rem 0 1rem;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: var(--surface-strong);
-}
-
-.game-rank-video.is-playing {
-  height: auto;
-  aspect-ratio: 16 / 9;
 }
 
 .game-rank-video button {
