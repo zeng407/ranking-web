@@ -322,6 +322,19 @@ describe('GameView restart regression', () => {
     wrapper.unmount()
   })
 
+  it('backs each pictured option with a blurred copy of its own picture', async () => {
+    const wrapper = await mountStartedGame()
+
+    const backdrops = wrapper.findAll('.game-candidate-backdrop')
+    const pictures = wrapper.findAll('.game-candidate-media img')
+    expect(backdrops).toHaveLength(pictures.length)
+    backdrops.forEach((backdrop, index) => {
+      expect(backdrop.attributes('style')).toContain(pictures[index]!.attributes('src'))
+    })
+
+    wrapper.unmount()
+  })
+
   it('only votes through the vote button and saves the vote locally before animation finishes', async () => {
     const wrapper = await mountStartedGame()
 

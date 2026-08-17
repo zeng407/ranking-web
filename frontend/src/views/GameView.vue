@@ -1315,6 +1315,17 @@ function randomId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+/**
+ * The blurred fill behind a contained picture, so the frame is never empty at the
+ * sides of a portrait shot. Only a still image gets one: an embedded player and a
+ * video both fill their own frame.
+ */
+function candidateBackdrop(element: LocalGameElement): string | null {
+  if (youtubeEmbedURL(element) || (element.type === 'video' && element.source_url)) return null
+  const image = preferredGameImage(element)
+  return image ? `url("${image.replace(/"/g, '%22')}")` : null
+}
+
 function isPlayableVideo(element: LocalGameElement): boolean {
   return element.type === 'video' && Boolean(youtubeEmbedURL(element) || element.source_url)
 }
@@ -1626,6 +1637,12 @@ function preferredRankImage(report: RankReport): string | null {
                 @mouseenter="onCandidateVideoEnter(element)"
                 @mouseleave="onCandidateVideoLeave(element)"
               >
+                <div
+                  v-if="candidateBackdrop(element)"
+                  class="game-candidate-backdrop"
+                  :style="{ backgroundImage: candidateBackdrop(element) || '' }"
+                  aria-hidden="true"
+                ></div>
                 <iframe
                   v-if="youtubeEmbedURL(element)"
                   :src="youtubeEmbedURL(element) || ''"

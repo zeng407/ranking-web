@@ -99,6 +99,24 @@ describe('vote candidate title', () => {
   })
 })
 
+describe('vote candidate media', () => {
+  it('fits the whole option inside the frame without growing the card', () => {
+    const frame = rule('\n.game-candidate-media')
+    const media = rule('.game-candidate-media img,\n.game-candidate-media video,\n.game-candidate-media iframe')
+
+    // The option being voted on is shown whole; the blurred copy behind it fills
+    // whatever the aspect ratio leaves over, as on the setup previews.
+    expect(media).toContain('object-fit: contain')
+    expect(rule('.game-candidate-backdrop')).toMatch(/filter:\s*blur\(/)
+    // While playing the frame is a 1fr row of a card sized to the viewport. In
+    // flow, height: 100% resolved against that indefinite row, fell back to auto,
+    // and a portrait picture grew the card past the fold, blowing the option up.
+    expect(frame).toContain('position: relative')
+    expect(media).toContain('position: absolute')
+    expect(media).toContain('inset: 0')
+  })
+})
+
 describe('vote card actions', () => {
   it('promotes opening a vote over viewing the ranking', () => {
     const actions = rule('.vote-card-actions')
