@@ -2902,15 +2902,15 @@ h2 {
 
 /* Preview of the two options, shown before the game starts. */
 .game-preview {
-  /* Frame height drives frame width, so the pair keeps roughly the 4:3 shape of
-     the thumbnails the CDN serves instead of growing wide panels of blurred
-     backdrop as the window gets larger. */
-  --game-preview-height: clamp(7rem, 24vh, 12rem);
+  /* One fixed frame size for both options, so the pair reads as a matched set
+     however tall or wide the two pictures happen to be. The landscape frame it
+     replaced was 190px tall at a desktop height, which left a 300x700 portrait
+     rendering 81px wide: contained, but too small to make out. */
+  --game-preview-size: clamp(8.5rem, 17vw, 14rem);
   --game-preview-gap: clamp(0.6rem, 2vw, 1.1rem);
 
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: min(100%, calc(2 * 1.34 * var(--game-preview-height) + var(--game-preview-gap)));
+  grid-template-columns: repeat(2, minmax(0, var(--game-preview-size)));
   margin-top: clamp(1rem, 3vw, 1.8rem);
   gap: var(--game-preview-gap);
 }
@@ -2925,12 +2925,11 @@ h2 {
   position: relative;
   display: grid;
   overflow: hidden;
-  /* Landscape frame measured against the viewport, not a portrait aspect ratio.
-     A preview is a teaser rather than the vote itself, so it gives up height to
-     keep the whole setup screen — title, description, both previews, the count
-     options and the buttons — above the fold on a desktop window. The backdrop
-     and object-fit below keep portrait artwork correctly proportioned inside it. */
-  height: var(--game-preview-height);
+  /* Square, because a preview has to hold portrait and landscape artwork equally
+     well without either one being cropped; the whole picture is fitted inside and
+     the blurred copy behind it fills whatever is left over. */
+  width: 100%;
+  aspect-ratio: 1;
   border: 1px solid var(--border);
   border-radius: 1.1rem;
   place-items: center;
