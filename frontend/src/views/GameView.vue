@@ -277,13 +277,6 @@ const trendPoints = computed<RankHistoryPoint[]>(() => (
 	rankDetails.value?.history.all ?? []
 ).filter((point) => positiveRank(point.rank) !== null))
 const cumulativeSelectedRank = computed(() => rankDetails.value?.groups?.cumulative ?? rankDetails.value?.current ?? null)
-const recentSelectedRank = computed(() => {
-  const grouped = rankDetails.value?.groups?.recent_1000
-  if (grouped) return grouped
-  const listed = selectedCommunityRank.value?.recent
-  if (listed) return listed
-  return rankDetails.value?.history.thousand_votes?.[0] ?? null
-})
 const trendCoordinates = computed(() => rankTrendCoordinates(trendPoints.value))
 const trendPolyline = computed(() => rankTrendPolyline(trendCoordinates.value))
 const trendPointRadius = computed(() => rankTrendPointRadius(trendCoordinates.value.length))
@@ -441,6 +434,18 @@ function positiveRank(rank: number | null | undefined): number | null {
 function rankLabel(rank: number | null | undefined): string {
 	const value = positiveRank(rank)
 	return value === null ? t('gameNoRankData') : `#${value}`
+}
+
+/**
+ * A win rate as a bar width. The scale is the absolute 0-100% one rather than
+ * the page's own maximum, because 50% is the meaningful middle of a one-on-one
+ * vote and a bar rescaled to the leader would put every list's top row at full
+ * width no matter how it actually did.
+ */
+function winRateBarWidth(rate: string | null | undefined): string {
+	const value = Number.parseFloat(rate ?? '')
+	if (!Number.isFinite(value)) return '0%'
+	return `${Math.min(100, Math.max(0, value))}%`
 }
 
 function resumeSnapshot(saved: LocalGameSnapshot): void {
@@ -828,7 +833,7 @@ async function selectCommunityRank(report: RankReport): Promise<void> {
     const details = await publicContentService.rank(
       postSerial.value,
       report.element.id,
-      ['all', 'thousand_votes'],
+      ['all'],
     )
     if (requestVersion === trendRequestVersion && selectedCommunityRank.value?.element.id === report.element.id) {
       rankDetails.value = details
@@ -1765,19 +1770,18 @@ function preferredRankImage(report: RankReport): string | null {
                   <span v-if="selectedRankIsCharted">{{ t('gameRankTrend') }}</span>
                   <h2>{{ selectedCommunityRank.element.title }}</h2>
                 </div>
+                <!-- The cumulative standing is the ranking; the thousand-vote
+                     one lives on its own row in the list below, so repeating it
+                     here as a second box read as a tab nobody could switch. -->
                 <dl class="game-selected-group-ranks">
                   <div>
                     <dt>{{ t('gameCumulativeRanking') }}</dt>
                     <dd>
-						<strong>{{ rankLabel(cumulativeSelectedRank?.rank) }}</strong>
-						<small v-if="positiveRank(cumulativeSelectedRank?.rank)">{{ t('gameWinRate', { rate: cumulativeSelectedRank?.win_rate ?? '' }) }}</small>
+                      <strong>{{ rankLabel(cumulativeSelectedRank?.rank) }}</strong>
+                      <small v-if="positiveRank(cumulativeSelectedRank?.rank)">{{ t('gameWinRate', { rate: cumulativeSelectedRank?.win_rate ?? '' }) }}</small>
                     </dd>
-                  </div>
-                  <div>
-                    <dt>{{ t('gameRecentThousandRanking') }}</dt>
-                    <dd>
-						<strong>{{ rankLabel(recentSelectedRank?.rank) }}</strong>
-						<small v-if="positiveRank(recentSelectedRank?.rank)">{{ t('gameWinRate', { rate: recentSelectedRank?.win_rate ?? '' }) }}</small>
+                    <dd v-if="positiveRank(cumulativeSelectedRank?.rank)" class="game-winrate-bar" aria-hidden="true">
+                      <span :style="{ width: winRateBarWidth(cumulativeSelectedRank?.win_rate) }"></span>
                     </dd>
                   </div>
                 </dl>
@@ -1897,6 +1901,11 @@ function preferredRankImage(report: RankReport): string | null {
                     <span class="game-community-title">
                       <strong>{{ report.element.title }}</strong>
                       <small>{{ t('gameWinRate', { rate: report.win_rate }) }}</small>
+                      <!-- The same number as a length: a column of bars is what
+                           makes 85% and 61% comparable at a glance. -->
+                      <span class="game-winrate-bar" aria-hidden="true">
+                        <span :style="{ width: winRateBarWidth(report.win_rate) }"></span>
+                      </span>
                     </span>
                     <!-- Both standings on one row: the number on the left is the
                          all-time place, this is the same element over the last

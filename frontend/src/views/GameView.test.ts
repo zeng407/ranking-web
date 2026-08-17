@@ -713,8 +713,15 @@ describe('GameView restart regression', () => {
     expect(wrapper.get('.game-community-position').text()).toBe('1')
     expect(wrapper.get('.game-community-recent').text()).toContain('#7')
     expect(wrapper.get('.game-community-recent').text()).toContain('61.5')
+    // The card shows the cumulative standing only: the recent one is a column of
+    // the list below, not a second box that looks like a tab.
     expect(wrapper.get('.game-selected-group-ranks').text()).toContain('累積排名#1')
-    expect(wrapper.get('.game-selected-group-ranks').text()).toContain('最近一千筆#7')
+    expect(wrapper.get('.game-selected-group-ranks').text()).not.toContain('最近一千筆')
+    // The win rate is also drawn, against the absolute 0-100% scale.
+    expect(wrapper.get('.game-selected-group-ranks .game-winrate-bar > span').attributes('style'))
+      .toContain('width: 75%')
+    expect(wrapper.get('.game-community-title .game-winrate-bar > span').attributes('style'))
+      .toContain('width: 75%')
     expect(wrapper.find('.game-trend-ranges').exists()).toBe(false)
 
     // Clicking the picture shows the picture, at the largest size the API offers.

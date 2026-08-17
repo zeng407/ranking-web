@@ -4165,7 +4165,7 @@ button.game-sync-indicator {
 .game-selected-group-ranks {
   display: grid;
   margin: 0;
-  grid-template-columns: repeat(2, minmax(6rem, 1fr));
+  grid-template-columns: minmax(6rem, 1fr);
   gap: 0.45rem;
 }
 
@@ -4207,6 +4207,47 @@ button.game-sync-indicator {
 .game-selected-group-ranks small {
   color: var(--text-faint);
   font-size: 0.58rem;
+}
+
+/* A win rate as a length. Drawn against the full 0-100% scale so the bar means
+   the same thing in every list, with the halfway mark shown because 50% is the
+   break-even point of a one-on-one vote. */
+.game-winrate-bar {
+  position: relative;
+  overflow: hidden;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-faint) 22%, transparent);
+}
+
+.game-winrate-bar::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: color-mix(in srgb, var(--text) 35%, transparent);
+  content: '';
+}
+
+.game-winrate-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--accent) 45%, transparent),
+    var(--accent));
+  transition: width 240ms ease;
+}
+
+.game-selected-group-ranks dd.game-winrate-bar {
+  margin-top: 0.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-winrate-bar > span {
+    transition: none;
+  }
 }
 
 /* One reserved box for whatever occupies the chart position — chart, loader,
@@ -4443,6 +4484,11 @@ button.game-sync-indicator {
 .game-community-title {
   display: grid;
   min-width: 0;
+}
+
+.game-community-title .game-winrate-bar {
+  margin-top: 0.3rem;
+  max-width: 13rem;
 }
 
 .game-community-title strong,
