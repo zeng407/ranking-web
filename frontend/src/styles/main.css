@@ -4567,6 +4567,8 @@ button.game-sync-indicator {
 }
 
 .game-ranking .game-community-list img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   /* Contained, not cropped: these thumbnails were cutting the faces out of
@@ -4591,10 +4593,11 @@ button.game-sync-indicator {
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: 2rem 4.5rem minmax(0, 1fr);
+  grid-template-columns: 2rem 7rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.5rem 0.7rem;
+  /* The rank number and the picture were reading as one box. */
+  gap: 1rem;
+  padding: 0.5rem 0.8rem;
 }
 
 .game-community-position {
@@ -4639,8 +4642,10 @@ button.game-sync-indicator {
 .game-community-thumb {
   position: relative;
   display: block;
-  width: 4.5rem;
-  height: 4.5rem;
+  /* A landscape frame, because a 16:9 video still in a square box rendered a
+     letterboxed strip barely a third of the box tall. */
+  width: 7rem;
+  aspect-ratio: 4 / 3;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 0.7rem;
@@ -4653,8 +4658,7 @@ button.game-sync-indicator {
   cursor: default;
 }
 
-/* Tells the row it holds a video. The player itself opens in the card above,
-   which is the only place with room for it. */
+/* Tells the row it holds a video: clicking the thumbnail opens the player. */
 .game-community-thumb-video {
   position: absolute;
   display: grid;
@@ -4752,6 +4756,99 @@ button.game-sync-indicator {
   stroke: currentColor;
   stroke-linecap: round;
   stroke-width: 1.9;
+}
+
+/* One player element in two positions: an overlay while it is being watched, and
+   a corner dock afterwards. Docking is a class change rather than a different
+   element, because re-mounting the iframe would restart the video. */
+.game-rank-player {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: rgb(0 0 0 / 78%);
+}
+
+.game-rank-player-frame {
+  position: relative;
+  width: min(92vw, 60rem);
+  aspect-ratio: 16 / 9;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: #000;
+}
+
+.game-rank-player-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Above the frame, not over it: inside the frame these buttons landed on top of
+   YouTube's own title bar and mute control. */
+.game-rank-player-actions {
+  display: flex;
+  width: min(92vw, 60rem);
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.game-rank-player-actions button {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 35%);
+  border-radius: 50%;
+  color: #fff;
+  background: rgb(0 0 0 / 62%);
+  cursor: pointer;
+}
+
+.game-rank-player-actions svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.9;
+}
+
+.game-rank-player-caption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0;
+  color: #fff;
+}
+
+.game-rank-player-caption strong {
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bottom left, still playing, out of the way of the ranking it came from. */
+.game-rank-player.is-docked {
+  inset: auto auto 1rem 1rem;
+  padding: 0;
+  background: none;
+}
+
+.game-rank-player.is-docked .game-rank-player-actions {
+  width: min(80vw, 22rem);
+  margin-bottom: -0.65rem;
+}
+
+.game-rank-player.is-docked .game-rank-player-frame {
+  width: min(80vw, 22rem);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 45%);
 }
 
 .game-ranking-state {
@@ -5415,13 +5512,12 @@ button.game-sync-indicator {
   /* Narrow rows drop the recent standing's own column and stack it under the
      title; three columns of numbers on a phone leaves nothing for the name. */
   .game-community-row {
-    grid-template-columns: 1.6rem 3.6rem minmax(0, 1fr);
-    gap: 0.5rem;
+    grid-template-columns: 1.6rem 5.2rem minmax(0, 1fr);
+    gap: 0.7rem;
   }
 
   .game-community-thumb {
-    width: 3.6rem;
-    height: 3.6rem;
+    width: 5.2rem;
   }
 
   .game-result-loading-ranking {

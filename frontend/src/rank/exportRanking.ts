@@ -32,14 +32,39 @@ export function rankingExportLayout(count: number): RankingExportSlot[] {
     : { rank: index + 1, column: (index - 1) % 3, row: Math.floor((index - 1) / 3) + 1, columnSpan: 1 })
 }
 
+/**
+ * Truncates to a byte budget without splitting a character.
+ *
+ * Filesystem name limits are in bytes (255 on ext4 and APFS), and a CJK title is
+ * three bytes per character — 80 characters of Chinese plus the prefix and suffix
+ * is already over the limit. Slicing by code unit would also cut an emoji in half
+ * and leave a lone surrogate in the name.
+ */
+function truncateToBytes(value: string, limit: number): string {
+  let bytes = 0
+  let result = ''
+  for (const character of value) {
+    const size = new TextEncoder().encode(character).length
+    if (bytes + size > limit) break
+    bytes += size
+    result += character
+  }
+  return result
+}
+
 export function rankingExportFilename(title: string): string {
-  const safeTitle = title
+  const cleaned = title
     .normalize('NFKC')
-    .replace(/[\\/:*?"<>|：]+/g, '-')
+    // Path separators, the characters Windows reserves, and control characters.
+    .replace(/[\\/:*?"<>|：\u0000-\u001f\u007f]+/g, '-')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 80) || 'ranking'
+  // Trailing dots and spaces are dropped by Windows, and a name that is only
+  // dots is not a name at all.
+  const safeTitle = truncateToBytes(cleaned, 150).replace(/^-|[-.\s]+$/g, '') || 'ranking'
+  // CON, PRN, AUX, NUL, COM1-9 and LPT1-9 cannot be filenames on Windows even
+  // with an extension; the prefix below already keeps us clear of them.
   return `2pick-${safeTitle}-top10.png`
 }
 

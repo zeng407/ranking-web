@@ -1003,6 +1003,26 @@ describe('GameView option preview and sharing', () => {
     const frame = wrapper.get('.game-rank-video iframe')
     expect(frame.attributes('src')).toContain('/embed/abc123')
     expect(wrapper.find('.game-rank-video button').exists()).toBe(false)
+
+    // A still frame is not the entry: the row's thumbnail opens the player.
+    await wrapper.get('.game-community-thumb').trigger('click')
+    expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+    const player = wrapper.get('.game-rank-player')
+    expect(player.get('iframe').attributes('src')).toContain('/embed/abc123')
+    expect(player.classes()).not.toContain('is-docked')
+
+    // Leaving the big view docks the same iframe rather than unmounting it,
+    // because a new iframe would restart the video.
+    await player.get('.game-rank-player-dock').trigger('click')
+    expect(wrapper.get('.game-rank-player').classes()).toContain('is-docked')
+    expect(wrapper.get('.game-rank-player iframe').attributes('src')).toContain('/embed/abc123')
+
+    await wrapper.get('.game-rank-player-expand').trigger('click')
+    expect(wrapper.get('.game-rank-player').classes()).not.toContain('is-docked')
+
+    // Only the close button ends playback.
+    await wrapper.get('.game-rank-player-close').trigger('click')
+    expect(wrapper.find('.game-rank-player').exists()).toBe(false)
     wrapper.unmount()
   })
 

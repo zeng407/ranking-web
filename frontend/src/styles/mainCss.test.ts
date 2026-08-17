@@ -240,6 +240,37 @@ describe('ranking picture zoom', () => {
   })
 })
 
+describe('ranking row thumbnails', () => {
+  it('separates the picture from the rank number and gives a video room', () => {
+    const row = rule('\n.game-community-row')
+    const thumb = rule('\n.game-community-thumb')
+
+    // A 16:9 still inside a 4.5rem square rendered a 26px strip, and the
+    // 0.7rem gap read as the number and the picture being one box.
+    expect(row).toContain('grid-template-columns: 2rem 7rem minmax(0, 1fr)')
+    expect(row).toContain('gap: 1rem')
+    expect(thumb).toContain('width: 7rem')
+    expect(thumb).toMatch(/aspect-ratio:\s*4\s*\/\s*3/)
+    expect(thumb).not.toMatch(/height:/)
+  })
+})
+
+describe('ranking video player', () => {
+  it('keeps one player element that docks bottom left instead of stopping', () => {
+    const player = rule('\n.game-rank-player')
+    const docked = rule('.game-rank-player.is-docked')
+
+    // Two elements would mean two iframes, and re-mounting the iframe restarts
+    // the video — the dock exists so playback survives leaving the big view.
+    expect(player).toContain('position: fixed')
+    expect(player).toContain('inset: 0')
+    expect(docked).toContain('inset: auto auto 1rem 1rem')
+    expect(docked).toContain('background: none')
+    expect(rule('.game-rank-player.is-docked .game-rank-player-frame')).toContain('width: min(80vw, 22rem)')
+    expect(rule('.game-rank-player-frame')).toMatch(/aspect-ratio:\s*16\s*\/\s*9/)
+  })
+})
+
 describe('home vote-card alignment', () => {
   it('reserves equal content space and pins every action row to the bottom', () => {
     const card = rule('.vote-card')

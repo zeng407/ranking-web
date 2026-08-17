@@ -113,6 +113,14 @@ const communityError = ref(false)
 const selectedCommunityRank = ref<RankReport | null>(null)
 const rankDetails = ref<RankDetails | null>(null)
 const zoomedPicture = ref<{ image: string; rank: string; title: string } | null>(null)
+/**
+ * The video a ranking row opened, and whether it is docked in the corner.
+ *
+ * Dismissing the overlay docks the player instead of unmounting it, so leaving the
+ * big view does not interrupt what is playing.
+ */
+const openedVideo = ref<{ embedURL: string; rank: string; title: string } | null>(null)
+const videoDocked = ref(false)
 const trendLoading = ref(false)
 /**
  * Whether the wait has lasted long enough to be worth showing. A cached details
@@ -325,8 +333,7 @@ const trendChart = { ...rankTrendViewBox, gridlines: rankTrendGridlines }
 const playingRankVideoID = ref<number | null>(null)
 
 function rankVideoEmbedURL(report: RankReport): string | null {
-  if (report.element.type !== 'video') return null
-  return youtubeEmbedURL(report.element)
+  return rankMediaEmbedURL(report.element)
 }
 
 function playRankVideo(report: RankReport): void {
@@ -826,14 +833,25 @@ function selectResultTab(tab: 'mine' | 'community'): void {
   }
 }
 
+function rankMediaEmbedURL(element: RankElement | LocalGameElement): string | null {
+  return element.type === 'video' ? youtubeEmbedURL(element) : null
+}
+
 /**
- * Opens the full-size picture of a ranked element.
+ * Opens a ranked element at a size worth looking at.
  *
  * The row and the card both show a thumbnail sized for a list, and the ranking is
- * the one screen where the picture is the thing being ranked — so it has to be
- * openable at its own size rather than only ever seen cropped into a square.
+ * the one screen where the entry is the thing being ranked — so it has to open at
+ * its own size rather than only ever be seen cropped into a small frame. A video
+ * entry opens its player: a still frame of a video is not the entry.
  */
-function zoomPicture(rank: number | null, element: RankElement | LocalGameElement): void {
+function openRankMedia(rank: number | null, element: RankElement | LocalGameElement): void {
+  const embedURL = rankMediaEmbedURL(element)
+  if (embedURL) {
+    openedVideo.value = { embedURL, rank: rankLabel(rank), title: element.title || '' }
+    videoDocked.value = false
+    return
+  }
   const image = fullSizeImage(element)
   if (!image) return
   zoomedPicture.value = { image, rank: rankLabel(rank), title: element.title || '' }
@@ -841,6 +859,19 @@ function zoomPicture(rank: number | null, element: RankElement | LocalGameElemen
 
 function closeZoom(): void {
   zoomedPicture.value = null
+}
+
+function dockVideo(): void {
+  videoDocked.value = true
+}
+
+function expandVideo(): void {
+  videoDocked.value = false
+}
+
+function closeVideo(): void {
+  openedVideo.value = null
+  videoDocked.value = false
 }
 
 async function selectCommunityRank(report: RankReport): Promise<void> {
@@ -1031,6 +1062,7 @@ async function restartGame(): Promise<void> {
   selectedCommunityRank.value = null
   rankDetails.value = null
   closeZoom()
+  closeVideo()
   entryDecisionPending.value = false
   resultPreparationVersion += 1
   resultPreparing.value = false
@@ -1287,6 +1319,11 @@ function onStorage(event: StorageEvent): void {
 function onKeydown(event: KeyboardEvent): void {
   // Before the input guard: the zoom's own close button is a BUTTON and usually
   // holds focus while it is open, so Escape has to reach here from there too.
+  if (event.key === 'Escape' && openedVideo.value && !videoDocked.value) {
+    // Docked, not stopped: Escape leaves the big view, it does not end playback.
+    dockVideo()
+    return
+  }
   if (event.key === 'Escape' && zoomedPicture.value) {
     closeZoom()
     return
@@ -1806,7 +1843,7 @@ function preferredRankImage(report: RankReport): string | null {
 						type="button"
 						:disabled="!fullSizeImage(item.element)"
 						:aria-label="t('gameZoomRankImage', { title: item.element.title })"
-						@click="zoomPicture(item.rank, item.element)"
+						@click="openRankMedia(item.rank, item.element)"
 					>
 						<div
 							v-if="imageBackdrop(preferredGameImage(item.element))"
@@ -1830,7 +1867,7 @@ function preferredRankImage(report: RankReport): string | null {
 						type="button"
 						:disabled="!fullSizeImage(item.element)"
 						:aria-label="t('gameZoomRankImage', { title: item.element.title })"
-						@click="zoomPicture(item.rank, item.element)"
+						@click="openRankMedia(item.rank, item.element)"
 					>
 						<div
 							v-if="imageBackdrop(preferredGameImage(item.element))"
@@ -1894,7 +1931,7 @@ function preferredRankImage(report: RankReport): string | null {
                 class="game-rank-figure"
                 type="button"
                 :aria-label="t('gameZoomRankImage', { title: selectedCommunityRank.element.title || '' })"
-                @click="zoomPicture(selectedCommunityRank.rank, selectedCommunityRank.element)"
+                @click="openRankMedia(selectedCommunityRank.rank, selectedCommunityRank.element)"
               >
                 <img
                   :src="preferredRankImage(selectedCommunityRank) || ''"
@@ -1988,13 +2025,13 @@ function preferredRankImage(report: RankReport): string | null {
                   <button
                     class="game-community-thumb"
                     type="button"
-                    :disabled="!fullSizeImage(report.element)"
+                    :disabled="!rankVideoEmbedURL(report) && !fullSizeImage(report.element)"
                     :aria-label="t('gameZoomRankImage', { title: report.element.title || '' })"
-                    @click="zoomPicture(report.rank, report.element)"
+                    @click="openRankMedia(report.rank, report.element)"
                   >
                     <img v-if="preferredRankImage(report)" :src="preferredRankImage(report) || ''" :alt="report.element.title || ''" loading="lazy">
-                    <!-- Marks the row as holding a video; the player itself lives
-                         in the card above, where there is room for it. -->
+                    <!-- Marks the row as holding a video: clicking it opens the
+                         player rather than a still frame. -->
                     <span v-if="rankVideoEmbedURL(report)" class="game-community-thumb-video" aria-hidden="true">
                       <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z" /></svg>
                     </span>
@@ -2042,6 +2079,53 @@ function preferredRankImage(report: RankReport): string | null {
         <p>
           <strong>{{ zoomedPicture.rank }}</strong>
           <span>{{ zoomedPicture.title }}</span>
+        </p>
+      </div>
+
+      <!-- One player in two positions. Leaving the big view docks it bottom left
+           and it keeps playing; only its close button ends playback. -->
+      <div
+        v-if="openedVideo"
+        class="game-rank-player"
+        :class="{ 'is-docked': videoDocked }"
+        role="dialog"
+        :aria-label="openedVideo.title"
+        @click.self="dockVideo"
+      >
+        <div class="game-rank-player-actions">
+          <button
+            v-if="videoDocked"
+            class="game-rank-player-expand"
+            type="button"
+            :aria-label="t('gameExpandRankVideo')"
+            @click="expandVideo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7" /></svg>
+          </button>
+          <button
+            v-else
+            class="game-rank-player-dock"
+            type="button"
+            :aria-label="t('gameDockRankVideo')"
+            @click="dockVideo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h6V4M10 10 3 3M20 14h-6v6M14 14l7 7" /></svg>
+          </button>
+          <button class="game-rank-player-close" type="button" :aria-label="t('close')" @click="closeVideo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <div class="game-rank-player-frame">
+          <iframe
+            :src="openedVideo.embedURL"
+            :title="openedVideo.title"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen
+          />
+        </div>
+        <p v-if="!videoDocked" class="game-rank-player-caption">
+          <strong>{{ openedVideo.rank }}</strong>
+          <span>{{ openedVideo.title }}</span>
         </p>
       </div>
     </section>
