@@ -153,6 +153,15 @@ export function preferredGameImage(element: GameElement): string | null {
   return element.lowthumb_url || element.mediumthumb_url || element.thumb_url || element.source_url
 }
 
+/**
+ * The largest picture the API offers, falling back down the thumbnail sizes. A
+ * video has no full-size frame, so its thumbnail is as large as it gets.
+ */
+export function fullSizeImage(element: Pick<GameElement, 'type' | 'source_url' | 'thumb_url' | 'mediumthumb_url' | 'lowthumb_url'>): string | null {
+  if (element.type === 'video') return element.thumb_url ?? element.mediumthumb_url ?? null
+  return element.source_url ?? element.thumb_url ?? element.mediumthumb_url ?? element.lowthumb_url ?? null
+}
+
 export function gamePreviewImage(element: GameElement): string | null {
   const thumbnail = element.lowthumb_url || element.mediumthumb_url || element.thumb_url
   if (thumbnail) return thumbnail

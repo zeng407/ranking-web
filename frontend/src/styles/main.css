@@ -4088,11 +4088,21 @@ button.game-sync-indicator {
   font-weight: 850;
 }
 
+/* A button, because the picture is worth opening at its own size: the card and
+   the row both show it inside a list-sized frame. */
 .game-personal-media {
   position: relative;
+  display: block;
   overflow: hidden;
+  padding: 0;
+  border: 0;
   border-radius: 0.85rem;
   background: var(--surface-strong);
+  cursor: zoom-in;
+}
+
+.game-personal-media:disabled {
+  cursor: default;
 }
 
 .game-personal-hero .game-personal-media {
@@ -4694,17 +4704,16 @@ button.game-sync-indicator {
   cursor: zoom-out;
 }
 
-/* Sized against the viewport, not the box: the page's global img rule caps
-   width at 100% of the parent, which in an auto-sized centring box resolves
-   back to the image's own box and rendered every zoom at thumbnail size. */
+/* A frame sized against the viewport, with the picture contained inside it.
+   Sizing to the picture instead left the zoom at its natural size, and some
+   posts store a source file smaller than the thumbnail the card already
+   shows — opening it then made the picture shrink. The frame is transparent so
+   a portrait picture does not sit in a wide bright box over the scrim. */
 .game-rank-zoom img {
-  width: auto;
-  height: auto;
-  max-width: min(92vw, 60rem);
-  max-height: 78vh;
+  width: min(92vw, 60rem);
+  height: min(78vh, 42rem);
   border-radius: 0.9rem;
   object-fit: contain;
-  background: var(--surface);
 }
 
 .game-rank-zoom p {

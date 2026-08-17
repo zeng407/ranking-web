@@ -515,6 +515,8 @@ describe('GameView restart regression', () => {
 		// The picture is what was ranked: the top three are picture-first cards, the
 		// rest a compact list, and every picture carries a blurred copy of itself so
 		// it can be contained rather than cropped to a square.
+		// The wins behind a place are noise beside the place itself.
+		expect(wrapper.get('.game-personal-ranking').text()).not.toContain('勝')
 		expect(wrapper.findAll('.game-personal-hero')).toHaveLength(3)
 		expect(wrapper.findAll('.game-personal-rest li')).toHaveLength(2)
 		const pictures = wrapper.findAll('.game-personal-media img')
@@ -524,6 +526,13 @@ describe('GameView restart regression', () => {
 		backdrops.forEach((backdrop, index) => {
 			expect(backdrop.attributes('style')).toContain(pictures[index]!.attributes('src'))
 		})
+		// A list frame is never the whole picture, so clicking one opens it.
+		expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+		await wrapper.get('.game-personal-hero .game-personal-media').trigger('click')
+		expect(wrapper.get('.game-rank-zoom img').attributes('src'))
+			.toBe('https://example.test/分享結果-1.webp')
+		await wrapper.get('.game-rank-zoom-close').trigger('click')
+		expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
 
 		await wrapper.get('.game-share-result').trigger('click')
 		expect(share).toHaveBeenCalledWith(expect.objectContaining({

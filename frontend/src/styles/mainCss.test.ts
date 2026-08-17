@@ -228,6 +228,18 @@ describe('my ranking layout', () => {
   })
 })
 
+describe('ranking picture zoom', () => {
+  it('opens the picture larger than the list frame it was clicked in', () => {
+    const zoom = rule('.game-rank-zoom img')
+
+    // Sizing to the picture rendered a zoom smaller than the card whenever the
+    // stored source file is smaller than the thumbnail beside it.
+    expect(zoom).toContain('width: min(92vw, 60rem)')
+    expect(zoom).toContain('height: min(78vh, 42rem)')
+    expect(zoom).toContain('object-fit: contain')
+  })
+})
+
 describe('home vote-card alignment', () => {
   it('reserves equal content space and pins every action row to the bottom', () => {
     const card = rule('.vote-card')

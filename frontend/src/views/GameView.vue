@@ -32,6 +32,7 @@ import {
 import type { RankingExportItem } from '../rank/exportRanking'
 import {
   createGameplayService,
+  fullSizeImage,
   gamePreviewImage,
   preferredGameImage,
   youtubeEmbedURL,
@@ -41,6 +42,7 @@ import {
 import {
   createPublicContentService,
   type RankDetails,
+  type RankElement,
   type RankHistoryPoint,
   type RankReport,
   type RanksPage,
@@ -110,7 +112,7 @@ const communityLoading = ref(false)
 const communityError = ref(false)
 const selectedCommunityRank = ref<RankReport | null>(null)
 const rankDetails = ref<RankDetails | null>(null)
-const zoomedRank = ref<RankReport | null>(null)
+const zoomedPicture = ref<{ image: string; rank: string; title: string } | null>(null)
 const trendLoading = ref(false)
 /**
  * Whether the wait has lasted long enough to be worth showing. A cached details
@@ -831,20 +833,14 @@ function selectResultTab(tab: 'mine' | 'community'): void {
  * the one screen where the picture is the thing being ranked — so it has to be
  * openable at its own size rather than only ever seen cropped into a square.
  */
-function zoomRank(report: RankReport): void {
-  if (!fullSizeRankImage(report)) return
-  zoomedRank.value = report
+function zoomPicture(rank: number | null, element: RankElement | LocalGameElement): void {
+  const image = fullSizeImage(element)
+  if (!image) return
+  zoomedPicture.value = { image, rank: rankLabel(rank), title: element.title || '' }
 }
 
 function closeZoom(): void {
-  zoomedRank.value = null
-}
-
-/** The largest picture the API offers, falling back down the thumbnail sizes. */
-function fullSizeRankImage(report: RankReport): string | null {
-  const element = report.element
-  if (element.type === 'video') return element.thumb_url ?? element.mediumthumb_url ?? null
-  return element.source_url ?? element.thumb_url ?? element.mediumthumb_url ?? element.lowthumb_url ?? null
+  zoomedPicture.value = null
 }
 
 async function selectCommunityRank(report: RankReport): Promise<void> {
@@ -1291,7 +1287,7 @@ function onStorage(event: StorageEvent): void {
 function onKeydown(event: KeyboardEvent): void {
   // Before the input guard: the zoom's own close button is a BUTTON and usually
   // holds focus while it is open, so Escape has to reach here from there too.
-  if (event.key === 'Escape' && zoomedRank.value) {
+  if (event.key === 'Escape' && zoomedPicture.value) {
     closeZoom()
     return
   }
@@ -1805,7 +1801,13 @@ function preferredRankImage(report: RankReport): string | null {
 			<div v-if="personalPodiumItems.length" class="game-personal-podium">
 				<article v-for="item in personalPodiumItems" :key="item.element.id" class="game-personal-hero">
 					<span class="game-personal-rank">{{ item.rank }}</span>
-					<div class="game-personal-media">
+					<button
+						class="game-personal-media"
+						type="button"
+						:disabled="!fullSizeImage(item.element)"
+						:aria-label="t('gameZoomRankImage', { title: item.element.title })"
+						@click="zoomPicture(item.rank, item.element)"
+					>
 						<div
 							v-if="imageBackdrop(preferredGameImage(item.element))"
 							class="game-personal-backdrop"
@@ -1813,17 +1815,23 @@ function preferredRankImage(report: RankReport): string | null {
 							aria-hidden="true"
 						></div>
 						<img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
-					</div>
+					</button>
 					<div class="game-personal-meta">
 						<strong>{{ item.element.title }}</strong>
-						<small>{{ t('gameWins', { count: item.win_count }) }} · {{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
+						<small>{{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
 					</div>
 				</article>
 			</div>
 			<ol v-if="personalRestItems.length" class="game-personal-rest">
 				<li v-for="item in personalRestItems" :key="item.element.id">
 					<span>{{ item.rank }}</span>
-					<div class="game-personal-media">
+					<button
+						class="game-personal-media"
+						type="button"
+						:disabled="!fullSizeImage(item.element)"
+						:aria-label="t('gameZoomRankImage', { title: item.element.title })"
+						@click="zoomPicture(item.rank, item.element)"
+					>
 						<div
 							v-if="imageBackdrop(preferredGameImage(item.element))"
 							class="game-personal-backdrop"
@@ -1831,10 +1839,10 @@ function preferredRankImage(report: RankReport): string | null {
 							aria-hidden="true"
 						></div>
 						<img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
-					</div>
+					</button>
 					<div>
 						<strong>{{ item.element.title }}</strong>
-						<small>{{ t('gameWins', { count: item.win_count }) }} · {{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
+						<small>{{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
 					</div>
 				</li>
 			</ol>
@@ -1886,7 +1894,7 @@ function preferredRankImage(report: RankReport): string | null {
                 class="game-rank-figure"
                 type="button"
                 :aria-label="t('gameZoomRankImage', { title: selectedCommunityRank.element.title || '' })"
-                @click="zoomRank(selectedCommunityRank)"
+                @click="zoomPicture(selectedCommunityRank.rank, selectedCommunityRank.element)"
               >
                 <img
                   :src="preferredRankImage(selectedCommunityRank) || ''"
@@ -1980,9 +1988,9 @@ function preferredRankImage(report: RankReport): string | null {
                   <button
                     class="game-community-thumb"
                     type="button"
-                    :disabled="!fullSizeRankImage(report)"
+                    :disabled="!fullSizeImage(report.element)"
                     :aria-label="t('gameZoomRankImage', { title: report.element.title || '' })"
-                    @click="zoomRank(report)"
+                    @click="zoomPicture(report.rank, report.element)"
                   >
                     <img v-if="preferredRankImage(report)" :src="preferredRankImage(report) || ''" :alt="report.element.title || ''" loading="lazy">
                     <!-- Marks the row as holding a video; the player itself lives
@@ -2014,25 +2022,27 @@ function preferredRankImage(report: RankReport): string | null {
             <span>{{ communityRanks.page }} / {{ communityRanks.total_pages }}</span>
             <button type="button" :disabled="communityLoading || communityRanks.page >= communityRanks.total_pages" @click="loadCommunityRanks(communityRanks.page + 1)">{{ t('nextPage') }}</button>
           </nav>
-          <!-- The picture on its own, which is what a ranking list is about.
-               Escape closes it; see onKeydown. -->
-          <div
-            v-if="zoomedRank"
-            class="game-rank-zoom"
-            role="dialog"
-            aria-modal="true"
-            :aria-label="zoomedRank.element.title || ''"
-            @click.self="closeZoom"
-          >
-            <button class="game-rank-zoom-close" type="button" :aria-label="t('close')" @click="closeZoom">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-            </button>
-            <img :src="fullSizeRankImage(zoomedRank) || ''" :alt="zoomedRank.element.title || ''">
-            <p>
-              <strong>{{ rankLabel(zoomedRank.rank) }}</strong>
-              <span>{{ zoomedRank.element.title }}</span>
-            </p>
-          </div>
+      </div>
+
+      <!-- The picture on its own, which is what a ranking list is about. Outside
+           both tab panels, because either tab can open it. Escape closes it; see
+           onKeydown. -->
+      <div
+        v-if="zoomedPicture"
+        class="game-rank-zoom"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="zoomedPicture.title"
+        @click.self="closeZoom"
+      >
+        <button class="game-rank-zoom-close" type="button" :aria-label="t('close')" @click="closeZoom">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <img :src="zoomedPicture.image" :alt="zoomedPicture.title">
+        <p>
+          <strong>{{ zoomedPicture.rank }}</strong>
+          <span>{{ zoomedPicture.title }}</span>
+        </p>
       </div>
     </section>
 
