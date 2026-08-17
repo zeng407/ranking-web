@@ -66,7 +66,7 @@ describe('public content service', () => {
     )
     const service = createPublicContentService(createAPIClient('/api/v1', fetchMock))
 
-    await service.ranks('post-serial', 'cumulative', 3, 24)
+    await service.ranks('post-serial', 3, 24)
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/ranks?post_serial=post-serial&group=cumulative&page=3&per_page=24',
@@ -74,7 +74,9 @@ describe('public content service', () => {
     )
   })
 
-  it('requests the recent one-thousand-vote ranking group', async () => {
+  // One table holds both standings now, so there is a single list to page through
+  // and the recent group is never requested separately.
+  it('always asks for the cumulative listing', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({
         data: { items: [], page: 1, per_page: 20, total: 0, total_pages: 0 },
@@ -82,10 +84,10 @@ describe('public content service', () => {
     )
     const service = createPublicContentService(createAPIClient('/api/v1', fetchMock))
 
-    await service.ranks('post-serial', 'recent_1000')
+    await service.ranks('post-serial')
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/ranks?post_serial=post-serial&group=recent_1000&page=1&per_page=20',
+      '/api/v1/ranks?post_serial=post-serial&group=cumulative&page=1&per_page=20',
       expect.objectContaining({ method: 'GET', credentials: 'omit' }),
     )
   })

@@ -662,37 +662,32 @@ describe('GameView restart regression', () => {
     scrollTo.mockRestore()
   })
 
-  it('defaults to cumulative ranking, switches to recent 1000, and shows both ranks for an element', async () => {
+  it('shows the all-time and thousand-vote standings on one row and opens the picture', async () => {
     routeMock.name = 'rank-localized'
     serviceMocks.definition.mockResolvedValue(definition)
     const report = {
       rank: 1,
       win_rate: '75.0',
       date: '2026-08-04',
+      recent: { rank: 7, win_rate: '61.5', date: '2026-08-04' },
       element: {
         id: 1,
         title: '排名選項',
         type: 'image',
         video_id: null,
-        source_url: null,
+        source_url: 'https://cdn.test/full.jpg',
         video_source: null,
-        thumb_url: null,
+        thumb_url: 'https://cdn.test/thumb.jpg',
         lowthumb_url: null,
         mediumthumb_url: null,
       },
     }
-    const recentReport = { ...report, rank: 7, win_rate: '61.5' }
-    serviceMocks.ranks.mockImplementation((_serial, group) => Promise.resolve({
-      items: [group === 'recent_1000' ? recentReport : report],
-      group,
-      page: 1,
-      per_page: 20,
-      total: 1,
-      total_pages: 1,
-    }))
+    serviceMocks.ranks.mockResolvedValue({
+      items: [report], group: 'cumulative', page: 1, per_page: 20, total: 1, total_pages: 1,
+    })
     serviceMocks.rank.mockResolvedValue({
       current: report,
-      groups: { cumulative: report, recent_1000: recentReport },
+      groups: { cumulative: report, recent_1000: { ...report, rank: 7, win_rate: '61.5' } },
       history: {
         all: [{ rank: 1, win_rate: '75.0', date: '2026-08-04' }],
         thousand_votes: [{ rank: 7, win_rate: '61.5', date: '2026-08-04' }],
@@ -711,20 +706,52 @@ describe('GameView restart regression', () => {
     })
     await flushPromises()
 
-    const groupTabs = wrapper.findAll('.game-ranking-group-tabs button')
-    expect(groupTabs.map((tab) => tab.text())).toEqual(['累積排名', '最近一千筆'])
-    expect(groupTabs[0]!.attributes('aria-selected')).toBe('true')
-    expect(serviceMocks.ranks).toHaveBeenLastCalledWith('post-1', 'cumulative', 1, 20)
+    // One table, one request: the recent standing rides along on the cumulative
+    // row instead of being a second list with its own paging.
+    expect(serviceMocks.ranks).toHaveBeenLastCalledWith('post-1', 1, 20)
+    expect(wrapper.find('.game-ranking-group-tabs').exists()).toBe(false)
+    expect(wrapper.get('.game-community-position').text()).toBe('1')
+    expect(wrapper.get('.game-community-recent').text()).toContain('#7')
+    expect(wrapper.get('.game-community-recent').text()).toContain('61.5')
     expect(wrapper.get('.game-selected-group-ranks').text()).toContain('累積排名#1')
     expect(wrapper.get('.game-selected-group-ranks').text()).toContain('最近一千筆#7')
     expect(wrapper.find('.game-trend-ranges').exists()).toBe(false)
 
-    await groupTabs[1]!.trigger('click')
+    // Clicking the picture shows the picture, at the largest size the API offers.
+    expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+    await wrapper.get('.game-community-thumb').trigger('click')
+    expect(wrapper.get('.game-rank-zoom img').attributes('src')).toBe('https://cdn.test/full.jpg')
+    await wrapper.get('.game-rank-zoom-close').trigger('click')
+    expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('leaves the recent column empty rather than inventing a standing', async () => {
+    routeMock.name = 'rank-localized'
+    serviceMocks.definition.mockResolvedValue(definition)
+    const element = {
+      id: 1, title: '排名選項', type: 'image', video_id: null, source_url: null,
+      video_source: null, thumb_url: null, lowthumb_url: null, mediumthumb_url: null,
+    }
+    // The latest thousand-vote snapshot did not place this element. It still has
+    // an all-time rank, so the row stays; only the recent half is blank.
+    const report = { rank: 3, win_rate: '75.0', date: '2026-08-04', element }
+    serviceMocks.ranks.mockResolvedValue({
+      items: [report], group: 'cumulative', page: 1, per_page: 20, total: 1, total_pages: 1,
+    })
+    serviceMocks.rank.mockResolvedValue({
+      current: report,
+      groups: { cumulative: report, recent_1000: null },
+      history: { all: [{ rank: 3, win_rate: '75.0', date: '2026-08-04' }], thousand_votes: [] },
+    })
+
+    const wrapper = mount(GameView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } } },
+    })
     await flushPromises()
 
-    expect(serviceMocks.ranks).toHaveBeenLastCalledWith('post-1', 'recent_1000', 1, 20)
-    expect(groupTabs[1]!.attributes('aria-selected')).toBe('true')
-    expect(wrapper.get('.game-community-list > li button > span').text()).toBe('7')
+    expect(wrapper.get('.game-community-position').text()).toBe('3')
+    expect(wrapper.get('.game-community-recent').text()).toContain('尚無資料')
     wrapper.unmount()
   })
 
@@ -969,15 +996,15 @@ describe('GameView option preview and sharing', () => {
     wrapper.unmount()
   })
 
-  it('offers a trend chart for a top-ten rank and simply omits it below that', async () => {
+  it('charts the top five and leaves everyone below it a win rate', async () => {
     routeMock.name = 'rank-localized'
     serviceMocks.definition.mockResolvedValue(definition)
     const element = {
       id: 1, title: '排名選項', type: 'image', video_id: null, source_url: null,
       video_source: null, thumb_url: null, lowthumb_url: null, mediumthumb_url: null,
     }
-    const history = { all: [{ rank: 4, win_rate: '75.0', date: '2026-08-04' }], thousand_votes: [] }
-    const charted = { rank: 4, win_rate: '75.0', date: '2026-08-04', element }
+    const history = { all: [{ rank: 5, win_rate: '75.0', date: '2026-08-04' }], thousand_votes: [] }
+    const charted = { rank: 5, win_rate: '75.0', date: '2026-08-04', element }
     serviceMocks.ranks.mockResolvedValue({
       items: [charted], group: 'cumulative', page: 1, per_page: 20, total: 1, total_pages: 1,
     })
@@ -985,24 +1012,25 @@ describe('GameView option preview and sharing', () => {
       current: charted, groups: { cumulative: charted, recent_1000: null }, history,
     })
 
-    const wrapper = mount(GameView, {
+    let wrapper = mount(GameView, {
       global: { stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } } },
     })
     await flushPromises()
     expect(wrapper.find('.game-trend-chart').exists()).toBe(true)
 
-    // Past the shared scale the line would lie flat on the boundary, so the chart
-    // is replaced by a note rather than drawn misleadingly.
-    const beyond = { rank: 24, win_rate: '31.0', date: '2026-08-04', element }
+    // Sixth place and below reads by win rate alone: a history chart for every
+    // row is noise, and the original site drew one for the podium only.
+    const beyond = { rank: 6, win_rate: '31.0', date: '2026-08-04', element }
     serviceMocks.ranks.mockResolvedValue({
       items: [beyond], group: 'cumulative', page: 1, per_page: 20, total: 1, total_pages: 1,
     })
     serviceMocks.rank.mockResolvedValue({
       current: beyond, groups: { cumulative: beyond, recent_1000: null }, history,
     })
-    await wrapper.findAll('.game-ranking-group-tabs button')[1]!.trigger('click')
-    await flushPromises()
-    await wrapper.get('.game-community-list > li button').trigger('click')
+    wrapper.unmount()
+    wrapper = mount(GameView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } } },
+    })
     await flushPromises()
 
     // No chart, and no notice about there being no chart either: the absence is
@@ -1011,47 +1039,10 @@ describe('GameView option preview and sharing', () => {
     expect(wrapper.find('.game-trend-chart').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('趨勢')
     expect(wrapper.find('.game-trend-slot').exists()).toBe(true)
+    expect(wrapper.get('.game-community-open').text()).toContain('31.0')
     wrapper.unmount()
   })
 
-  it('judges chart eligibility by the rank in the list being viewed', async () => {
-    routeMock.name = 'rank-localized'
-    serviceMocks.definition.mockResolvedValue(definition)
-    const element = {
-      id: 1, title: '排名選項', type: 'image', video_id: null, source_url: null,
-      video_source: null, thumb_url: null, lowthumb_url: null, mediumthumb_url: null,
-    }
-    // Top three over the last thousand votes, but 42nd all-time. On the recent
-    // tab the chart has to follow the position shown beside it.
-    const recent = { rank: 3, win_rate: '81.0', date: '2026-08-04', element }
-    const cumulative = { rank: 42, win_rate: '54.0', date: '2026-08-04', element }
-    serviceMocks.ranks.mockImplementation((_serial, group) => Promise.resolve({
-      items: [group === 'recent_1000' ? recent : cumulative],
-      group, page: 1, per_page: 20, total: 1, total_pages: 1,
-    }))
-    serviceMocks.rank.mockResolvedValue({
-      current: cumulative,
-      groups: { cumulative, recent_1000: recent },
-      history: {
-        all: [{ rank: 42, win_rate: '54.0', date: '2026-08-04' }],
-        thousand_votes: [{ rank: 3, win_rate: '81.0', date: '2026-08-04' }],
-      },
-    })
-
-    const wrapper = mount(GameView, {
-      global: { stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } } },
-    })
-    await flushPromises()
-    expect(wrapper.find('.game-trend-chart').exists()).toBe(false)
-
-    await wrapper.findAll('.game-ranking-group-tabs button')[1]!.trigger('click')
-    await flushPromises()
-    await wrapper.get('.game-community-list > li button').trigger('click')
-    await flushPromises()
-
-    expect(wrapper.find('.game-trend-chart').exists()).toBe(true)
-    wrapper.unmount()
-  })
   it('keeps exactly one chart-slot box while a selection reloads', async () => {
     routeMock.name = 'rank-localized'
     serviceMocks.definition.mockResolvedValue(definition)

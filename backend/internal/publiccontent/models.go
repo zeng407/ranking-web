@@ -120,11 +120,23 @@ type RankElement struct {
 	MediumThumbURL *string `json:"mediumthumb_url"`
 }
 
+// RankSnapshot is one element's standing in a past ranking run.
+type RankSnapshot struct {
+	Rank    int64  `json:"rank"`
+	WinRate string `json:"win_rate"`
+	Date    string `json:"date"`
+}
+
 type RankReport struct {
 	Rank    *int64      `json:"rank"`
 	WinRate string      `json:"win_rate"`
 	Date    string      `json:"date"`
 	Element RankElement `json:"element"`
+	// Recent is the same element's place in the latest thousand-vote snapshot, so
+	// a cumulative listing can show both standings on one row. Absent when the
+	// snapshot did not place this element, and on the thousand-vote listing
+	// itself, where it would only repeat the row.
+	Recent *RankSnapshot `json:"recent,omitempty"`
 }
 
 type RanksPage struct {

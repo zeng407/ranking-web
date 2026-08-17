@@ -80,11 +80,24 @@ export interface RankElement {
   mediumthumb_url: string | null
 }
 
+/** One element's standing in a past ranking run. */
+export interface RankSnapshot {
+  rank: number
+  win_rate: string
+  date: string
+}
+
 export interface RankReport {
   rank: number | null
   win_rate: string
   date: string
   element: RankElement
+  /**
+   * The same element's place over the last thousand votes, sent with a cumulative
+   * listing so one table holds both standings. Absent when the latest snapshot did
+   * not place this element.
+   */
+  recent?: RankSnapshot | null
 }
 
 export type RankGroup = 'cumulative' | 'recent_1000'
@@ -156,10 +169,14 @@ export function createPublicContentService(client: APIClient = getAPIClient()) {
     champions(): Promise<Champion[]> {
       return publicGet('/champions')
     },
-    ranks(postSerial: string, group: RankGroup = 'cumulative', page = 1, perPage = 20): Promise<RanksPage> {
+    /**
+     * The one ranking table. Each cumulative row carries its own thousand-vote
+     * standing, so the recent group is not a second list to fetch and page through.
+     */
+    ranks(postSerial: string, page = 1, perPage = 20): Promise<RanksPage> {
       return rankGet(`/ranks?${new URLSearchParams({
         post_serial: postSerial,
-        group,
+        group: 'cumulative',
         page: String(page),
         per_page: String(perPage),
       })}`, postSerial)

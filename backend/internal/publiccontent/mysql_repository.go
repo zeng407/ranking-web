@@ -367,10 +367,10 @@ func (repository *MySQLRepository) cumulativeRanks(ctx context.Context, postID i
 	}
 
 	offset := (page - 1) * perPage
-	rows, err := repository.database.QueryContext(ctx, rankReportSelect+`
+	rows, err := repository.database.QueryContext(ctx, cumulativeRankReportSelect+`
 		WHERE rr.post_id = ? AND e.deleted_at IS NULL`+visibilityClause+`
 		ORDER BY rr.rank ASC, rr.id ASC
-		LIMIT ? OFFSET ?`, postID, perPage, offset)
+		LIMIT ? OFFSET ?`, postID, postID, perPage, offset)
 	if err != nil {
 		return RanksPage{}, err
 	}
@@ -378,7 +378,7 @@ func (repository *MySQLRepository) cumulativeRanks(ctx context.Context, postID i
 
 	reports := make([]RankReport, 0, perPage)
 	for rows.Next() {
-		report, err := scanRankReport(rows, repository.now())
+		report, err := scanCumulativeRankReport(rows, repository.now())
 		if err != nil {
 			return RanksPage{}, err
 		}
@@ -398,14 +398,9 @@ func (repository *MySQLRepository) cumulativeRanks(ctx context.Context, postID i
 }
 
 func (repository *MySQLRepository) recentRanks(ctx context.Context, postID int64, visibilityClause string, page, perPage int) (RanksPage, error) {
-	const latestSnapshot = `
-		SELECT MAX(latest.start_date)
-		FROM rank_report_histories latest
-		WHERE latest.post_id = ? AND latest.time_range = 'thousand_votes'
-		  AND latest.rank > 0 AND latest.deleted_at IS NULL`
 	filters := `
 		WHERE rrh.post_id = ? AND rrh.time_range = 'thousand_votes'
-		  AND rrh.start_date = (` + latestSnapshot + `)
+		  AND rrh.start_date = (` + latestThousandSnapshot + `)
 		  AND rrh.rank > 0 AND rrh.deleted_at IS NULL
 		  AND e.deleted_at IS NULL` + visibilityClause
 
@@ -563,6 +558,39 @@ const rankReportSelect = `
 	JOIN elements e ON e.id = rr.element_id
 `
 
+// The newest thousand-vote snapshot the post has, which is the one the recent
+// column of a ranking is read from. Snapshots with rank 0 mean "counted but not
+// placed", so a run that produced only those is not a snapshot to show.
+const latestThousandSnapshot = `
+	SELECT MAX(latest.start_date)
+	FROM rank_report_histories latest
+	WHERE latest.post_id = ? AND latest.time_range = 'thousand_votes'
+	  AND latest.rank > 0 AND latest.deleted_at IS NULL`
+
+// The cumulative ranking carries each element's place in the latest thousand-vote
+// snapshot beside its all-time place, so one table answers both questions. The
+// original site put them in two tabs, which made comparing an element's two
+// standings a matter of paging through a second list to find the same row.
+//
+// The join is left: an element that arrived after the snapshot, or that the
+// snapshot left unplaced, still belongs in the cumulative list — it simply has
+// nothing recent to report.
+const cumulativeRankReportSelect = `
+	SELECT rr.rank, rr.win_rate,
+	       recent.rank, recent.win_rate, recent.start_date,
+	       e.title, e.type, e.id, e.video_id, e.source_url, e.video_source,
+	       e.thumb_url,
+	       e.lowthumb_url, e.mediumthumb_url
+	FROM rank_reports rr
+	JOIN elements e ON e.id = rr.element_id
+	LEFT JOIN rank_report_histories recent
+	       ON recent.rank_report_id = rr.id
+	      AND recent.time_range = 'thousand_votes'
+	      AND recent.rank > 0
+	      AND recent.deleted_at IS NULL
+	      AND recent.start_date = (` + latestThousandSnapshot + `)
+`
+
 const recentRankReportSelect = `
 	SELECT rrh.rank, rrh.win_rate, rrh.start_date,
 	       e.title, e.type, e.id, e.video_id, e.source_url, e.video_source,
@@ -595,6 +623,36 @@ func scanRankReport(scanner rowScanner, now time.Time) (RankReport, error) {
 	return RankReport{
 		Rank: rankValue, WinRate: formatRate(winRate), Date: now.Format("2006-01-02"), Element: element,
 	}, nil
+}
+
+func scanCumulativeRankReport(scanner rowScanner, now time.Time) (RankReport, error) {
+	var rank, recentRank sql.NullInt64
+	var winRate, recentWinRate sql.NullFloat64
+	var recentDate sql.NullTime
+	var element RankElement
+	if err := scanner.Scan(
+		&rank, &winRate, &recentRank, &recentWinRate, &recentDate,
+		&element.Title, &element.Type, &element.ID,
+		&element.VideoID, &element.SourceURL, &element.VideoSource, &element.ThumbURL,
+		&element.LowThumbURL, &element.MediumThumbURL,
+	); err != nil {
+		return RankReport{}, err
+	}
+	var rankValue *int64
+	if rank.Valid {
+		rankValue = &rank.Int64
+	}
+	report := RankReport{
+		Rank: rankValue, WinRate: formatRate(winRate), Date: now.Format("2006-01-02"), Element: element,
+	}
+	if recentRank.Valid {
+		snapshot := RankSnapshot{Rank: recentRank.Int64, WinRate: formatRate(recentWinRate)}
+		if recentDate.Valid {
+			snapshot.Date = recentDate.Time.Format("2006-01-02")
+		}
+		report.Recent = &snapshot
+	}
+	return report, nil
 }
 
 func scanHistoricalRankReport(scanner rowScanner) (RankReport, error) {

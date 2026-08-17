@@ -105,10 +105,32 @@ func TestRankQueriesDoNotHardcodeRankReportColumns(t *testing.T) {
 	// The ranking queries must take their rank_reports filter from the probe
 	// above; an inlined rr.deleted_at or rr.hidden reintroduces the 503 on any
 	// database whose schema lacks that column.
-	for _, query := range []string{rankReportSelect, recentRankReportSelect} {
+	for _, query := range []string{rankReportSelect, recentRankReportSelect, cumulativeRankReportSelect} {
 		if strings.Contains(query, "rr.deleted_at") || strings.Contains(query, "rr.hidden") {
 			t.Errorf("query hardcodes a rank_reports column that is not present in every schema:\n%s", query)
 		}
+	}
+}
+
+func TestCumulativeRanksCarryTheThousandVoteStandingWithoutDroppingRows(t *testing.T) {
+	// One table shows both standings, so the recent join must never decide which
+	// elements appear: an element the snapshot left out still has an all-time
+	// rank, and an inner join would silently shorten the page.
+	if !strings.Contains(cumulativeRankReportSelect, "LEFT JOIN rank_report_histories recent") {
+		t.Fatalf("the recent standing must be joined left:\n%s", cumulativeRankReportSelect)
+	}
+	// Rank 0 means "counted but not placed"; showing it as #0 reads as a real
+	// standing, which is why the recent group elsewhere skips those rows too.
+	if !strings.Contains(cumulativeRankReportSelect, "recent.rank > 0") {
+		t.Fatalf("unplaced snapshot rows must not become a recent rank:\n%s", cumulativeRankReportSelect)
+	}
+	if !strings.Contains(cumulativeRankReportSelect, "recent.time_range = 'thousand_votes'") {
+		t.Fatalf("the recent standing must come from the thousand-vote range:\n%s", cumulativeRankReportSelect)
+	}
+	// Both the join subquery and the caller's own filter take a post id, and the
+	// subquery is read first: swapping them ranks a different post.
+	if strings.Count(cumulativeRankReportSelect, "?") != 1 {
+		t.Fatalf("the select must take exactly the post id of the snapshot subquery:\n%s", cumulativeRankReportSelect)
 	}
 }
 

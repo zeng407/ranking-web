@@ -4030,43 +4030,6 @@ button.game-sync-indicator {
   min-width: 0;
 }
 
-.game-ranking-group-tabs {
-  display: inline-flex;
-  gap: 0.4rem;
-  margin-bottom: 1.25rem;
-  padding: 0.35rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--rank-tab-bg);
-}
-
-.game-ranking-group-tabs button {
-  min-height: 2.55rem;
-  padding: 0.55rem 1rem;
-  border: 0;
-  border-radius: 999px;
-  color: var(--rank-tab-inactive-text);
-  background: transparent;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-.game-ranking-group-tabs button.active {
-  color: var(--rank-tab-active-text);
-  background: var(--rank-tab-active-bg);
-  box-shadow: 0 5px 16px color-mix(in srgb, var(--rank-tab-active-bg) 34%, transparent);
-}
-
-.game-ranking-group-tabs button:hover:not(.active) {
-  color: var(--text);
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-}
-
-.game-ranking-group-tabs button:disabled {
-  cursor: wait;
-}
-
 /* The ranking gets the wider column. It used to be the narrower of the two, so
    only five of twenty rows were visible while the supporting trend card took
    728px of width for a chart that was mostly empty scale. */
@@ -4124,20 +4087,60 @@ button.game-sync-indicator {
    down to "刀劍神域 - …". */
 .game-rank-trend > header {
   display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 0.7rem 0.8rem;
 }
 
-.game-rank-trend > header .game-selected-group-ranks {
-  grid-column: 1 / -1;
+/* The picture is the subject of a ranking, so it gets real size and is never
+   cropped: contain inside a fixed box keeps portraits and banners on the same
+   card height without cutting either one. */
+.game-rank-figure {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: clamp(11rem, 26vh, 17rem);
+  margin: 0.9rem 0 1rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-strong);
+  cursor: zoom-in;
 }
 
-.game-rank-trend > header img {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.8rem;
-  object-fit: cover;
+.game-rank-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.game-rank-zoom-hint {
+  position: absolute;
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.game-rank-figure:hover .game-rank-zoom-hint,
+.game-rank-figure:focus-visible .game-rank-zoom-hint {
+  opacity: 1;
+}
+
+.game-rank-zoom-hint svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
 }
 
 .game-rank-trend > header div {
@@ -4385,13 +4388,11 @@ button.game-sync-indicator {
 }
 
 .game-ranking .game-community-list img {
-  width: 3rem;
-  height: 3rem;
-}
-
-.game-community-list .game-community-thumb {
-  width: 3rem;
-  height: 3rem;
+  width: 100%;
+  height: 100%;
+  /* Contained, not cropped: these thumbnails were cutting the faces out of
+     portrait entries, which is the one thing a ranking row has to show. */
+  object-fit: contain;
 }
 
 .game-ranking .game-community-list > li {
@@ -4405,14 +4406,33 @@ button.game-sync-indicator {
   box-shadow: inset 3px 0 var(--accent);
 }
 
-.game-community-list button {
+/* Rank, picture, and the rest of the row. The picture is its own control, so
+   it cannot live inside the button that selects the row. */
+.game-community-row {
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: 2rem 3rem minmax(0, 1fr) 1.1rem;
+  grid-template-columns: 2rem 4.5rem minmax(0, 1fr);
   align-items: center;
   gap: 0.7rem;
   padding: 0.5rem 0.7rem;
+}
+
+.game-community-position {
+  color: var(--text-faint);
+  font-size: 1.25rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.game-community-open {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto 1.1rem;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.35rem 0;
   border: 0;
   color: var(--text);
   background: transparent;
@@ -4420,20 +4440,58 @@ button.game-sync-indicator {
   text-align: left;
 }
 
-/* Scoped to the first child: the thumbnail beside it is also a span now, and it
-   must not pick up the rank number's type. */
-.game-community-list button > span:first-child {
+.game-community-title {
+  display: grid;
+  min-width: 0;
+}
+
+.game-community-title strong,
+.game-community-title small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The thousand-vote standing, on the same row as the all-time one: the two
+   tables were separate lists before, which meant comparing an element with
+   itself across two pages. */
+.game-community-recent {
+  display: grid;
+  min-width: 4.5rem;
+  padding-left: 0.7rem;
+  border-left: 1px solid var(--border);
   color: var(--text-faint);
-  font-size: 1.25rem;
-  font-weight: 850;
-  text-align: center;
+  font-size: 0.6rem;
+  justify-items: end;
+  text-align: right;
+}
+
+.game-community-recent strong {
+  color: var(--accent);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-community-recent strong.is-empty {
+  color: var(--text-faint);
+  font-size: 0.7rem;
 }
 
 .game-community-thumb {
   position: relative;
   display: block;
-  width: 4rem;
-  height: 4rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  overflow: hidden;
+  background: var(--surface-strong);
+  cursor: zoom-in;
+}
+
+.game-community-thumb:disabled {
+  cursor: default;
 }
 
 /* Tells the row it holds a video. The player itself opens in the card above,
@@ -4458,7 +4516,7 @@ button.game-sync-indicator {
   stroke: none;
 }
 
-.game-community-list button > svg {
+.game-community-open > svg {
   width: 1rem;
   fill: none;
   stroke: var(--text-faint);
@@ -4467,12 +4525,69 @@ button.game-sync-indicator {
   stroke-width: 1.8;
 }
 
-.game-community-list button:hover {
+.game-ranking .game-community-list > li:hover {
   background: var(--surface-strong);
 }
 
-.game-community-list button div {
-  min-width: 0;
+/* The picture on its own. Fixed, so it covers the page whatever the row was
+   scrolled to. */
+.game-rank-zoom {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 4vw, 3rem);
+  place-content: center;
+  justify-items: center;
+  background: rgb(0 0 0 / 78%);
+  cursor: zoom-out;
+}
+
+.game-rank-zoom img {
+  max-width: min(92vw, 60rem);
+  max-height: 78vh;
+  border-radius: 0.9rem;
+  object-fit: contain;
+  background: var(--surface);
+}
+
+.game-rank-zoom p {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0;
+  color: #fff;
+  text-align: center;
+}
+
+.game-rank-zoom p strong {
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-rank-zoom-close {
+  position: absolute;
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  top: 1rem;
+  right: 1rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 35%);
+  border-radius: 50%;
+  color: #fff;
+  background: rgb(0 0 0 / 45%);
+  cursor: pointer;
+}
+
+.game-rank-zoom-close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.9;
 }
 
 .game-ranking-state {
@@ -5118,20 +5233,27 @@ button.game-sync-indicator {
     grid-template-columns: 1fr;
   }
 
-  .game-ranking-group-tabs {
-    display: flex;
+  /* Narrow rows drop the recent standing's own column and stack it under the
+     title; three columns of numbers on a phone leaves nothing for the name. */
+  .game-community-row {
+    grid-template-columns: 1.6rem 3.6rem minmax(0, 1fr);
+    gap: 0.5rem;
   }
 
-  .game-ranking-group-tabs button {
-    flex: 1;
+  .game-community-open {
+    grid-template-columns: minmax(0, 1fr) 1.1rem;
   }
 
-  .game-rank-trend > header {
-    grid-template-columns: 3.5rem minmax(0, 1fr);
-  }
-
-  .game-selected-group-ranks {
+  .game-community-recent {
     grid-column: 1 / -1;
+    padding-left: 0;
+    border-left: 0;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .game-community-recent strong {
+    font-size: 0.85rem;
   }
 
   .game-result-loading-ranking {

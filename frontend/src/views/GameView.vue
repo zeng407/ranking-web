@@ -41,7 +41,6 @@ import {
 import {
   createPublicContentService,
   type RankDetails,
-  type RankGroup,
   type RankHistoryPoint,
   type RankReport,
   type RanksPage,
@@ -111,7 +110,7 @@ const communityLoading = ref(false)
 const communityError = ref(false)
 const selectedCommunityRank = ref<RankReport | null>(null)
 const rankDetails = ref<RankDetails | null>(null)
-const rankingGroup = ref<RankGroup>('cumulative')
+const zoomedRank = ref<RankReport | null>(null)
 const trendLoading = ref(false)
 const trendError = ref(false)
 const controlsOpen = ref(false)
@@ -265,18 +264,24 @@ function onPreviewImageError(event: Event, option: PreviewOption): void {
   image.src = option.fallback
 }
 
-const rankingGroups = computed(() => [
-  { value: 'cumulative' as const, label: t('gameCumulativeRanking') },
-  { value: 'recent_1000' as const, label: t('gameRecentThousandRanking') },
-])
-const trendHistoryKey = computed(() => rankingGroup.value === 'recent_1000' ? 'thousand_votes' : 'all')
+/**
+ * How far down the table a history chart is worth drawing.
+ *
+ * The original site drew one for the podium and the tail and gave every other
+ * element a win rate alone, because a chart of ranks 40 to 44 is a flat line that
+ * says nothing a percentage does not. Five keeps that judgement and states it once.
+ */
+const historyChartRankLimit = 5
+
 const trendPoints = computed<RankHistoryPoint[]>(() => (
-	rankDetails.value?.history[trendHistoryKey.value] ?? []
+	rankDetails.value?.history.all ?? []
 ).filter((point) => positiveRank(point.rank) !== null))
 const cumulativeSelectedRank = computed(() => rankDetails.value?.groups?.cumulative ?? rankDetails.value?.current ?? null)
 const recentSelectedRank = computed(() => {
   const grouped = rankDetails.value?.groups?.recent_1000
   if (grouped) return grouped
+  const listed = selectedCommunityRank.value?.recent
+  if (listed) return listed
   return rankDetails.value?.history.thousand_votes?.[0] ?? null
 })
 const trendCoordinates = computed(() => rankTrendCoordinates(trendPoints.value))
@@ -284,19 +289,14 @@ const trendPolyline = computed(() => rankTrendPolyline(trendCoordinates.value))
 const trendPointRadius = computed(() => rankTrendPointRadius(trendCoordinates.value.length))
 const trendFirstDate = computed(() => trendCoordinates.value[0]?.date ?? '')
 const trendLastDate = computed(() => trendCoordinates.value.at(-1)?.date ?? '')
-// A chart is only drawn for the ranks the shared scale covers. Beyond that the
-// line would sit flat on the boundary and say nothing.
-//
-// The rank that decides this is the one in the list the reader is looking at, not
-// the cumulative one: an element can be top ten over the last thousand votes
-// while sitting far lower all-time, and hiding its chart on the recent tab would
-// contradict the position shown next to it.
-const selectedRankIsCharted = computed(() => isRankTrendCharted(
-  positiveRank(selectedCommunityRank.value?.rank)
-  ?? positiveRank(rankingGroup.value === 'recent_1000'
-    ? recentSelectedRank.value?.rank
-    : cumulativeSelectedRank.value?.rank),
-))
+// A chart is only drawn for the ranks the shared scale covers, and only for the
+// top few: everything below reads its standing off the two win rates instead.
+const selectedChartRank = computed(() => positiveRank(selectedCommunityRank.value?.rank)
+  ?? positiveRank(cumulativeSelectedRank.value?.rank))
+const selectedRankIsCharted = computed(() => {
+  const rank = selectedChartRank.value
+  return rank !== null && rank <= historyChartRankLimit && isRankTrendCharted(rank)
+})
 const trendWorstLabel = `#${rankTrendDomain.worst}+`
 // Geometry comes from the module so the gridlines and axis labels cannot drift
 // away from the coordinates the points are plotted with.
@@ -577,18 +577,17 @@ function resetVoteAnimation(): void {
   hoveredVideoID.value = null
 }
 
-async function loadCommunityRanks(page = communityRanks.value.page, group = rankingGroup.value): Promise<void> {
-  if (communityLoading.value && group === rankingGroup.value) return
+async function loadCommunityRanks(page = communityRanks.value.page): Promise<void> {
+  if (communityLoading.value) return
   const requestVersion = ++communityRankRequestVersion
-  const scrollPosition = (page !== communityRanks.value.page || group !== rankingGroup.value) && communityRanks.value.items.length
+  const scrollPosition = page !== communityRanks.value.page && communityRanks.value.items.length
     ? captureRankingScrollPosition()
     : null
-  rankingGroup.value = group
   communityLoading.value = true
   communityError.value = false
   try {
-    const ranks = await publicContentService.ranks(postSerial.value, group, page, 20)
-    if (requestVersion !== communityRankRequestVersion || rankingGroup.value !== group) return
+    const ranks = await publicContentService.ranks(postSerial.value, page, 20)
+    if (requestVersion !== communityRankRequestVersion) return
     communityRanks.value = ranks
     const firstReport = communityRanks.value.items[0]
     if (resultTab.value === 'community' && firstReport) {
@@ -795,9 +794,27 @@ function selectResultTab(tab: 'mine' | 'community'): void {
   }
 }
 
-function selectRankingGroup(group: RankGroup): void {
-  if (group === rankingGroup.value) return
-  void loadCommunityRanks(1, group)
+/**
+ * Opens the full-size picture of a ranked element.
+ *
+ * The row and the card both show a thumbnail sized for a list, and the ranking is
+ * the one screen where the picture is the thing being ranked — so it has to be
+ * openable at its own size rather than only ever seen cropped into a square.
+ */
+function zoomRank(report: RankReport): void {
+  if (!fullSizeRankImage(report)) return
+  zoomedRank.value = report
+}
+
+function closeZoom(): void {
+  zoomedRank.value = null
+}
+
+/** The largest picture the API offers, falling back down the thumbnail sizes. */
+function fullSizeRankImage(report: RankReport): string | null {
+  const element = report.element
+  if (element.type === 'video') return element.thumb_url ?? element.mediumthumb_url ?? null
+  return element.source_url ?? element.thumb_url ?? element.mediumthumb_url ?? element.lowthumb_url ?? null
 }
 
 async function selectCommunityRank(report: RankReport): Promise<void> {
@@ -968,10 +985,10 @@ async function restartGame(): Promise<void> {
   }
   resetVoteAnimation()
   resultTab.value = 'mine'
-  rankingGroup.value = 'cumulative'
   communityRanks.value = { items: [], page: 1, per_page: 20, total: 0, total_pages: 0 }
   selectedCommunityRank.value = null
   rankDetails.value = null
+  closeZoom()
   entryDecisionPending.value = false
   resultPreparationVersion += 1
   resultPreparing.value = false
@@ -1226,6 +1243,12 @@ function onStorage(event: StorageEvent): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
+  // Before the input guard: the zoom's own close button is a BUTTON and usually
+  // holds focus while it is open, so Escape has to reach here from there too.
+  if (event.key === 'Escape' && zoomedRank.value) {
+    closeZoom()
+    return
+  }
   const target = event.target
   if (target instanceof HTMLElement
     && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))) return
@@ -1722,18 +1745,6 @@ function preferredRankImage(report: RankReport): string | null {
 				</li>
       </ol>
       <div v-else class="game-community-ranking" role="tabpanel">
-          <div class="game-ranking-group-tabs" role="tablist" :aria-label="t('gameRankingGroup')">
-            <button
-              v-for="group in rankingGroups"
-              :key="group.value"
-              type="button"
-              role="tab"
-              :aria-selected="rankingGroup === group.value"
-              :class="{ active: rankingGroup === group.value }"
-              :disabled="communityLoading && rankingGroup === group.value"
-              @click="selectRankingGroup(group.value)"
-            >{{ group.label }}</button>
-          </div>
           <p v-if="communityLoading && !communityRanks.items.length" class="game-ranking-state">{{ t('gameCommunityLoading') }}</p>
           <div v-else-if="communityError && !communityRanks.items.length" class="game-ranking-state">
             <p>{{ t('gameCommunityError') }}</p>
@@ -1748,7 +1759,6 @@ function preferredRankImage(report: RankReport): string | null {
           >
             <section class="game-rank-trend">
               <header v-if="selectedCommunityRank">
-                <img v-if="preferredRankImage(selectedCommunityRank)" :src="preferredRankImage(selectedCommunityRank) || ''" :alt="selectedCommunityRank.element.title || ''">
                 <div>
                   <!-- Dropped along with the chart rather than announced: a label
                        for something that is not there reads as a fault. -->
@@ -1756,14 +1766,14 @@ function preferredRankImage(report: RankReport): string | null {
                   <h2>{{ selectedCommunityRank.element.title }}</h2>
                 </div>
                 <dl class="game-selected-group-ranks">
-                  <div :class="{ active: rankingGroup === 'cumulative' }">
+                  <div>
                     <dt>{{ t('gameCumulativeRanking') }}</dt>
                     <dd>
 						<strong>{{ rankLabel(cumulativeSelectedRank?.rank) }}</strong>
 						<small v-if="positiveRank(cumulativeSelectedRank?.rank)">{{ t('gameWinRate', { rate: cumulativeSelectedRank?.win_rate ?? '' }) }}</small>
                     </dd>
                   </div>
-                  <div :class="{ active: rankingGroup === 'recent_1000' }">
+                  <div>
                     <dt>{{ t('gameRecentThousandRanking') }}</dt>
                     <dd>
 						<strong>{{ rankLabel(recentSelectedRank?.rank) }}</strong>
@@ -1772,6 +1782,28 @@ function preferredRankImage(report: RankReport): string | null {
                   </div>
                 </dl>
               </header>
+              <!-- The selected element at a size worth looking at. Contained
+                   rather than cropped, because a ranking picture is the thing
+                   being ranked, and clicking it opens the full image. -->
+              <button
+                v-if="selectedCommunityRank
+                  && !rankVideoEmbedURL(selectedCommunityRank)
+                  && preferredRankImage(selectedCommunityRank)"
+                class="game-rank-figure"
+                type="button"
+                :aria-label="t('gameZoomRankImage', { title: selectedCommunityRank.element.title || '' })"
+                @click="zoomRank(selectedCommunityRank)"
+              >
+                <img
+                  :src="preferredRankImage(selectedCommunityRank) || ''"
+                  :alt="selectedCommunityRank.element.title || ''"
+                >
+                <span class="game-rank-zoom-hint" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="7" /><path d="M20 20l-4.4-4.4M11 8v6M8 11h6" />
+                  </svg>
+                </span>
+              </button>
               <!-- Video entries preview as a still and only load the player once
                    the viewer asks for it. Depends on the selected row alone, so it
                    survives a details reload without the card resizing. -->
@@ -1842,19 +1874,42 @@ function preferredRankImage(report: RankReport): string | null {
 
             <ol class="game-community-list">
               <li v-for="(report, index) in communityRanks.items" :key="report.element.id" :class="{ active: selectedCommunityRank?.element.id === report.element.id }">
-                <button type="button" @click="selectCommunityRank(report)">
-				  <span>{{ positiveRank(report.rank) ?? ((communityRanks.page - 1) * communityRanks.per_page + index + 1) }}</span>
-                  <span class="game-community-thumb">
+                <div class="game-community-row">
+                  <span class="game-community-position">{{ positiveRank(report.rank) ?? ((communityRanks.page - 1) * communityRanks.per_page + index + 1) }}</span>
+                  <!-- The picture is its own control: the row selects the element,
+                       the thumbnail opens the picture at full size. -->
+                  <button
+                    class="game-community-thumb"
+                    type="button"
+                    :disabled="!fullSizeRankImage(report)"
+                    :aria-label="t('gameZoomRankImage', { title: report.element.title || '' })"
+                    @click="zoomRank(report)"
+                  >
                     <img v-if="preferredRankImage(report)" :src="preferredRankImage(report) || ''" :alt="report.element.title || ''" loading="lazy">
                     <!-- Marks the row as holding a video; the player itself lives
                          in the card above, where there is room for it. -->
                     <span v-if="rankVideoEmbedURL(report)" class="game-community-thumb-video" aria-hidden="true">
                       <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z" /></svg>
                     </span>
-                  </span>
-                  <div><strong>{{ report.element.title }}</strong><small>{{ t('gameWinRate', { rate: report.win_rate }) }}</small></div>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V9M10 18V5M16 18v-7M22 18H2" /></svg>
-                </button>
+                  </button>
+                  <button class="game-community-open" type="button" @click="selectCommunityRank(report)">
+                    <span class="game-community-title">
+                      <strong>{{ report.element.title }}</strong>
+                      <small>{{ t('gameWinRate', { rate: report.win_rate }) }}</small>
+                    </span>
+                    <!-- Both standings on one row: the number on the left is the
+                         all-time place, this is the same element over the last
+                         thousand votes. An element the latest snapshot left out
+                         keeps its cumulative place and shows no recent one. -->
+                    <span class="game-community-recent">
+                      <small>{{ t('gameRecentThousandRanking') }}</small>
+                      <strong v-if="report.recent">{{ rankLabel(report.recent.rank) }}</strong>
+                      <strong v-else class="is-empty">{{ t('gameNoRankData') }}</strong>
+                      <small v-if="report.recent">{{ t('gameWinRate', { rate: report.recent.win_rate }) }}</small>
+                    </span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V9M10 18V5M16 18v-7M22 18H2" /></svg>
+                  </button>
+                </div>
               </li>
             </ol>
           </div>
@@ -1866,6 +1921,25 @@ function preferredRankImage(report: RankReport): string | null {
             <span>{{ communityRanks.page }} / {{ communityRanks.total_pages }}</span>
             <button type="button" :disabled="communityLoading || communityRanks.page >= communityRanks.total_pages" @click="loadCommunityRanks(communityRanks.page + 1)">{{ t('nextPage') }}</button>
           </nav>
+          <!-- The picture on its own, which is what a ranking list is about.
+               Escape closes it; see onKeydown. -->
+          <div
+            v-if="zoomedRank"
+            class="game-rank-zoom"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="zoomedRank.element.title || ''"
+            @click.self="closeZoom"
+          >
+            <button class="game-rank-zoom-close" type="button" :aria-label="t('close')" @click="closeZoom">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <img :src="fullSizeRankImage(zoomedRank) || ''" :alt="zoomedRank.element.title || ''">
+            <p>
+              <strong>{{ rankLabel(zoomedRank.rank) }}</strong>
+              <span>{{ zoomedRank.element.title }}</span>
+            </p>
+          </div>
       </div>
     </section>
 
