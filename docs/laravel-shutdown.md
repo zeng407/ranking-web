@@ -130,10 +130,27 @@ APP_PORT=8000 docker compose -p ranking-web up -d laravel.test   # http://localh
 `password_resets`，兩張表獨立。但**同一個時間點只有其中一邊寄出的連結有效**，切換的瞬間
 另一邊已寄出、還沒使用的連結會失效（TTL 60 分鐘）。
 
+## 3.5 Google 登入的 redirect URI
+
+`GO_OAUTH_GOOGLE_REDIRECT_URL` 現在指向站台自己的 origin：
+
+    GO_OAUTH_GOOGLE_REDIRECT_URL=http://localhost/api/v1/auth/oauth/google/callback
+
+前端 nginx 的 `location /api/` 會把它轉給 `backend:8080`，所以 callback 不再依賴 backend
+把 8080 發佈到 host。原本的 `http://localhost:8080/...` 之所以要改，是因為它沒有註冊在
+Google 的授權清單裡，按下 Google 登入會拿到 `400 redirect_uri_mismatch`。
+
+**每個環境都要自己在 Google Cloud console 註冊。** APIs & Services → Credentials → 該
+OAuth 2.0 Client ID → Authorized redirect URIs，填的字串必須與 `GO_OAUTH_GOOGLE_REDIRECT_URL`
+完全一致：web 類型的 client 對 `localhost` 也是逐字比對，連 port 都算，`http://localhost`
+（隱含 80）和 `http://localhost:8080` 是兩個不同的項目。正式環境是
+`https://<站台網域>/api/v1/auth/oauth/google/callback`。
+
+換 origin 不會讓已登入的人掉出來：cookie 的作用域不看 port，`localhost:8080` 寫下的
+`2pick_refresh` 在 port 80 一樣送得出去。OAuth 的 state 存在服務端（`OAuthStateStore`），
+沒有跟著 redirect URI 的 origin 走的 cookie，所以中途改這個值只影響還沒完成的那一次流程。
+
 ## 4. 之後可以做，這次沒做
 
-- `GO_OAUTH_GOOGLE_REDIRECT_URL` 仍指向 `:8080`。改成
-  `http://localhost/api/v1/auth/oauth/google/callback` 可以讓 callback 與站台同源，但
-  **必須先在 Google Cloud console 加這個 URI**，否則會直接 `redirect_uri_mismatch`。
 - 刪掉 PHP 端已經沒有讀者的程式碼（`cachePosts`、Blade 版 `/admin`、auth 相關 route）。
   停掉容器不等於刪掉，這次只做前者，回滾才有東西可用。
