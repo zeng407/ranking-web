@@ -108,6 +108,11 @@ type BatchInput struct {
 	//
 	// Without this the column ends up holding the pair just ELIMINATED, and a room shows
 	// a match that is already decided. Two elements, or empty to leave the column alone.
+	//
+	// The batch that FINISHES a game sends the final two here instead, in the order they
+	// were shown, room or no room: nothing is on screen any more, and that order is the
+	// one user_game_results.candidates keeps for the home page's champion rail. See
+	// finalPairAsDisplayed.
 	CurrentCandidates []int64
 	Caller            postaccess.Caller
 }

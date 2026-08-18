@@ -330,6 +330,26 @@ export function champion(snapshot: LocalGameSnapshot): LocalGameElement | null {
   return snapshot.elements.find((element) => !element.local_eliminated) ?? null
 }
 
+/**
+ * The final pair, in the order the two candidates were shown, left first.
+ *
+ * The server records a winner and a loser per round, never a side, so this is the only
+ * thing that knows which finalist stood on the left. The home page's champion rail
+ * places the two finalists in this order; without it every entry there shows the winner
+ * on the left, which reads as "the left one always wins".
+ *
+ * Null for a game still in play, and for a snapshot written before the side was
+ * recorded — the server then falls back to winner-first.
+ */
+export function finalDisplayedPair(snapshot: LocalGameSnapshot): [number, number] | null {
+  if (snapshot.status !== 'completed') return null
+  const last = snapshot.match_history[0]
+  if (!last || (last.winner_side !== 'left' && last.winner_side !== 'right')) return null
+  return last.winner_side === 'right'
+    ? [last.loser_id, last.winner_id]
+    : [last.winner_id, last.loser_id]
+}
+
 export function rankedElements(snapshot: LocalGameSnapshot): LocalGameElement[] {
   return [...snapshot.elements].sort((left, right) => {
     if (left.local_eliminated !== right.local_eliminated) return left.local_eliminated ? 1 : -1

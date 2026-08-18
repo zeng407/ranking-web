@@ -29,9 +29,10 @@ type submitGameVotesRequest struct {
 	ExpectedVoteCount *int            `json:"expected_vote_count"`
 	Votes             []gameplay.Vote `json:"votes"`
 	AnonymousID       string          `json:"anonymous_id"`
-	// CurrentCandidates is the pair the client is showing after these votes, sent only
-	// when hosting a room. See gameplay.BatchInput.CurrentCandidates for why the server
-	// cannot work it out itself.
+	// CurrentCandidates is the pair the client is showing after these votes when hosting a
+	// room, and the final two in the order they were shown on the batch that finishes the
+	// game. See gameplay.BatchInput.CurrentCandidates for why the server cannot work
+	// either one out itself.
 	CurrentCandidates []int64 `json:"current_candidates"`
 }
 

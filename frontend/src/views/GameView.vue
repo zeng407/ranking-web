@@ -10,6 +10,7 @@ import {
   champion,
   chooseNextMatch,
   createInitialSnapshot,
+  finalDisplayedPair,
   rankedElements,
   restoreLegacySnapshot,
   restoreSnapshot,
@@ -943,8 +944,15 @@ async function syncVotes(): Promise<void> {
     // means exactly that, and this client picks its own pairs locally, so the server has no
     // other way to know — without it the room shows its participants the match just decided.
     // Only sent when this batch empties the outbox; see onScreenPairForBatch.
+    //
+    // The batch that finishes the game has no pair on screen any more, and sends the final
+    // two in the order they were shown instead: that order is what the home page's champion
+    // rail places the finalists by, and only this client knows it. See finalDisplayedPair.
     const onScreen = hostedRoom.hosting.value
       ? onScreenPairForBatch(batch.length, game.outbox.length, currentElements.value)
+      : undefined
+    const finalists = batch.length === game.outbox.length
+      ? finalDisplayedPair(game) ?? undefined
       : undefined
 
     const result = await service.submitVotes(
@@ -953,7 +961,7 @@ async function syncVotes(): Promise<void> {
       batch.map(({ winner_id, loser_id }) => ({ winner_id, loser_id })),
       getAnonymousID(),
       requestController.signal,
-      onScreen,
+      onScreen ?? finalists,
     )
     if (!renewOwnedLease() || snapshot.value?.game_serial !== game.game_serial) {
       readOnly.value = true

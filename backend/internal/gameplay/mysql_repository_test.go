@@ -121,3 +121,30 @@ func TestPositiveRankPointerHidesZeroAndMissingRanks(t *testing.T) {
 		t.Fatalf("positive rank = %#v", rank)
 	}
 }
+
+func TestFinalPairAsDisplayedKeepsTheSideThePlayerSaw(t *testing.T) {
+	final := Vote{WinnerID: 7, LoserID: 9}
+	tests := []struct {
+		name       string
+		candidates []int64
+		want       string
+		wantOK     bool
+	}{
+		{name: "winner on the left", candidates: []int64{7, 9}, want: "7,9", wantOK: true},
+		{name: "winner on the right", candidates: []int64{9, 7}, want: "9,7", wantOK: true},
+		{name: "missing", candidates: nil, wantOK: false},
+		{name: "not a pair", candidates: []int64{7, 9, 11}, wantOK: false},
+		{name: "a stranger in the pair", candidates: []int64{7, 11}, wantOK: false},
+		{name: "same element twice", candidates: []int64{7, 7}, wantOK: false},
+	}
+	for _, test := range tests {
+		got, ok := finalPairAsDisplayed(test.candidates, final)
+		if ok != test.wantOK {
+			t.Errorf("%s: ok = %t, want %t", test.name, ok, test.wantOK)
+			continue
+		}
+		if ok && got != test.want {
+			t.Errorf("%s: candidates = %q, want %q", test.name, got, test.want)
+		}
+	}
+}

@@ -633,13 +633,17 @@ func (repository *MySQLRepository) SubmitVotes(ctx context.Context, gameSerial s
 			return BatchResult{}, conflict("game_state_unavailable", serverVoteCount)
 		}
 		anonymousID := sql.NullString{String: input.AnonymousID, Valid: input.AnonymousID != ""}
+		finalists, ok := finalPairAsDisplayed(input.CurrentCandidates, finalVote)
+		if !ok {
+			finalists = fmt.Sprintf("%d,%d", finalVote.WinnerID, finalVote.LoserID)
+		}
 		if _, err := transaction.ExecContext(ctx, `
 			INSERT INTO user_game_results
 			(user_id, anonymous_id, game_id, champion_id, loser_id, loser_name, champion_name, candidates, created_at, updated_at)
 			SELECT NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?
 			WHERE NOT EXISTS (SELECT 1 FROM user_game_results WHERE game_id = ?)`,
 			anonymousID, gameID, finalVote.WinnerID, finalVote.LoserID,
-			loser.title, winner.title, fmt.Sprintf("%d,%d", finalVote.WinnerID, finalVote.LoserID), now, now, gameID,
+			loser.title, winner.title, finalists, now, now, gameID,
 		); err != nil {
 			return BatchResult{}, err
 		}
@@ -676,6 +680,33 @@ func onScreenPair(candidates []int64, states map[int64]*gameElementState) (strin
 		}
 	}
 	return fmt.Sprintf("%d,%d", candidates[0], candidates[1]), true
+}
+
+/*
+finalPairAsDisplayed formats a completed game's last pair in the order the player saw
+it, left first.
+
+game_1v1_rounds records a winner and a loser, never a side, so a client that picks its
+own pairs is the only thing that knows which finalist stood on the left. The home
+page's champion rail places the two finalists with the column this feeds, so writing
+the winner first for every game is exactly what makes the left candidate look like it
+always wins.
+
+The value is client-supplied and purely presentational, so it is accepted only when it
+names the two elements this game actually ended on — anything else falls back to
+winner-first rather than putting a stranger on the home page.
+*/
+func finalPairAsDisplayed(candidates []int64, finalVote Vote) (string, bool) {
+	if len(candidates) != 2 {
+		return "", false
+	}
+	left, right := candidates[0], candidates[1]
+	sameElements := (left == finalVote.WinnerID && right == finalVote.LoserID) ||
+		(left == finalVote.LoserID && right == finalVote.WinnerID)
+	if !sameElements {
+		return "", false
+	}
+	return fmt.Sprintf("%d,%d", left, right), true
 }
 
 func loadRounds(ctx context.Context, transaction *sql.Tx, gameID int64) ([]persistedRound, error) {
