@@ -209,6 +209,9 @@ func (a *api) requirePublicContent(w http.ResponseWriter, r *http.Request) bool 
 }
 
 func (a *api) writePublicContentError(w http.ResponseWriter, r *http.Request, err error) {
+	if wroteSignInRequired(w, r, err) {
+		return
+	}
 	if errors.Is(err, publiccontent.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "not_found", "public content was not found")
 		return

@@ -223,3 +223,29 @@ func TestPublicEndpointMapsMissingAndUnavailableRepositories(t *testing.T) {
 		}
 	})
 }
+
+/*
+The ranking of an adult post answers 401, not 404.
+
+404 is what every other refused post read returns, and the browser reads it as "this post
+wants a door code" — it would put a password box in front of a post that has no password.
+The body must also stay out of the shared caches, since the answer depends on the caller.
+*/
+func TestRanksEndpointAsksAnAdultPostVisitorToSignIn(t *testing.T) {
+	response := httptest.NewRecorder()
+	publicTestHandler(&fakePublicContent{err: postaccess.ErrSignInRequired}).ServeHTTP(
+		response,
+		httptest.NewRequest(http.MethodGet, "/api/v1/ranks?post_serial=abc", nil),
+	)
+
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+	if response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("Cache-Control = %q, want no-store", response.Header().Get("Cache-Control"))
+	}
+	if response.Header().Get("Cloudflare-CDN-Cache-Control") != "" {
+		t.Fatalf("Cloudflare-CDN-Cache-Control = %q, want none",
+			response.Header().Get("Cloudflare-CDN-Cache-Control"))
+	}
+}

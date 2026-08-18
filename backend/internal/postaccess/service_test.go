@@ -287,3 +287,31 @@ func TestTheAliasesAreTheOnesTheCallerAsksFor(t *testing.T) {
 func contains(haystack, needle string) bool { return strings.Contains(haystack, needle) }
 
 func index(haystack, needle string) int { return strings.Index(haystack, needle) }
+
+/*
+THE ADULT RULE IS ABOUT ACCOUNTS, NOT ABOUT DOOR CODES.
+
+An 18+ post is listed on the home page and previewed on the game page, so the rule cannot
+live in VisibilityClause — it only applies to playing, voting and reading the ranking. A
+door code is no substitute for an account here: the two protections answer different
+questions, and a password post that is also 18+ needs both.
+*/
+func TestAnAdultPostNeedsAnAccount(t *testing.T) {
+	for name, testCase := range map[string]struct {
+		isCensored bool
+		caller     Caller
+		wantErr    error
+	}{
+		"a visitor may read an ordinary post":         {false, Caller{}, nil},
+		"a visitor may not read an adult post":        {true, Caller{}, ErrSignInRequired},
+		"an account may read an adult post":           {true, Caller{UserID: 7}, nil},
+		"a door code is not an account":               {true, Caller{UnlockedSerials: []string{"abc"}}, ErrSignInRequired},
+		"an account with a door code reads it anyway": {true, Caller{UserID: 7, UnlockedSerials: []string{"abc"}}, nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := RequireSignIn(testCase.isCensored, testCase.caller); !errors.Is(err, testCase.wantErr) {
+				t.Errorf("RequireSignIn() error = %v, want %v", err, testCase.wantErr)
+			}
+		})
+	}
+}

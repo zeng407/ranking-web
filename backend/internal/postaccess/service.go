@@ -20,6 +20,9 @@ var ErrPostNotFound = errors.New("postaccess: post not found")
 // ErrRateLimited means too many attempts on one post. Laravel allowed ten a minute.
 var ErrRateLimited = errors.New("postaccess: too many attempts")
 
+// ErrSignInRequired means the post is marked adult and the caller has no account.
+var ErrSignInRequired = errors.New("postaccess: sign in required")
+
 // RateLimit and RateWindow match GameController::access's RateLimiter.
 const (
 	RateLimit  = 10
@@ -191,4 +194,25 @@ func VisibilityClause(postAlias, policyAlias string, caller Caller) (clause stri
 			policyAlias, PolicyPassword, postAlias, placeholders)
 	}
 	return clause + ")", arguments
+}
+
+/*
+RequireSignIn enforces the adult-content rule: an 18+ post may be previewed by anyone but
+played, voted on and ranked only by an account.
+
+Deliberately NOT folded into VisibilityClause. That clause answers "may this caller see the
+post at all", and the answer for an adult post is yes — the home feed lists it and the game
+page shows its two preview thumbnails blurred. Only the acts that go past the preview need
+an account, so the rule is a separate check the statements that read a game or a rank apply
+after they have the row, and every other reader (comments, the feed, the definition itself)
+stays untouched.
+
+isCensored is posts.is_censored, read by the same statement that reads the row, so the flag
+cannot be stale by the time it is enforced.
+*/
+func RequireSignIn(isCensored bool, caller Caller) error {
+	if isCensored && caller.UserID == 0 {
+		return ErrSignInRequired
+	}
+	return nil
 }

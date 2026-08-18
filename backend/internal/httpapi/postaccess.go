@@ -182,3 +182,20 @@ func (a *api) refreshPostAccess(w http.ResponseWriter, caller postaccess.Caller,
 	token, _ := a.postAccess.Reissue(serial)
 	w.Header().Set(postAccessHeader, serial+":"+token)
 }
+
+/*
+wroteSignInRequired answers postaccess.ErrSignInRequired with 401 and reports that it did.
+
+401 rather than 404, even though every other refusal to read a post is a 404: an adult post
+is listed on the home page and its blurred preview is public, so there is nothing left to
+hide, and the browser has to tell "sign in to see this" apart from the 404 that means "enter
+the door code". writeError marks the body no-store, so no edge caches this per-caller answer.
+*/
+func wroteSignInRequired(w http.ResponseWriter, r *http.Request, err error) bool {
+	if !errors.Is(err, postaccess.ErrSignInRequired) {
+		return false
+	}
+	writeError(w, r, http.StatusUnauthorized, "unauthenticated",
+		"an account is required for adult content")
+	return true
+}

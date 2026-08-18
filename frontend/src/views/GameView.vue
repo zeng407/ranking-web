@@ -18,6 +18,7 @@ import {
   type LocalGameSnapshot,
 } from '../game/localGame'
 import { APIError } from '../lib/api'
+import { useAuth } from '../composables/useAuth'
 import { unlockPost } from '../services/postAccess'
 import { onScreenPairForBatch, useHostedRoom } from '../composables/useHostedRoom'
 import { getAnonymousID } from '../lib/anonymousId'
@@ -88,6 +89,21 @@ const definition = ref<GameDefinition | null>(null)
  * not allow its units on adult content, and the penalty is the whole account.
  */
 const adsAllowed = computed(() => definition.value !== null && !definition.value.is_censored)
+const { authenticated, loading: authLoading, refreshAuthState } = useAuth()
+const censored = computed(() => definition.value?.is_censored === true)
+/**
+ * Whether this visitor has to sign in before the page will do anything.
+ *
+ * An 18+ post stays previewable — it is listed on the home page, and its two blurred
+ * thumbnails show here — but playing it, voting on it and reading its ranking need an
+ * account. The server enforces all three with a 401; this only decides what to render, and
+ * waits for `authLoading` so a signed-in visitor never sees the prompt flash past.
+ */
+const signInRequired = computed(() => censored.value && !authLoading.value && !authenticated.value)
+const signInTarget = computed(() => ({
+  path: localizedPath('/login', locale.value),
+  query: { redirect: route.fullPath },
+}))
 // The ranking row an in-content ad follows, counted from zero.
 const rankAdAfterRow = 9
 const snapshot = ref<LocalGameSnapshot | null>(null)
@@ -373,6 +389,14 @@ async function loadPost(): Promise<void> {
   try {
     definition.value = await service.definition(postSerial.value, requestController.signal)
     selectedCount.value = Math.min(32, definition.value.max_elements)
+    // Nothing below this line is worth doing for a visitor who will be shown the sign-in
+    // prompt instead: not the ranking requests, which would answer 401, and above all not
+    // the saved game, which would put a playable board in front of the gate. Unforced, so
+    // joining the header's boot request rather than rotating the refresh token again.
+    if (definition.value.is_censored) {
+      if (authLoading.value) await refreshAuthState(locale.value)
+      if (signInRequired.value) return
+    }
     if (rankOnly.value) {
 			if (resultGameSerial.value) {
 				resultTab.value = 'mine'
@@ -1488,6 +1512,17 @@ function preferredRankImage(report: RankReport): string | null {
     <button class="button button-primary" type="button" @click="$router.go(0)">{{ t('retry') }}</button>
   </section>
 
+  <!-- The ranking of an 18+ post is locked outright: unlike the game page there is no
+       preview of it to show, so the whole card is the prompt. -->
+  <section v-else-if="rankOnly && signInRequired" class="game-state-card game-sign-in-required">
+    <h1>{{ definition.title }}</h1>
+    <p class="game-sign-in-hint">{{ t('gameRankSignInRequiredHint') }}</p>
+    <div class="game-sign-in-actions">
+      <RouterLink class="button button-primary" :to="signInTarget">{{ t('login') }}</RouterLink>
+      <RouterLink class="button button-quiet" :to="localizedPath('/', locale)">{{ t('gameBackHome') }}</RouterLink>
+    </div>
+  </section>
+
   <section v-else-if="!snapshot && !rankOnly" class="game-setup">
     <div class="game-setup-intro">
       <p class="eyebrow">2PICK · NEW GAME</p>
@@ -1498,7 +1533,7 @@ function preferredRankImage(report: RankReport): string | null {
            it is on screen before the player presses start. -->
       <div v-if="previewOptions.length" class="game-preview">
         <figure v-for="option in previewOptions" :key="option.key" class="game-preview-card">
-          <div class="game-preview-media">
+          <div class="game-preview-media" :class="{ 'is-censored': censored }">
             <div class="game-preview-backdrop" :style="{ backgroundImage: option.backdrop }"></div>
             <img
               v-if="option.isImage"
@@ -1516,8 +1551,9 @@ function preferredRankImage(report: RankReport): string | null {
 
     <div class="game-setup-panel">
       <p>{{ t('gameAvailable', { count: definition.elements_count }) }}</p>
-      <h2>{{ t('gameChooseCount') }}</h2>
-      <div class="game-count-options">
+      <h2>{{ signInRequired ? t('gameSignInRequiredTitle') : t('gameChooseCount') }}</h2>
+      <p v-if="signInRequired" class="game-sign-in-hint">{{ t('gameSignInRequiredHint') }}</p>
+      <div v-else class="game-count-options">
         <button
           v-for="count in countOptions"
           :key="count"
@@ -1527,10 +1563,19 @@ function preferredRankImage(report: RankReport): string | null {
         >{{ count }}</button>
       </div>
       <div class="game-setup-actions">
-        <button class="button button-primary game-start-button" type="button" :disabled="creating" @click="startGame">
+        <RouterLink
+          v-if="signInRequired"
+          class="button button-primary game-start-button"
+          :to="signInTarget"
+        >{{ t('login') }}</RouterLink>
+        <button v-else class="button button-primary game-start-button" type="button" :disabled="creating" @click="startGame">
           {{ creating ? t('gameCreating') : t('gameStart') }}
         </button>
-        <RouterLink class="button button-quiet" :to="localizedPath(`/r/${encodeURIComponent(postSerial)}`, locale)">
+        <RouterLink
+          v-if="!signInRequired"
+          class="button button-quiet"
+          :to="localizedPath(`/r/${encodeURIComponent(postSerial)}`, locale)"
+        >
           {{ t('viewRanking') }}
         </RouterLink>
         <button class="button button-quiet game-share-button" type="button" @click="sharePost">

@@ -778,7 +778,13 @@ h2 {
   white-space: nowrap;
 }
 
-.is-censored img {
+/*
+An 18+ thumbnail is blurred wherever it appears — the home feed, the game page's preview —
+because the preview is public and only what lies past it needs an account. The scale hides
+the transparent edge blur leaves behind.
+*/
+.is-censored img,
+.is-censored video {
   filter: blur(18px);
   transform: scale(1.08);
 }
@@ -2483,11 +2489,32 @@ h2 {
   margin: 0;
 }
 
-.game-door-code {
+.game-door-code,
+.game-sign-in-required {
   align-content: center;
   gap: 1rem;
   padding: 2rem 1.5rem;
   text-align: center;
+}
+
+.game-sign-in-required h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: var(--text);
+}
+
+.game-sign-in-hint {
+  margin: 0;
+  max-width: 32rem;
+  font-size: 0.95rem;
+  color: var(--text-soft);
+}
+
+.game-sign-in-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
 }
 
 .game-door-code h1 {

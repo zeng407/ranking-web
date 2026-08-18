@@ -37,7 +37,27 @@ function readRoles(): string[] {
   return getCachedSession()?.roles ?? []
 }
 
-export async function refreshAuthState(_locale?: string, force = false): Promise<void> {
+/**
+ * The resolution in flight, so two mounts that both need the answer share one request.
+ *
+ * The header resolves the session on every page load, and a view that cannot decide what to
+ * render until it knows — the game page of an adult post — has to wait for the same answer.
+ * Without this it would ask again, which is a second `/auth/refresh` racing the first.
+ *
+ * A forced call always goes to the server: its whole point is to re-resolve now.
+ */
+let resolving: Promise<void> | null = null
+
+export function refreshAuthState(locale?: string, force = false): Promise<void> {
+  if (resolving && !force) return resolving
+  const attempt = resolveAuthState(locale, force).finally(() => {
+    if (resolving === attempt) resolving = null
+  })
+  resolving = attempt
+  return attempt
+}
+
+async function resolveAuthState(_locale: string | undefined, force: boolean): Promise<void> {
   loading.value = true
 
   try {

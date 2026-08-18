@@ -726,21 +726,35 @@ func historyLimit(dateRange string) int {
 // visiblePostID resolves a serial to a post id, or ErrNotFound if this caller may not see
 // it. Not found rather than forbidden on purpose: a stranger learns nothing about which
 // serials exist.
+//
+// The one exception is postaccess.ErrSignInRequired for an adult post: those are listed on
+// the home page already, so there is nothing left to hide, and the browser needs to tell
+// "log in to see this ranking" apart from the 404 that asks for a door code.
+//
+// Every ranking read goes through here — the board, the search within a board and the single
+// post's trend — so the adult rule is applied once for all of them.
 func (repository *MySQLRepository) visiblePostID(
 	ctx context.Context, serial string, caller postaccess.Caller,
 ) (int64, error) {
 	visible, visibleArguments := postaccess.VisibilityClause("p", "pp", caller)
 	var postID int64
+	var isCensored bool
 	err := repository.database.QueryRowContext(ctx, `
-		SELECT p.id
+		SELECT p.id, p.is_censored
 		FROM posts p
 		JOIN post_policies pp ON pp.post_id = p.id
 		WHERE p.serial = ? AND p.deleted_at IS NULL AND `+visible+`
-		LIMIT 1`, append([]any{serial}, visibleArguments...)...).Scan(&postID)
+		LIMIT 1`, append([]any{serial}, visibleArguments...)...).Scan(&postID, &isCensored)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound
 	}
-	return postID, err
+	if err != nil {
+		return 0, err
+	}
+	if err := postaccess.RequireSignIn(isCensored, caller); err != nil {
+		return 0, err
+	}
+	return postID, nil
 }
 
 // rankVisibilityClause builds the rank_reports row filter for whichever of the

@@ -352,3 +352,20 @@ func TestCompletionSignalsAreNotSerialised(t *testing.T) {
 		t.Errorf("the public complete flag is missing: %s", body)
 	}
 }
+
+// Starting a game on an adult post without an account is 401, so the browser can send the
+// visitor to the sign-in page instead of showing the door-code box a 404 would imply.
+func TestCreateGameAsksAnAdultPostVisitorToSignIn(t *testing.T) {
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/games",
+		strings.NewReader(`{"post_serial":"post-1","element_count":16}`))
+	request.Header.Set("Content-Type", "application/json")
+	gameplayTestHandler(&fakeGameplay{err: postaccess.ErrSignInRequired}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+	if response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("Cache-Control = %q, want no-store", response.Header().Get("Cache-Control"))
+	}
+}

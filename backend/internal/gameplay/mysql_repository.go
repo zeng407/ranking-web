@@ -102,6 +102,11 @@ func (repository *MySQLRepository) Create(ctx context.Context, input CreateInput
 	if err != nil {
 		return Session{}, err
 	}
+	// Definition itself stays open so the game page can show the blurred preview to a
+	// visitor; starting a game on an adult post is where the account is required.
+	if err := postaccess.RequireSignIn(definition.IsCensored, input.Caller); err != nil {
+		return Session{}, err
+	}
 	if input.ElementCount < 2 || input.ElementCount > definition.MaxElements {
 		return Session{}, fmt.Errorf("%w: element count must be between 2 and %d", ErrInvalidElementCount, definition.MaxElements)
 	}
@@ -203,6 +208,9 @@ func (repository *MySQLRepository) Resume(
 	if err != nil {
 		return Session{}, err
 	}
+	if err := postaccess.RequireSignIn(session.Definition.IsCensored, caller); err != nil {
+		return Session{}, err
+	}
 	elements, err := queryGameElements(ctx, repository.database, gameID)
 	if err != nil {
 		return Session{}, err
@@ -221,18 +229,22 @@ func (repository *MySQLRepository) Result(
 	var gameID int64
 	var result GameResult
 	var completedAt sql.NullTime
+	var isCensored bool
 	err := repository.database.QueryRowContext(ctx, `
-		SELECT g.id, g.serial, p.serial, g.completed_at
+		SELECT g.id, g.serial, p.serial, g.completed_at, p.is_censored
 		FROM games g
 		JOIN posts p ON p.id = g.post_id AND p.deleted_at IS NULL
 		JOIN post_policies pp ON pp.post_id = p.id AND `+visible+`
 		WHERE g.serial = ?
 		LIMIT 1`, append(visibleArguments, gameSerial)...).Scan(
-		&gameID, &result.GameSerial, &result.PostSerial, &completedAt)
+		&gameID, &result.GameSerial, &result.PostSerial, &completedAt, &isCensored)
 	if errors.Is(err, sql.ErrNoRows) || (err == nil && !completedAt.Valid) {
 		return GameResult{}, ErrNotFound
 	}
 	if err != nil {
+		return GameResult{}, err
+	}
+	if err := postaccess.RequireSignIn(isCensored, caller); err != nil {
 		return GameResult{}, err
 	}
 
@@ -477,17 +489,21 @@ func (repository *MySQLRepository) SubmitVotes(ctx context.Context, gameSerial s
 	var gameID, postID int64
 	var elementCount int
 	var completedAt sql.NullTime
+	var isCensored bool
 	if err := transaction.QueryRowContext(ctx, `
-		SELECT g.id, g.post_id, g.element_count, g.completed_at
+		SELECT g.id, g.post_id, g.element_count, g.completed_at, p.is_censored
 		FROM games g
 		JOIN posts p ON p.id = g.post_id AND p.deleted_at IS NULL
 		JOIN post_policies pp ON pp.post_id = p.id AND `+visible+`
 		WHERE g.serial = ?
 		FOR UPDATE`, append(visibleArguments, gameSerial)...).Scan(
-		&gameID, &postID, &elementCount, &completedAt); err != nil {
+		&gameID, &postID, &elementCount, &completedAt, &isCensored); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return BatchResult{}, ErrNotFound
 		}
+		return BatchResult{}, err
+	}
+	if err := postaccess.RequireSignIn(isCensored, input.Caller); err != nil {
 		return BatchResult{}, err
 	}
 

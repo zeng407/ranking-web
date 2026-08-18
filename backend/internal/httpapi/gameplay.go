@@ -277,6 +277,9 @@ func (a *api) requireGameplay(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func (a *api) writeGameplayError(w http.ResponseWriter, r *http.Request, err error) {
+	if wroteSignInRequired(w, r, err) {
+		return
+	}
 	if errors.Is(err, gameplay.ErrInvalidElementCount) {
 		writeError(w, r, http.StatusUnprocessableEntity, "invalid_element_count", err.Error())
 		return

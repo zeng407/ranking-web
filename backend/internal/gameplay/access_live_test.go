@@ -380,3 +380,92 @@ func TestAVisitorCannotStartAGameOnAProtectedPost(t *testing.T) {
 		}
 	}
 }
+
+// markCensored sets posts.is_censored, which no fixture post carries by default.
+func (fixture *accessFixture) markCensored(t *testing.T, ctx context.Context, serial string) {
+	t.Helper()
+	if _, err := fixture.database.ExecContext(ctx,
+		`UPDATE posts SET is_censored = 1 WHERE serial = ?`, serial); err != nil {
+		t.Fatalf("mark the post censored: %v", err)
+	}
+}
+
+/*
+AN ADULT POST PREVIEWS FOR ANYONE AND PLAYS ONLY FOR AN ACCOUNT.
+
+Definition stays open on purpose: the post is listed on the home page and its two preview
+thumbnails are shown on the game page behind a blur, so a visitor has to be able to read it.
+Everything past the preview needs an account, and — as with a door code — every path needs
+it, or a visitor starts a game that then refuses to continue after the votes are spent.
+
+The refusal is postaccess.ErrSignInRequired rather than ErrNotFound because the post is
+public: hiding it would contradict the listing the visitor just clicked, and the browser
+could not tell "sign in" apart from "enter the door code".
+*/
+func TestAnAdultPostPreviewsForAnyoneAndPlaysOnlyForAnAccount(t *testing.T) {
+	fixture, ctx := newAccessFixture(t)
+	serial := fixture.serials[postaccess.PolicyPublic]
+	fixture.markCensored(t, ctx, serial)
+	account := postaccess.Caller{UserID: fixture.stranger}
+
+	definition, err := fixture.repository.Definition(ctx, serial, visitor)
+	if err != nil {
+		t.Fatalf("Definition() by a visitor error = %v, want the preview to work", err)
+	}
+	if !definition.IsCensored {
+		t.Fatalf("Definition() reported is_censored = false for a censored post")
+	}
+
+	if _, err := fixture.repository.Create(ctx, CreateInput{
+		PostSerial: serial, ElementCount: 4, Caller: visitor,
+	}); !errors.Is(err, postaccess.ErrSignInRequired) {
+		t.Fatalf("Create() by a visitor error = %v, want ErrSignInRequired", err)
+	}
+
+	session, err := fixture.repository.Create(ctx, CreateInput{
+		PostSerial: serial, ElementCount: 4, Caller: account,
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	if _, err := fixture.repository.Resume(ctx, session.GameSerial, visitor); !errors.Is(err, postaccess.ErrSignInRequired) {
+		t.Fatalf("Resume() by a visitor error = %v, want ErrSignInRequired", err)
+	}
+	if _, err := fixture.repository.Resume(ctx, session.GameSerial, account); err != nil {
+		t.Fatalf("Resume() error = %v", err)
+	}
+
+	votes := []Vote{
+		{WinnerID: session.Elements[0].ID, LoserID: session.Elements[1].ID},
+		{WinnerID: session.Elements[2].ID, LoserID: session.Elements[3].ID},
+	}
+	if _, err := fixture.repository.SubmitVotes(ctx, session.GameSerial, BatchInput{
+		ExpectedVoteCount: 0, Votes: votes, Caller: visitor,
+	}); !errors.Is(err, postaccess.ErrSignInRequired) {
+		t.Fatalf("SubmitVotes() by a visitor error = %v, want ErrSignInRequired", err)
+	}
+	if _, err := fixture.repository.SubmitVotes(ctx, session.GameSerial, BatchInput{
+		ExpectedVoteCount: 0, Votes: votes, Caller: account,
+	}); err != nil {
+		t.Fatalf("SubmitVotes() error = %v", err)
+	}
+	final, err := fixture.repository.SubmitVotes(ctx, session.GameSerial, BatchInput{
+		ExpectedVoteCount: 2,
+		Votes:             []Vote{{WinnerID: session.Elements[0].ID, LoserID: session.Elements[2].ID}},
+		Caller:            account,
+	})
+	if err != nil {
+		t.Fatalf("SubmitVotes() final error = %v", err)
+	}
+	if !final.Complete {
+		t.Fatalf("the game did not complete: %#v", final)
+	}
+
+	if _, err := fixture.repository.Result(ctx, session.GameSerial, visitor); !errors.Is(err, postaccess.ErrSignInRequired) {
+		t.Fatalf("Result() by a visitor error = %v, want ErrSignInRequired", err)
+	}
+	if _, err := fixture.repository.Result(ctx, session.GameSerial, account); err != nil {
+		t.Fatalf("Result() error = %v", err)
+	}
+}

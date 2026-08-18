@@ -315,3 +315,36 @@ describe('ad slots', () => {
     expect(wide.slice(0, wide.indexOf('}', wide.indexOf('.ad-slot-vertical')))).toContain('min-height: 38rem')
   })
 })
+
+/*
+The blur on adult thumbnails is a rule the page cannot express any other way: the markup
+just adds `is-censored`, so if the declaration stops reaching the media the preview goes
+out uncensored with nothing failing.
+
+The game page's preview renders a video element for a video option, which is why both tags
+are covered — and why the rule that positions them must not reintroduce `filter`, since it
+is written later in the file and would win the tie.
+*/
+describe('adult thumbnails', () => {
+  /*
+   * Both rules below are written for two tags at once, and `rule` only finds a selector
+   * that opens its own block, so it reports nothing for the first name in a list.
+   */
+  function listedRule(selector: string): string {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const block = css.match(new RegExp(`[,\\n]\\s*${escaped}\\s*(?:,[^{}]*)?\\{([\\s\\S]*?)\\}`))
+    return block?.[1] ?? ''
+  }
+
+  it('blurs both images and videos', () => {
+    for (const selector of ['.is-censored img', '.is-censored video']) {
+      expect(listedRule(selector), `${selector} does not blur`).toContain('blur(')
+    }
+  })
+
+  it('does not let the game preview undo the blur', () => {
+    const positioning = listedRule('.game-preview-media img')
+    expect(positioning, 'the game preview rule was renamed').toContain('object-fit')
+    expect(positioning).not.toContain('filter')
+  })
+})

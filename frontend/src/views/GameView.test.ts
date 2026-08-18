@@ -34,7 +34,35 @@ const routeMock = vi.hoisted(() => ({
   name: 'game-localized',
   params: { locale: 'zh-tw', serial: 'post-1' },
 	query: {} as Record<string, string>,
+	fullPath: '/zh-tw/g/post-1',
 }))
+
+/*
+Auth is mocked rather than resolved: signing in for real would mean a refresh request, and
+what these tests are about is which of the two 18+ states the page renders. Every test
+starts anonymous and settled, so the ordinary post tests never see the sign-in branch.
+*/
+const authMocks = vi.hoisted(() => ({
+	authenticated: false,
+	loading: false,
+	refreshAuthState: vi.fn(),
+}))
+
+vi.mock('../composables/useAuth', async () => {
+	const { computed } = await import('vue')
+	return {
+		useAuth: () => ({
+			authenticated: computed(() => authMocks.authenticated),
+			loading: computed(() => authMocks.loading),
+			refreshAuthState: authMocks.refreshAuthState,
+		}),
+	}
+})
+
+beforeEach(() => {
+	authMocks.authenticated = false
+	authMocks.loading = false
+})
 
 vi.mock('vue-router', async (importOriginal) => ({
   ...await importOriginal<typeof import('vue-router')>(),
@@ -1318,9 +1346,163 @@ describe('GameView ad slots', () => {
   it('shows no ad at all on an 18+ post', async () => {
     // AdSense does not allow its units on adult content, and the penalty is the
     // whole account, so a censored post carries no slot on either of its pages.
+    // Signed in, because a visitor gets the sign-in prompt instead of the list.
+    authMocks.authenticated = true
     const wrapper = await mountRankPage({ ...definition, is_censored: true }, 14)
 
     expect(wrapper.findAll('.ad-slot')).toHaveLength(0)
     wrapper.unmount()
   })
+})
+
+/*
+18+ POSTS: PREVIEW FOR ANYONE, EVERYTHING ELSE FOR AN ACCOUNT.
+
+The home page lists adult posts and links to this page, so the preview has to survive — a
+visitor who clicks through must see what they clicked, blurred. What must not survive is
+anything past it: no game may start, no ranking may load, and a game saved from an earlier
+session must not put a playable board in front of the prompt.
+*/
+describe('GameView adult content', () => {
+	const adultDefinition: GameDefinition = {
+		...definition,
+		is_censored: true,
+		element1: {
+			id: 1, url: 'https://cdn.test/1.webp', url2: null, title: '選項 1',
+			type: 'image', video_source: null, previewable: true,
+		},
+		element2: {
+			id: 2, url: 'https://cdn.test/2.webp', url2: null, title: '選項 2',
+			type: 'image', video_source: null, previewable: true,
+		},
+	}
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		localStorage.clear()
+		sessionStorage.clear()
+		routeMock.name = 'game-localized'
+		routeMock.params = { locale: 'zh-tw', serial: 'post-1' }
+		routeMock.query = {}
+		routeMock.fullPath = '/zh-tw/g/post-1'
+	})
+
+	// JSON rather than the object's toString, so the redirect target is readable.
+	function mountAdultView() {
+		return mount(GameView, {
+			global: {
+				mocks: { $router: { go: vi.fn() } },
+				stubs: {
+					RouterLink: { props: ['to'], template: '<a :data-to="JSON.stringify(to)"><slot /></a>' },
+				},
+			},
+		})
+	}
+
+	async function mountAdultPage(): Promise<VueWrapper> {
+		serviceMocks.definition.mockResolvedValue(adultDefinition)
+		const wrapper = mountAdultView()
+		await flushPromises()
+		return wrapper
+	}
+
+	it('previews the two options, blurred, to a visitor', async () => {
+		const wrapper = await mountAdultPage()
+
+		const previews = wrapper.findAll('.game-preview-media')
+		expect(previews).toHaveLength(2)
+		for (const preview of previews) expect(preview.classes()).toContain('is-censored')
+		wrapper.unmount()
+	})
+
+	it('offers a visitor the sign-in page instead of the start button', async () => {
+		const wrapper = await mountAdultPage()
+
+		expect(wrapper.find('.game-setup-panel .game-count-options').exists()).toBe(false)
+		expect(wrapper.find('.game-sign-in-hint').text()).toBe(translate('zh_TW', 'gameSignInRequiredHint'))
+
+		const link = wrapper.get('.game-start-button')
+		expect(link.element.tagName).toBe('A')
+		expect(JSON.parse(link.attributes('data-to')!)).toEqual({
+			path: '/zh-tw/login',
+			query: { redirect: '/zh-tw/g/post-1' },
+		})
+		expect(serviceMocks.create).not.toHaveBeenCalled()
+		wrapper.unmount()
+	})
+
+	it('lets an account start the game as usual', async () => {
+		authMocks.authenticated = true
+		const wrapper = await mountAdultPage()
+
+		expect(wrapper.find('.game-setup-panel .game-count-options').exists()).toBe(true)
+		expect(wrapper.get('.game-start-button').element.tagName).toBe('BUTTON')
+		wrapper.unmount()
+	})
+
+	/*
+	A saved game is what makes this more than a rendering rule.
+
+	The snapshot lives in localStorage, so signing out does not remove it, and the board
+	branch renders whenever one exists. Without the gate running before the snapshot is
+	read, a visitor would resume the game and vote — locally, since the server answers 401.
+	*/
+	it('does not resume a game saved before the account signed out', async () => {
+		authMocks.authenticated = true
+		serviceMocks.definition.mockResolvedValue(adultDefinition)
+		serviceMocks.create.mockResolvedValueOnce(session('game-adult', '選項'))
+		const signedIn = mountAdultView()
+		await flushPromises()
+		await signedIn.get('.game-start-button').trigger('click')
+		await flushPromises()
+		expect(signedIn.find('.game-candidate-media').exists()).toBe(true)
+		signedIn.unmount()
+
+		authMocks.authenticated = false
+		const visitor = await mountAdultPage()
+
+		expect(visitor.find('.game-candidate-media').exists()).toBe(false)
+		expect(visitor.find('.game-sign-in-hint').exists()).toBe(true)
+		visitor.unmount()
+	})
+
+	// The page cannot decide while the session is still resolving: a signed-in visitor
+	// would see the prompt flash past on every load.
+	it('waits for the session before it decides', async () => {
+		authMocks.loading = true
+		const wrapper = await mountAdultPage()
+
+		expect(authMocks.refreshAuthState).toHaveBeenCalledWith('zh_TW')
+		expect(wrapper.find('.game-sign-in-hint').exists()).toBe(false)
+		wrapper.unmount()
+	})
+
+	describe('the ranking page', () => {
+		beforeEach(() => {
+			routeMock.name = 'rank-localized'
+			routeMock.fullPath = '/zh-tw/r/post-1'
+		})
+
+		it('locks itself and asks a visitor to sign in', async () => {
+			const wrapper = await mountAdultPage()
+
+			const card = wrapper.get('.game-sign-in-required')
+			expect(card.find('.game-sign-in-hint').text()).toBe(translate('zh_TW', 'gameRankSignInRequiredHint'))
+			expect(wrapper.find('.game-community-list').exists()).toBe(false)
+			expect(serviceMocks.ranks).not.toHaveBeenCalled()
+			wrapper.unmount()
+		})
+
+		it('opens for an account', async () => {
+			authMocks.authenticated = true
+			serviceMocks.ranks.mockResolvedValue({
+				items: [], group: 'cumulative', page: 1, per_page: 20, total: 0, total_pages: 0,
+			})
+			const wrapper = await mountAdultPage()
+
+			expect(wrapper.find('.game-sign-in-required').exists()).toBe(false)
+			expect(serviceMocks.ranks).toHaveBeenCalled()
+			wrapper.unmount()
+		})
+	})
 })
