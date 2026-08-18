@@ -444,25 +444,29 @@ function showNextCarouselItem(): void {
         <article class="vote-card">
         <RouterLink class="vote-card-main" :to="gameURL(post.serial)">
           <div class="vote-card-media" :class="{ 'is-censored': post.is_censored > 0 }">
-            <div>
+            <div v-for="(element, side) in [post.element1, post.element2]" :key="side">
+              <!-- The same file twice: blurred and cropped to fill the cell, then whole
+                   and untouched on top. An option is often a portrait or a wide banner,
+                   and cropping it to the cell is what used to cut heads and captions
+                   off. Both tags carry one src, so the browser fetches it once. -->
               <img
-                :src="voteCardImage(post.element1)"
-                :alt="post.element1.title || ''"
+                class="vote-card-media-backdrop"
+                :src="voteCardImage(element)"
+                alt=""
+                aria-hidden="true"
                 loading="lazy"
                 decoding="async"
                 @error="useDefaultImage"
               >
-              <span>{{ post.element1.title }}</span>
-            </div>
-            <div>
               <img
-                :src="voteCardImage(post.element2)"
-                :alt="post.element2.title || ''"
+                class="vote-card-media-shot"
+                :src="voteCardImage(element)"
+                :alt="element.title || ''"
                 loading="lazy"
                 decoding="async"
                 @error="useDefaultImage"
               >
-              <span>{{ post.element2.title }}</span>
+              <span>{{ element.title }}</span>
             </div>
             <b aria-hidden="true">VS</b>
           </div>

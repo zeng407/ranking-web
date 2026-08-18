@@ -208,13 +208,21 @@ describe('HomeView regression behavior', () => {
     item.element2.url = 'https://example.test/broken.webp'
     mocks.posts.mockResolvedValue(page([item]))
     const wrapper = await mountHome()
-    const images = wrapper.findAll('.vote-card-media img')
+    const shots = wrapper.findAll('.vote-card-media-shot')
+    const backdrops = wrapper.findAll('.vote-card-media-backdrop')
 
-    expect(images).toHaveLength(2)
-    expect(images[0]!.attributes('src')).toBe('/image-placeholder.svg')
-    await images[1]!.trigger('error')
-    expect(images[1]!.attributes('src')).toBe('/image-placeholder.svg')
-    expect(images[1]!.attributes('data-fallback-applied')).toBe('true')
+    // Two options, each drawn twice: the whole image over a blurred copy of itself.
+    expect(shots).toHaveLength(2)
+    expect(backdrops).toHaveLength(2)
+    expect(shots[0]!.attributes('src')).toBe('/image-placeholder.svg')
+    expect(backdrops[0]!.attributes('src')).toBe('/image-placeholder.svg')
+    // The blurred copy must fall back too, or a broken file leaves a blank cell
+    // behind the placeholder.
+    for (const image of [shots[1]!, backdrops[1]!]) {
+      await image.trigger('error')
+      expect(image.attributes('src')).toBe('/image-placeholder.svg')
+      expect(image.attributes('data-fallback-applied')).toBe('true')
+    }
     wrapper.unmount()
   })
 
