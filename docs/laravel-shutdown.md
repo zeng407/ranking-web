@@ -66,10 +66,10 @@ Laravel 的 `app/Console/Kernel.php` 現在仍然是這些工作的執行者；G
    - `backend` 的 `ALLOWED_ORIGINS` 加上 `http://localhost`（CORS 是白名單，沒加就是
      瀏覽器端每個 API 請求都被擋）。
    - `backend` 加上 `GO_MAIL_TRANSPORT`、`MAIL_*` 與 `APP_URL`。
-   - 注意：`GO_MAIL_TRANSPORT` 目前**沒有設**，所以忘記密碼端點回 503。本機 `.env` 的
-     `MAIL_USERNAME` 與 `MAIL_PASSWORD` 也是註解掉的，要真的寄信必須補上（Gmail 要 app
-     password）並設 `GO_MAIL_TRANSPORT=smtp`；只是想驗流程用 `GO_MAIL_TRANSPORT=log`。
-     細節見 `docs/password-reset-deployment.md`。
+   - 本機 `.env` 已設 `GO_MAIL_TRANSPORT=smtp`，並啟用 `MAIL_USERNAME` / `MAIL_PASSWORD`
+     （Gmail app password），所以忘記密碼會真的寄信；backend 啟動時會記
+     `mail_enabled`。留空則兩個端點回 503，設 `log` 則不寄信、把連結寫進 log（只能在本機
+     用）。細節見 `docs/password-reset-deployment.md`。
 2. `frontend/docker/nginx.conf`：刪掉 `^/(register|logout|password|auth)` 與 `/login`
    非 GET 兩塊 `proxy_pass http://host.docker.internal:80`。
    **這兩塊不能留**：前端一旦自己佔用 host port 80，`host.docker.internal:80` 就是它自己，
