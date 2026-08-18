@@ -154,6 +154,21 @@ describe('session', () => {
     expect(post).not.toHaveBeenCalled()
   })
 
+  it('resolves a sign-in that happens after a cookie-less refresh', async () => {
+    const post = vi.fn().mockResolvedValue(grant({ access_token: 'after-sign-in' }))
+    const client = { get: vi.fn(), post } as unknown as APIClient
+
+    // The page opened as a visitor, so the first refresh short-circuits on the missing
+    // cookie. Signing in from that same page writes the cookie, and the next refresh has
+    // to actually go and ask — if the short circuit left its promise parked as the
+    // in-flight one, the app would keep answering "anonymous" until a full reload.
+    expect(await refreshSession(client)).toBeNull()
+    setCSRFCookie()
+
+    expect((await refreshSession(client))?.accessToken).toBe('after-sign-in')
+    expect(post).toHaveBeenCalledTimes(1)
+  })
+
   it('treats a rejected refresh as signed out rather than as an error', async () => {
     const post = vi.fn().mockRejectedValue(apiError(401))
     const client = { get: vi.fn(), post } as unknown as APIClient

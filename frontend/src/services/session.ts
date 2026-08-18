@@ -99,15 +99,23 @@ export async function getAccessToken(client: APIClient = getAPIClient()): Promis
 export async function refreshSession(client: APIClient = getAPIClient()): Promise<Session | null> {
   if (inFlight) return inFlight
 
+  const csrf = readCSRFToken()
+  // No CSRF cookie means no session was ever established in this browser. Calling
+  // refresh anyway would be a guaranteed 401, and on the server side an unnecessary
+  // "invalid token" to log.
+  //
+  // Answered before anything is parked in `inFlight`, and that placement is the point: a
+  // body with no `await` in it runs to completion — its `finally` included — during the
+  // call that creates the promise, so the assignment below would overwrite the cleanup and
+  // leave a settled promise parked forever. Every later refresh in the page's life would
+  // then return that stale null, and a visitor who signed in would stay anonymous to the
+  // app until a full reload.
+  if (!csrf) {
+    session = null
+    return null
+  }
+
   inFlight = (async () => {
-    const csrf = readCSRFToken()
-    // No CSRF cookie means no session was ever established in this browser. Calling
-    // refresh anyway would be a guaranteed 401, and on the server side an unnecessary
-    // "invalid token" to log.
-    if (!csrf) {
-      session = null
-      return null
-    }
     try {
       const grant = await client.post<GrantBody>('/auth/refresh', {}, undefined, 'include', {
         [CSRF_HEADER]: csrf,
