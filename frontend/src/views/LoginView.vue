@@ -5,7 +5,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { localizedPath, normalizeLocale, translate, type MessageKey } from '../i18n'
 import { useAuth } from '../composables/useAuth'
 import {
-  PASSWORD_RESET_PATH,
   googleRedirectURL,
   login,
   readOAuthResult,
@@ -223,8 +222,9 @@ watchEffect(() => {
             <input v-model="loginForm.remember" type="checkbox" name="remember">
             <span>{{ translate(locale, 'rememberMe') }}</span>
           </label>
-          <!-- Password reset still lives in Laravel, so this leaves the SPA. -->
-          <a :href="PASSWORD_RESET_PATH">{{ translate(locale, 'forgotPassword') }}</a>
+          <RouterLink :to="localizedPath('/password/forgot', locale)">
+            {{ translate(locale, 'forgotPassword') }}
+          </RouterLink>
         </div>
 
         <button class="auth-submit" type="submit" :disabled="submitting">

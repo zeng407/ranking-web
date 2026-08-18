@@ -45,6 +45,14 @@ type fakeAuth struct {
 	lastAvatar    []byte
 	lastAvatarKey string
 
+	// The forgot-password half.
+	forgotErr      error
+	forgotCalls    int
+	lastLocale     string
+	resetErr       error
+	resetCalls     int
+	lastResetToken string
+
 	loginCalls    int
 	registerCalls int
 	refreshCalls  int
@@ -114,6 +122,27 @@ func (service *fakeAuth) Logout(_ context.Context, refreshToken string) error {
 func (service *fakeAuth) VerifyCSRF(_ context.Context, refreshToken, csrfToken string) error {
 	service.lastRefresh, service.lastCSRF = refreshToken, csrfToken
 	return service.csrfErr
+}
+
+func (service *fakeAuth) RequestPasswordReset(
+	_ context.Context, email, locale string, client auth.ClientInfo,
+) error {
+	service.forgotCalls++
+	service.lastEmail, service.lastLocale = email, locale
+	service.lastClientIP, service.lastUserAgent = client.IP, client.UserAgent
+	return service.forgotErr
+}
+
+func (service *fakeAuth) ResetPassword(
+	_ context.Context, token, newPassword string, client auth.ClientInfo,
+) (auth.Grant, error) {
+	service.resetCalls++
+	service.lastResetToken, service.lastNew = token, newPassword
+	service.lastClientIP, service.lastUserAgent = client.IP, client.UserAgent
+	if service.resetErr != nil {
+		return auth.Grant{}, service.resetErr
+	}
+	return service.grant, nil
 }
 
 func authTestHandler(service AuthService) http.Handler {

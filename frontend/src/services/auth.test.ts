@@ -3,7 +3,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { APIError, type APIClient } from '../lib/api'
-import { login, logout, readOAuthResult, register } from './auth'
+import {
+  login,
+  logout,
+  readOAuthResult,
+  register,
+  requestPasswordReset,
+  resetPassword,
+} from './auth'
 import { getCachedSession, resetSessionForTests } from './session'
 
 function grant() {
@@ -149,6 +156,69 @@ describe('auth service', () => {
 
     await logout('zh_TW', client)
 
+    expect(getCachedSession()).toBeNull()
+  })
+
+  it('asks for a reset mail with the locale the mail should be written in', async () => {
+    const post = vi.fn().mockResolvedValue({ status: 'sent' })
+    const client = { get: vi.fn(), post } as unknown as APIClient
+
+    const outcome = await requestPasswordReset('ja', ' player@example.test ', client)
+
+    expect(outcome).toEqual({ ok: true })
+    // The mail is read outside the browser, so its language cannot be chosen here.
+    expect(post).toHaveBeenCalledWith(
+      '/auth/password/forgot', { email: 'player@example.test', locale: 'ja' })
+  })
+
+  it('does not spend a request on an empty address', async () => {
+    const post = vi.fn()
+    const client = { get: vi.fn(), post } as unknown as APIClient
+
+    const outcome = await requestPasswordReset('zh_TW', '   ', client)
+
+    expect(outcome).toEqual({ ok: false, kind: 'validation', errors: { email: ['required'] } })
+    expect(post).not.toHaveBeenCalled()
+  })
+
+  // A server with no mail transport answers 503. There is nothing field-specific in that
+  // and nothing the user can do, so it must not surface as a rejected address.
+  it('reports an unconfigured mail transport as unavailable', async () => {
+    const post = vi.fn().mockRejectedValue(apiError(503))
+    const client = { get: vi.fn(), post } as unknown as APIClient
+
+    const outcome = await requestPasswordReset('zh_TW', 'player@example.test', client)
+
+    expect(outcome).toEqual({ ok: false, kind: 'unavailable' })
+  })
+
+  it('signs the account in when the reset succeeds', async () => {
+    const post = vi.fn().mockResolvedValue(grant())
+    const client = { get: vi.fn(), post } as unknown as APIClient
+
+    const outcome = await resetPassword(
+      'zh_TW', { token: 'the-mailed-token', new_password: 'a-brand-new-password' }, client)
+
+    expect(outcome).toEqual({ ok: true })
+    expect(post).toHaveBeenCalledWith(
+      '/auth/password/reset',
+      { token: 'the-mailed-token', new_password: 'a-brand-new-password' },
+      undefined,
+      // The refresh cookie only arrives if the request carries credentials.
+      'include',
+    )
+    // Without this the user would be sent home as a guest, having just set a password.
+    expect(getCachedSession()?.accessToken).toBe('header.claims.signature')
+  })
+
+  it('reports a spent link on the token field', async () => {
+    const post = vi.fn().mockRejectedValue(apiError(422, { errors: { token: ['invalid'] } }))
+    const client = { get: vi.fn(), post } as unknown as APIClient
+
+    const outcome = await resetPassword(
+      'zh_TW', { token: 'a-spent-token', new_password: 'a-brand-new-password' }, client)
+
+    expect(outcome).toEqual({ ok: false, kind: 'validation', errors: { token: ['invalid'] } })
     expect(getCachedSession()).toBeNull()
   })
 

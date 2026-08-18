@@ -265,12 +265,27 @@
 
 - 左上小標（loginEyebrow）+ 標題（loginTitle）+ 說明（loginIntro）。
 - 卡片上方兩個分頁：登入（loginTab）／註冊（registerTab）。
-- 登入表單：Email、密碼、記住我（rememberMe）、忘記密碼（forgotPassword，會離開 SPA 到 Laravel）、
-  送出鈕（送出中顯示 authSubmitting）。
+- 登入表單：Email、密碼、記住我（rememberMe）、忘記密碼（forgotPassword，連到 SPA 內的
+  `/{locale}/password/forgot`）、送出鈕（送出中顯示 authSubmitting）。
 - 註冊表單：暱稱（含提示 nicknameHint）、Email、密碼、確認密碼、送出鈕。
 - 分隔線（socialDivider）下方是 **使用 Google 登入（googleLogin）**，這是整頁跳轉。
 - 最下面一行是服務條款與隱私權政策的連結。
 - 錯誤：整體錯誤顯示在卡片上方紅字；欄位錯誤顯示在該欄位下方。
+
+### PASSWORD — 忘記密碼／重設密碼
+
+網址：`/{locale}/password/forgot`、`/{locale}/password/reset/{token}`
+（沒有語系前綴的舊格式會轉到 `zh-tw`，因為 Laravel 寄出的信是那個形狀）。
+
+- 兩頁都用 LOGIN 的 `.auth-page` / `.auth-card` 版型，小標沿用 loginEyebrow。
+- 忘記密碼：一個 Email 欄位 + 送出鈕（forgotPasswordSubmit）。送出成功後表單換成
+  `role="status"` 的說明（forgotPasswordSent）。
+  **文案必須是有條件的**（「如果這個電子郵件已經註冊過…」）：伺服器對沒有帳號的地址、
+  被 throttle 擋下的請求、寄信失敗都一律回 200，改寫成「信已寄出」會把這個表單變成
+  查詢某個信箱有沒有註冊的工具。
+- 重設密碼：新密碼 + 確認密碼（不一致由前端擋，不浪費一次連結）、送出鈕
+  （resetPasswordSubmit）。成功後直接登入並回首頁。
+- 連結失效、用過、亂填一律顯示同一句 resetPasswordLinkInvalid，並提供回到忘記密碼頁的連結。
 
 ### ACCOUNT — 帳號設定
 
@@ -393,6 +408,5 @@
 
 - 後台沒有手機版排版。
 - 後台沒有操作紀錄（誰在什麼時候封鎖了誰）。
-- 前台沒有「忘記密碼」的自有頁面，那條連結會離開 SPA 交給舊站。
 - 手機版的漢堡選單裡沒有帳號相關項目。
 - 首頁沒有無限捲動，是「載入更多」按鈕。

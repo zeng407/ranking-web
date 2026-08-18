@@ -22,7 +22,6 @@ vi.mock('../services/session', () => ({
 
 vi.mock('../services/auth', () => ({
   logout: vi.fn().mockResolvedValue({ ok: true }),
-  PASSWORD_RESET_PATH: '/password/reset',
 }))
 
 import AppHeader from './AppHeader.vue'

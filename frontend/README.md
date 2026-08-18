@@ -19,7 +19,7 @@ Vite 會將 `/api/v1/*` proxy 到 `http://localhost:8080`。可用 `FRONTEND_API
 docker compose -f compose.separated.yml up --build
 ```
 
-瀏覽 `http://localhost:4173`。
+瀏覽 `http://localhost`。前端容器現在直接佔用 host port 80（Laravel 已停止，不再持有這個 port）；需要讓開時設 `FRONTEND_PORT`，例如 `FRONTEND_PORT=4173`。
 
 ## 已遷移頁面
 
@@ -34,7 +34,7 @@ docker compose -f compose.separated.yml up --build
 
 舊 `/lang/{locale}/*` 以及無語系的 `/donate`、`/tos`、`/privacy` 由 Nginx 永久 `301` 到 canonical locale URL。`/` 暫時提供繁中，但內部繁中語言連結使用 `/zh-tw/`；等 `/zh-tw/` 收錄與流量穩定後，再決定是否把 `/` 改為 `x-default` 國際入口。
 
-`routes-manifest.json` 是這一批可切流的 allowlist 與 redirect contract。Cloudflare／反向代理可把首頁、`/hot`、`/new`、公開遊戲頁與多語系對應路徑送到新版 frontend；登入與尚未遷移的管理頁仍交給 Laravel。切流時保留 Laravel 同名 route 作為立即回滾來源。
+`routes-manifest.json` 是這一批可切流的 allowlist 與 redirect contract。Cloudflare／反向代理可依 `frontendRoutes` 把對應路徑送到新版 frontend。登入、註冊、帳號設定與忘記密碼／重設密碼現在也都在這份 allowlist 裡：Go API 接手了認證，這些頁面是 SPA 自己的路由，不再有任何一條路徑需要離開前端。因此 `fallbackOrigin: "laravel"` 只剩歷史意義——Laravel 已停止，allowlist 外的路徑由前端自己回 SPA（見 `docs/laravel-shutdown.md` 的回滾方式）。
 
 公開遊戲採 local-first：每票先保存至 `localStorage`，再送到 Go API。重新整理會保留已完成的票並重新抽本輪尚未對決的候選；雙分頁由可接管的 lease 保證只有一頁寫入。Go 回傳分支衝突時，前端只停止雲端同步，不覆蓋或回溯本地進度。
 

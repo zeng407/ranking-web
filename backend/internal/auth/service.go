@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"2pick.app/backend/internal/mailer"
 )
 
 // ErrInvalidCredentials is the single answer to every failed login: unknown
@@ -55,9 +57,18 @@ type Service struct {
 	accounts AccountStore
 	avatars  AvatarStore
 	sessions RefreshStore
-	issuer   *Issuer
-	logger   *slog.Logger
-	now      func() time.Time
+	// resets, mail and appURL are the forgot-password flow, and all three have to be
+	// present for it: a token table with no way to mail the link, or a link with no site
+	// to point at, is not half a feature. Nil disables the two reset endpoints.
+	resets PasswordResetStore
+	mail   mailer.Sender
+	appURL string
+	// resetLimiter is the optional per-source cap on reset mails. See
+	// ResetRequestLimiter for why the per-account throttle is not enough on its own.
+	resetLimiter ResetRequestLimiter
+	issuer       *Issuer
+	logger       *slog.Logger
+	now          func() time.Time
 	// timezone is the application timezone, Asia/Taipei, used by the rules that are
 	// written against calendar days rather than durations. Nil means UTC.
 	timezone *time.Location
@@ -67,16 +78,21 @@ type Service struct {
 
 // ServiceOptions wires Service.
 type ServiceOptions struct {
-	Users      UserStore
-	Registrar  UserWriter
-	Accounts   AccountStore
-	Avatars    AvatarStore
-	Sessions   RefreshStore
-	Issuer     *Issuer
-	Logger     *slog.Logger
-	Now        func() time.Time
-	RefreshTTL time.Duration
-	Timezone   *time.Location
+	Users     UserStore
+	Registrar UserWriter
+	Accounts  AccountStore
+	Avatars   AvatarStore
+	Sessions  RefreshStore
+	Resets    PasswordResetStore
+	Mail      mailer.Sender
+	// AppURL is the site the reset link points at, from APP_URL.
+	AppURL       string
+	ResetLimiter ResetRequestLimiter
+	Issuer       *Issuer
+	Logger       *slog.Logger
+	Now          func() time.Time
+	RefreshTTL   time.Duration
+	Timezone     *time.Location
 }
 
 func NewService(options ServiceOptions) (*Service, error) {
@@ -107,6 +123,10 @@ func NewService(options ServiceOptions) (*Service, error) {
 		accounts:      options.Accounts,
 		avatars:       options.Avatars,
 		sessions:      options.Sessions,
+		resets:        options.Resets,
+		mail:          options.Mail,
+		appURL:        strings.TrimRight(options.AppURL, "/"),
+		resetLimiter:  options.ResetLimiter,
 		issuer:        options.Issuer,
 		logger:        logger,
 		now:           now,

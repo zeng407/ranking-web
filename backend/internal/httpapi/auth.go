@@ -23,6 +23,11 @@ type AuthService interface {
 	Refresh(ctx context.Context, refreshToken, csrfToken string, client auth.ClientInfo) (auth.Grant, error)
 	Logout(ctx context.Context, refreshToken string) error
 	VerifyCSRF(ctx context.Context, refreshToken, csrfToken string) error
+	// Forgot password and reset. RequestPasswordReset returns no session on purpose:
+	// asking for a mail proves nothing about who is asking.
+	RequestPasswordReset(ctx context.Context, email, locale string, client auth.ClientInfo) error
+	ResetPassword(ctx context.Context, token, newPassword string,
+		client auth.ClientInfo) (auth.Grant, error)
 	// The account settings, from Profile\ProfileController. Part of this interface
 	// rather than a second one because two of them re-issue a session, which only the
 	// thing that issues sessions can do.
@@ -315,12 +320,13 @@ func (a *api) cookiesAreSecure(r *http.Request) bool {
 	return !(host == "localhost" || host == "127.0.0.1" || host == "::1")
 }
 
+// clientInfo is what the audit columns and the reset limiter see. It reads the
+// forwarded address rather than RemoteAddr: behind the frontend's nginx every
+// request arrives from the same container, so a session row recording RemoteAddr
+// records the proxy, and a per-source limit keyed on it limits the whole site as
+// one source. See clientIP for why the value can never authorise anything.
 func (a *api) clientInfo(r *http.Request) auth.ClientInfo {
-	ip := r.RemoteAddr
-	if h, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		ip = h
-	}
-	return auth.ClientInfo{IP: ip, UserAgent: r.Header.Get("User-Agent")}
+	return auth.ClientInfo{IP: clientIP(r), UserAgent: r.Header.Get("User-Agent")}
 }
 
 // writeAuthError maps every failure to a deliberately vague response.

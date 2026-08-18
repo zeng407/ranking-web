@@ -21,6 +21,7 @@ import (
 	"2pick.app/backend/internal/gameroom"
 	"2pick.app/backend/internal/httpapi"
 	"2pick.app/backend/internal/ingest"
+	"2pick.app/backend/internal/mailer"
 	"2pick.app/backend/internal/media"
 	"2pick.app/backend/internal/platform/mysqlstore"
 	"2pick.app/backend/internal/platform/redisstore"
@@ -139,10 +140,16 @@ func main() {
 			Accounts:   auth.NewMySQLAccountStore(database),
 			Avatars:    avatarStore(configuration, logger),
 			Sessions:   auth.NewMySQLRefreshStore(database),
-			Issuer:     issuer,
-			Logger:     logger,
-			RefreshTTL: configuration.Auth.RefreshTTL,
-			Timezone:   applicationTimezone(logger),
+			Resets:     auth.NewMySQLPasswordResetStore(database),
+			// A nil sender is what disables the forgot-password endpoints; the table
+			// above is harmless without one. See mailSender.
+			Mail:         mailSender(configuration.Mail, logger),
+			AppURL:       configuration.Mail.AppURL,
+			ResetLimiter: resetLimiter(redisClient, logger),
+			Issuer:       issuer,
+			Logger:       logger,
+			RefreshTTL:   configuration.Auth.RefreshTTL,
+			Timezone:     applicationTimezone(logger),
 		})
 		if err != nil {
 			logger.Error("auth_service_configuration_error", "error", err)
@@ -637,4 +644,71 @@ func avatarStore(configuration config.Config, logger *slog.Logger) auth.AvatarSt
 		return nil
 	}
 	return store
+}
+
+// mailSender is how the reset link leaves the process. Nil when GO_MAIL_TRANSPORT is
+// unset, which leaves the two forgot-password endpoints answering 503 and the rest of
+// authentication working.
+func mailSender(configuration config.MailConfig, logger *slog.Logger) mailer.Sender {
+	switch configuration.Transport {
+	case "":
+		logger.Warn("password_reset_disabled",
+			"effect", "the forgot-password endpoints answer 503, so an account whose password "+
+				"was forgotten cannot be recovered without an operator",
+			"fix", "set GO_MAIL_TRANSPORT=smtp with the MAIL_* variables and APP_URL")
+		return nil
+	case config.MailTransportLog:
+		// Loud, because this is a development transport in a process that might not be
+		// development. See mailer.LogSender.
+		logger.Warn("mail_transport_is_log",
+			"effect", "no mail is sent and every reset link is written to this log in clear",
+			"fix", "set GO_MAIL_TRANSPORT=smtp anywhere real users can reach this api")
+		return mailer.NewLogSender(logger)
+	case config.MailTransportSMTP:
+		sender, err := mailer.NewSMTPSender(mailer.SMTPConfig{
+			Host:       configuration.Host,
+			Port:       configuration.Port,
+			Encryption: configuration.Encryption,
+			Username:   configuration.Username,
+			Password:   configuration.Password,
+			From: mailer.Address{
+				Address: configuration.FromAddress,
+				Name:    configuration.FromName,
+			},
+		})
+		if err != nil {
+			// Not a warning: the operator asked for smtp, so silently running without a
+			// way to send mail would be the wrong reading of their intent.
+			logger.Error("mail_configuration_error", "error", err)
+			os.Exit(1)
+		}
+		logger.Info("mail_enabled", "host", configuration.Host, "port", configuration.Port,
+			"encryption", configuration.Encryption, "from", configuration.FromAddress)
+		return sender
+	default:
+		// config.Load rejects an unknown transport, so reaching here means the two
+		// disagree about what the valid values are.
+		logger.Error("mail_configuration_error", "transport", configuration.Transport)
+		os.Exit(1)
+		return nil
+	}
+}
+
+// resetLimiter caps reset mails per source address. Nil without Redis, which leaves the
+// per-account throttle as the only limit — see auth.ResetRequestLimiter for what that
+// misses.
+func resetLimiter(client *redis.Client, logger *slog.Logger) auth.ResetRequestLimiter {
+	if client == nil {
+		logger.Warn("password_reset_rate_limit_disabled",
+			"effect", "one source can ask for a reset mail for as many addresses as it likes, "+
+				"which is a way to get the sending account locked",
+			"fix", "configure REDIS_ADDR for the api process")
+		return nil
+	}
+	limiter, err := auth.NewRedisResetLimiter(client)
+	if err != nil {
+		logger.Warn("password_reset_rate_limit_disabled", "error", err)
+		return nil
+	}
+	return limiter
 }

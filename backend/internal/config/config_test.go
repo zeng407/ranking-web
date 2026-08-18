@@ -341,3 +341,119 @@ func TestRealtimeDisabledWhenUnset(t *testing.T) {
 		t.Error("Realtime should be disabled when nothing is configured")
 	}
 }
+
+// mailEnvironment clears every variable loadMailConfig reads, so a value left in the
+// developer's own environment cannot make one of these pass or fail by accident.
+func mailEnvironment(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{
+		"GO_MAIL_TRANSPORT", "MAIL_HOST", "MAIL_PORT", "MAIL_ENCRYPTION",
+		"MAIL_USERNAME", "MAIL_PASSWORD", "MAIL_FROM_ADDRESS", "MAIL_FROM_NAME",
+		"APP_URL", "APP_NAME",
+	} {
+		t.Setenv(key, "")
+	}
+}
+
+func TestMailDisabledWithoutTransport(t *testing.T) {
+	mailEnvironment(t)
+	// The variables Laravel needs are set, and they must not be read as intent: the
+	// worker and the scheduler run with the same environment and send nothing.
+	t.Setenv("MAIL_HOST", "smtp.gmail.com")
+	t.Setenv("MAIL_PORT", "587")
+	t.Setenv("MAIL_FROM_ADDRESS", "2pick.app@gmail.com")
+
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if configuration.Mail.Configured() {
+		t.Error("mail should be off until GO_MAIL_TRANSPORT is set")
+	}
+}
+
+func TestLoadMailSMTPConfig(t *testing.T) {
+	mailEnvironment(t)
+	t.Setenv("GO_MAIL_TRANSPORT", "smtp")
+	t.Setenv("MAIL_HOST", "smtp.gmail.com")
+	t.Setenv("MAIL_PORT", "587")
+	t.Setenv("MAIL_ENCRYPTION", "TLS")
+	t.Setenv("MAIL_USERNAME", "2pick.app@gmail.com")
+	t.Setenv("MAIL_PASSWORD", "an-app-password")
+	t.Setenv("MAIL_FROM_ADDRESS", "2pick.app@gmail.com")
+	t.Setenv("MAIL_FROM_NAME", "殘酷二選一")
+	t.Setenv("APP_URL", "https://2pick.app/")
+
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	mail := configuration.Mail
+	if !mail.Configured() {
+		t.Fatal("mail should be configured")
+	}
+	if mail.Host != "smtp.gmail.com" || mail.Port != 587 {
+		t.Errorf("relay = %s:%d", mail.Host, mail.Port)
+	}
+	if mail.Encryption != "tls" {
+		t.Errorf("Encryption = %q, want the value lower-cased", mail.Encryption)
+	}
+	if mail.FromName != "殘酷二選一" {
+		t.Errorf("FromName = %q", mail.FromName)
+	}
+	// The trailing slash is dropped so links do not end up with a double slash.
+	if mail.AppURL != "https://2pick.app" {
+		t.Errorf("AppURL = %q", mail.AppURL)
+	}
+}
+
+func TestLoadMailResolvesTheLaravelFromNamePlaceholder(t *testing.T) {
+	mailEnvironment(t)
+	t.Setenv("GO_MAIL_TRANSPORT", "log")
+	t.Setenv("APP_URL", "http://localhost")
+	t.Setenv("APP_NAME", "殘酷二選一")
+	// What .env holds verbatim. Compose passes it through without expanding it.
+	t.Setenv("MAIL_FROM_NAME", "${APP_NAME}")
+
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if configuration.Mail.FromName != "殘酷二選一" {
+		t.Errorf("FromName = %q, want the expanded application name", configuration.Mail.FromName)
+	}
+}
+
+func TestLoadRejectsMailConfigurationThatCannotSend(t *testing.T) {
+	cases := map[string]map[string]string{
+		"an unknown transport": {"GO_MAIL_TRANSPORT": "sendmail", "APP_URL": "http://localhost"},
+		"no APP_URL to link to": {
+			"GO_MAIL_TRANSPORT": "smtp", "MAIL_HOST": "smtp.gmail.com",
+			"MAIL_PORT": "587", "MAIL_FROM_ADDRESS": "2pick.app@gmail.com",
+		},
+		"smtp without a host": {
+			"GO_MAIL_TRANSPORT": "smtp", "APP_URL": "http://localhost",
+			"MAIL_PORT": "587", "MAIL_FROM_ADDRESS": "2pick.app@gmail.com",
+		},
+		"smtp without a port": {
+			"GO_MAIL_TRANSPORT": "smtp", "APP_URL": "http://localhost",
+			"MAIL_HOST": "smtp.gmail.com", "MAIL_FROM_ADDRESS": "2pick.app@gmail.com",
+		},
+		"smtp with nobody to send as": {
+			"GO_MAIL_TRANSPORT": "smtp", "APP_URL": "http://localhost",
+			"MAIL_HOST": "smtp.gmail.com", "MAIL_PORT": "587",
+		},
+	}
+
+	for name, environment := range cases {
+		t.Run(name, func(t *testing.T) {
+			mailEnvironment(t)
+			for key, value := range environment {
+				t.Setenv(key, value)
+			}
+			if _, err := Load(); err == nil {
+				t.Errorf("Load() accepted the %q case", name)
+			}
+		})
+	}
+}

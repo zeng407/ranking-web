@@ -27,3 +27,36 @@ describe('legacy export links', () => {
     expect(router.currentRoute.value.query).toEqual({ s: 'game-1' })
   })
 })
+
+/**
+ * The reset links Laravel mailed carry no locale, and the ones already in inboxes have an
+ * hour of life left after the cutover. A dead link there means a user who cannot get back
+ * into their account, so both shapes have to resolve.
+ */
+describe('password reset routes', () => {
+  beforeEach(async () => {
+    await router.replace('/')
+    await router.isReady()
+  })
+
+  it('resolves a localized reset link with its token', async () => {
+    await router.push('/ja/password/reset/the-mailed-token')
+    expect(router.currentRoute.value.name).toBe('password-reset-localized')
+    expect(router.currentRoute.value.params.token).toBe('the-mailed-token')
+    expect(router.currentRoute.value.params.locale).toBe('ja')
+  })
+
+  it('sends an unprefixed Laravel-shaped reset link to the default locale', async () => {
+    await router.push('/password/reset/the-mailed-token')
+    expect(router.currentRoute.value.path).toBe('/zh-tw/password/reset/the-mailed-token')
+    expect(router.currentRoute.value.params.token).toBe('the-mailed-token')
+  })
+
+  it('resolves the forgot form in both shapes', async () => {
+    await router.push('/en/password/forgot')
+    expect(router.currentRoute.value.name).toBe('password-forgot-localized')
+
+    await router.push('/password/forgot')
+    expect(router.currentRoute.value.path).toBe('/zh-tw/password/forgot')
+  })
+})

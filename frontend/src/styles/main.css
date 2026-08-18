@@ -445,6 +445,14 @@ p {
   margin: 0;
 }
 
+/* The reset-mail confirmation. Not an error colour: nothing went wrong. */
+.auth-notice {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
 .auth-row {
   display: flex;
   align-items: center;

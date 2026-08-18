@@ -10,18 +10,17 @@ import {
 } from './session'
 
 /**
- * Sign-in and sign-up against the Go API.
+ * Sign-in, sign-up and password reset against the Go API.
  *
  * Laravel used to be the session authority, which meant posting credentials to its web
  * routes and reading a CSRF token out of `/session-context` first. None of that is here
  * any more: the Go API issues its own sessions, so a login is one request and the token
  * arrives in the response.
  *
- * Password reset is still Laravel's, because it needs a mail sender the Go API does not
- * have. It stays a full-page link rather than a fetch, which is why it is a path and not
- * a function.
+ * Password reset was the last thing that still left the SPA, because it needs a mail
+ * sender Laravel had and the Go API did not. It is two requests here now, and both pages
+ * are ordinary routes.
  */
-export const PASSWORD_RESET_PATH = '/password/reset'
 
 export interface AuthFieldErrors {
   [field: string]: string[]
@@ -100,6 +99,73 @@ export async function register(
   try {
     const grant = await client.post<GrantBody>('/auth/register', payload, undefined, 'include')
     // Registering signs the user in, matching what Laravel's RegistersUsers trait did.
+    adoptGrant(grant)
+    return { ok: true }
+  } catch (error) {
+    if (!(error instanceof APIError)) return { ok: false, kind: 'unavailable' }
+    if (error.status === 422) {
+      return { ok: false, kind: 'validation', errors: fieldErrorsFrom(error.data) }
+    }
+    return { ok: false, kind: 'unavailable' }
+  }
+}
+
+/**
+ * Asks for a reset mail.
+ *
+ * IT ANSWERS THE SAME WHETHER OR NOT THE ADDRESS HAS AN ACCOUNT. The server reports
+ * success for an address it has never seen, for one that asked a moment ago, and for one
+ * whose mail its relay refused — a form that answered differently would be a way to test
+ * which addresses are registered here, and this one needs no credentials to use. So the
+ * page it drives must not promise that a mail is on its way, only that one has been sent
+ * if the address is registered.
+ *
+ * `locale` picks the language of the mail, which is read outside the browser and so cannot
+ * be translated by this app.
+ */
+export async function requestPasswordReset(
+  locale: string,
+  email: string,
+  client: APIClient = getAPIClient(),
+): Promise<AuthOutcome> {
+  const address = email.trim()
+  if (!address) return { ok: false, kind: 'validation', errors: { email: ['required'] } }
+
+  try {
+    await client.post('/auth/password/forgot', { email: address, locale })
+    return { ok: true }
+  } catch (error) {
+    if (!(error instanceof APIError)) return { ok: false, kind: 'unavailable' }
+    if (error.status === 422) {
+      return { ok: false, kind: 'validation', errors: fieldErrorsFrom(error.data) }
+    }
+    // 503 is a server with no mail transport configured. There is nothing the user can do
+    // about it and nothing field-specific to show, so it reads as unavailable.
+    return { ok: false, kind: 'unavailable' }
+  }
+}
+
+export interface ResetPasswordPayload {
+  token: string
+  new_password: string
+}
+
+/**
+ * Sets the new password and signs the account in.
+ *
+ * Signing in is the server's doing: the user has just proved control of the address on
+ * file, which is the same proof a login gives. A `token: ['invalid']` error covers a link
+ * that expired, was already used, or was never issued — the server does not distinguish
+ * them, and neither should the page.
+ */
+export async function resetPassword(
+  _locale: string,
+  payload: ResetPasswordPayload,
+  client: APIClient = getAPIClient(),
+): Promise<AuthOutcome> {
+  try {
+    const grant = await client.post<GrantBody>(
+      '/auth/password/reset', payload, undefined, 'include')
     adoptGrant(grant)
     return { ok: true }
   } catch (error) {

@@ -13,6 +13,8 @@ const DonateView = () => import('./views/DonateView.vue')
 const LegalView = () => import('./views/LegalView.vue')
 const GameView = () => import('./views/GameView.vue')
 const LoginView = () => import('./views/LoginView.vue')
+const ForgotPasswordView = () => import('./views/ForgotPasswordView.vue')
+const ResetPasswordView = () => import('./views/ResetPasswordView.vue')
 const GameRoomView = () => import('./views/GameRoomView.vue')
 const AccountView = () => import('./views/AccountView.vue')
 const MyPostsView = () => import('./views/MyPostsView.vue')
@@ -25,6 +27,18 @@ function localizedPublicRoutes(): RouteRecordRaw[] {
 
   return [
     { path: `${prefix}/login`, name: 'login-localized', component: LoginView },
+    {
+      path: `${prefix}/password/forgot`,
+      name: 'password-forgot-localized',
+      component: ForgotPasswordView,
+    },
+    // The token is in the path because that is the shape of the links already mailed, and
+    // a query string would follow the page into the browser's history and Referer.
+    {
+      path: `${prefix}/password/reset/:token`,
+      name: 'password-reset-localized',
+      component: ResetPasswordView,
+    },
     { path: `${prefix}/`, name: 'home-localized', component: HomeView, meta: { viewKey: 'home', keepAlive: true } },
     { path: `${prefix}/hot`, name: 'hot-localized', component: HomeView, meta: { viewKey: 'home', keepAlive: true } },
     { path: `${prefix}/new`, name: 'new-localized', component: HomeView, meta: { viewKey: 'home', keepAlive: true } },
@@ -87,6 +101,14 @@ const router = createRouter({
     { path: '/r/:serial', name: 'rank', component: GameView },
     { path: '/r/:serial/export', redirect: (to) => redirectToPath(to, `/r/${to.params.serial}`) },
     { path: '/login', name: 'login', component: LoginView },
+    // Laravel's own links carried no locale. They stop being mailed at the cutover, but the
+    // ones already in inboxes have an hour left to work, and a user who typed the old path
+    // should land somewhere too.
+    { path: '/password/forgot', redirect: (to) => redirectToPath(to, '/zh-tw/password/forgot') },
+    {
+      path: '/password/reset/:token',
+      redirect: (to) => redirectToPath(to, `/zh-tw/password/reset/${to.params.token}`),
+    },
     { path: '/donate', redirect: (to) => redirectToPath(to, '/zh-tw/donate') },
     { path: '/tos', redirect: (to) => redirectToPath(to, '/zh-tw/tos') },
     { path: '/privacy', redirect: (to) => redirectToPath(to, '/zh-tw/privacy') },

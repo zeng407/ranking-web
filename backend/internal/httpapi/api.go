@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"runtime/debug"
 	"strings"
@@ -242,6 +244,11 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("/api/v1/auth/register", method(http.MethodPost, server.register))
 	mux.HandleFunc("/api/v1/auth/refresh", method(http.MethodPost, server.refreshSession))
 	mux.HandleFunc("/api/v1/auth/logout", method(http.MethodPost, server.logout))
+	// Forgot password and reset. Unauthenticated by necessity — the caller cannot sign in,
+	// which is the problem — so the only defences are the token itself, the per-account
+	// throttle and the per-source cap. See auth.RequestPasswordReset.
+	mux.HandleFunc("/api/v1/auth/password/forgot", method(http.MethodPost, server.forgotPassword))
+	mux.HandleFunc("/api/v1/auth/password/reset", method(http.MethodPost, server.resetPassword))
 	// start and callback are GET because the browser navigates to them; neither
 	// changes anything on its own — start only writes a short-lived state, and the
 	// callback's effect is gated on that state.
@@ -572,6 +579,38 @@ func (a *api) originAllowed(origin, requestHost string) bool {
 	}
 	parsed, err := url.Parse(origin)
 	return err == nil && strings.EqualFold(parsed.Host, requestHost)
+}
+
+// clientIP is the address the request came from, as against the address it last
+// hopped through. This api never faces a browser directly: nginx in the frontend
+// container proxies /api/ to it, with Cloudflare in front of that in production, so
+// RemoteAddr is a proxy and is the same value for every visitor on earth. Anything
+// that counts per source, or records who acted, has to read the left-most
+// X-Forwarded-For entry instead — nginx appends the peer to it on every hop.
+//
+// THE HEADER IS CLIENT-SUPPLIED, so this value must never authorise anything. A
+// caller can send its own X-Forwarded-For and get a key of its choosing, which is
+// why the password reset limit keyed on it is a flood guard and not a defence: the
+// limit that cannot be sidestepped is the per-account throttle. Reading RemoteAddr
+// instead would not be safer, only useless — one shared key would rate-limit every
+// user of the site at once.
+//
+// The result is validated as an address because the header is arbitrary text and
+// the audit columns it lands in are VARCHAR(45). Unparseable input yields "",
+// which callers treat as "unknown" rather than storing a fragment of a header.
+func clientIP(r *http.Request) string {
+	forwarded := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0])
+	if address, err := netip.ParseAddr(forwarded); err == nil {
+		return address.Unmap().String()
+	}
+	host := r.RemoteAddr
+	if split, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		host = split
+	}
+	if address, err := netip.ParseAddr(strings.TrimSpace(host)); err == nil {
+		return address.Unmap().String()
+	}
+	return ""
 }
 
 func writeJSON(w http.ResponseWriter, r *http.Request, status int, payload envelope) {

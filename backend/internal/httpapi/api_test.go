@@ -206,3 +206,58 @@ func TestAuthenticatedIdentityEndpointIsUnavailableWithoutBridgeKey(t *testing.T
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
 	}
 }
+
+// Every deployment puts a proxy in front of this api, so RemoteAddr is the proxy and
+// carries nothing about the visitor. A per-source limit reading it would count the
+// whole site as one source; an audit column reading it would record the proxy on
+// every row.
+func TestClientIPReadsTheForwardedAddressRatherThanTheProxy(t *testing.T) {
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
+	request.RemoteAddr = "172.18.0.9:41234" // the frontend container
+	request.Header.Set("X-Forwarded-For", "203.0.113.7, 172.18.0.9")
+
+	if got := clientIP(request); got != "203.0.113.7" {
+		t.Fatalf("clientIP = %q, want the left-most forwarded address", got)
+	}
+}
+
+func TestClientIPFallsBackToThePeerWithoutAForwardedHeader(t *testing.T) {
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
+	request.RemoteAddr = "203.0.113.7:41234"
+
+	if got := clientIP(request); got != "203.0.113.7" {
+		t.Fatalf("clientIP = %q", got)
+	}
+}
+
+// The header is arbitrary client-supplied text and the columns it lands in are
+// VARCHAR(45), so anything that is not an address has to be dropped rather than
+// stored as a fragment — and a spoofed header must not hide the peer either.
+func TestClientIPRejectsAForwardedValueThatIsNotAnAddress(t *testing.T) {
+	for _, forwarded := range []string{
+		"not-an-address",
+		"", // header present but empty
+		strings.Repeat("x", 200),
+		"<script>alert(1)</script>",
+	} {
+		request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
+		request.RemoteAddr = "203.0.113.7:41234"
+		request.Header.Set("X-Forwarded-For", forwarded)
+
+		if got := clientIP(request); got != "203.0.113.7" {
+			t.Fatalf("clientIP with %q = %q, want the peer", forwarded, got)
+		}
+	}
+}
+
+func TestClientIPReportsNothingWhenThereIsNoAddressAtAll(t *testing.T) {
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
+	request.RemoteAddr = "@" // a unix socket peer, as in a test or a local pipe
+
+	// Empty rather than "@": the limiter skips an unknown source and the audit column
+	// stays NULL, which is honest. Storing "@" would key a rate limit on a string every
+	// such request shares.
+	if got := clientIP(request); got != "" {
+		t.Fatalf("clientIP = %q, want empty", got)
+	}
+}

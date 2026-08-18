@@ -172,6 +172,7 @@ type Config struct {
 	YouTubeAPIKey string
 	Realtime      RealtimeConfig
 	GoogleOAuth   GoogleOAuthConfig
+	Mail          MailConfig
 	// AdminAssetDir is the directory the back office's own build sits in.
 	//
 	// IT MUST NOT BE INSIDE THE PUBLIC DOCUMENT ROOT. The files are served by this
@@ -197,6 +198,43 @@ type GoogleOAuthConfig struct {
 // Configured reports whether the sign-in can run.
 func (config GoogleOAuthConfig) Configured() bool {
 	return config.ClientID != "" && config.ClientSecret != "" && config.RedirectURL != ""
+}
+
+// Transport values for MailConfig.
+const (
+	// MailTransportLog writes the message to the log instead of delivering it. For
+	// development only — see mailer.LogSender.
+	MailTransportLog = "log"
+	// MailTransportSMTP delivers through a submission server.
+	MailTransportSMTP = "smtp"
+)
+
+// MailConfig is the outbound mail sender.
+//
+// The variable names are Laravel's, unprefixed, because the two stacks send from the same
+// mailbox through the same relay and duplicating them under GO_ names would be two places
+// to rotate one app password.
+type MailConfig struct {
+	// Transport is "" (off), "log" or "smtp". See loadMailConfig for why this and not
+	// MAIL_MAILER.
+	Transport string
+	Host      string
+	Port      int
+	// Encryption is "tls" for STARTTLS, "ssl" for implicit TLS, or empty for a plain
+	// connection.
+	Encryption  string
+	Username    string
+	Password    string
+	FromAddress string
+	FromName    string
+	// AppURL is the origin the links in the mail point at, from the APP_URL Laravel
+	// already defines. Without it a reset mail would carry a link to nowhere.
+	AppURL string
+}
+
+// Configured reports whether mail can be sent.
+func (config MailConfig) Configured() bool {
+	return config.Transport != ""
 }
 
 func Load() (Config, error) {
@@ -257,6 +295,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	mailConfig, err := loadMailConfig()
+	if err != nil {
+		return Config{}, err
+	}
 
 	return Config{
 		Environment:     stringFromEnv("APP_ENV", "local"),
@@ -281,6 +323,7 @@ func Load() (Config, error) {
 		YouTubeAPIKey: strings.TrimSpace(os.Getenv("YOUTUBE_API_KEY")),
 		Realtime:      realtime,
 		GoogleOAuth:   googleOAuth,
+		Mail:          mailConfig,
 		AdminAssetDir: strings.TrimSpace(os.Getenv("ADMIN_ASSET_DIR")),
 	}, nil
 }
@@ -328,6 +371,85 @@ func loadGoogleOAuthConfig() (GoogleOAuthConfig, error) {
 		ClientSecret: clientSecret,
 		RedirectURL:  redirectURL,
 	}, nil
+}
+
+// loadMailConfig reads the mail sender.
+//
+// THE SWITCH IS GO_MAIL_TRANSPORT, NOT MAIL_MAILER.
+//
+// Same reasoning as loadGoogleOAuthConfig. MAIL_MAILER=smtp is already in every
+// environment file because Laravel needs it, so treating it as intent would turn mail on
+// in the worker and the scheduler — neither of which sends any — and then fail their
+// startup over a missing relay password. GO_MAIL_TRANSPORT is specific to this
+// implementation, so it is the variable that says "send mail here".
+//
+// Unset means the password reset endpoints answer 503. That is the fail-closed direction:
+// a deployment that has not been given a relay must not silently accept reset requests it
+// cannot act on.
+func loadMailConfig() (MailConfig, error) {
+	transport := strings.ToLower(strings.TrimSpace(os.Getenv("GO_MAIL_TRANSPORT")))
+	if transport == "" {
+		return MailConfig{}, nil
+	}
+	if transport != MailTransportLog && transport != MailTransportSMTP {
+		return MailConfig{}, fmt.Errorf(
+			"mail configuration: GO_MAIL_TRANSPORT must be %q or %q, got %q",
+			MailTransportLog, MailTransportSMTP, transport)
+	}
+
+	// Required whatever the transport: a mail with no link in it is not worth sending,
+	// and the link needs an origin. No default — guessing the public origin would send
+	// every reader to the wrong host.
+	appURL := strings.TrimRight(strings.TrimSpace(os.Getenv("APP_URL")), "/")
+	if appURL == "" {
+		return MailConfig{}, fmt.Errorf("mail configuration: APP_URL is required when GO_MAIL_TRANSPORT is set")
+	}
+
+	config := MailConfig{
+		Transport:   transport,
+		Host:        strings.TrimSpace(os.Getenv("MAIL_HOST")),
+		Encryption:  strings.ToLower(strings.TrimSpace(os.Getenv("MAIL_ENCRYPTION"))),
+		Username:    strings.TrimSpace(os.Getenv("MAIL_USERNAME")),
+		Password:    os.Getenv("MAIL_PASSWORD"),
+		FromAddress: strings.TrimSpace(os.Getenv("MAIL_FROM_ADDRESS")),
+		FromName:    strings.TrimSpace(os.Getenv("MAIL_FROM_NAME")),
+		AppURL:      appURL,
+	}
+
+	// Laravel's .env writes MAIL_FROM_NAME="${APP_NAME}" and interpolates it itself.
+	// Docker Compose does not expand a value it read from that same file, so this
+	// process can receive the placeholder verbatim; sending it as a display name would
+	// put "${APP_NAME}" in every inbox.
+	if strings.Contains(config.FromName, "${") {
+		config.FromName = strings.TrimSpace(os.Getenv("APP_NAME"))
+		if strings.Contains(config.FromName, "${") {
+			config.FromName = ""
+		}
+	}
+
+	port, err := positiveIntFromEnv("MAIL_PORT", 0)
+	if err != nil {
+		return MailConfig{}, err
+	}
+	config.Port = port
+
+	if transport == MailTransportSMTP {
+		for name, value := range map[string]string{
+			"MAIL_HOST":         config.Host,
+			"MAIL_FROM_ADDRESS": config.FromAddress,
+		} {
+			if value == "" {
+				return MailConfig{}, fmt.Errorf(
+					"mail configuration: %s is required when GO_MAIL_TRANSPORT is %q", name, MailTransportSMTP)
+			}
+		}
+		if config.Port == 0 {
+			return MailConfig{}, fmt.Errorf(
+				"mail configuration: MAIL_PORT is required when GO_MAIL_TRANSPORT is %q", MailTransportSMTP)
+		}
+	}
+
+	return config, nil
 }
 
 // loadRealtimeConfig reads the PUSHER_* variables Laravel already defines.

@@ -39,8 +39,9 @@ ADMIN_ASSET_DIR=/srv/admin
 
 ## 3. Edge 必須把 `/admin/*` 送到 Go
 
-`frontend/routes-manifest.json` 的 `fallbackOrigin` 是 `laravel`，而 Laravel 目前**還在** serve
-Blade 版的 `/admin`。沒有調整路由的環境，使用者會拿到舊後台而不是新的 bundle。
+`frontend/routes-manifest.json` 的 `fallbackOrigin` 現在是 `none`，`/admin/*` 列在
+`backendRoutes`。但只要環境裡還有一個仍在執行的 Laravel（回滾用的那一份也算），它同樣會
+serve Blade 版的 `/admin`；沒有調整路由的環境，使用者會拿到舊後台而不是新的 bundle。
 
 部署新後台時，反向代理要把這兩組路徑送到 Go api：
 
