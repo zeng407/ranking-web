@@ -226,15 +226,15 @@ async function connectGoogle(): Promise<void> {
 </script>
 
 <template>
-  <main class="account">
+  <div class="account">
     <h1>{{ translate(locale, 'accountTitle') }}</h1>
 
     <p v-if="loading" class="account__status">{{ translate(locale, 'roomLoading') }}</p>
-    <p v-else-if="loadFailed" class="account__error">{{ translate(locale, 'accountLoadFailed') }}</p>
+    <p v-else-if="loadFailed" class="form-error">{{ translate(locale, 'accountLoadFailed') }}</p>
 
     <template v-else-if="account">
-      <p v-if="notice" class="account__notice" role="status">{{ text(notice) }}</p>
-      <p v-if="generalError" class="account__error" role="alert">{{ text(generalError) }}</p>
+      <p v-if="notice" class="form-notice" role="status">{{ text(notice) }}</p>
+      <p v-if="generalError" class="form-error" role="alert">{{ text(generalError) }}</p>
 
       <section class="account__section">
         <h2>{{ translate(locale, 'accountProfile') }}</h2>
@@ -256,7 +256,7 @@ async function connectGoogle(): Promise<void> {
             <circle cx="12" cy="8.5" r="3.5" />
             <path d="M5 20a7 7 0 0 1 14 0" />
           </svg>
-          <button type="button" :disabled="busy" @click="pickAvatar">
+          <button type="button" class="form-button" :disabled="busy" @click="pickAvatar">
             {{ translate(locale, 'accountAvatarChange') }}
           </button>
           <input
@@ -266,32 +266,43 @@ async function connectGoogle(): Promise<void> {
             hidden
             @change="submitAvatar"
           />
-          <p v-if="firstError('avatar')" class="account__field-error">{{ firstError('avatar') }}</p>
+          <p v-if="firstError('avatar')" class="form-error">{{ firstError('avatar') }}</p>
         </div>
 
-        <form @submit.prevent="submitName">
-          <label for="account-name">{{ translate(locale, 'accountName') }}</label>
-          <input id="account-name" v-model="nameDraft" type="text" maxlength="20" :disabled="busy" />
-          <p v-if="nameLocked" class="account__hint">{{ translate(locale, 'accountErrorNameTooSoon') }}</p>
-          <p v-if="firstError('name')" class="account__field-error">{{ firstError('name') }}</p>
-          <button type="submit" :disabled="busy || nameDraft === account.name">
+        <form class="account__form" @submit.prevent="submitName">
+          <div class="form-field">
+            <label for="account-name">{{ translate(locale, 'accountName') }}</label>
+            <input id="account-name" v-model="nameDraft" type="text" maxlength="20" :disabled="busy" />
+            <p v-if="nameLocked" class="form-hint">{{ translate(locale, 'accountErrorNameTooSoon') }}</p>
+            <p v-if="firstError('name')" class="form-error">{{ firstError('name') }}</p>
+          </div>
+          <button type="submit" class="form-submit" :disabled="busy || nameDraft === account.name">
             {{ translate(locale, 'accountSave') }}
           </button>
         </form>
 
-        <div class="account__readonly">
-          <label for="account-email">{{ translate(locale, 'accountEmail') }}</label>
-          <input id="account-email" :value="account.email" type="email" disabled />
-          <p class="account__hint">{{ translate(locale, 'accountEmailFixed') }}</p>
+        <div class="account__form">
+          <div class="form-field">
+            <label for="account-email">{{ translate(locale, 'accountEmail') }}</label>
+            <input id="account-email" :value="account.email" type="email" disabled />
+            <p class="form-hint">{{ translate(locale, 'accountEmailFixed') }}</p>
+          </div>
         </div>
       </section>
 
       <section class="account__section">
         <h2>Google</h2>
-        <p v-if="account.google_linked">{{ translate(locale, 'accountGoogleLinked') }}</p>
+        <p v-if="account.google_linked" class="account__copy">
+          {{ translate(locale, 'accountGoogleLinked') }}
+        </p>
         <template v-else>
-          <p>{{ translate(locale, 'accountGoogleUnlinked') }}</p>
-          <button type="button" :disabled="googleConnectPending" @click="connectGoogle">
+          <p class="account__copy">{{ translate(locale, 'accountGoogleUnlinked') }}</p>
+          <button
+            type="button"
+            class="form-button account__google"
+            :disabled="googleConnectPending"
+            @click="connectGoogle"
+          >
             {{ translate(locale, 'accountGoogleConnect') }}
           </button>
         </template>
@@ -299,12 +310,12 @@ async function connectGoogle(): Promise<void> {
 
       <section class="account__section">
         <h2>{{ translate(locale, 'accountPassword') }}</h2>
-        <p v-if="!hasPassword" class="account__hint">
+        <p v-if="!hasPassword" class="form-hint">
           {{ translate(locale, 'accountPasswordInitHint') }}
         </p>
 
-        <form @submit.prevent="submitPassword">
-          <template v-if="hasPassword">
+        <form class="account__form" @submit.prevent="submitPassword">
+          <div v-if="hasPassword" class="form-field">
             <label for="account-current">{{ translate(locale, 'accountPasswordCurrent') }}</label>
             <input
               id="account-current"
@@ -313,74 +324,105 @@ async function connectGoogle(): Promise<void> {
               autocomplete="current-password"
               :disabled="busy"
             />
-            <p v-if="firstError('current_password')" class="account__field-error">
+            <p v-if="firstError('current_password')" class="form-error">
               {{ firstError('current_password') }}
             </p>
-          </template>
+          </div>
 
-          <label for="account-new">{{ translate(locale, 'accountPasswordNew') }}</label>
-          <input
-            id="account-new"
-            v-model="passwordForm.next"
-            type="password"
-            autocomplete="new-password"
-            minlength="8"
-            :disabled="busy"
-          />
-          <label for="account-confirm">{{ translate(locale, 'accountPasswordConfirm') }}</label>
-          <input
-            id="account-confirm"
-            v-model="passwordForm.confirm"
-            type="password"
-            autocomplete="new-password"
-            :disabled="busy"
-          />
-          <p v-if="firstError('new_password')" class="account__field-error">
-            {{ firstError('new_password') }}
-          </p>
+          <div class="form-field">
+            <label for="account-new">{{ translate(locale, 'accountPasswordNew') }}</label>
+            <input
+              id="account-new"
+              v-model="passwordForm.next"
+              type="password"
+              autocomplete="new-password"
+              minlength="8"
+              :disabled="busy"
+            />
+          </div>
 
-          <button type="submit" :disabled="busy">
+          <div class="form-field">
+            <label for="account-confirm">{{ translate(locale, 'accountPasswordConfirm') }}</label>
+            <input
+              id="account-confirm"
+              v-model="passwordForm.confirm"
+              type="password"
+              autocomplete="new-password"
+              :disabled="busy"
+            />
+            <p v-if="firstError('new_password')" class="form-error">
+              {{ firstError('new_password') }}
+            </p>
+          </div>
+
+          <button type="submit" class="form-submit" :disabled="busy">
             {{ translate(locale, hasPassword ? 'accountPasswordSet' : 'accountPasswordInit') }}
           </button>
         </form>
       </section>
     </template>
-  </main>
+  </div>
 </template>
 
 <style scoped>
+/* Fields, hints, errors and buttons come from the shared .form-* classes in
+   main.css, the same shapes the login page draws. Only the page's own layout
+   lives here. */
 .account {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  display: grid;
+  width: min(100%, 32rem);
+  margin-inline: auto;
+  gap: 1.25rem;
+}
+
+.account h1 {
+  margin: 0;
+}
+
+.account__status {
+  margin: 0;
+  color: var(--text-soft);
 }
 
 .account__section {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border, #d9d9d9);
+  display: grid;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background: var(--bg-elevated);
+  gap: 1.1rem;
 }
 
-.account__section form,
-.account__readonly {
+.account__section h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.account__copy {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.account__form {
   display: grid;
-  gap: 0.5rem;
-  justify-items: start;
-  margin-top: 0.75rem;
+  gap: 0.95rem;
 }
 
 .account__avatar {
   display: flex;
   align-items: center;
-  gap: 1rem;
   flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .account__avatar img,
 .account__avatar-placeholder {
   width: 96px;
   height: 96px;
+  border: 1px solid var(--border);
   border-radius: 50%;
+  background: var(--surface);
   object-fit: cover;
 }
 
@@ -391,24 +433,9 @@ async function connectGoogle(): Promise<void> {
   opacity: 0.55;
 }
 
-.account__hint {
-  font-size: 0.875rem;
-  opacity: 0.75;
-}
-
-.account__field-error,
-.account__error {
-  color: var(--danger, #c0392b);
-  font-size: 0.875rem;
-}
-
-.account__notice {
-  color: var(--success, #1e7e34);
-  font-size: 0.875rem;
-}
-
-.account input {
-  min-width: min(20rem, 100%);
-  padding: 0.4rem 0.6rem;
+/* The connect button sizes to its label instead of the card: it is one action,
+   not the section's submit. */
+.account__google {
+  justify-self: start;
 }
 </style>

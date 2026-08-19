@@ -144,10 +144,10 @@ function editorPath(serial: string): string {
 </script>
 
 <template>
-  <main class="posts">
+  <div class="posts">
     <header class="posts__head">
       <h1>{{ translate(locale, 'myPosts') }}</h1>
-      <button v-if="!creating" type="button" @click="startCreating">
+      <button v-if="!creating" type="button" class="form-button" @click="startCreating">
         {{ translate(locale, 'myPostsNew') }}
       </button>
     </header>
@@ -155,49 +155,55 @@ function editorPath(serial: string): string {
     <form v-if="creating" class="posts__create" @submit.prevent="submitCreate">
       <h2>{{ translate(locale, 'editorCreateTitle') }}</h2>
 
-      <label for="post-title">{{ translate(locale, 'myPostsTitle') }}</label>
-      <input id="post-title" v-model="form.title" type="text" :maxlength="limits.title" :disabled="busy" />
-      <p v-if="firstError('title')" class="posts__field-error">{{ firstError('title') }}</p>
+      <div class="form-field">
+        <label for="post-title">{{ translate(locale, 'myPostsTitle') }}</label>
+        <input id="post-title" v-model="form.title" type="text" :maxlength="limits.title" :disabled="busy" />
+        <p v-if="firstError('title')" class="form-error">{{ firstError('title') }}</p>
+      </div>
 
-      <label for="post-description">{{ translate(locale, 'myPostsDescription') }}</label>
-      <textarea
-        id="post-description"
-        v-model="form.description"
-        rows="3"
-        :maxlength="limits.description"
-        :disabled="busy"
-      ></textarea>
-      <p class="posts__hint">{{ translate(locale, 'editorDescriptionHint') }}</p>
-      <p v-if="firstError('description')" class="posts__field-error">{{ firstError('description') }}</p>
+      <div class="form-field">
+        <label for="post-description">{{ translate(locale, 'myPostsDescription') }}</label>
+        <textarea
+          id="post-description"
+          v-model="form.description"
+          rows="3"
+          :maxlength="limits.description"
+          :disabled="busy"
+        ></textarea>
+        <p class="form-hint">{{ translate(locale, 'editorDescriptionHint') }}</p>
+        <p v-if="firstError('description')" class="form-error">{{ firstError('description') }}</p>
+      </div>
 
       <fieldset class="posts__policies">
         <legend>{{ translate(locale, 'myPostsPublishment') }}</legend>
-        <label v-for="(label, value) in policyLabels" :key="value">
+        <label v-for="(label, value) in policyLabels" :key="value" class="posts__policy">
           <input v-model="form.access_policy" type="radio" :value="value" :disabled="busy" />
           {{ translate(locale, label) }}
         </label>
       </fieldset>
 
-      <template v-if="form.access_policy === 'password'">
+      <div v-if="form.access_policy === 'password'" class="form-field">
         <label for="post-password">{{ translate(locale, 'editorPassword') }}</label>
         <input id="post-password" v-model="form.password" type="text" maxlength="255" :disabled="busy" />
-        <p v-if="firstError('password')" class="posts__field-error">{{ firstError('password') }}</p>
-      </template>
+        <p v-if="firstError('password')" class="form-error">{{ firstError('password') }}</p>
+      </div>
 
-      <p v-if="generalError" class="posts__error" role="alert">
+      <p v-if="generalError" class="form-error" role="alert">
         {{ translate(locale, generalError) }}
       </p>
 
-      <div class="posts__actions">
-        <button type="submit" :disabled="busy">{{ translate(locale, 'editorCreateSubmit') }}</button>
-        <button type="button" :disabled="busy" @click="cancelCreating">
+      <div class="posts__actions form-actions">
+        <button type="submit" class="form-submit" :disabled="busy">
+          {{ translate(locale, 'editorCreateSubmit') }}
+        </button>
+        <button type="button" class="form-button" :disabled="busy" @click="cancelCreating">
           {{ translate(locale, 'editorCancel') }}
         </button>
       </div>
     </form>
 
     <p v-if="loading" class="posts__status">{{ translate(locale, 'roomLoading') }}</p>
-    <p v-else-if="loadFailed" class="posts__error">{{ translate(locale, 'myPostsLoadFailed') }}</p>
+    <p v-else-if="loadFailed" class="form-error">{{ translate(locale, 'myPostsLoadFailed') }}</p>
     <p v-else-if="posts.length === 0" class="posts__status">{{ translate(locale, 'myPostsEmpty') }}</p>
 
     <ul v-else class="posts__list">
@@ -217,116 +223,139 @@ function editorPath(serial: string): string {
     </ul>
 
     <nav v-if="!loading && lastPage > 1" class="posts__pages">
-      <button type="button" :disabled="page <= 1" @click="load(page - 1)">
+      <button type="button" class="form-button" :disabled="page <= 1" @click="load(page - 1)">
         {{ translate(locale, 'myPostsPrevious') }}
       </button>
       <span>{{ page }} / {{ lastPage }}</span>
-      <button type="button" :disabled="page >= lastPage" @click="load(page + 1)">
+      <button type="button" class="form-button" :disabled="page >= lastPage" @click="load(page + 1)">
         {{ translate(locale, 'myPostsNext') }}
       </button>
     </nav>
-  </main>
+  </div>
 </template>
 
 <style scoped>
+/* Fields, hints, errors and buttons come from the shared .form-* classes in
+   main.css. Only the list and the page's own layout live here. */
 .posts {
-  max-width: 52rem;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  display: grid;
+  width: min(100%, 46rem);
+  margin-inline: auto;
+  gap: 1.25rem;
 }
 
 .posts__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
   flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.posts__head h1 {
+  margin: 0;
+}
+
+.posts__status {
+  margin: 0;
+  color: var(--text-soft);
 }
 
 .posts__create {
   display: grid;
-  gap: 0.4rem;
-  justify-items: start;
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border: 1px solid var(--border, #d9d9d9);
-  border-radius: 0.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background: var(--bg-elevated);
+  gap: 0.95rem;
 }
 
-.posts__create input[type='text'],
-.posts__create textarea {
-  width: min(28rem, 100%);
-  padding: 0.4rem 0.6rem;
+.posts__create h2 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .posts__policies {
   display: flex;
-  gap: 1rem;
   flex-wrap: wrap;
-  border: 0;
   padding: 0;
-  margin: 0.5rem 0;
+  border: 0;
+  margin: 0;
+  gap: 0.4rem 1rem;
 }
 
-.posts__actions {
+.posts__policies legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.posts__policies input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+}
+
+/* The label carries the radio's touch target: the input itself is ~17px. */
+.posts__policy {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: 0.85rem;
+  gap: 0.4rem;
+  cursor: pointer;
 }
 
 .posts__list {
-  list-style: none;
-  padding: 0;
-  margin: 1.5rem 0 0;
   display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
   gap: 0.75rem;
 }
 
 .posts__item {
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--border, #d9d9d9);
-  border-radius: 0.5rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background: var(--bg-elevated);
 }
 
 .posts__item-title {
-  font-weight: 600;
-  font-size: 1.05rem;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.posts__item-title:hover {
+  color: var(--accent);
 }
 
 .posts__item-description {
-  margin: 0.35rem 0;
-  opacity: 0.85;
+  margin: 0.35rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
   overflow-wrap: anywhere;
 }
 
 .posts__item-meta,
 .posts__item-tags {
   display: flex;
-  gap: 0.75rem;
   flex-wrap: wrap;
-  font-size: 0.85rem;
-  opacity: 0.75;
-  margin: 0.25rem 0 0;
+  margin: 0.5rem 0 0;
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  gap: 0.35rem 0.75rem;
 }
 
 .posts__pages {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.posts__hint {
+  color: var(--text-soft);
   font-size: 0.85rem;
-  opacity: 0.75;
-  margin: 0;
-}
-
-.posts__field-error,
-.posts__error {
-  color: var(--danger, #c0392b);
-  font-size: 0.875rem;
-  margin: 0;
+  gap: 1rem;
 }
 </style>

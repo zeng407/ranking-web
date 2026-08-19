@@ -60,6 +60,7 @@ describe('small-type floor', () => {
     const sizes = [
       rule('.eyebrow'),
       rule('.vote-card-meta,\n.vote-card-tags'),
+      rule('.auth-field-hint,\n.form-hint'),
     ].map((block) => Number.parseFloat(block.match(/font-size:\s*([\d.]+)rem/)?.[1] ?? '0'))
 
     for (const size of sizes) {
@@ -373,5 +374,37 @@ describe('adult thumbnails', () => {
     const positioning = listedRule('.game-preview-media img')
     expect(positioning, 'the game preview rule was renamed').toContain('object-fit')
     expect(positioning).not.toContain('filter')
+  })
+})
+
+describe('status colours', () => {
+  it('defines the danger and success tokens the account pages ask for', () => {
+    // Both were used with a hardcoded fallback and never defined, so the account,
+    // my-posts and editor pages painted #c0392b whatever the theme.
+    expect(rule(':root')).toMatch(/--danger:\s*#[0-9a-f]{6}/i)
+    expect(rule(':root')).toMatch(/--success:\s*#[0-9a-f]{6}/i)
+  })
+
+  it('keeps them readable on the dark surface', () => {
+    const surface = darkVariable('--surface')
+
+    expect(contrast(darkVariable('--danger'), surface)).toBeGreaterThan(4.5)
+    expect(contrast(darkVariable('--success'), surface)).toBeGreaterThan(4.5)
+  })
+})
+
+describe('form controls', () => {
+  it('draws the account pages with the same field and buttons as the login page', () => {
+    // The account and my-posts pages shipped browser-default inputs and buttons; the
+    // shapes below are the login page's, shared rather than copied.
+    expect(css).toMatch(/\.auth-field input,\n\.form-field input,\n\.form-field textarea \{[\s\S]*?border-radius: 0\.7rem/)
+    expect(css).toMatch(/\.auth-submit,\n\.form-submit \{[\s\S]*?background: var\(--accent\)/)
+    expect(css).toMatch(/\.auth-google,\n\.form-button \{[\s\S]*?border-radius: 999px/)
+  })
+
+  it('keeps the quiet button on a 44px touch target', () => {
+    // 0.75rem of padding around a 0.85rem line: the mobile sweep found these buttons
+    // at 24px tall.
+    expect(css).toMatch(/\.auth-google,\n\.form-button \{[\s\S]*?padding: 0\.75rem 1rem/)
   })
 })

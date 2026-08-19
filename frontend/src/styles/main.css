@@ -11,6 +11,8 @@
   --accent: #ff5a36;
   --accent-hover: #e94522;
   --accent-soft: #ffe0d7;
+  --danger: #c0392b;
+  --success: #1e7e34;
   --indigo: #635bff;
   --indigo-soft: #e3e1ff;
   --lime: #c8f169;
@@ -40,6 +42,9 @@
   --accent: #ff704f;
   --accent-hover: #ff876c;
   --accent-soft: #4a251d;
+  /* Lightened for the dark theme: #c0392b on #1b1a18 is 1.9:1, unreadable. */
+  --danger: #ff8a80;
+  --success: #7fdba2;
   --indigo: #8b85ff;
   --indigo-soft: #292647;
   --lime: #b9df61;
@@ -405,17 +410,21 @@ p {
   gap: 0.95rem;
 }
 
-.auth-field {
+.auth-field,
+.form-field {
   display: grid;
   gap: 0.35rem;
 }
 
-.auth-field > span {
+.auth-field > span,
+.form-field > label {
   font-size: 0.78rem;
   font-weight: 700;
 }
 
-.auth-field input {
+.auth-field input,
+.form-field input,
+.form-field textarea {
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: 0.7rem;
@@ -424,21 +433,50 @@ p {
   background: var(--surface);
 }
 
-.auth-field input:focus-visible {
+.form-field textarea {
+  resize: vertical;
+}
+
+.form-field input:disabled {
+  color: var(--text-faint);
+  background: var(--bg);
+}
+
+.auth-field input:focus-visible,
+.form-field input:focus-visible,
+.form-field textarea:focus-visible {
   border-color: var(--accent);
   outline: none;
 }
 
-.auth-field-hint {
+.auth-field-hint,
+.form-hint {
+  margin: 0;
   color: var(--text-faint);
-  font-size: 0.72rem;
+  /* 0.72rem rendered at 11.5px; CJK strokes collapse below 12px. */
+  font-size: 0.75rem;
 }
 
 .auth-field-error,
-.auth-error {
+.auth-error,
+.form-error {
   color: var(--accent);
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+/* Saved / mail sent: nothing went wrong, so not the error colour. */
+.form-notice {
+  margin: 0;
+  color: var(--success);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .auth-error {
@@ -468,8 +506,10 @@ p {
   cursor: pointer;
 }
 
-.auth-submit {
-  padding: 0.8rem 1rem;
+.auth-submit,
+.form-submit {
+  /* Wide enough that a two-character label still reads as a button, not a bubble. */
+  padding: 0.8rem 1.4rem;
   border: 0;
   border-radius: 999px;
   color: #fff;
@@ -479,11 +519,13 @@ p {
   cursor: pointer;
 }
 
-.auth-submit:hover:not(:disabled) {
+.auth-submit:hover:not(:disabled),
+.form-submit:hover:not(:disabled) {
   background: var(--accent-hover);
 }
 
-.auth-submit:disabled {
+.auth-submit:disabled,
+.form-submit:disabled {
   cursor: progress;
   opacity: 0.65;
 }
@@ -504,22 +546,33 @@ p {
   background: var(--border);
 }
 
-.auth-google {
+.auth-google,
+.form-button {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 0.75rem of padding on a 0.85rem line clears the 44px touch target. */
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   color: var(--text);
+  font: inherit;
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
+  background: none;
   gap: 0.6rem;
+  cursor: pointer;
 }
 
-.auth-google:hover {
+.auth-google:hover,
+.form-button:hover:not(:disabled) {
   border-color: var(--text);
+}
+
+.form-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .auth-tos {
