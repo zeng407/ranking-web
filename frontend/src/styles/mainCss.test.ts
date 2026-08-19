@@ -217,7 +217,9 @@ describe('game setup option previews', () => {
     // One frame size for the pair, so a portrait and a landscape option are the
     // same box rather than one filling it and the other rendering 81px wide.
     expect(preview).toMatch(/--game-preview-size:\s*clamp\([^)]*\)/)
-    expect(preview).toContain('grid-template-columns: repeat(2, minmax(0, var(--game-preview-size)))')
+    expect(preview).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
+    // The size is a cap rather than a fixed column width, so a phone can lift it.
+    expect(preview).toContain('max-width: calc(var(--game-preview-size) * 2 + var(--game-preview-gap))')
     // Portrait, because most option artwork is a standing product shot.
     expect(media).toMatch(/aspect-ratio:\s*3\s*\/\s*4/)
     // A taller frame (aspect-ratio: 2 / 3) once pushed the count options and the
@@ -232,6 +234,16 @@ describe('game setup option previews', () => {
     expect(picture).toContain('position: absolute')
     expect(picture).toContain('inset: 0')
     expect(rule('.game-preview-backdrop')).toMatch(/filter:\s*blur\(/)
+  })
+
+  it('gives the pair the whole row on a phone', () => {
+    // The frame size bottoms out at 9rem: two 144px frames in a 336px shell left the
+    // pair 38px short of the right edge on a 360px phone, reading as pushed aside.
+    const mobile = [...css.matchAll(/@media \(max-width: 640px\) \{([\s\S]*?)\n\}/g)]
+      .map((match) => match[1])
+      .join('\n')
+
+    expect(mobile).toMatch(/\.game-preview \{[\s\S]*?max-width:\s*none/)
   })
 })
 

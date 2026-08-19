@@ -3073,7 +3073,11 @@ the transparent edge blur leaves behind.
   --game-preview-gap: clamp(0.6rem, 2vw, 1.1rem);
 
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, var(--game-preview-size)));
+  /* Flexible columns capped at that frame size: the pair renders at the size above
+     wherever the row is wide enough for it, and the cap can be lifted on a phone
+     (below) without the columns having to be redeclared. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: calc(var(--game-preview-size) * 2 + var(--game-preview-gap));
   margin-top: clamp(1rem, 3vw, 1.8rem);
   gap: var(--game-preview-gap);
 }
@@ -5609,6 +5613,13 @@ button.game-sync-indicator {
 
   .game-setup h1 {
     font-size: clamp(2.2rem, 12vw, 3.8rem);
+  }
+
+  /* The frame size bottoms out at 9rem, so on a 360px phone two 144px frames sat in
+     a 336px row and the pair stopped 38px short of the right edge, reading as pushed
+     to one side. Drop the cap here and let the row size the two cards. */
+  .game-preview {
+    max-width: none;
   }
 
   /* Title, two pills and five round buttons come to 398px of fixed content against
