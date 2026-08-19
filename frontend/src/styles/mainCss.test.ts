@@ -139,6 +139,15 @@ describe('mobile touch targets', () => {
     expect(mobile).toMatch(/\.login-link,|\.login-link::after/)
     expect(mobile).toMatch(/\.highlight-dots button \{[\s\S]*?padding:\s*1rem 0\.85rem/)
   })
+
+  it('keeps the carousel dots painted inside their padded hit box', () => {
+    // The phone rules give each dot a 38x43px hit box and clip its paint to the
+    // content box. The background shorthand resets background-clip, so the active dot
+    // filled the whole hit box as a 53x43px block instead of staying a dot.
+    expect(rule('.highlight-dots button')).toContain('background-color: var(--border-strong)')
+    expect(rule('.highlight-dots button.active')).toContain('background-color: var(--accent)')
+    expect(css).not.toMatch(/\.highlight-dots button[^{]*\{[^}]*background:\s/)
+  })
 })
 
 describe('game heading on a phone', () => {

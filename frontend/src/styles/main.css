@@ -1316,20 +1316,23 @@ the transparent edge blur leaves behind.
   gap: 0.4rem;
 }
 
+/* background-color, never the background shorthand: on a phone the dots carry a
+   padded hit box and paint only their content box, and the shorthand would reset
+   that background-clip back to border-box. */
 .highlight-dots button {
   width: 0.55rem;
   height: 0.55rem;
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: var(--border-strong);
+  background-color: var(--border-strong);
   cursor: pointer;
   transition: width 160ms ease, background-color 160ms ease;
 }
 
 .highlight-dots button.active {
   width: 1.6rem;
-  background: var(--accent);
+  background-color: var(--accent);
 }
 
 .highlight-carousel-position {
