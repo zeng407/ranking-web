@@ -1611,77 +1611,81 @@ function preferredRankImage(report: RankReport): string | null {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M8 5h8M7 9h10l-1 12H8L7 9Z" /><path d="M10 13v4M14 13v4" /></svg>
             <b>{{ activeCount }}</b>
           </span>
-          <RouterLink
-            class="game-controls-toggle"
-            :to="localizedPath(`/r/${encodeURIComponent(postSerial)}`, locale)"
-            :title="t('viewRanking')"
-            :aria-label="t('viewRanking')"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-7M10 20V8M16 20V4M22 20H2" /></svg>
-          </RouterLink>
-          <!-- The take-over control stays because it is actionable. The former
-               sync-status icon was removed: it only described background
-               syncing, which is not the player's concern. -->
-          <button
-            v-if="readOnly"
-            class="game-sync-indicator is-readonly"
-            type="button"
-            :title="t('gameTakeOver')"
-            :aria-label="t('gameTakeOver')"
-            @click="takeOver"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="12" height="10" rx="2" /><path d="M7 10V7a3 3 0 0 1 6 0v3M16 7h5M19 4l3 3-3 3" /></svg>
-          </button>
-          <!-- Hosting a room. Hidden once the game is over: a finished game has no round for
-               anyone to wager on, so opening a room then would produce an empty one. -->
-          <button
-            v-if="snapshot?.status !== 'completed'"
-            class="game-controls-toggle"
-            type="button"
-            :class="{ 'is-hosting': hostedRoom.hosting.value }"
-            :disabled="hostedRoom.status.value === 'opening'"
-            :title="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
-            :aria-label="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
-            @click="hostedRoom.hosting.value ? copyRoomLink() : openGameRoom()"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
-              <path d="M3.5 19a5.5 5.5 0 0 1 11 0M15 19a4 4 0 0 1 5.5-3.7" />
-            </svg>
-          </button>
-          <button
-            class="game-controls-toggle game-share-control"
-            type="button"
-            :title="shareCopied ? t('gameShareCopied') : t('gameShare')"
-            :aria-label="shareCopied ? t('gameShareCopied') : t('gameShare')"
-            @click="sharePost"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-              <path d="m8.6 10.6 6.8-4M8.6 13.4l6.8 4" />
-            </svg>
-          </button>
-          <button
-            class="game-controls-toggle"
-            type="button"
-            :disabled="creating"
-            :title="t('gameRefresh')"
-            :aria-label="t('gameRefresh')"
-            @click="openRestartDialog"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M5.6 15a8 8 0 1 0 .5-7.5L4 10" /></svg>
-          </button>
-          <button
-            class="game-controls-toggle"
-            type="button"
-            :aria-expanded="controlsOpen"
-            aria-controls="game-control-help"
-            :title="controlsOpen ? t('gameControlsClose') : t('gameControls')"
-            :aria-label="controlsOpen ? t('gameControlsClose') : t('gameControls')"
-            @click="controlsOpen = !controlsOpen"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h4M7 16h10" /></svg>
-          </button>
+          <!-- The actions are grouped so a phone can move them to their own row under the
+               title and its pills: side by side they are wider than the screen. -->
+          <div class="game-controls">
+            <RouterLink
+              class="game-controls-toggle"
+              :to="localizedPath(`/r/${encodeURIComponent(postSerial)}`, locale)"
+              :title="t('viewRanking')"
+              :aria-label="t('viewRanking')"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-7M10 20V8M16 20V4M22 20H2" /></svg>
+            </RouterLink>
+            <!-- The take-over control stays because it is actionable. The former
+                 sync-status icon was removed: it only described background
+                 syncing, which is not the player's concern. -->
+            <button
+              v-if="readOnly"
+              class="game-sync-indicator is-readonly"
+              type="button"
+              :title="t('gameTakeOver')"
+              :aria-label="t('gameTakeOver')"
+              @click="takeOver"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="12" height="10" rx="2" /><path d="M7 10V7a3 3 0 0 1 6 0v3M16 7h5M19 4l3 3-3 3" /></svg>
+            </button>
+            <!-- Hosting a room. Hidden once the game is over: a finished game has no round for
+                 anyone to wager on, so opening a room then would produce an empty one. -->
+            <button
+              v-if="snapshot?.status !== 'completed'"
+              class="game-controls-toggle"
+              type="button"
+              :class="{ 'is-hosting': hostedRoom.hosting.value }"
+              :disabled="hostedRoom.status.value === 'opening'"
+              :title="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
+              :aria-label="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
+              @click="hostedRoom.hosting.value ? copyRoomLink() : openGameRoom()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
+                <path d="M3.5 19a5.5 5.5 0 0 1 11 0M15 19a4 4 0 0 1 5.5-3.7" />
+              </svg>
+            </button>
+            <button
+              class="game-controls-toggle game-share-control"
+              type="button"
+              :title="shareCopied ? t('gameShareCopied') : t('gameShare')"
+              :aria-label="shareCopied ? t('gameShareCopied') : t('gameShare')"
+              @click="sharePost"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <path d="m8.6 10.6 6.8-4M8.6 13.4l6.8 4" />
+              </svg>
+            </button>
+            <button
+              class="game-controls-toggle"
+              type="button"
+              :disabled="creating"
+              :title="t('gameRefresh')"
+              :aria-label="t('gameRefresh')"
+              @click="openRestartDialog"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M5.6 15a8 8 0 1 0 .5-7.5L4 10" /></svg>
+            </button>
+            <button
+              class="game-controls-toggle"
+              type="button"
+              :aria-expanded="controlsOpen"
+              aria-controls="game-control-help"
+              :title="controlsOpen ? t('gameControlsClose') : t('gameControls')"
+              :aria-label="controlsOpen ? t('gameControlsClose') : t('gameControls')"
+              @click="controlsOpen = !controlsOpen"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h4M7 16h10" /></svg>
+            </button>
+          </div>
         </div>
       </header>
 

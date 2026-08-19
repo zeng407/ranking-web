@@ -141,6 +141,24 @@ describe('mobile touch targets', () => {
   })
 })
 
+describe('game heading on a phone', () => {
+  it('drops the round controls to their own row instead of overflowing the screen', () => {
+    // Two @media (max-width: 640px) blocks carry phone rules; the game heading is in
+    // the second one.
+    const mobile = [...css.matchAll(/@media \(max-width: 640px\) \{([\s\S]*?)\n\}/g)]
+      .map((match) => match[1])
+      .join('\n')
+
+    // Two pills at 111px and 56px plus five 38px buttons come to 398px against a
+    // 336px shell on a 360px phone: the page scrolled sideways and the title, the
+    // only item able to shrink, was squeezed to 0px wide.
+    expect(rule('.game-controls')).toContain('gap: 0.45rem')
+    expect(mobile).toMatch(/\.game-heading \{[\s\S]*?flex-wrap:\s*wrap/)
+    expect(mobile).toMatch(/\.game-stats \{[\s\S]*?display:\s*contents/)
+    expect(mobile).toMatch(/\.game-controls \{[\s\S]*?flex:\s*1 1 100%/)
+  })
+})
+
 describe('donate hero', () => {
   it('gives the display heading the width it needs to stop ragging', () => {
     const hero = rule('.donate-hero')

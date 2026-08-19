@@ -3211,6 +3211,15 @@ the transparent edge blur leaves behind.
   white-space: nowrap;
 }
 
+/* The round actions sit in their own group inside .game-stats: the gap matches the
+   one between the pills, so the whole strip still reads as one row here, and a
+   phone can drop the group to a line of its own without touching the pills. */
+.game-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .game-controls-toggle {
   display: grid;
   width: 2.35rem;
@@ -5546,9 +5555,25 @@ button.game-sync-indicator {
     font-size: clamp(2.2rem, 12vw, 3.8rem);
   }
 
+  /* Title, two pills and five round buttons come to 398px of fixed content against
+     a 336px shell on a 360px phone: the row overflowed into a sideways scroll and
+     the title, the only shrinkable item, was squeezed to zero width. Dissolving
+     .game-stats hands the pills to this row beside the title and lets the button
+     group take a line of its own. */
   .game-heading {
     align-items: center;
-    gap: 0.8rem;
+    flex-wrap: wrap;
+    gap: 0.55rem 0.45rem;
+  }
+
+  .game-stats {
+    display: contents;
+  }
+
+  .game-controls {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .game-heading h1 {
