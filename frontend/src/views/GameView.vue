@@ -19,6 +19,7 @@ import {
 } from '../game/localGame'
 import { APIError } from '../lib/api'
 import { useAuth } from '../composables/useAuth'
+import { closeImageViewer, isImageViewerOpen, openImageViewer } from '../services/imageViewer'
 import { unlockPost } from '../services/postAccess'
 import { onScreenPairForBatch, useHostedRoom } from '../composables/useHostedRoom'
 import { getAnonymousID } from '../lib/anonymousId'
@@ -137,7 +138,6 @@ const communityLoading = ref(false)
 const communityError = ref(false)
 const selectedCommunityRank = ref<RankReport | null>(null)
 const rankDetails = ref<RankDetails | null>(null)
-const zoomedPicture = ref<{ image: string; rank: string; title: string } | null>(null)
 /**
  * The video a ranking row opened, and whether it is docked in the corner.
  *
@@ -482,6 +482,7 @@ onBeforeUnmount(() => {
   if (shareCopiedTimer) window.clearTimeout(shareCopiedTimer)
   if (trendLoaderTimer) window.clearTimeout(trendLoaderTimer)
   cancelRestartHold()
+  closeImageViewer()
   stopAllCandidateMedia()
   releaseLease()
 })
@@ -887,11 +888,7 @@ function openRankMedia(rank: number | null, element: RankElement | LocalGameElem
   }
   const image = fullSizeImage(element)
   if (!image) return
-  zoomedPicture.value = { image, rank: rankLabel(rank), title: element.title || '' }
-}
-
-function closeZoom(): void {
-  zoomedPicture.value = null
+  openImageViewer({ image, title: [rankLabel(rank), element.title].filter(Boolean).join(' ') })
 }
 
 function dockVideo(): void {
@@ -1101,7 +1098,7 @@ async function restartGame(): Promise<void> {
   communityRanks.value = { items: [], page: 1, per_page: 20, total: 0, total_pages: 0 }
   selectedCommunityRank.value = null
   rankDetails.value = null
-  closeZoom()
+  closeImageViewer()
   closeVideo()
   entryDecisionPending.value = false
   resultPreparationVersion += 1
@@ -1357,17 +1354,16 @@ function onStorage(event: StorageEvent): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  // Before the input guard: the zoom's own close button is a BUTTON and usually
-  // holds focus while it is open, so Escape has to reach here from there too.
+  // Before the input guard: the video overlay's own controls are BUTTONs and
+  // usually hold focus while it is open, so Escape has to reach here from there.
   if (event.key === 'Escape' && openedVideo.value && !videoDocked.value) {
     // Docked, not stopped: Escape leaves the big view, it does not end playback.
     dockVideo()
     return
   }
-  if (event.key === 'Escape' && zoomedPicture.value) {
-    closeZoom()
-    return
-  }
+  // The picture viewer binds its own keys (Escape, zoom, rotate) while it is
+  // open, so the game shortcuts have to stay out of the way.
+  if (isImageViewerOpen()) return
   const target = event.target
   if (target instanceof HTMLElement
     && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))) return
@@ -2129,27 +2125,6 @@ function preferredRankImage(report: RankReport): string | null {
             <span>{{ communityRanks.page }} / {{ communityRanks.total_pages }}</span>
             <button type="button" :disabled="communityLoading || communityRanks.page >= communityRanks.total_pages" @click="loadCommunityRanks(communityRanks.page + 1)">{{ t('nextPage') }}</button>
           </nav>
-      </div>
-
-      <!-- The picture on its own, which is what a ranking list is about. Outside
-           both tab panels, because either tab can open it. Escape closes it; see
-           onKeydown. -->
-      <div
-        v-if="zoomedPicture"
-        class="game-rank-zoom"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="zoomedPicture.title"
-        @click.self="closeZoom"
-      >
-        <button class="game-rank-zoom-close" type="button" :aria-label="t('close')" @click="closeZoom">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-        </button>
-        <img :src="zoomedPicture.image" :alt="zoomedPicture.title">
-        <p>
-          <strong>{{ zoomedPicture.rank }}</strong>
-          <span>{{ zoomedPicture.title }}</span>
-        </p>
       </div>
 
       <!-- One player in two positions. Leaving the big view docks it bottom left

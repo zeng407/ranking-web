@@ -269,14 +269,15 @@ describe('my ranking layout', () => {
 })
 
 describe('ranking picture zoom', () => {
-  it('opens the picture larger than the list frame it was clicked in', () => {
-    const zoom = rule('.game-rank-zoom img')
+  it('darkens the viewer scrim to the depth the other overlays use', () => {
+    // viewer.js ships a 50% backdrop; the video overlay on the same page is 78%.
+    expect(rule('.viewer-container.viewer-backdrop')).toContain('background-color: rgb(0 0 0 / 78%)')
+  })
 
-    // Sizing to the picture rendered a zoom smaller than the card whenever the
-    // stored source file is smaller than the thumbnail beside it.
-    expect(zoom).toContain('width: min(92vw, 60rem)')
-    expect(zoom).toContain('height: min(78vh, 42rem)')
-    expect(zoom).toContain('object-fit: contain')
+  it('marks the area around the picture as the one that closes', () => {
+    // That area is the viewer's canvas, and clicking it is what hides the
+    // viewer — the picture itself keeps its own drag cursor.
+    expect(rule('.viewer-container .viewer-canvas')).toContain('cursor: zoom-out')
   })
 })
 

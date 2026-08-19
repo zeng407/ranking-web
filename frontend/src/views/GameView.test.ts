@@ -24,6 +24,36 @@ const routerMocks = vi.hoisted(() => ({
 	replace: vi.fn(),
 }))
 
+/*
+viewer.js draws its own overlay straight into the document and measures the
+picture to lay it out, which happy-dom cannot do. What the view owes it is the
+full-size URL and the caption, so the mock records those and the tests read them.
+*/
+const viewerMock = vi.hoisted(() => ({
+	opened: [] as { src: string; title: string }[],
+	shown: 0,
+	destroyed: 0,
+}))
+
+vi.mock('viewerjs', () => ({
+	default: class {
+		constructor(element: HTMLElement, options: { title: () => string }) {
+			viewerMock.opened.push({
+				src: element.querySelector('img')?.getAttribute('src') ?? '',
+				title: options.title(),
+			})
+		}
+
+		show(): void {
+			viewerMock.shown += 1
+		}
+
+		destroy(): void {
+			viewerMock.destroyed += 1
+		}
+	},
+}))
+
 const exportMocks = vi.hoisted(() => ({
 	createPersonalRankingExport: vi.fn(),
 	disposePersonalRankingExport: vi.fn(),
@@ -62,6 +92,9 @@ vi.mock('../composables/useAuth', async () => {
 beforeEach(() => {
 	authMocks.authenticated = false
 	authMocks.loading = false
+	viewerMock.opened.length = 0
+	viewerMock.shown = 0
+	viewerMock.destroyed = 0
 })
 
 vi.mock('vue-router', async (importOriginal) => ({
@@ -555,12 +588,12 @@ describe('GameView restart regression', () => {
 			expect(backdrop.attributes('style')).toContain(pictures[index]!.attributes('src'))
 		})
 		// A list frame is never the whole picture, so clicking one opens it.
-		expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+		expect(viewerMock.opened).toHaveLength(0)
 		await wrapper.get('.game-personal-hero .game-personal-media').trigger('click')
-		expect(wrapper.get('.game-rank-zoom img').attributes('src'))
-			.toBe('https://example.test/分享結果-1.webp')
-		await wrapper.get('.game-rank-zoom-close').trigger('click')
-		expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+		expect(viewerMock.opened).toEqual([
+			{ src: 'https://example.test/分享結果-1.webp', title: '#1 分享結果 1' },
+		])
+		expect(viewerMock.shown).toBe(1)
 
 		await wrapper.get('.game-share-result').trigger('click')
 		expect(share).toHaveBeenCalledWith(expect.objectContaining({
@@ -785,11 +818,9 @@ describe('GameView restart regression', () => {
     expect(wrapper.find('.game-trend-ranges').exists()).toBe(false)
 
     // Clicking the picture shows the picture, at the largest size the API offers.
-    expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+    expect(viewerMock.opened).toHaveLength(0)
     await wrapper.get('.game-community-thumb').trigger('click')
-    expect(wrapper.get('.game-rank-zoom img').attributes('src')).toBe('https://cdn.test/full.jpg')
-    await wrapper.get('.game-rank-zoom-close').trigger('click')
-    expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+    expect(viewerMock.opened.at(-1)?.src).toBe('https://cdn.test/full.jpg')
     wrapper.unmount()
   })
 
@@ -1034,7 +1065,7 @@ describe('GameView option preview and sharing', () => {
 
     // A still frame is not the entry: the row's thumbnail opens the player.
     await wrapper.get('.game-community-thumb').trigger('click')
-    expect(wrapper.find('.game-rank-zoom').exists()).toBe(false)
+    expect(viewerMock.opened).toHaveLength(0)
     const player = wrapper.get('.game-rank-player')
     expect(player.get('iframe').attributes('src')).toContain('/embed/abc123')
     expect(player.classes()).not.toContain('is-docked')

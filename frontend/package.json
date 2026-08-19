@@ -17,6 +17,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "viewerjs": "^1.11.8",
     "vue": "^3.5.40",
     "vue-router": "^5.2.0"
   },

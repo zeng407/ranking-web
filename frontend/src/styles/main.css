@@ -4866,70 +4866,24 @@ button.game-sync-indicator {
   background: var(--surface-strong);
 }
 
-/* The picture on its own. Fixed, so it covers the page whatever the row was
-   scrolled to. */
-.game-rank-zoom {
-  position: fixed;
-  z-index: 60;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: clamp(1rem, 4vw, 3rem);
-  background: rgb(0 0 0 / 78%);
+/* The picture on its own is viewer.js (see services/imageViewer.ts), which
+   brings its own overlay, zoom and rotate. Only what has to match the rest of
+   the page is restated here: the scrim depth of the other overlays, a cursor
+   saying that the area around the picture closes it, and a caption that is
+   readable rather than 12px grey. The selectors are doubled up because
+   viewer.css ships in the view's own chunk and so lands after this file. */
+.viewer-container.viewer-backdrop {
+  background-color: rgb(0 0 0 / 78%);
+}
+
+.viewer-container .viewer-canvas {
   cursor: zoom-out;
 }
 
-/* A frame sized against the viewport, with the picture contained inside it.
-   Sizing to the picture instead left the zoom at its natural size, and some
-   posts store a source file smaller than the thumbnail the card already
-   shows — opening it then made the picture shrink. The frame is transparent so
-   a portrait picture does not sit in a wide bright box over the scrim. */
-.game-rank-zoom img {
-  width: min(92vw, 60rem);
-  height: min(78vh, 42rem);
-  border-radius: 0.9rem;
-  object-fit: contain;
-}
-
-.game-rank-zoom p {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  margin: 0;
+.viewer-container .viewer-title {
+  font-size: 0.9rem;
   color: #fff;
-  text-align: center;
-}
-
-.game-rank-zoom p strong {
-  font-size: 1.2rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.game-rank-zoom-close {
-  position: absolute;
-  display: grid;
-  width: 2.6rem;
-  height: 2.6rem;
-  top: 1rem;
-  right: 1rem;
-  place-items: center;
-  border: 1px solid rgb(255 255 255 / 35%);
-  border-radius: 50%;
-  color: #fff;
-  background: rgb(0 0 0 / 45%);
-  cursor: pointer;
-}
-
-.game-rank-zoom-close svg {
-  width: 1.1rem;
-  height: 1.1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 1.9;
+  opacity: 0.85;
 }
 
 /* One player element in two positions: an overlay while it is being watched, and
