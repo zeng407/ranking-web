@@ -19,10 +19,11 @@ import {
 } from '../game/localGame'
 import { APIError } from '../lib/api'
 import { useAuth } from '../composables/useAuth'
-import { closeImageViewer, isImageViewerOpen, openImageViewer } from '../services/imageViewer'
+import { closeImageViewer, openImageViewer } from '../services/imageViewer'
 import { unlockPost } from '../services/postAccess'
 import { onScreenPairForBatch, useHostedRoom } from '../composables/useHostedRoom'
 import { getAnonymousID } from '../lib/anonymousId'
+import { shareOrCopyLink } from '../lib/share'
 import { localeDefinition, localizedPath, normalizeLocale, translate, type MessageKey } from '../i18n'
 import {
   isRankTrendCharted,
@@ -165,8 +166,15 @@ const trendLoaderVisible = ref(false)
 const trendLoaderDelay = 220
 let trendLoaderTimer: number | undefined
 const trendError = ref(false)
-const controlsOpen = ref(false)
 const restartDialog = ref<HTMLDialogElement | null>(null)
+const multiplayerDialog = ref<HTMLDialogElement | null>(null)
+/**
+ * Which half of the multiplayer dialog is on screen.
+ *
+ * `mode` is the choice of game mode, `invite` is the link to hand out. A host never leaves
+ * their own game for a room, so these two steps are the whole of hosting.
+ */
+const multiplayerStep = ref<'mode' | 'invite'>('mode')
 const rankingExportOpen = ref(false)
 const restartError = ref(false)
 const entryDecisionPending = ref(false)
@@ -772,6 +780,32 @@ function resultShareURL(): string {
  * The pair on screen goes with the request: a host opens the room mid-game, and without it
  * the first participants are shown whatever match was last decided.
  */
+/**
+ * Opens the multiplayer dialog.
+ *
+ * A host who already has a room lands on the invite directly: there is one room per game,
+ * so the mode was settled when it was opened and re-asking would suggest otherwise.
+ */
+function openMultiplayerDialog(): void {
+	multiplayerStep.value = hostedRoom.hosting.value ? 'invite' : 'mode'
+	if (!multiplayerDialog.value?.open) multiplayerDialog.value?.showModal()
+}
+
+function closeMultiplayerDialog(): void {
+	multiplayerDialog.value?.close()
+}
+
+/**
+ * Starts the guess-the-host's-preference mode, which is the only one built.
+ *
+ * Staying on the mode step when opening fails is deliberate: the error belongs next to the
+ * card that was pressed, and an invite step with no link to show would be a dead end.
+ */
+async function chooseGuessPreferenceMode(): Promise<void> {
+	await openGameRoom()
+	if (hostedRoom.hosting.value) multiplayerStep.value = 'invite'
+}
+
 async function openGameRoom(): Promise<void> {
 	const displayed = currentElements.value
 	await hostedRoom.open(displayed ? [displayed[0].id, displayed[1].id] : undefined)
@@ -781,36 +815,14 @@ async function copyRoomLink(): Promise<void> {
 	const url = hostedRoom.inviteURL.value
 	if (!url) return
 
-	if (navigator.share) {
-		try {
-			await navigator.share({ title: definition.value?.title || '2Pick', url })
-			return
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') return
-		}
-	}
-
-	try {
-		await navigator.clipboard.writeText(url)
-		roomLinkCopied.value = true
-		if (roomLinkCopiedTimer) window.clearTimeout(roomLinkCopiedTimer)
-		roomLinkCopiedTimer = window.setTimeout(() => { roomLinkCopied.value = false }, 2_000)
-	} catch {
-		// Clipboard access can be denied; the link is on screen to copy by hand.
-	}
+	if (await shareOrCopyLink(url, definition.value?.title || '2Pick') !== 'copied') return
+	roomLinkCopied.value = true
+	if (roomLinkCopiedTimer) window.clearTimeout(roomLinkCopiedTimer)
+	roomLinkCopiedTimer = window.setTimeout(() => { roomLinkCopied.value = false }, 2_000)
 }
 
 async function sharePersonalResult(): Promise<void> {
-	const url = resultShareURL()
-	if (navigator.share) {
-		try {
-			await navigator.share({ title: definition.value?.title || '2Pick', url })
-			return
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') return
-		}
-	}
-	await navigator.clipboard?.writeText(url)
+	await shareOrCopyLink(resultShareURL(), definition.value?.title || '2Pick')
 }
 
 // Shares the /g/<serial> short URL rather than the localized route, so the link
@@ -820,26 +832,10 @@ function postShareURL(): string {
 }
 
 async function sharePost(): Promise<void> {
-	const url = postShareURL()
-
-	if (navigator.share) {
-		try {
-			await navigator.share({ title: definition.value?.title || '2Pick', url })
-			return
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') return
-		}
-	}
-
-	// Desktop browsers without the share sheet fall back to copying the link.
-	try {
-		await navigator.clipboard.writeText(url)
-		shareCopied.value = true
-		if (shareCopiedTimer) window.clearTimeout(shareCopiedTimer)
-		shareCopiedTimer = window.setTimeout(() => { shareCopied.value = false }, 2_000)
-	} catch {
-		// Clipboard access can be denied; the URL is still in the address bar.
-	}
+	if (await shareOrCopyLink(postShareURL(), definition.value?.title || '2Pick') !== 'copied') return
+	shareCopied.value = true
+	if (shareCopiedTimer) window.clearTimeout(shareCopiedTimer)
+	shareCopiedTimer = window.setTimeout(() => { shareCopied.value = false }, 2_000)
 }
 
 function openPersonalResultExport(): void {
@@ -1362,27 +1358,17 @@ function onStorage(event: StorageEvent): void {
   }
 }
 
+/**
+ * Escape, for the docked video overlay.
+ *
+ * The game itself has no keyboard controls. The arrow-key and 1/2 shortcuts were removed
+ * along with the help panel that documented them: a vote is a tap on a picture, and the
+ * shortcuts made the page listen to every key press to serve a path almost nobody took.
+ */
 function onKeydown(event: KeyboardEvent): void {
-  // Before the input guard: the video overlay's own controls are BUTTONs and
-  // usually hold focus while it is open, so Escape has to reach here from there.
-  if (event.key === 'Escape' && openedVideo.value && !videoDocked.value) {
-    // Docked, not stopped: Escape leaves the big view, it does not end playback.
-    dockVideo()
-    return
-  }
-  // The picture viewer binds its own keys (Escape, zoom, rotate) while it is
-  // open, so the game shortcuts have to stay out of the way.
-  if (isImageViewerOpen()) return
-  const target = event.target
-  if (target instanceof HTMLElement
-    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))) return
-  if (event.key === '?') {
-    controlsOpen.value = !controlsOpen.value
-    return
-  }
-  if (!currentElements.value || readOnly.value || animating.value) return
-  if (event.key === 'ArrowLeft' || event.key === '1') voteFor(currentElements.value[0].id)
-  if (event.key === 'ArrowRight' || event.key === '2') voteFor(currentElements.value[1].id)
+  if (event.key !== 'Escape' || !openedVideo.value || videoDocked.value) return
+  // Docked, not stopped: Escape leaves the big view, it does not end playback.
+  dockVideo()
 }
 
 function scheduleSync(delay: number): void {
@@ -1619,14 +1605,6 @@ function preferredRankImage(report: RankReport): string | null {
           <!-- The actions are grouped so a phone can move them to their own row under the
                title and its pills: side by side they are wider than the screen. -->
           <div class="game-controls">
-            <RouterLink
-              class="game-controls-toggle"
-              :to="localizedPath(`/r/${encodeURIComponent(postSerial)}`, locale)"
-              :title="t('viewRanking')"
-              :aria-label="t('viewRanking')"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-7M10 20V8M16 20V4M22 20H2" /></svg>
-            </RouterLink>
             <!-- The take-over control stays because it is actionable. The former
                  sync-status icon was removed: it only described background
                  syncing, which is not the player's concern. -->
@@ -1650,7 +1628,7 @@ function preferredRankImage(report: RankReport): string | null {
               :disabled="hostedRoom.status.value === 'opening'"
               :title="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
               :aria-label="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
-              @click="hostedRoom.hosting.value ? copyRoomLink() : openGameRoom()"
+              @click="openMultiplayerDialog"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
@@ -1679,57 +1657,9 @@ function preferredRankImage(report: RankReport): string | null {
             >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M5.6 15a8 8 0 1 0 .5-7.5L4 10" /></svg>
             </button>
-            <button
-              class="game-controls-toggle"
-              type="button"
-              :aria-expanded="controlsOpen"
-              aria-controls="game-control-help"
-              :title="controlsOpen ? t('gameControlsClose') : t('gameControls')"
-              :aria-label="controlsOpen ? t('gameControlsClose') : t('gameControls')"
-              @click="controlsOpen = !controlsOpen"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h4M7 16h10" /></svg>
-            </button>
           </div>
         </div>
       </header>
-
-      <section v-if="hostedRoom.hosting.value" class="game-room-invite">
-        <div>
-          <p class="game-room-invite-title">{{ t('roomInviteTitle') }}</p>
-          <!-- The link is shown as text as well as copied: clipboard access is refused often
-               enough that a copy button alone leaves people stuck. -->
-          <p class="game-room-invite-url">{{ hostedRoom.inviteURL.value }}</p>
-        </div>
-        <div class="game-room-invite-actions">
-          <button type="button" @click="copyRoomLink">
-            {{ roomLinkCopied ? t('roomInviteCopied') : t('roomInviteCopy') }}
-          </button>
-          <RouterLink :to="`/${localeDefinition(locale).prefix}/room/${hostedRoom.serial.value}`">
-            {{ t('roomInviteOpen') }}
-          </RouterLink>
-        </div>
-      </section>
-
-      <p v-else-if="hostedRoom.status.value === 'failed'" class="game-room-invite-error">
-        {{ t('roomHostFailed') }}
-      </p>
-
-      <Transition name="game-help">
-        <section v-if="controlsOpen" id="game-control-help" class="game-control-help">
-          <header>
-            <div>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h4M7 16h10" /></svg>
-              <h2>{{ t('gameControls') }}</h2>
-            </div>
-            <button type="button" :aria-label="t('gameControlsClose')" @click="controlsOpen = false">×</button>
-          </header>
-          <div class="game-control-list">
-            <div><span><kbd>←</kbd><kbd>1</kbd></span><strong>{{ t('gameChooseLeft') }}</strong></div>
-            <div><span><kbd>→</kbd><kbd>2</kbd></span><strong>{{ t('gameChooseRight') }}</strong></div>
-          </div>
-        </section>
-      </Transition>
 
       <div class="game-layout">
         <div class="game-arena" :class="{ disabled: readOnly }">
@@ -2199,6 +2129,76 @@ function preferredRankImage(report: RankReport): string | null {
 		:locale="locale"
 		@close="rankingExportOpen = false"
 	/>
+
+  <!-- Multiplayer. Two steps: pick the mode, then hand out the link. The host stays on
+       their own game throughout — there is nothing for them inside the room, and walking
+       in would leave the game they are hosting unattended. -->
+  <dialog
+    ref="multiplayerDialog"
+    class="game-multiplayer-dialog"
+    aria-labelledby="game-multiplayer-title"
+    @cancel.prevent="closeMultiplayerDialog"
+  >
+    <form method="dialog" @submit.prevent>
+      <header>
+        <div>
+          <p class="eyebrow">2PICK · {{ t('gameRoom') }}</p>
+          <h2 id="game-multiplayer-title">
+            {{ multiplayerStep === 'invite' ? t('roomInviteFriends') : t('roomChooseMode') }}
+          </h2>
+        </div>
+        <button type="button" :aria-label="t('close')" @click="closeMultiplayerDialog">×</button>
+      </header>
+
+      <template v-if="multiplayerStep === 'mode'">
+        <div class="game-mode-options">
+          <button
+            class="game-mode-card"
+            type="button"
+            :disabled="hostedRoom.status.value === 'opening'"
+            @click="chooseGuessPreferenceMode"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6c0 4.8-7 9.4-7 9.4Z" /></svg>
+            <strong>{{ t('roomModePreference') }}</strong>
+            <p>{{ t('roomModePreferenceDescription') }}</p>
+            <ul>
+              <li>{{ t('roomModePreferenceLeaderboard') }}</li>
+              <li>{{ t('roomModeBlackBox') }}</li>
+              <li>{{ t('roomModePoints') }}</li>
+              <li>{{ t('roomModeCombo') }}</li>
+            </ul>
+          </button>
+          <!-- Not a disabled button: there is nothing to press, and a button that can never
+               be pressed still takes keyboard focus. -->
+          <div class="game-mode-card is-upcoming">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
+              <path d="M3.5 19a5.5 5.5 0 0 1 11 0M15 19a4 4 0 0 1 5.5-3.7" />
+            </svg>
+            <strong>{{ t('roomModeMajority') }}</strong>
+            <p>{{ t('roomModeMajorityDescription') }}</p>
+            <span class="game-mode-upcoming">{{ t('roomModeComingSoon') }}</span>
+          </div>
+        </div>
+        <p
+          v-if="hostedRoom.status.value === 'failed'"
+          class="game-room-invite-error"
+          role="alert"
+        >{{ t('roomHostFailed') }}</p>
+      </template>
+
+      <section v-else class="game-room-invite">
+        <p class="game-room-invite-host">{{ t('roomHostYou') }}</p>
+        <p class="game-room-invite-hint">{{ t('roomInviteHint') }}</p>
+        <!-- The link is shown as text as well as copied: clipboard access is refused often
+             enough that a copy button alone leaves people stuck. -->
+        <p class="game-room-invite-url">{{ hostedRoom.inviteURL.value }}</p>
+        <button class="button button-primary" type="button" @click="copyRoomLink">
+          {{ roomLinkCopied ? t('roomInviteCopied') : t('roomInviteCopy') }}
+        </button>
+      </section>
+    </form>
+  </dialog>
 
   <dialog
     ref="restartDialog"

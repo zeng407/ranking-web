@@ -2621,7 +2621,8 @@ the transparent edge blur leaves behind.
   font-size: 0.9rem;
 }
 
-.game-restart-dialog {
+.game-restart-dialog,
+.game-multiplayer-dialog {
   width: min(32rem, calc(100% - 2rem));
   max-height: calc(100dvh - 2rem);
   padding: 0;
@@ -2633,7 +2634,8 @@ the transparent edge blur leaves behind.
   box-shadow: 0 30px 90px rgb(10 9 8 / 32%);
 }
 
-.game-restart-dialog::backdrop {
+.game-restart-dialog::backdrop,
+.game-multiplayer-dialog::backdrop {
   background: rgb(10 9 8 / 65%);
   backdrop-filter: blur(7px);
 }
@@ -2783,11 +2785,13 @@ the transparent edge blur leaves behind.
   to { transform: rotate(360deg); }
 }
 
-.game-restart-dialog form {
+.game-restart-dialog form,
+.game-multiplayer-dialog form {
   padding: 1.25rem;
 }
 
-.game-restart-dialog header {
+.game-restart-dialog header,
+.game-multiplayer-dialog header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -2795,17 +2799,20 @@ the transparent edge blur leaves behind.
   margin-bottom: 1rem;
 }
 
-.game-restart-dialog header .eyebrow {
+.game-restart-dialog header .eyebrow,
+.game-multiplayer-dialog header .eyebrow {
   margin-bottom: 0.3rem;
   font-size: 0.6rem;
 }
 
-.game-restart-dialog header h2 {
+.game-restart-dialog header h2,
+.game-multiplayer-dialog header h2 {
   margin: 0;
   font-size: clamp(1.25rem, 4vw, 1.65rem);
 }
 
-.game-restart-dialog header > button {
+.game-restart-dialog header > button,
+.game-multiplayer-dialog header > button {
   width: 2.25rem;
   height: 2.25rem;
   padding: 0;
@@ -3356,49 +3363,145 @@ button.game-sync-indicator {
   border-color: var(--accent, #22c55e);
 }
 
-.game-room-invite {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin: 0 0 0.75rem;
-  padding: 0.6rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  background: var(--surface);
+/* Choosing a mode. Two cards, stacked on a phone and side by side once there is room for
+   both to stay legible. */
+.game-mode-options {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
 }
 
-.game-room-invite-title {
+@media (width >= 34rem) {
+  .game-mode-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.game-mode-card {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  color: inherit;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.game-mode-card:hover:not(:disabled),
+.game-mode-card:focus-visible {
+  border-color: var(--indigo, #4f46e5);
+  background: var(--surface-strong);
+}
+
+.game-mode-card:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.game-mode-card:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.game-mode-card svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: none;
+  stroke: var(--indigo, #4f46e5);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.game-mode-card strong {
+  font-size: 1.05rem;
+}
+
+.game-mode-card p {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--text-muted, inherit);
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.game-mode-card ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-mode-card li {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  color: var(--text-soft);
+  background: var(--surface-strong);
+  font-size: 0.7rem;
+}
+
+/* The unbuilt mode. Shown so the roadmap is visible, dimmed so it is not mistaken for a
+   choice, and not a button at all so it never takes focus. */
+.game-mode-card.is-upcoming {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.game-mode-card.is-upcoming svg {
+  stroke: var(--text-soft);
+}
+
+.game-mode-upcoming {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  color: var(--text-soft);
+  background: var(--surface-strong);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+/* Handing out the link. The host reads this and stays on their own game. */
+.game-room-invite {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.game-room-invite-host {
+  margin: 0;
+  font-weight: 600;
+}
+
+.game-room-invite-hint {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
 }
 
 /* The link is shown as text as well as offered for copying: clipboard access is refused
    often enough that a copy button on its own leaves people stuck. */
 .game-room-invite-url {
-  margin: 0.15rem 0 0;
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface-strong);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85rem;
   word-break: break-all;
 }
 
-.game-room-invite-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  white-space: nowrap;
-}
-
 .game-room-invite-error {
-  margin: 0 0 0.75rem;
+  margin: 0.75rem 0 0;
   font-size: 0.85rem;
   color: var(--danger, #dc2626);
 }
 
-.game-controls-toggle:hover,
-.game-controls-toggle[aria-expanded="true"] {
+.game-controls-toggle:hover {
   border-color: var(--border-strong);
   color: var(--text);
   background: var(--surface-strong);
@@ -3411,110 +3514,6 @@ button.game-sync-indicator {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.8;
-}
-
-.game-control-help {
-  width: min(100%, 34rem);
-  margin: -0.55rem 0 1.2rem auto;
-  padding: 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--surface);
-  box-shadow: 0 14px 34px rgb(35 28 24 / 8%);
-}
-
-.game-control-help header,
-.game-control-help header > div {
-  display: flex;
-  align-items: center;
-}
-
-.game-control-help header {
-  justify-content: space-between;
-  padding: 0.1rem 0.2rem 0.7rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.game-control-help header > div {
-  gap: 0.5rem;
-}
-
-.game-control-help header svg {
-  width: 1rem;
-  fill: none;
-  stroke: var(--text-soft);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.game-control-help h2 {
-  margin: 0;
-  font-size: 0.82rem;
-}
-
-.game-control-help header button {
-  width: 1.8rem;
-  height: 1.8rem;
-  padding: 0;
-  border: 0;
-  color: var(--text-soft);
-  background: transparent;
-  cursor: pointer;
-  font-size: 1.3rem;
-}
-
-.game-control-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-  padding-top: 0.7rem;
-}
-
-.game-control-list > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.7rem;
-  padding: 0.55rem 0.65rem;
-  border-radius: 0.75rem;
-  background: var(--bg);
-}
-
-.game-control-list > div > span {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.game-control-list kbd {
-  display: grid;
-  min-width: 1.7rem;
-  height: 1.7rem;
-  padding-inline: 0.35rem;
-  place-items: center;
-  border: 1px solid var(--border-strong);
-  border-bottom-width: 3px;
-  border-radius: 0.4rem;
-  color: var(--text);
-  background: var(--surface-strong);
-  font-family: inherit;
-  font-size: 0.67rem;
-}
-
-.game-control-list strong {
-  color: var(--text-soft);
-  font-size: 0.72rem;
-}
-
-.game-help-enter-active,
-.game-help-leave-active {
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.game-help-enter-from,
-.game-help-leave-to {
-  transform: translateY(-0.4rem);
-  opacity: 0;
 }
 
 .game-layout {

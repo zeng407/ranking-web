@@ -120,7 +120,7 @@ func newParticipationService(t *testing.T, store *fakeParticipation, limiter Ren
 		Repository: store,
 		Limiter:    limiter,
 		Scoring:    DefaultScoring(),
-		Nicknames:  func() string { return "測試路人" },
+		Nicknames:  func(string) string { return "測試路人" },
 	})
 	if err != nil {
 		t.Fatalf("NewParticipation() error = %v", err)
@@ -202,7 +202,7 @@ func TestJoinRefusesAnEmptyAnonymousID(t *testing.T) {
 	service := newParticipationService(t, store, nil)
 
 	for _, value := range []string{"", "   ", "\t"} {
-		if _, err := service.Join(context.Background(), 42, value, nil); err == nil {
+		if _, err := service.Join(context.Background(), 42, value, nil, "zh-tw"); err == nil {
 			t.Errorf("Join(%q) succeeded", value)
 		}
 	}
@@ -212,7 +212,7 @@ func TestJoinSuppliesAStartingNameAndScore(t *testing.T) {
 	store := &fakeParticipation{}
 	service := newParticipationService(t, store, nil)
 
-	participant, err := service.Join(context.Background(), 42, "browser-a", nil)
+	participant, err := service.Join(context.Background(), 42, "browser-a", nil, "zh-tw")
 	if err != nil {
 		t.Fatalf("Join() error = %v", err)
 	}
@@ -353,15 +353,61 @@ func TestEnsureRoomRecordsThePairAlreadyOnScreen(t *testing.T) {
 }
 
 func TestRandomNicknameStaysWithinTheColumn(t *testing.T) {
-	for range 200 {
-		nickname := RandomNickname()
-		if nickname == "" {
-			t.Fatal("an empty nickname was generated")
-		}
-		if runes := len([]rune(nickname)); runes > MaxNicknameRunes {
-			t.Fatalf("%q is %d runes, over the %d the column allows", nickname, runes, MaxNicknameRunes)
+	// English is the case that needs the guard: "Adventurous" and "Hippopotamus" are both
+	// in the site's own lists and together they overflow the column.
+	for _, locale := range []string{"zh-tw", "en-US", "ja", "de", "", "en;q=0.9,zh-TW"} {
+		for range 200 {
+			nickname := RandomNickname(locale)
+			if nickname == "" {
+				t.Fatalf("an empty nickname was generated for %q", locale)
+			}
+			if runes := len([]rune(nickname)); runes > NicknameColumnRunes {
+				t.Fatalf("%q (%s) is %d runes, over the %d the column allows",
+					nickname, locale, runes, NicknameColumnRunes)
+			}
 		}
 	}
+}
+
+func TestRandomNicknameFollowsTheLocale(t *testing.T) {
+	// The nickname is the first thing a player sees of themselves in a room, so it is
+	// drawn from the language they are reading the page in. An unknown language falls
+	// back to the site's own rather than to no name at all.
+	cases := map[string]string{
+		"zh-tw":          "zh_TW",
+		"zh-TW,zh;q=0.9": "zh_TW",
+		"en-US":          "en",
+		"en;q=0.9,zh-TW": "en",
+		"ja":             "ja",
+		"de":             defaultNicknameLocale,
+		"":               defaultNicknameLocale,
+	}
+	for locale, want := range cases {
+		words := nicknamesByLocale[want]
+		for range 50 {
+			name := RandomNickname(locale)
+			if !fromWordLists(name, words) {
+				t.Fatalf("RandomNickname(%q) = %q, which is not in the %s lists", locale, name, want)
+			}
+		}
+	}
+}
+
+// fromWordLists reports whether a name is one of the language's adjectives followed by
+// one of its animals, which is the whole shape random_nickname() ever produced.
+func fromWordLists(name string, words nicknameWords) bool {
+	for _, adjective := range words.adjectives {
+		rest, found := strings.CutPrefix(name, adjective)
+		if !found {
+			continue
+		}
+		for _, animal := range words.names {
+			if rest == animal {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // BetOnCurrentRound sends only the pick; the counters come from the server's own view of

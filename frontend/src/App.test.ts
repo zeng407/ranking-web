@@ -147,7 +147,10 @@ describe('App navigation cache', () => {
     await wrapper.get('.game-start-button').trigger('click')
     await flushPromises()
     expect(wrapper.find('.game-arena').exists()).toBe(true)
-    await wrapper.get('a[title="排行榜"]').trigger('click')
+    // The control bar has no ranking link any more; the way through mid-game is the
+    // restart dialog, which still offers one next to "continue".
+    await wrapper.get('button[title="重整遊戲"]').trigger('click')
+    await wrapper.get('.game-dialog-ranking-link').trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/zh-tw/r/post-1')

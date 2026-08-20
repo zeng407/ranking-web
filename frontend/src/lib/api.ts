@@ -182,6 +182,12 @@ function requestHeaders(additional?: HeadersInit, json = false): Headers {
   const headers = new Headers(additional)
   if (!headers.has('Accept')) headers.set('Accept', 'application/json')
   if (json && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  // The language the visitor is actually reading, which is the localized route they are on
+  // rather than whatever their browser prefers. Anything the API generates for a person to
+  // read — a starting nickname in a game room, for one — should be in that language.
+  // Taken from the document because AppHeader already keeps it in step with the route.
+  const language = typeof document === 'undefined' ? '' : document.documentElement.lang
+  if (language && !headers.has('Accept-Language')) headers.set('Accept-Language', language)
   return headers
 }
 

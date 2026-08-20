@@ -40,10 +40,14 @@ var (
 	ErrNotTheCurrentPairing = errors.New("gameroom: that is not the current pairing")
 )
 
-// MaxNicknameRunes is the game_room_users.nickname column width, counted in runes
-// because the column is utf8mb4 and these names are mostly Chinese. Laravel validates
-// max:10; the column holds 20. The narrower rule is kept.
+// MaxNicknameRunes is what a player may rename themselves to, counted in runes because
+// the column is utf8mb4 and these names are mostly Chinese. Matches Laravel's max:10.
 const MaxNicknameRunes = 10
+
+// NicknameColumnRunes is the game_room_users.nickname column width. Generated names are
+// held to this rather than to MaxNicknameRunes: the rename rule was always the stricter
+// of the two, and the English word list needs the room.
+const NicknameColumnRunes = 20
 
 // NicknameCooldown is how long a player must wait between renames. Matches
 // CacheService::putUpdateGameUserNameThreashold.
@@ -202,8 +206,8 @@ type Participation struct {
 	repository ParticipationRepository
 	limiter    RenameLimiter
 	scoring    Scoring
-	// nicknames supplies a starting name for a new participant.
-	nicknames func() string
+	// nicknames supplies a starting name for a new participant, in their language.
+	nicknames func(locale string) string
 }
 
 // ParticipationOptions wires Participation.
@@ -211,7 +215,7 @@ type ParticipationOptions struct {
 	Repository ParticipationRepository
 	Limiter    RenameLimiter
 	Scoring    Scoring
-	Nicknames  func() string
+	Nicknames  func(locale string) string
 }
 
 func NewParticipation(options ParticipationOptions) (*Participation, error) {
@@ -277,7 +281,7 @@ func (participation *Participation) EnsureRoom(
 // game's score, the comments endpoint already made the same trade, and the alternative
 // is keeping a Laravel session alive purely to identify anonymous players.
 func (participation *Participation) Join(
-	ctx context.Context, roomID int64, anonymousID string, userID *int64,
+	ctx context.Context, roomID int64, anonymousID string, userID *int64, locale string,
 ) (Participant, error) {
 	anonymousID = strings.TrimSpace(anonymousID)
 	if anonymousID == "" {
@@ -287,7 +291,7 @@ func (participation *Participation) Join(
 		return Participant{}, fmt.Errorf("%w: an anonymous id is required", ErrInvalidNickname)
 	}
 	return participation.repository.EnsureParticipant(
-		ctx, roomID, anonymousID, userID, participation.nicknames(), participation.scoring.DefaultScore)
+		ctx, roomID, anonymousID, userID, participation.nicknames(locale), participation.scoring.DefaultScore)
 }
 
 // Bet records a wager on the round in progress.
@@ -398,26 +402,4 @@ func NewRoomSerial() (string, error) {
 		serial[index] = serialAlphabet[int(value)%len(serialAlphabet)]
 	}
 	return string(serial), nil
-}
-
-// nicknameAdjectives and nicknameNouns build a starting name, replacing PHP's
-// random_nickname() helper.
-var (
-	nicknameAdjectives = []string{"快樂", "神秘", "勇敢", "冷靜", "熱血", "悠閒", "認真", "隨性"}
-	nicknameNouns      = []string{"路人", "玩家", "觀眾", "選手", "旅人", "食客", "貓咪", "阿宅"}
-)
-
-// RandomNickname produces a starting display name.
-//
-// Two words rather than a number, so a room full of new players is readable rather than
-// a list of "Player 4193". Collisions inside one room are possible and harmless: the
-// leaderboard is keyed on the player digest, not the name.
-func RandomNickname() string {
-	raw := make([]byte, 2)
-	if _, err := rand.Read(raw); err != nil {
-		// A fixed name is better than a failed join. The player can rename themselves.
-		return "路人"
-	}
-	return nicknameAdjectives[int(raw[0])%len(nicknameAdjectives)] +
-		nicknameNouns[int(raw[1])%len(nicknameNouns)]
 }

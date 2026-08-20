@@ -17,7 +17,7 @@ import (
 // business recomputing a leaderboard inside a request.
 type GameRoomService interface {
 	EnsureRoom(ctx context.Context, gameSerial string, onScreen []int64) (gameroom.Room, bool, error)
-	Join(ctx context.Context, roomID int64, anonymousID string, userID *int64) (gameroom.Participant, error)
+	Join(ctx context.Context, roomID int64, anonymousID string, userID *int64, locale string) (gameroom.Participant, error)
 	BetOnCurrentRound(ctx context.Context, roomID int64, participant gameroom.Participant, gameSerial string, winnerID, loserID int64) error
 	Rename(ctx context.Context, participant gameroom.Participant, nickname string) error
 }
@@ -59,6 +59,16 @@ const maxAnonymousIDLength = 255
 // visitor with no id would land on ONE participant row, see each other's score, and
 // overwrite each other's wagers. Laravel had exactly that behaviour
 // (`session()->get('anonymous_id', 'unknown')`); refusing is the fix.
+// roomLocale is the language a new participant's starting nickname is drawn in.
+//
+// Accept-Language, which the SPA sets from the localized route the visitor is on — the same
+// thing Laravel keyed the nickname lists off. Only a display default rides on this, so a
+// missing or unrecognized value falling back to the site's own language (see
+// gameroom.RandomNickname) is the whole of the error handling it needs.
+func roomLocale(r *http.Request) string {
+	return r.Header.Get("Accept-Language")
+}
+
 func roomAnonymousID(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" || utf8.RuneCountInString(value) > maxAnonymousIDLength {
@@ -196,7 +206,7 @@ func (a *api) gameRoomState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participant, err := a.gameRooms.Join(r.Context(), room.ID, anonymousID, a.optionalUserID(r))
+	participant, err := a.gameRooms.Join(r.Context(), room.ID, anonymousID, a.optionalUserID(r), roomLocale(r))
 	if err != nil {
 		a.writeGameRoomError(w, r, err)
 		return
@@ -293,7 +303,7 @@ func (a *api) placeGameRoomBet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participant, err := a.gameRooms.Join(r.Context(), room.ID, anonymousID, a.optionalUserID(r))
+	participant, err := a.gameRooms.Join(r.Context(), room.ID, anonymousID, a.optionalUserID(r), roomLocale(r))
 	if err != nil {
 		a.writeGameRoomError(w, r, err)
 		return
@@ -338,7 +348,7 @@ func (a *api) renameGameRoomPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participant, err := a.gameRooms.Join(r.Context(), room.ID, anonymousID, a.optionalUserID(r))
+	participant, err := a.gameRooms.Join(r.Context(), room.ID, anonymousID, a.optionalUserID(r), roomLocale(r))
 	if err != nil {
 		a.writeGameRoomError(w, r, err)
 		return

@@ -40,6 +40,7 @@ type fakeGameRoom struct {
 	betCalls          int
 	renameCalls       int
 	lastAnonymousID   string
+	lastLocale        string
 	lastUserID        *int64
 	lastBet           gameroom.PlacedBet
 	lastBetGameSerial string
@@ -72,10 +73,10 @@ func (fake *fakeGameRoom) EnsureRoom(
 }
 
 func (fake *fakeGameRoom) Join(
-	_ context.Context, _ int64, anonymousID string, userID *int64,
+	_ context.Context, _ int64, anonymousID string, userID *int64, locale string,
 ) (gameroom.Participant, error) {
 	fake.joinCalls++
-	fake.lastAnonymousID, fake.lastUserID = anonymousID, userID
+	fake.lastAnonymousID, fake.lastUserID, fake.lastLocale = anonymousID, userID, locale
 	if fake.joinErr != nil {
 		return gameroom.Participant{}, fake.joinErr
 	}
@@ -270,6 +271,29 @@ func TestGameRoomStateReturnsPlayerVotesBetAndBoardTogether(t *testing.T) {
 	}
 	if fake.joinCalls != 1 {
 		t.Errorf("Join was called %d times, want 1", fake.joinCalls)
+	}
+}
+
+// The starting nickname is drawn in the visitor's language, so the join has to carry one.
+// The SPA sets Accept-Language from the localized route it is on.
+func TestGameRoomStateForwardsTheLocaleToJoin(t *testing.T) {
+	for name, test := range map[string]string{
+		"header": "zh-TW,zh;q=0.9",
+		"none":   "",
+	} {
+		t.Run(name, func(t *testing.T) {
+			fake := newFakeGameRoom()
+			request := httptest.NewRequest(http.MethodGet,
+				"/api/v1/game-rooms/abcdefgh?anonymous_id=browser-a", nil)
+			if test != "" {
+				request.Header.Set("Accept-Language", test)
+			}
+			gameRoomHandler(fake).ServeHTTP(httptest.NewRecorder(), request)
+
+			if fake.lastLocale != test {
+				t.Errorf("locale = %q, want %q", fake.lastLocale, test)
+			}
+		})
 	}
 }
 

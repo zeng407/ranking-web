@@ -54,6 +54,15 @@ vi.mock('viewerjs', () => ({
 	},
 }))
 
+const roomMocks = vi.hoisted(() => ({
+	open: vi.fn(),
+}))
+
+vi.mock('../services/gameRoom', async (importOriginal) => ({
+	...await importOriginal<typeof import('../services/gameRoom')>(),
+	getGameRoomService: () => ({ open: roomMocks.open }),
+}))
+
 const exportMocks = vi.hoisted(() => ({
 	createPersonalRankingExport: vi.fn(),
 	disposePersonalRankingExport: vi.fn(),
@@ -95,6 +104,10 @@ beforeEach(() => {
 	viewerMock.opened.length = 0
 	viewerMock.shown = 0
 	viewerMock.destroyed = 0
+	Reflect.deleteProperty(navigator, 'userAgentData')
+	roomMocks.open.mockReset()
+	roomMocks.open.mockResolvedValue({ serial: 'room-1' })
+	localStorage.clear()
 })
 
 vi.mock('vue-router', async (importOriginal) => ({
@@ -551,6 +564,7 @@ describe('GameView restart regression', () => {
 		})
 		const share = vi.fn().mockResolvedValue(undefined)
 		Object.defineProperty(navigator, 'share', { configurable: true, value: share })
+		Object.defineProperty(navigator, 'userAgentData', { configurable: true, value: { mobile: true } })
 		class LoadedImage {
 			onload: (() => void) | null = null
 			onerror: (() => void) | null = null
@@ -824,16 +838,55 @@ describe('GameView restart regression', () => {
     wrapper.unmount()
   })
 
-  it('keeps keyboard help hidden until requested and always exposes the ranking link', async () => {
+  it('leaves the game with no keyboard shortcuts and no ranking link', async () => {
     const wrapper = await mountStartedGame()
 
+    // Voting is a tap on a picture. There is no help panel because there is nothing to
+    // document, and the arrow keys reach nothing.
     expect(wrapper.find('#game-control-help').exists()).toBe(false)
-    expect(wrapper.get('a[title="排行榜"]').attributes('data-to')).toBe('/zh-tw/r/post-1')
-    await wrapper.get('button[title="操作說明"]').trigger('click')
+    expect(wrapper.find('a[title="排行榜"]').exists()).toBe(false)
+    const first = wrapper.get('.game-vote-button').attributes('aria-label')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    await flushPromises()
+    expect(wrapper.get('.game-vote-button').attributes('aria-label')).toBe(first)
 
-    expect(wrapper.get('#game-control-help').text()).toContain('選擇左側')
-    expect(wrapper.get('#game-control-help').text()).toContain('選擇右側')
-    expect(wrapper.get('.game-vote-button').text()).toBe('')
+    wrapper.unmount()
+  })
+
+  it('hosts multiplayer from a dialog: pick the mode, then hand out the link', async () => {
+    const clipboard = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: clipboard },
+    })
+    const wrapper = await mountStartedGame()
+
+    const dialog = () => wrapper.get('.game-multiplayer-dialog').element as HTMLDialogElement
+    expect(dialog().open).toBe(false)
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+
+    // Mode first: the one built mode is pressable, the other is only announced.
+    expect(dialog().open).toBe(true)
+    expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('選擇遊戲模式')
+    expect(wrapper.findAll('.game-mode-card')).toHaveLength(2)
+    expect(wrapper.get('.game-mode-card.is-upcoming').text()).toContain('敬請期待')
+    expect(wrapper.get('.game-mode-card.is-upcoming').element.tagName).not.toBe('BUTTON')
+
+    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await flushPromises()
+
+    // The host is handed a link and stays on their own game: no way in from here.
+    // The pair on screen goes with the room, in whichever order it was shuffled into.
+    expect(roomMocks.open).toHaveBeenCalledWith('game-old', expect.arrayContaining([1, 2]))
+    expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('邀請朋友加入遊戲')
+    expect(wrapper.get('.game-room-invite-url').text()).toContain('/zh-tw/room/room-1')
+    expect(wrapper.get('.game-multiplayer-dialog').text()).not.toContain('進入房間')
+
+    // Desktop jsdom: no share sheet, so the link goes straight to the clipboard.
+    await wrapper.get('.game-room-invite button').trigger('click')
+    await flushPromises()
+    expect(clipboard).toHaveBeenCalledWith(expect.stringContaining('/zh-tw/room/room-1'))
+    expect(wrapper.get('.game-room-invite button').text()).toBe('已複製')
 
     wrapper.unmount()
   })
@@ -987,24 +1040,28 @@ describe('GameView option preview and sharing', () => {
     wrapper.unmount()
   })
 
-  it('copies the short /g/ link when the native share sheet is unavailable', async () => {
+  it('copies the short /g/ link on a desktop instead of opening a share sheet', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
+    const share = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+    Object.defineProperty(navigator, 'userAgentData', { value: { mobile: false }, configurable: true })
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
 
     const wrapper = await mountSetupScreen(previewDefinition)
     await wrapper.get('.game-share-button').trigger('click')
     await flushPromises()
 
+    expect(share).not.toHaveBeenCalled()
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/g/post-1`)
     expect(wrapper.get('.game-share-button').text()).toContain('已複製連結')
 
     wrapper.unmount()
   })
 
-  it('uses the native share sheet with the short /g/ link when available', async () => {
+  it('uses the native share sheet on a phone, with the short /g/ link', async () => {
     const share = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+    Object.defineProperty(navigator, 'userAgentData', { value: { mobile: true }, configurable: true })
 
     const wrapper = await mountSetupScreen(previewDefinition)
     await wrapper.get('.game-share-button').trigger('click')
