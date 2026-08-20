@@ -260,6 +260,31 @@ describe('HomeView regression behavior', () => {
     wrapper.unmount()
   })
 
+  /*
+	THE RAIL SHOWS THE SIDES THE FINALISTS WERE PLAYED ON.
+
+	The result carries the pair in display order, so a game the right-hand option won
+	renders with the winner on the right. Sorting the pair winner-first here made every
+	entry in the rail look like the left option always wins.
+	*/
+  it('keeps the winner on the side it was played on', async () => {
+    mocks.champions.mockResolvedValue([{
+      post_title: '冠軍賽', post_serial: 'post-1', datetime: '2026-08-03T00:00:00Z',
+      thumb_url: null, key: 'champion-2',
+      left: { name: '敗者', thumb_url: 'https://example.test/loser.webp', is_winner: false },
+      right: { name: '勝者', thumb_url: 'https://example.test/winner.webp', is_winner: true },
+    }])
+    const wrapper = await mountHome()
+
+    const candidates = wrapper.get('.champion-marquee-track > a').findAll('.champion-marquee-candidate')
+    expect(candidates).toHaveLength(2)
+    expect(candidates[0]!.classes()).toContain('is-loser')
+    expect(candidates[0]!.text()).toContain('敗者')
+    expect(candidates[1]!.classes()).toContain('is-winner')
+    expect(candidates[1]!.text()).toContain('勝者')
+    wrapper.unmount()
+  })
+
   it('loads another page without duplicating an existing post', async () => {
     mocks.posts
       .mockResolvedValueOnce(page([post('post-1', '第一個投票')], 1, 2))

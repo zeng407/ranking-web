@@ -1574,9 +1574,15 @@ the transparent edge blur leaves behind.
   gap: 0.45rem;
 }
 
+/* The separator between the two finalists. It used to be "›", which read as "beats" and
+   so pointed at the loser — wrong half the time now that the rail keeps the side each
+   finalist was played on. "vs" says the same thing without taking a side, and needs the
+   size of a word rather than of a glyph. */
 .champion-marquee-finalists > b {
   color: var(--text-faint);
-  font-size: 1rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .champion-marquee-candidate {

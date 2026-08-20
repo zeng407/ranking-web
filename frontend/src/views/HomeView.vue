@@ -75,19 +75,22 @@ const feedAdPositions = computed<Set<number>>(() => {
 })
 
 interface ChampionMarqueeItem extends Champion {
-  winner: ChampionElement | null
-  loser: ChampionElement | null
+  /**
+   * The two finalists on the sides they were played on.
+   *
+   * Not sorted winner-first: `left` and `right` are the positions the player saw, and
+   * reordering them made every result in the rail look like the left option had won.
+   * Which one won is said by `is_winner`, and shown by the ring and the label.
+   */
+  finalists: ChampionElement[]
 }
 
 const championMarqueeItems = computed<ChampionMarqueeItem[]>(() => {
-  const normalized = champions.value.map((champion) => {
-    const candidates = [champion.left, champion.right].filter((candidate): candidate is ChampionElement => Boolean(candidate))
-    return {
-      ...champion,
-      winner: candidates.find((candidate) => candidate.is_winner) ?? candidates[0] ?? null,
-      loser: candidates.find((candidate) => !candidate.is_winner) ?? candidates[1] ?? null,
-    }
-  })
+  const normalized = champions.value.map((champion) => ({
+    ...champion,
+    finalists: [champion.left, champion.right]
+      .filter((candidate): candidate is ChampionElement => Boolean(candidate)),
+  }))
   return [...normalized, ...normalized]
 })
 
@@ -348,29 +351,26 @@ function showNextCarouselItem(): void {
         >
           <small class="champion-marquee-title">{{ champion.post_title }}</small>
           <span class="champion-marquee-finalists">
-            <span v-if="champion.winner" class="champion-marquee-candidate is-winner">
-              <video
-                v-if="isVideoThumbnail(champion.winner.thumb_url)"
-                :src="`${champion.winner.thumb_url}#t=0.01`"
-                muted
-                playsinline
-                preload="metadata"
-              />
-              <img v-else-if="champion.winner.thumb_url" :src="champion.winner.thumb_url" :alt="champion.winner.name" loading="lazy">
-              <span><em>{{ translate(locale, 'championWinner') }}</em><strong>{{ champion.winner.name }}</strong></span>
-            </span>
-            <b aria-hidden="true">›</b>
-            <span v-if="champion.loser" class="champion-marquee-candidate is-loser">
-              <video
-                v-if="isVideoThumbnail(champion.loser.thumb_url)"
-                :src="`${champion.loser.thumb_url}#t=0.01`"
-                muted
-                playsinline
-                preload="metadata"
-              />
-              <img v-else-if="champion.loser.thumb_url" :src="champion.loser.thumb_url" :alt="champion.loser.name" loading="lazy">
-              <span><em>{{ translate(locale, 'championLoser') }}</em><strong>{{ champion.loser.name }}</strong></span>
-            </span>
+            <template v-for="(finalist, side) in champion.finalists" :key="side">
+              <b v-if="side > 0" aria-hidden="true">vs</b>
+              <span
+                class="champion-marquee-candidate"
+                :class="finalist.is_winner ? 'is-winner' : 'is-loser'"
+              >
+                <video
+                  v-if="isVideoThumbnail(finalist.thumb_url)"
+                  :src="`${finalist.thumb_url}#t=0.01`"
+                  muted
+                  playsinline
+                  preload="metadata"
+                />
+                <img v-else-if="finalist.thumb_url" :src="finalist.thumb_url" :alt="finalist.name" loading="lazy">
+                <span>
+                  <em>{{ translate(locale, finalist.is_winner ? 'championWinner' : 'championLoser') }}</em>
+                  <strong>{{ finalist.name }}</strong>
+                </span>
+              </span>
+            </template>
           </span>
         </RouterLink>
       </div>
