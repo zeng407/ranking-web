@@ -1398,6 +1398,7 @@ describe('GameView adult content', () => {
 	const adultDefinition: GameDefinition = {
 		...definition,
 		is_censored: true,
+		requires_sign_in: true,
 		element1: {
 			id: 1, url: 'https://cdn.test/1.webp', url2: null, title: '選項 1',
 			type: 'image', video_source: null, previewable: true,
@@ -1497,6 +1498,39 @@ describe('GameView adult content', () => {
 		visitor.unmount()
 	})
 
+	/*
+	THE GATE IS A DEPLOYMENT SETTING, AND ITS DEFAULT IS OFF.
+
+	`is_censored` is the post: it blurs the preview and keeps the ads away wherever the
+	site runs. Whether an account is also needed is the deployment's answer, which arrives
+	on `requires_sign_in` — the browser has no other way to know it. A response without the
+	field comes from an API older than the setting, where every 18+ post was gated.
+	*/
+	it('lets a visitor play an adult post the server does not gate', async () => {
+		serviceMocks.definition.mockResolvedValue({ ...adultDefinition, requires_sign_in: false })
+		const wrapper = mountAdultView()
+		await flushPromises()
+
+		expect(wrapper.find('.game-sign-in-hint').exists()).toBe(false)
+		expect(wrapper.find('.game-setup-panel .game-count-options').exists()).toBe(true)
+		expect(wrapper.get('.game-start-button').element.tagName).toBe('BUTTON')
+		// Still adult content, so the preview stays blurred.
+		const previews = wrapper.findAll('.game-preview-media')
+		expect(previews).toHaveLength(2)
+		for (const preview of previews) expect(preview.classes()).toContain('is-censored')
+		wrapper.unmount()
+	})
+
+	it('keeps the gate against an API that predates the setting', async () => {
+		const { requires_sign_in: _absent, ...legacy } = adultDefinition
+		serviceMocks.definition.mockResolvedValue(legacy)
+		const wrapper = mountAdultView()
+		await flushPromises()
+
+		expect(wrapper.find('.game-sign-in-hint').exists()).toBe(true)
+		wrapper.unmount()
+	})
+
 	// The page cannot decide while the session is still resolving: a signed-in visitor
 	// would see the prompt flash past on every load.
 	it('waits for the session before it decides', async () => {
@@ -1521,6 +1555,19 @@ describe('GameView adult content', () => {
 			expect(card.find('.game-sign-in-hint').text()).toBe(translate('zh_TW', 'gameRankSignInRequiredHint'))
 			expect(wrapper.find('.game-community-list').exists()).toBe(false)
 			expect(serviceMocks.ranks).not.toHaveBeenCalled()
+			wrapper.unmount()
+		})
+
+		it('opens for a visitor when the server does not gate the post', async () => {
+			serviceMocks.definition.mockResolvedValue({ ...adultDefinition, requires_sign_in: false })
+			serviceMocks.ranks.mockResolvedValue({
+				items: [], group: 'cumulative', page: 1, per_page: 20, total: 0, total_pages: 0,
+			})
+			const wrapper = mountAdultView()
+			await flushPromises()
+
+			expect(wrapper.find('.game-sign-in-required').exists()).toBe(false)
+			expect(serviceMocks.ranks).toHaveBeenCalled()
 			wrapper.unmount()
 		})
 

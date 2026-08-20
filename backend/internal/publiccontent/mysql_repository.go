@@ -19,14 +19,16 @@ import (
 type MySQLRepository struct {
 	database *sql.DB
 	now      func() time.Time
+	// adult is the deployment's answer to whether an 18+ post needs an account.
+	adult postaccess.AdultPolicy
 	// rankVisibility caches the rank_reports row filter that this database's
 	// schema actually supports. See rankVisibilityClause.
 	capabilityMu   sync.RWMutex
 	rankVisibility *string
 }
 
-func NewMySQLRepository(database *sql.DB) *MySQLRepository {
-	return &MySQLRepository{database: database, now: time.Now}
+func NewMySQLRepository(database *sql.DB, adult postaccess.AdultPolicy) *MySQLRepository {
+	return &MySQLRepository{database: database, now: time.Now, adult: adult}
 }
 
 func (repository *MySQLRepository) Tags(ctx context.Context, keyword string, limit int) ([]Tag, error) {
@@ -751,7 +753,7 @@ func (repository *MySQLRepository) visiblePostID(
 	if err != nil {
 		return 0, err
 	}
-	if err := postaccess.RequireSignIn(isCensored, caller); err != nil {
+	if err := repository.adult.RequireSignIn(isCensored, caller); err != nil {
 		return 0, err
 	}
 	return postID, nil

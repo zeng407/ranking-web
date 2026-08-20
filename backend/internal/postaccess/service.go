@@ -197,8 +197,26 @@ func VisibilityClause(postAlias, policyAlias string, caller Caller) (clause stri
 }
 
 /*
-RequireSignIn enforces the adult-content rule: an 18+ post may be previewed by anyone but
-played, voted on and ranked only by an account.
+AdultPolicy is the deployment's answer to whether an 18+ post needs an account.
+
+It is a deployment setting rather than a constant because the answer is a legal and
+editorial one, not a technical one: the same code runs where adult posts are open to
+visitors and where they are not. The zero value requires nothing, matching the site's
+default — a visitor may play, vote and read ranks on an adult post exactly as on any
+other one, and the blurred preview and the 18+ badge are what mark it.
+
+Held by the repositories that read a game or a rank, so the setting is read once at
+startup and cannot differ between two statements serving the same request.
+*/
+type AdultPolicy struct {
+	// SignInRequired closes adult posts to visitors: previewing stays public, and
+	// playing, voting and ranking then need an account.
+	SignInRequired bool
+}
+
+/*
+RequireSignIn enforces the adult-content rule: when the deployment asks for it, an 18+
+post may be previewed by anyone but played, voted on and ranked only by an account.
 
 Deliberately NOT folded into VisibilityClause. That clause answers "may this caller see the
 post at all", and the answer for an adult post is yes — the home feed lists it and the game
@@ -210,9 +228,18 @@ stays untouched.
 isCensored is posts.is_censored, read by the same statement that reads the row, so the flag
 cannot be stale by the time it is enforced.
 */
-func RequireSignIn(isCensored bool, caller Caller) error {
-	if isCensored && caller.UserID == 0 {
+func (policy AdultPolicy) RequireSignIn(isCensored bool, caller Caller) error {
+	if policy.SignInRequired && isCensored && caller.UserID == 0 {
 		return ErrSignInRequired
 	}
 	return nil
+}
+
+// GateApplies reports whether a post is behind the sign-in gate at all, whoever asks.
+//
+// The answer travels to the browser on the game definition so the page can render the
+// gate itself, and it must stay independent of who is asking: that response is cached
+// by serial, not by caller.
+func (policy AdultPolicy) GateApplies(isCensored bool) bool {
+	return policy.SignInRequired && isCensored
 }

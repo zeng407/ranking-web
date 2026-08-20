@@ -36,6 +36,28 @@ func TestLoadDefaults(t *testing.T) {
 	if configuration.Database.Enabled() {
 		t.Fatalf("Database = %#v", configuration.Database)
 	}
+	if configuration.AdultSignInRequired {
+		t.Fatalf("AdultSignInRequired = true, want adult posts playable without an account by default")
+	}
+}
+
+// The adult gate is the one setting that changes who may play a post, so both the
+// switch and a typo in it are worth pinning: a value nobody can read must not quietly
+// leave the gate open.
+func TestLoadAdultSignInRequired(t *testing.T) {
+	t.Setenv("ADULT_CONTENT_REQUIRE_SIGN_IN", "true")
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if !configuration.AdultSignInRequired {
+		t.Fatalf("AdultSignInRequired = false, want true")
+	}
+
+	t.Setenv("ADULT_CONTENT_REQUIRE_SIGN_IN", "yes")
+	if _, err := Load(); err == nil {
+		t.Fatalf("Load() error = nil, want a rejection of an unreadable boolean")
+	}
 }
 
 func TestLoadDatabaseConfig(t *testing.T) {

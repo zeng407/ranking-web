@@ -74,10 +74,13 @@ func main() {
 			os.Exit(1)
 		}
 		defer database.Close()
-		publicContent = publiccontent.NewMySQLRepository(database)
-		gameRepository = gameplay.NewMySQLRepository(database)
+		adultPolicy := postaccess.AdultPolicy{SignInRequired: configuration.AdultSignInRequired}
+		publicContent = publiccontent.NewMySQLRepository(database, adultPolicy)
+		gameRepository = gameplay.NewMySQLRepository(database, adultPolicy)
 		commentRepository = comments.NewMySQLRepository(database)
-		logger.Info("public_content_database_enabled", "host", configuration.Database.Host, "database", configuration.Database.Name)
+		logger.Info("public_content_database_enabled", "host", configuration.Database.Host,
+			"database", configuration.Database.Name,
+			"adult_sign_in_required", configuration.AdultSignInRequired)
 	}
 
 	// Redis, only for the rank freshness flag a finished game sets. The API served
@@ -135,12 +138,12 @@ func main() {
 			os.Exit(1)
 		}
 		service, err := auth.NewService(auth.ServiceOptions{
-			Users:      auth.NewMySQLUserStore(database),
-			Registrar:  auth.NewMySQLUserStore(database),
-			Accounts:   auth.NewMySQLAccountStore(database),
-			Avatars:    avatarStore(configuration, logger),
-			Sessions:   auth.NewMySQLRefreshStore(database),
-			Resets:     auth.NewMySQLPasswordResetStore(database),
+			Users:     auth.NewMySQLUserStore(database),
+			Registrar: auth.NewMySQLUserStore(database),
+			Accounts:  auth.NewMySQLAccountStore(database),
+			Avatars:   avatarStore(configuration, logger),
+			Sessions:  auth.NewMySQLRefreshStore(database),
+			Resets:    auth.NewMySQLPasswordResetStore(database),
 			// A nil sender is what disables the forgot-password endpoints; the table
 			// above is harmless without one. See mailSender.
 			Mail:         mailSender(configuration.Mail, logger),

@@ -173,6 +173,11 @@ type Config struct {
 	Realtime      RealtimeConfig
 	GoogleOAuth   GoogleOAuthConfig
 	Mail          MailConfig
+	// AdultSignInRequired closes 18+ posts to visitors: the preview stays public, but
+	// playing, voting and reading the ranks then need an account. Off by default —
+	// adult posts play like any other post — and turned on with
+	// ADULT_CONTENT_REQUIRE_SIGN_IN=true where that is what the site has to do.
+	AdultSignInRequired bool
 	// AdminAssetDir is the directory the back office's own build sits in.
 	//
 	// IT MUST NOT BE INSIDE THE PUBLIC DOCUMENT ROOT. The files are served by this
@@ -299,6 +304,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	adultSignInRequired, err := boolFromEnv("ADULT_CONTENT_REQUIRE_SIGN_IN", false)
+	if err != nil {
+		return Config{}, err
+	}
 
 	return Config{
 		Environment:     stringFromEnv("APP_ENV", "local"),
@@ -320,11 +329,12 @@ func Load() (Config, error) {
 		Scheduler: scheduler,
 		Storage:   storage,
 		// The same variable name Laravel reads it from.
-		YouTubeAPIKey: strings.TrimSpace(os.Getenv("YOUTUBE_API_KEY")),
-		Realtime:      realtime,
-		GoogleOAuth:   googleOAuth,
-		Mail:          mailConfig,
-		AdminAssetDir: strings.TrimSpace(os.Getenv("ADMIN_ASSET_DIR")),
+		YouTubeAPIKey:       strings.TrimSpace(os.Getenv("YOUTUBE_API_KEY")),
+		Realtime:            realtime,
+		GoogleOAuth:         googleOAuth,
+		Mail:                mailConfig,
+		AdultSignInRequired: adultSignInRequired,
+		AdminAssetDir:       strings.TrimSpace(os.Getenv("ADMIN_ASSET_DIR")),
 	}, nil
 }
 

@@ -21,6 +21,13 @@ export interface GameDefinition {
   serial: string
   description: string
   is_censored: boolean
+  /**
+   * Whether this post is behind the sign-in gate, which is a deployment setting the
+   * browser cannot derive: an 18+ post plays for a visitor unless the site is configured
+   * to ask for an account. Optional so the page still works against an API that predates
+   * the setting, where the gate was on for every 18+ post.
+   */
+  requires_sign_in?: boolean
   elements_count: number
   max_elements: number
   // Optional so the page still works against an API that predates previews.

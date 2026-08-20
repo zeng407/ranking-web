@@ -18,16 +18,19 @@ import (
 const maxGameElements = 1024
 
 type MySQLRepository struct {
-	database     *sql.DB
-	now          func() time.Time
+	database *sql.DB
+	now      func() time.Time
+	// adult is the deployment's answer to whether an 18+ post needs an account. Held
+	// here rather than read per call so every statement of one request agrees.
+	adult        postaccess.AdultPolicy
 	capabilityMu sync.RWMutex
 	// rankVisibility caches the rank_reports row filter this database supports. See
 	// resultRankVisibilityClause.
 	rankVisibility *string
 }
 
-func NewMySQLRepository(database *sql.DB) *MySQLRepository {
-	return &MySQLRepository{database: database, now: time.Now}
+func NewMySQLRepository(database *sql.DB, adult postaccess.AdultPolicy) *MySQLRepository {
+	return &MySQLRepository{database: database, now: time.Now, adult: adult}
 }
 
 func (repository *MySQLRepository) Definition(
@@ -54,6 +57,10 @@ func (repository *MySQLRepository) Definition(
 		return Definition{}, err
 	}
 	definition.MaxElements = min(definition.ElementsCount, maxGameElements)
+	// The page renders the sign-in gate itself, so it is told the answer rather than
+	// deriving it from is_censored — the rule is a deployment setting the browser has
+	// no other way to learn.
+	definition.RequiresSignIn = repository.adult.GateApplies(definition.IsCensored)
 	definition.Element1, definition.Element2 = repository.previewElements(ctx, postSerial)
 	return definition, nil
 }
@@ -104,7 +111,7 @@ func (repository *MySQLRepository) Create(ctx context.Context, input CreateInput
 	}
 	// Definition itself stays open so the game page can show the blurred preview to a
 	// visitor; starting a game on an adult post is where the account is required.
-	if err := postaccess.RequireSignIn(definition.IsCensored, input.Caller); err != nil {
+	if err := repository.adult.RequireSignIn(definition.IsCensored, input.Caller); err != nil {
 		return Session{}, err
 	}
 	if input.ElementCount < 2 || input.ElementCount > definition.MaxElements {
@@ -208,7 +215,7 @@ func (repository *MySQLRepository) Resume(
 	if err != nil {
 		return Session{}, err
 	}
-	if err := postaccess.RequireSignIn(session.Definition.IsCensored, caller); err != nil {
+	if err := repository.adult.RequireSignIn(session.Definition.IsCensored, caller); err != nil {
 		return Session{}, err
 	}
 	elements, err := queryGameElements(ctx, repository.database, gameID)
@@ -244,7 +251,7 @@ func (repository *MySQLRepository) Result(
 	if err != nil {
 		return GameResult{}, err
 	}
-	if err := postaccess.RequireSignIn(isCensored, caller); err != nil {
+	if err := repository.adult.RequireSignIn(isCensored, caller); err != nil {
 		return GameResult{}, err
 	}
 
@@ -503,7 +510,7 @@ func (repository *MySQLRepository) SubmitVotes(ctx context.Context, gameSerial s
 		}
 		return BatchResult{}, err
 	}
-	if err := postaccess.RequireSignIn(isCensored, input.Caller); err != nil {
+	if err := repository.adult.RequireSignIn(isCensored, input.Caller); err != nil {
 		return BatchResult{}, err
 	}
 

@@ -47,12 +47,16 @@ type PreviewElement struct {
 }
 
 type Definition struct {
-	Title         string `json:"title"`
-	Serial        string `json:"serial"`
-	Description   string `json:"description"`
-	IsCensored    bool   `json:"is_censored"`
-	ElementsCount int    `json:"elements_count"`
-	MaxElements   int    `json:"max_elements"`
+	Title       string `json:"title"`
+	Serial      string `json:"serial"`
+	Description string `json:"description"`
+	IsCensored  bool   `json:"is_censored"`
+	// RequiresSignIn is the adult gate as this deployment configures it: true only
+	// when the post is 18+ AND the deployment asks visitors to sign in for those.
+	// Caller-independent on purpose, so the answer is the same in every cache.
+	RequiresSignIn bool `json:"requires_sign_in"`
+	ElementsCount  int  `json:"elements_count"`
+	MaxElements    int  `json:"max_elements"`
 	// Preview options, so the page can render something on first paint instead
 	// of waiting for the player to press start. Null when no preview is
 	// available; the page must stay usable without it.

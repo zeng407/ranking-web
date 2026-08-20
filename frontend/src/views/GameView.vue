@@ -93,14 +93,23 @@ const adsAllowed = computed(() => definition.value !== null && !definition.value
 const { authenticated, loading: authLoading, refreshAuthState } = useAuth()
 const censored = computed(() => definition.value?.is_censored === true)
 /**
+ * Whether this post is gated at all, whoever is looking.
+ *
+ * Not the same question as `censored`: an 18+ post is blurred and ad-free everywhere,
+ * but whether it also needs an account is a deployment setting, so the server sends the
+ * answer with the definition rather than the page inferring it. An API that predates the
+ * setting sends no field, and the gate was on for every 18+ post there.
+ */
+const signInGated = computed(() => definition.value?.requires_sign_in ?? censored.value)
+/**
  * Whether this visitor has to sign in before the page will do anything.
  *
- * An 18+ post stays previewable — it is listed on the home page, and its two blurred
+ * A gated post stays previewable — it is listed on the home page, and its two blurred
  * thumbnails show here — but playing it, voting on it and reading its ranking need an
  * account. The server enforces all three with a 401; this only decides what to render, and
  * waits for `authLoading` so a signed-in visitor never sees the prompt flash past.
  */
-const signInRequired = computed(() => censored.value && !authLoading.value && !authenticated.value)
+const signInRequired = computed(() => signInGated.value && !authLoading.value && !authenticated.value)
 const signInTarget = computed(() => ({
   path: localizedPath('/login', locale.value),
   query: { redirect: route.fullPath },
@@ -393,7 +402,7 @@ async function loadPost(): Promise<void> {
     // prompt instead: not the ranking requests, which would answer 401, and above all not
     // the saved game, which would put a playable board in front of the gate. Unforced, so
     // joining the header's boot request rather than rotating the refresh token again.
-    if (definition.value.is_censored) {
+    if (signInGated.value) {
       if (authLoading.value) await refreshAuthState(locale.value)
       if (signInRequired.value) return
     }

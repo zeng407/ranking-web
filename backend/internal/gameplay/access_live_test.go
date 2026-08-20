@@ -89,8 +89,11 @@ func newAccessFixture(t *testing.T) (*accessFixture, context.Context) {
 		t.Fatalf("namespace: %v", err)
 	}
 	fixture := &accessFixture{
-		database:   database,
-		repository: NewMySQLRepository(database),
+		database: database,
+		// The fixture's repository has the adult gate turned on, which is what the
+		// access tests are about. The default — gate off — is covered separately, at
+		// the end of TestAnAdultPostPreviewsForAnyoneAndPlaysOnlyForAnAccount.
+		repository: NewMySQLRepository(database, postaccess.AdultPolicy{SignInRequired: true}),
 		namespace:  "go-access-" + hex.EncodeToString(suffix),
 		serials:    map[string]string{},
 	}
@@ -415,6 +418,9 @@ func TestAnAdultPostPreviewsForAnyoneAndPlaysOnlyForAnAccount(t *testing.T) {
 	if !definition.IsCensored {
 		t.Fatalf("Definition() reported is_censored = false for a censored post")
 	}
+	if !definition.RequiresSignIn {
+		t.Fatalf("Definition() reported requires_sign_in = false while the gate is on")
+	}
 
 	if _, err := fixture.repository.Create(ctx, CreateInput{
 		PostSerial: serial, ElementCount: 4, Caller: visitor,
@@ -467,5 +473,32 @@ func TestAnAdultPostPreviewsForAnyoneAndPlaysOnlyForAnAccount(t *testing.T) {
 	}
 	if _, err := fixture.repository.Result(ctx, session.GameSerial, account); err != nil {
 		t.Fatalf("Result() error = %v", err)
+	}
+
+	// The gate is a deployment setting, and its default is off: the same post, read
+	// through a repository configured the default way, plays for a visitor.
+	open := NewMySQLRepository(fixture.database, postaccess.AdultPolicy{})
+	openDefinition, err := open.Definition(ctx, serial, visitor)
+	if err != nil {
+		t.Fatalf("Definition() with the gate off error = %v", err)
+	}
+	if !openDefinition.IsCensored || openDefinition.RequiresSignIn {
+		t.Fatalf("Definition() with the gate off = %+v, want is_censored true and requires_sign_in false",
+			openDefinition)
+	}
+	visitorSession, err := open.Create(ctx, CreateInput{
+		PostSerial: serial, ElementCount: 4, Caller: visitor,
+	})
+	if err != nil {
+		t.Fatalf("Create() by a visitor with the gate off error = %v, want the game to start", err)
+	}
+	if _, err := open.SubmitVotes(ctx, visitorSession.GameSerial, BatchInput{
+		ExpectedVoteCount: 0,
+		Votes: []Vote{
+			{WinnerID: visitorSession.Elements[0].ID, LoserID: visitorSession.Elements[1].ID},
+		},
+		Caller: visitor,
+	}); err != nil {
+		t.Fatalf("SubmitVotes() by a visitor with the gate off error = %v", err)
 	}
 }

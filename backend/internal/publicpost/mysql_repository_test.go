@@ -13,6 +13,7 @@ import (
 
 	"2pick.app/backend/internal/config"
 	"2pick.app/backend/internal/platform/mysqlstore"
+	"2pick.app/backend/internal/postaccess"
 	"2pick.app/backend/internal/publiccontent"
 	"2pick.app/backend/internal/queue"
 )
@@ -290,7 +291,7 @@ func TestWrittenPayloadDecodesOnTheReadSide(t *testing.T) {
 	t.Logf("full refresh took %s", time.Since(started).Round(time.Millisecond))
 
 	// Read what was written through the read side's own decoder.
-	reader := publiccontent.NewMySQLRepository(database)
+	reader := publiccontent.NewMySQLRepository(database, postaccess.AdultPolicy{})
 	page, err := reader.Posts(ctx, publiccontent.PostsQuery{
 		Sort: "new", Page: 1, PerPage: 15,
 	})

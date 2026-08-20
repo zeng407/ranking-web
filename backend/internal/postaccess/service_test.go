@@ -295,22 +295,48 @@ An 18+ post is listed on the home page and previewed on the game page, so the ru
 live in VisibilityClause — it only applies to playing, voting and reading the ranking. A
 door code is no substitute for an account here: the two protections answer different
 questions, and a password post that is also 18+ needs both.
+
+The gate itself is a deployment setting, so both settings are covered: with it off, which
+is the default, an adult post plays like any other one.
 */
-func TestAnAdultPostNeedsAnAccount(t *testing.T) {
+func TestAnAdultPostNeedsAnAccountWhenTheDeploymentAsksForOne(t *testing.T) {
+	closed := AdultPolicy{SignInRequired: true}
 	for name, testCase := range map[string]struct {
+		policy     AdultPolicy
 		isCensored bool
 		caller     Caller
 		wantErr    error
 	}{
-		"a visitor may read an ordinary post":         {false, Caller{}, nil},
-		"a visitor may not read an adult post":        {true, Caller{}, ErrSignInRequired},
-		"an account may read an adult post":           {true, Caller{UserID: 7}, nil},
-		"a door code is not an account":               {true, Caller{UnlockedSerials: []string{"abc"}}, ErrSignInRequired},
-		"an account with a door code reads it anyway": {true, Caller{UserID: 7, UnlockedSerials: []string{"abc"}}, nil},
+		"a visitor may read an ordinary post":           {closed, false, Caller{}, nil},
+		"a visitor may not read an adult post":          {closed, true, Caller{}, ErrSignInRequired},
+		"an account may read an adult post":             {closed, true, Caller{UserID: 7}, nil},
+		"a door code is not an account":                 {closed, true, Caller{UnlockedSerials: []string{"abc"}}, ErrSignInRequired},
+		"an account with a door code reads it anyway":   {closed, true, Caller{UserID: 7, UnlockedSerials: []string{"abc"}}, nil},
+		"the default lets a visitor read an adult post": {AdultPolicy{}, true, Caller{}, nil},
 	} {
 		t.Run(name, func(t *testing.T) {
-			if err := RequireSignIn(testCase.isCensored, testCase.caller); !errors.Is(err, testCase.wantErr) {
+			if err := testCase.policy.RequireSignIn(testCase.isCensored, testCase.caller); !errors.Is(err, testCase.wantErr) {
 				t.Errorf("RequireSignIn() error = %v, want %v", err, testCase.wantErr)
+			}
+		})
+	}
+}
+
+// GateApplies is what the browser is told, so it must not depend on who is asking.
+func TestTheGateIsReportedOnlyWhenBothTheSettingAndThePostSaySo(t *testing.T) {
+	for name, testCase := range map[string]struct {
+		policy     AdultPolicy
+		isCensored bool
+		want       bool
+	}{
+		"off, ordinary post": {AdultPolicy{}, false, false},
+		"off, adult post":    {AdultPolicy{}, true, false},
+		"on, ordinary post":  {AdultPolicy{SignInRequired: true}, false, false},
+		"on, adult post":     {AdultPolicy{SignInRequired: true}, true, true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := testCase.policy.GateApplies(testCase.isCensored); got != testCase.want {
+				t.Errorf("GateApplies(%v) = %v, want %v", testCase.isCensored, got, testCase.want)
 			}
 		})
 	}

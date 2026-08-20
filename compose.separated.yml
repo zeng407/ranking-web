@@ -149,6 +149,9 @@ services:
       # server serves directly is served without the pass, which is the whole gate.
       # Unset leaves /admin/ a 404, which is the right state until the bundle exists.
       ADMIN_ASSET_DIR: ${GO_ADMIN_ASSET_DIR:-}
+      # 18+ posts: blurred and ad-free either way, but playable by a visitor unless this
+      # is set. See docs/adult-content-gating.md.
+      ADULT_CONTENT_REQUIRE_SIGN_IN: ${ADULT_CONTENT_REQUIRE_SIGN_IN:-}
     volumes:
       # The bundle `npm run build:admin` writes, mounted read-only where
       # GO_ADMIN_ASSET_DIR=/srv/admin can point at it. Deliberately NOT a path inside the
