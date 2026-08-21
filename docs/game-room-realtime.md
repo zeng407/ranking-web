@@ -49,15 +49,22 @@ match on screen — legal, since it had not been voted on — while the server s
 pair reported by the last vote sync, so everybody seated kept looking at the pre-reload
 match and their poll kept confirming it.
 
-Two things stop that now:
+The re-pick itself stays — a host reloads precisely to get a different match. What changed
+is that the room is told. `POST /api/v1/game-rooms` is idempotent and the host's page calls
+it on every load, so with `current_candidates` it doubles as that report, and the handler
+broadcasts `GameRoomRound` when the room already existed. A room created by the same call
+announces nothing: nobody has joined it yet.
 
-- **While a room is open for the game, a resume keeps the pairing it had.** Re-picking would
-  strand every wager already placed on that match, since it would never be played.
-- **Picking the room back up reports the pairing anyway.** `POST /api/v1/game-rooms` is
-  idempotent and the host's page calls it on load; with `current_candidates` it also
-  broadcasts `GameRoomRound` to a room that already existed. That covers the pair the server
-  never heard about — a vote sync that failed before the reload, for instance. A room created
-  by that same call announces nothing: nobody has joined it yet.
+The report is sent twice on a reload, because two different pairings are on screen. Picking
+the stored room back up reports whatever is up at that moment — the pre-reload match, since
+the host is still answering the saved-game dialog — and the re-pick that follows their answer
+reports itself (`resumeSnapshot` calls `reportPair`). Reporting only from the first would
+broadcast the match the reload was meant to replace.
+
+Wagers already placed on the pre-reload pairing are neither lost nor punished. A participant
+can simply pick again — the wager row is keyed on the round, so a second pick replaces the
+first — and a wager left on a pairing the round never presented is discarded by the
+settlement rather than counted as a loss.
 
 ## Turning the websocket on
 

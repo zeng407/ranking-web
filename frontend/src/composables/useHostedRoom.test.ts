@@ -260,6 +260,36 @@ describe('useHostedRoom', () => {
     room.stopWatching()
   })
 
+  /**
+   * The re-pick a reload performs happens after the room has been picked back up, so the
+   * game view reports it itself. Calling that on a game with no room must stay a no-op:
+   * opening would create one, and a solo host would find themselves hosting.
+   */
+  it('reports nothing on a game with no room open', async () => {
+    const service = fakeService()
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service, () => [33, 44])
+
+    await room.reportPair()
+
+    expect(service.open).not.toHaveBeenCalled()
+    expect(room.hosting.value).toBe(false)
+  })
+
+  // The point of exposing it: the pair on screen changed without a vote, so the room has to
+  // be told again after it was already adopted.
+  it('reports the pairing again on demand while hosting', async () => {
+    const service = fakeService()
+    const pair = ref([11, 22])
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service, () => pair.value)
+    await room.open(pair.value)
+
+    pair.value = [33, 44]
+    await room.reportPair()
+
+    expect(service.open).toHaveBeenLastCalledWith('game-1', [33, 44])
+    room.stopWatching()
+  })
+
   it('reads the tally only while the black box is open', async () => {
     const tally: RoomVotes = {
       first_candidate: 11,

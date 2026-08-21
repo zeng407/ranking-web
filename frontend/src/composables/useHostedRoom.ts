@@ -70,6 +70,11 @@ export interface UseHostedRoom {
   blackBox: Ref<boolean>
   live: Ref<PusherState>
   open(currentCandidates?: number[]): Promise<void>
+  /**
+   * Tells the room which pair is on screen now. Does nothing when no room is open, so the
+   * game view can call it on every re-pick without asking whether it is hosting.
+   */
+  reportPair(): Promise<void>
   /** Starts following the room. Idempotent, so a reload with a stored room can just call it. */
   startWatching(): void
   /** Stops the socket and every timer. */
@@ -156,10 +161,13 @@ export function useHostedRoom(
    * Opening is idempotent, so it doubles as the report; the server broadcasts the pairing
    * to the room when a pair comes with it. Best effort: the host is mid-game, and their
    * next vote records the pair anyway.
+   *
+   * No room open means nothing to tell, and the guard matters: opening would CREATE one, so
+   * without it a solo host re-picking a match would find themselves hosting.
    */
   async function reportPair(): Promise<void> {
     const pair = onScreen?.()
-    if (!gameSerial.value || !pair || pair.length !== 2) return
+    if (!serial.value || !gameSerial.value || !pair || pair.length !== 2) return
     try {
       await service.open(gameSerial.value, pair)
     } catch (error) {
@@ -313,6 +321,7 @@ export function useHostedRoom(
     blackBox,
     live,
     open,
+    reportPair,
     startWatching,
     stopWatching,
     toggleBlackBox,
@@ -345,14 +354,7 @@ function storageKey(gameSerial: string): string {
   return STORAGE_PREFIX + gameSerial
 }
 
-/**
- * The room this browser has open for a game, or '' for none.
- *
- * Exported because the game view needs it before the composable can tell it anything: a
- * resume decides whether to re-pick the pairing, and it must not re-pick one that people
- * are already looking at and wagering on.
- */
-export function storedRoomSerial(gameSerial: string): string {
+function storedRoomSerial(gameSerial: string): string {
   if (!gameSerial || typeof localStorage === 'undefined') return ''
   try {
     return localStorage.getItem(storageKey(gameSerial)) || ''

@@ -22,7 +22,7 @@ import { useAuth } from '../composables/useAuth'
 import { closeImageViewer, openImageViewer } from '../services/imageViewer'
 import { unlockPost } from '../services/postAccess'
 import { boardRows } from '../composables/useGameRoom'
-import { onScreenPairForBatch, storedRoomSerial, useHostedRoom } from '../composables/useHostedRoom'
+import { onScreenPairForBatch, useHostedRoom } from '../composables/useHostedRoom'
 import { getAnonymousID } from '../lib/anonymousId'
 import { downloadQRCode, drawQRCode } from '../lib/qrcode'
 import { shareOrCopyLink } from '../lib/share'
@@ -585,14 +585,17 @@ function resumeSnapshot(saved: LocalGameSnapshot): void {
   saved.writer_id = writerId
   saved.lease_token = leaseToken.value
   // The current pair has not been voted on, so a reload may choose any still-ready
-  // candidates from this stage without changing progress — EXCEPT while hosting a room.
-  // There, other people are looking at that pair and have wagered on it: re-picking would
-  // strand every one of those wagers on a match that now never happens.
-  if (saved.status === 'playing' && (!saved.current_match || !storedRoomSerial(saved.game_serial))) {
+  // candidates from this stage without changing progress. Kept deliberately, rooms
+  // included: a host reloads to get a different match. What the room needs is to be TOLD,
+  // and it is told here rather than by whoever picked the room back up: on the usual reload
+  // the host answers the saved-game dialog first, so the room is adopted — and reported —
+  // while the pre-reload match is still on screen, and this re-pick happens afterwards.
+  if (saved.status === 'playing') {
     saved.current_match = null
     chooseNextMatch(saved, Math.random, true)
     saved.revision += 1
     saved.updated_at = Date.now()
+    void hostedRoom.reportPair()
   }
   saveSnapshot()
   if (saved.outbox.length) scheduleSync(0)
