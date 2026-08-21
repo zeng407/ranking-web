@@ -146,7 +146,7 @@ func (runner *Runner) consume(ctx context.Context, slot int) {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(queue.ReserveBlockTimeout):
+			case <-time.After(queue.ReserveFailurePause):
 			}
 			continue
 		}

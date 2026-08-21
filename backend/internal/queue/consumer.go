@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -26,7 +27,20 @@ const (
 	// ReserveBlockTimeout is how long a consumer waits for work before looping.
 	// It must stay well under the shutdown timeout so a drain is not held up by
 	// one idle blocking read.
-	ReserveBlockTimeout = 2 * time.Second
+	//
+	// It is also the worst-case delay for every queue that is NOT the one the
+	// blocking read sits on: those are drained by a non-blocking pop once per
+	// loop, so a message on `game_room` published while the worker is parked on
+	// `low` waits for this window to expire. That queue carries the pairing a
+	// room is looking at, so the window is a quarter of a second rather than
+	// seconds — it cost a measured 800ms of lag at 2s. The price is one
+	// non-blocking pop per queue per window on an idle worker, which is a few
+	// dozen Redis commands a second and nothing next to a single job.
+	ReserveBlockTimeout = 250 * time.Millisecond
+	// ReserveFailurePause is how long a consumer waits after a FAILED reserve, so
+	// a Redis outage does not become a hot loop. Unlike the block above this is
+	// not on any message's path — nothing is being delivered while Redis is down.
+	ReserveFailurePause = 2 * time.Second
 )
 
 // processingSuffix names the in-flight list for a queue. Reserving moves the
@@ -84,7 +98,7 @@ func (transport *RedisTransport) Reserve(ctx context.Context, queues []string, b
 		if index == len(queues)-1 {
 			// Only the lowest-priority queue blocks, so an idle worker parks
 			// instead of spinning.
-			body, err = transport.client.BRPopLPush(ctx, key, processing, block).Bytes()
+			body, err = transport.blockingReserve(ctx, key, processing, block)
 		} else {
 			body, err = transport.client.RPopLPush(ctx, key, processing).Bytes()
 		}
@@ -116,6 +130,24 @@ func (transport *RedisTransport) Reserve(ctx context.Context, queues []string, b
 		}, nil
 	}
 	return nil, nil
+}
+
+// blockingReserve is BRPOPLPUSH with a sub-second timeout.
+//
+// The command has taken a fractional timeout since Redis 6.0, but the client's
+// typed helper formats it as whole seconds and floors anything smaller to one,
+// which would silently make ReserveBlockTimeout a second whatever it says. That
+// second is the delay paid by every queue the blocking read is NOT sitting on,
+// so it is worth issuing the command directly.
+func (transport *RedisTransport) blockingReserve(
+	ctx context.Context, key, processing string, block time.Duration,
+) ([]byte, error) {
+	seconds := strconv.FormatFloat(block.Seconds(), 'f', -1, 64)
+	value, err := transport.client.Do(ctx, "brpoplpush", key, processing, seconds).Text()
+	if err != nil {
+		return nil, err
+	}
+	return []byte(value), nil
 }
 
 // Ack removes the message from the processing list, completing it.

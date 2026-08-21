@@ -18,11 +18,14 @@ import (
 const DefaultKeyPrefix = "2pick:go:queue:"
 
 type RedisTransport struct {
-	client    redis.Cmdable
+	// UniversalClient rather than Cmdable: the blocking reserve issues
+	// BRPOPLPUSH through Do, because the typed helper cannot express a
+	// sub-second timeout. See blockingReserve.
+	client    redis.UniversalClient
 	keyPrefix string
 }
 
-func NewRedisTransport(client redis.Cmdable, keyPrefix string) (*RedisTransport, error) {
+func NewRedisTransport(client redis.UniversalClient, keyPrefix string) (*RedisTransport, error) {
 	if client == nil {
 		return nil, errors.New("queue: redis client is required")
 	}

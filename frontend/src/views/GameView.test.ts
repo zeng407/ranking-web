@@ -207,6 +207,20 @@ function session(gameSerial: string, titlePrefix: string): GameSession {
   }
 }
 
+/** The same fixture with playable video entries, for the media rules. */
+function videoSession(gameSerial: string, titlePrefix: string): GameSession {
+  const built = session(gameSerial, titlePrefix)
+  return {
+    ...built,
+    elements: built.elements.map((element) => ({
+      ...element,
+      type: 'video',
+      source_url: `https://example.test/${titlePrefix}-${element.id}.mp4`,
+      video_source: 'url',
+    })),
+  }
+}
+
 async function mountStartedGame(): Promise<VueWrapper> {
   serviceMocks.definition.mockResolvedValue(definition)
   serviceMocks.create.mockResolvedValueOnce(session('game-old', '舊選項'))
@@ -284,6 +298,48 @@ describe('GameView restart regression', () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     document.body.innerHTML = ''
+  })
+
+  /**
+   * A pairing's video autoplays and loops. Behind a modal that is motion the host cannot
+   * stop — the player's controls are under the backdrop — so every dialog covering the
+   * board pauses it, and closing the dialog starts it again.
+   */
+  it('pauses the pairing video while a dialog covers it', async () => {
+    const pause = vi.spyOn(window.HTMLMediaElement.prototype, 'pause')
+    const play = vi.spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined)
+    serviceMocks.definition.mockResolvedValue(definition)
+    serviceMocks.create.mockResolvedValueOnce(videoSession('game-video', '影片'))
+    const wrapper = mount(GameView, {
+      // In the document, because the media is reached by data attribute: a detached tree
+      // would make the pause a silent no-op and the test pass on nothing.
+      attachTo: document.body,
+      global: {
+        mocks: { $router: { go: vi.fn() } },
+        stubs: { RouterLink: { props: ['to'], template: '<a :data-to="to"><slot /></a>' } },
+      },
+    })
+    await flushPromises()
+    await wrapper.get('.game-start-button').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('.game-candidate video')).toHaveLength(2)
+
+    pause.mockClear()
+    play.mockClear()
+    await wrapper.get('button[title="重整遊戲"]').trigger('click')
+    expect(pause).toHaveBeenCalledTimes(2)
+    expect(play).not.toHaveBeenCalled()
+
+    // The native close event, so Esc and the buttons all count.
+    const dialog = wrapper.get('.game-restart-dialog').element as HTMLDialogElement
+    dialog.close()
+    await flushPromises()
+    expect(play).toHaveBeenCalledTimes(2)
+
+    wrapper.unmount()
+    pause.mockRestore()
+    play.mockRestore()
   })
 
   it('opens the restart decision without discarding the current local game', async () => {

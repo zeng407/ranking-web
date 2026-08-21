@@ -99,6 +99,46 @@ func testRedis(t *testing.T) *redis.Client {
 	return client
 }
 
+/**
+ * The blocking reserve has to honour a sub-second window.
+ *
+ * Only the last queue in the priority order blocks; the rest are drained by one
+ * non-blocking pop per loop, so this window is the delay a message on any of
+ * them pays. The client's typed BRPopLPush helper floors anything under a second
+ * to a second, which is why Reserve issues the command itself — and why this
+ * test exists, because that floor is silent.
+ */
+func TestReserveHonoursASubSecondBlock(t *testing.T) {
+	client := testRedis(t)
+	defer client.Close()
+
+	transport, err := NewRedisTransport(client, "2pick:test:queue:")
+	if err != nil {
+		t.Fatalf("NewRedisTransport() error = %v", err)
+	}
+	ctx := context.Background()
+	queues := []string{"high", "low"}
+	keys := []string{transport.Key("high"), transport.Key("low"),
+		transport.Key("high") + ":processing", transport.Key("low") + ":processing"}
+	client.Del(ctx, keys...)
+	t.Cleanup(func() { client.Del(context.Background(), keys...) })
+
+	start := time.Now()
+	reservation, err := transport.Reserve(ctx, queues, 250*time.Millisecond)
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatalf("Reserve() error = %v", err)
+	}
+	if reservation != nil {
+		t.Fatalf("Reserve() returned %v from empty queues", reservation.Message)
+	}
+	// Generous, because a loaded CI box is slow — but nowhere near the second the
+	// typed helper would have imposed.
+	if elapsed > 700*time.Millisecond {
+		t.Errorf("an idle reserve blocked for %s, want about 250ms", elapsed)
+	}
+}
+
 func TestRedisTransportPublishesFIFOPerQueue(t *testing.T) {
 	client := testRedis(t)
 	defer client.Close()

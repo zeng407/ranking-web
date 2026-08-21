@@ -66,6 +66,24 @@ can simply pick again — the wager row is keyed on the round, so a second pick 
 first — and a wager left on a pairing the round never presented is discarded by the
 settlement rather than counted as a loss.
 
+## How fast the pairing travels
+
+Measured end to end in a browser, from the host's click to the participant's DOM changing:
+**0.19s**. It was 0.86s until the worker's reserve window was shortened, and that difference
+is worth knowing about because it is not in this feature's code at all.
+
+The worker consumes six queues in priority order. Only the last one blocks; the rest are
+drained by a non-blocking pop once per loop. So a message on `game_room` — which is second,
+by priority — waits for the blocking read on `low` to time out, and that window was two
+seconds. `queue.ReserveBlockTimeout` is now 250ms, and the reserve issues BRPOPLPUSH itself
+because the client's typed helper silently floors a sub-second timeout to one second
+(`internal/queue/consumer.go`, `blockingReserve`). The cost is one non-blocking pop per queue
+per window on an idle worker.
+
+If the pairing ever feels slow again, that constant is the first thing to check, and
+`worker_job_completed`'s `duration_ms` next to the publish time in the API log is how to tell
+the queue hop from the handler.
+
 ## Turning the websocket on
 
 The room is fully playable with no websocket at all: it falls back to the poll and

@@ -833,7 +833,10 @@ function resultShareURL(): string {
  */
 function openMultiplayerDialog(): void {
   multiplayerStep.value = hostedRoom.hosting.value ? 'invite' : 'mode'
-  if (!multiplayerDialog.value?.open) multiplayerDialog.value?.showModal()
+  if (!multiplayerDialog.value?.open) {
+    multiplayerDialog.value?.showModal()
+    setModalOpen(true)
+  }
   if (multiplayerStep.value === 'invite') void renderRoomQRCode()
 }
 
@@ -1115,7 +1118,10 @@ function showRestartDialog(): void {
   if (!snapshot.value || creating.value) return
   selectedCount.value = snapshot.value.selected_count
   restartError.value = false
-  if (!restartDialog.value?.open) restartDialog.value?.showModal()
+  if (!restartDialog.value?.open) {
+    restartDialog.value?.showModal()
+    setModalOpen(true)
+  }
 }
 
 function openRestartDialog(): void {
@@ -1541,6 +1547,32 @@ function pauseCandidateMedia(element: LocalGameElement): void {
 
 function stopAllCandidateMedia(): void {
   visibleElements.value?.forEach(pauseCandidateMedia)
+}
+
+/**
+ * Puts the pairing's media back the way the markup starts it: playing, muted, looping.
+ *
+ * Silent on purpose. Sound is only ever the host's hover, and a modal closing is not a
+ * hover.
+ */
+function resumeCandidateMedia(): void {
+  hoveredVideoID.value = null
+  visibleElements.value?.forEach((element) => playCandidateMedia(element, false))
+}
+
+/**
+ * A dialog covering the board pauses the video behind it.
+ *
+ * The pairing's video autoplays and loops, so a host who reloads into the continue-or-restart
+ * question is left with motion behind a modal they have to read, and no way to stop it — the
+ * controls are under the backdrop. Every modal here covers the pairing, so they all do this.
+ */
+function setModalOpen(open: boolean): void {
+  if (open) {
+    stopAllCandidateMedia()
+    return
+  }
+  resumeCandidateMedia()
 }
 
 function postYouTubeCommand(frame: HTMLIFrameElement, command: 'playVideo' | 'pauseVideo' | 'mute' | 'unMute'): void {
@@ -2277,6 +2309,7 @@ function preferredRankImage(report: RankReport): string | null {
     class="game-multiplayer-dialog"
     aria-labelledby="game-multiplayer-title"
     @cancel.prevent="closeMultiplayerDialog"
+    @close="setModalOpen(false)"
   >
     <form method="dialog" @submit.prevent>
       <header>
@@ -2363,6 +2396,7 @@ function preferredRankImage(report: RankReport): string | null {
     class="game-restart-dialog"
     aria-labelledby="game-restart-title"
     @cancel.prevent="dismissRestartDialog"
+    @close="setModalOpen(false)"
   >
     <form method="dialog" @submit.prevent>
       <header>
