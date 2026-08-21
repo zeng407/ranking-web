@@ -88,6 +88,100 @@ func (repository *MySQLParticipation) roomByGameID(ctx context.Context, gameID i
 	return room, true, nil
 }
 
+// Rebinding a room: read the pair under a lock, then move the row.
+//
+// FOR UPDATE is not decoration. Two restarts racing (a double-tapped button, or two tabs
+// of the same game) would otherwise both read the room on its old game and both move it,
+// and the second move would be to a game the host has already left.
+const roomForRebindQuery = `
+	SELECT r.id, r.serial, g.serial, g.post_id
+	  FROM game_rooms AS r
+	  JOIN games AS g ON g.id = r.game_id
+	 WHERE r.serial = ?
+	 LIMIT 1
+	   FOR UPDATE`
+
+const gameForRebindQuery = `SELECT id, post_id FROM games WHERE serial = ? LIMIT 1`
+
+const rebindRoomStatement = `UPDATE game_rooms SET game_id = ?, updated_at = NOW() WHERE id = ?`
+
+// RebindRoom points a room at another game of the same post.
+//
+// The three refusals are all deliberate and all cheap to state:
+//
+// The room is not on fromGameSerial — the caller's idea of the room is stale, so it must
+// not move it. Already on toGameSerial is the harmless half of that and returns the room:
+// a retried request must not fail.
+//
+// The games belong to different posts. This is the one rule protecting people sitting in
+// the room from having the content swapped under them.
+//
+// The target game already has a room of its own, which the unique index on game_id
+// reports as a duplicate key. Nothing to do here: the host already has a room for that
+// game and should be using it.
+func (repository *MySQLParticipation) RebindRoom(
+	ctx context.Context, roomSerial, fromGameSerial, toGameSerial string,
+) (Room, error) {
+	transaction, err := repository.database.BeginTx(ctx, nil)
+	if err != nil {
+		return Room{}, fmt.Errorf("gameroom: begin rebind: %w", err)
+	}
+	defer func() { _ = transaction.Rollback() }()
+
+	var (
+		room        Room
+		boundSerial string
+		boundPostID int64
+	)
+	err = transaction.QueryRowContext(ctx, roomForRebindQuery, roomSerial).
+		Scan(&room.ID, &room.Serial, &boundSerial, &boundPostID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Room{}, ErrNotFound
+	}
+	if err != nil {
+		return Room{}, fmt.Errorf("gameroom: look up room %q for rebind: %w", roomSerial, err)
+	}
+
+	var (
+		targetID     int64
+		targetPostID int64
+	)
+	err = transaction.QueryRowContext(ctx, gameForRebindQuery, toGameSerial).
+		Scan(&targetID, &targetPostID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Room{}, ErrGameNotFound
+	}
+	if err != nil {
+		return Room{}, fmt.Errorf("gameroom: look up game %q for rebind: %w", toGameSerial, err)
+	}
+
+	if boundSerial == toGameSerial {
+		// Already moved. Committing an empty transaction rather than returning early
+		// keeps the lock's lifetime obvious.
+		if err := transaction.Commit(); err != nil {
+			return Room{}, fmt.Errorf("gameroom: commit rebind: %w", err)
+		}
+		return room, nil
+	}
+	if boundSerial != fromGameSerial {
+		return Room{}, ErrRoomMismatch
+	}
+	if targetPostID != boundPostID {
+		return Room{}, ErrRoomNotRebindable
+	}
+
+	if _, err := transaction.ExecContext(ctx, rebindRoomStatement, targetID, room.ID); err != nil {
+		if mysqlstore.IsDuplicateKey(err) {
+			return Room{}, ErrRoomNotRebindable
+		}
+		return Room{}, fmt.Errorf("gameroom: rebind room %q: %w", roomSerial, err)
+	}
+	if err := transaction.Commit(); err != nil {
+		return Room{}, fmt.Errorf("gameroom: commit rebind: %w", err)
+	}
+	return room, nil
+}
+
 const roomWithGameQuery = `
 	SELECT r.id, r.serial, g.serial
 	  FROM game_rooms AS r

@@ -74,6 +74,7 @@ func TestSettledRoundReachesASubscribedClient(t *testing.T) {
 		Legacy:      legacyCache,
 		Broadcaster: broadcaster,
 		Publisher:   publisher,
+		Votes:       NewMySQLParticipation(database),
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	if err != nil {

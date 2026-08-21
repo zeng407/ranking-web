@@ -84,21 +84,30 @@ const ownPick = computed(() => {
 })
 
 /**
- * Loads the game's elements once the room tells us which game it is.
+ * Loads the game's elements whenever the room tells us which game it is on.
  *
  * The room payload names the pairing by element id only — the images live with the game. A
  * failure here leaves the ids on screen rather than blocking the room: you can still bet,
  * you just cannot see what you are betting on, which beats not being able to bet.
+ *
+ * KEYED ON THE SERIAL, NOT ON WHETHER THE MAP IS EMPTY. The host restarting moves the room
+ * onto a new game with new element ids, and a map left over from the old one resolves none
+ * of them — the room would show two bare ids until the page was reloaded by hand.
  */
+const loadedGameSerial = ref('')
 watch(
   () => room.gameSerial.value,
   async (gameSerial) => {
-    if (!gameSerial || elements.value.size > 0) return
+    if (!gameSerial || gameSerial === loadedGameSerial.value) return
     try {
       const session = await gameplay.resume(gameSerial)
+      // Checked after the await: a second restart can land while this read is in flight,
+      // and the later game is the one on screen.
+      if (room.gameSerial.value !== gameSerial) return
       elements.value = new Map(session.elements.map((element) => [element.id, element]))
+      loadedGameSerial.value = gameSerial
     } catch {
-      // Left empty; the template falls back to the element id.
+      // Left as it was; the template falls back to the element id.
     }
   },
   { immediate: true },

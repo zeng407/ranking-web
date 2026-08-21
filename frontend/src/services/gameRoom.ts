@@ -107,6 +107,30 @@ export function createGameRoomService(client: APIClient = getAPIClient()) {
     },
 
     /**
+     * Moves the room onto another game of the same post, keeping its serial.
+     *
+     * This is the restart: the host reshuffles, the game serial changes, and the room has
+     * to follow it or the participants are left voting on a match that has been decided.
+     * Re-opening instead would mint a new room serial and break every invite link and QR
+     * code already handed out.
+     *
+     * fromGameSerial is the game the caller believes the room is on. The server checks it
+     * rather than trusting it: nothing in this stack records who hosts a room, so naming
+     * its current game is the only proof of hosting there is.
+     */
+    async rebind(
+      roomSerial: string, fromGameSerial: string, gameSerial: string, currentCandidates?: number[],
+    ): Promise<OpenedRoom> {
+      return client.put<OpenedRoom>(`/game-rooms/${encodeURIComponent(roomSerial)}/game`, {
+        from_game_serial: fromGameSerial,
+        game_serial: gameSerial,
+        ...(currentCandidates && currentCandidates.length === 2
+          ? { current_candidates: currentCandidates }
+          : {}),
+      })
+    },
+
+    /**
      * Joins a room and reads everything needed to draw it in one call.
      *
      * gameSerial is optional and checked by the server when given, so a stale link cannot

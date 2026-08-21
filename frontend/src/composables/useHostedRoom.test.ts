@@ -10,6 +10,7 @@ import type { GameRoomService, Leaderboard, RoomVotes } from '../services/gameRo
 function fakeService(overrides: Partial<GameRoomService> = {}): GameRoomService {
   return {
     open: vi.fn().mockResolvedValue({ serial: 'abcdefgh', game_serial: 'game-1' }),
+    rebind: vi.fn().mockResolvedValue({ serial: 'abcdefgh', game_serial: 'game-2' }),
     state: vi.fn(),
     leaderboard: vi.fn().mockResolvedValue(board(0)),
     votes: vi.fn().mockResolvedValue(null),
@@ -55,14 +56,72 @@ describe('useHostedRoom', () => {
     expect(reloaded.hosting.value).toBe(true)
   })
 
-  // Keyed on the game, not the post: a restart is a new game and therefore a new room, and
-  // the old invite link must not silently follow the host into it.
+  // A page that opens on another game hosts nothing: the stored room belongs to the game it
+  // was opened for, and nothing here says this host ever ran it.
   it('does not carry a room into a different game', async () => {
     await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).open()
 
     const other = useHostedRoom(ref('game-2'), ref('zh-tw'), fakeService())
     expect(other.serial.value).toBe('')
     expect(other.hosting.value).toBe(false)
+  })
+
+  /*
+  The restart. The game serial changes under an open room, and the room has to follow it:
+  abandoning it would leave the participants voting on a decided match while the host's votes
+  went to a game the room cannot see, and re-opening would mint a serial that invalidates
+  every invite link already handed out.
+  */
+  it('moves the open room onto the game a restart created', async () => {
+    const service = fakeService()
+    const gameSerial = ref('game-1')
+    const room = useHostedRoom(gameSerial, ref('zh-tw'), service, () => [11, 22])
+
+    await room.open()
+    gameSerial.value = 'game-2'
+    await flush()
+
+    expect(service.rebind).toHaveBeenCalledWith('abcdefgh', 'game-1', 'game-2', [11, 22])
+    expect(room.serial.value).toBe('abcdefgh')
+    expect(room.status.value).toBe('open')
+
+    // The stored key moved with it, so the host's next reload finds the room on the new
+    // game rather than opening a second one.
+    const reloaded = useHostedRoom(ref('game-2'), ref('zh-tw'), fakeService())
+    expect(reloaded.serial.value).toBe('abcdefgh')
+    reloaded.stopWatching()
+    room.stopWatching()
+  })
+
+  // A refusal means this page does not drive that room — it has already moved, or the new
+  // game belongs to another post. Better to stop hosting than to show a link that lies.
+  it('stops hosting when the room refuses to follow', async () => {
+    const service = fakeService({ rebind: vi.fn().mockRejectedValue(apiError(409)) })
+    const gameSerial = ref('game-1')
+    const room = useHostedRoom(gameSerial, ref('zh-tw'), service)
+
+    await room.open()
+    gameSerial.value = 'game-2'
+    await flush()
+
+    expect(room.serial.value).toBe('')
+    expect(room.status.value).toBe('closed')
+    expect(room.inviteURL.value).toBe('')
+    // And the old key is gone, so a reload does not resurrect it.
+    expect(useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).serial.value).toBe('')
+  })
+
+  // Only when a room is actually open: a host who never opened one must not have a rebind
+  // fired at them every time they restart.
+  it('does not rebind when no room is open', async () => {
+    const service = fakeService()
+    const gameSerial = ref('game-1')
+    useHostedRoom(gameSerial, ref('zh-tw'), service)
+
+    gameSerial.value = 'game-2'
+    await flush()
+
+    expect(service.rebind).not.toHaveBeenCalled()
   })
 
   it('builds the localized invite link', async () => {

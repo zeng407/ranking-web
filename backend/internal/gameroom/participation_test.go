@@ -31,6 +31,10 @@ type fakeParticipation struct {
 	renameCalls    int
 	ensureRoomCall int
 	lastNewSerial  string
+	rebindCalls    int
+	rebindFrom     string
+	rebindTo       string
+	rebindErr      error
 
 	err error
 }
@@ -42,6 +46,20 @@ func (fake *fakeParticipation) EnsureRoom(_ context.Context, gameSerial, newSeri
 		return Room{}, false, fake.err
 	}
 	return fake.room, fake.roomCreated, nil
+}
+
+func (fake *fakeParticipation) RebindRoom(
+	_ context.Context, _, fromGameSerial, toGameSerial string,
+) (Room, error) {
+	fake.rebindCalls++
+	fake.rebindFrom, fake.rebindTo = fromGameSerial, toGameSerial
+	if fake.rebindErr != nil {
+		return Room{}, fake.rebindErr
+	}
+	if fake.err != nil {
+		return Room{}, fake.err
+	}
+	return fake.room, nil
 }
 
 func (fake *fakeParticipation) RoomBySerialWithGame(_ context.Context, _ string) (Room, string, bool, error) {
@@ -349,6 +367,71 @@ func TestEnsureRoomRecordsThePairAlreadyOnScreen(t *testing.T) {
 	}
 	if store.onScreenPair != [2]int64{} {
 		t.Errorf("a pair was recorded with none supplied: %v", store.onScreenPair)
+	}
+}
+
+/**
+ * The restart case: the room follows the host into the new game, and the pair the host has
+ * up in it is recorded — otherwise the participants are shown a game whose candidates
+ * column is still empty.
+ */
+func TestRebindMovesTheRoomAndRecordsTheNewPair(t *testing.T) {
+	store := &fakeParticipation{room: Room{ID: 7, Serial: "ROOMSERIAL"}}
+	service := newParticipationService(t, store, nil)
+
+	room, err := service.Rebind(context.Background(), "ROOMSERIAL", "old-game", "new-game", []int64{11, 22})
+	if err != nil {
+		t.Fatalf("Rebind() error = %v", err)
+	}
+	if room.Serial != "ROOMSERIAL" {
+		t.Errorf("room serial = %q, want the room to keep its serial", room.Serial)
+	}
+	if store.rebindFrom != "old-game" || store.rebindTo != "new-game" {
+		t.Errorf("rebind %q -> %q, want old-game -> new-game", store.rebindFrom, store.rebindTo)
+	}
+	if store.onScreenPair != [2]int64{11, 22} {
+		t.Errorf("on screen pair = %v, want the new game's pair", store.onScreenPair)
+	}
+}
+
+func TestRebindNeedsBothGameSerials(t *testing.T) {
+	store := &fakeParticipation{room: Room{ID: 7, Serial: "ROOMSERIAL"}}
+	service := newParticipationService(t, store, nil)
+
+	for name, call := range map[string]func() error{
+		"no room": func() error {
+			_, err := service.Rebind(context.Background(), " ", "old-game", "new-game", nil)
+			return err
+		},
+		"no source game": func() error {
+			_, err := service.Rebind(context.Background(), "ROOMSERIAL", "", "new-game", nil)
+			return err
+		},
+		"no target game": func() error {
+			_, err := service.Rebind(context.Background(), "ROOMSERIAL", "old-game", " ", nil)
+			return err
+		},
+	} {
+		if err := call(); err == nil {
+			t.Errorf("Rebind() with %s should fail", name)
+		}
+	}
+	if store.rebindCalls != 0 {
+		t.Errorf("rebind calls = %d, want the store left alone", store.rebindCalls)
+	}
+}
+
+// A refusal from the store is the caller's answer, not something to paper over: it means
+// the room has already moved, or the game belongs to another post.
+func TestRebindSurfacesARefusal(t *testing.T) {
+	store := &fakeParticipation{room: Room{ID: 7, Serial: "ROOMSERIAL"}, rebindErr: ErrRoomNotRebindable}
+	service := newParticipationService(t, store, nil)
+
+	if _, err := service.Rebind(context.Background(), "ROOMSERIAL", "old-game", "new-game", []int64{1, 2}); !errors.Is(err, ErrRoomNotRebindable) {
+		t.Fatalf("Rebind() error = %v, want ErrRoomNotRebindable", err)
+	}
+	if store.onScreenPair != [2]int64{} {
+		t.Errorf("on screen pair = %v, want nothing recorded for a refused move", store.onScreenPair)
 	}
 }
 

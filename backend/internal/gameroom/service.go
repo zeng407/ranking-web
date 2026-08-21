@@ -24,6 +24,12 @@ const (
 	RefreshTimeout  = 30 * time.Second
 	SettleAttempts  = 5
 	RefreshAttempts = 5
+	// A round broadcast is one indexed read and one HTTP call to Soketi. Short, and
+	// retried less: the pairing it carries is worth having within a second or two and
+	// worthless a minute later, by which time the host has moved on and the room's own
+	// poll has corrected itself anyway.
+	RoundTimeout  = 10 * time.Second
+	RoundAttempts = 3
 )
 
 // Lock namespaces for the per-room serialization.
@@ -36,6 +42,10 @@ const (
 const (
 	SettleLockPrefix  = "gameroom:settle:"
 	RefreshLockPrefix = "gameroom:refresh:"
+	// Its own namespace so a round broadcast never waits behind the recompute a
+	// settlement triggered: the pairing is what the participants are looking at, and it
+	// must arrive while the leaderboard is still being tallied.
+	RoundLockPrefix = "gameroom:round:"
 )
 
 // SettlePayload is the message the vote path publishes. Port of the array
@@ -67,12 +77,55 @@ type RefreshPayload struct {
 	RoomSerial string `json:"room_serial"`
 }
 
+// RoundPayload asks for the room's current pairing to be broadcast.
+//
+// IT CARRIES NO TALLY, DELIBERATELY. The publisher is the API, which has just written the
+// pair to games.candidates, and the handler reads the tally back through the same call the
+// room's REST endpoint uses. So the event and the poll cannot disagree: they are the same
+// query. A payload built at publish time would instead have to derive the round numbers a
+// second way, and any drift between the two would show up as a pairing that jumps when the
+// poll catches up.
+type RoundPayload struct {
+	RoomSerial string `json:"room_serial"`
+	GameSerial string `json:"game_serial"`
+}
+
+func (payload RoundPayload) validate() error {
+	if payload.RoomSerial == "" {
+		return errors.New("room_serial is required")
+	}
+	if payload.GameSerial == "" {
+		return errors.New("game_serial is required")
+	}
+	return nil
+}
+
+// RoundBroadcast is what a subscriber receives.
+//
+// GameSerial is not padding: a host who restarts points the room at a new game, and a
+// participant has to reload that game's elements before the ids in the tally mean
+// anything. Votes is null between rounds, which is a normal answer — the client keeps
+// what it has and waits for the next event rather than blanking the board.
+type RoundBroadcast struct {
+	GameSerial string     `json:"game_serial"`
+	Votes      *VoteTally `json:"votes"`
+}
+
+// VoteReader reads the tally for the pairing a room's host has on screen.
+//
+// Satisfied by MySQLParticipation, which the API also reads through: one query, one
+// meaning of "the match in progress".
+type VoteReader interface {
+	CurrentVotes(ctx context.Context, roomID int64, gameSerial string) (VoteTally, bool, error)
+}
+
 // Options wires the service.
 type Options struct {
 	Repository  Repository
 	Tracker     RefreshTracker
 	Legacy      LegacyCache
 	Broadcaster Broadcaster
+	Votes       VoteReader
 	Publisher   *queue.Publisher
 	Scoring     Scoring
 	Logger      *slog.Logger
@@ -84,6 +137,7 @@ type Service struct {
 	tracker     RefreshTracker
 	legacy      LegacyCache
 	broadcaster Broadcaster
+	votes       VoteReader
 	publisher   *queue.Publisher
 	scoring     Scoring
 	logger      *slog.Logger
@@ -98,6 +152,9 @@ func NewService(options Options) (*Service, error) {
 	}
 	if options.Broadcaster == nil {
 		return nil, errors.New("gameroom: broadcaster is required")
+	}
+	if options.Votes == nil {
+		return nil, errors.New("gameroom: vote reader is required")
 	}
 	if options.Publisher == nil {
 		return nil, errors.New("gameroom: publisher is required")
@@ -119,6 +176,7 @@ func NewService(options Options) (*Service, error) {
 		tracker:     options.Tracker,
 		legacy:      legacy,
 		broadcaster: options.Broadcaster,
+		votes:       options.Votes,
 		publisher:   options.Publisher,
 		scoring:     scoring,
 		logger:      logger,
@@ -149,13 +207,27 @@ func (service *Service) RefreshRegistration() jobs.Registration {
 	}
 }
 
-// roomSerialed is satisfied by both payloads, so one serial-key helper covers them.
+// RoundRegistration broadcasts the pairing the host moved to. Replaces
+// BroadcastGameRoomRefresh.
+func (service *Service) RoundRegistration() jobs.Registration {
+	return jobs.Registration{
+		Type:        TypeRoundChanged,
+		Handler:     jobs.HandlerFunc(service.handleRound),
+		Timeout:     RoundTimeout,
+		MaxAttempts: RoundAttempts,
+		SerialKey:   serialKeyFor[RoundPayload](RoundLockPrefix),
+		LaravelJob:  "App\\Jobs\\BroadcastGameRoomRefresh",
+	}
+}
+
+// roomSerialed is satisfied by every payload, so one serial-key helper covers them.
 type roomSerialed interface {
 	serial() string
 }
 
 func (payload SettlePayload) serial() string  { return payload.RoomSerial }
 func (payload RefreshPayload) serial() string { return payload.RoomSerial }
+func (payload RoundPayload) serial() string   { return payload.RoomSerial }
 
 func serialKeyFor[T roomSerialed](prefix string) jobs.SerialKeyFunc {
 	return func(message queue.Message) (string, error) {
@@ -323,6 +395,52 @@ func (service *Service) handleRefresh(ctx context.Context, message queue.Message
 	return nil
 }
 
+// handleRound broadcasts the pairing the room is now voting on.
+//
+// NO COALESCING, unlike the refresh. A refresh recomputes a whole room and two of them in a
+// row produce the same standings, so skipping the second is free. A round event is the
+// opposite: every one of them is a different match, and dropping one leaves the room
+// looking at a pairing the host has already left. The work is one read and one publish, so
+// there is nothing to coalesce for.
+func (service *Service) handleRound(ctx context.Context, message queue.Message) error {
+	var payload RoundPayload
+	if err := json.Unmarshal(message.Payload, &payload); err != nil {
+		return jobs.Permanent(fmt.Errorf("gameroom: decode round payload: %w", err))
+	}
+	if err := payload.validate(); err != nil {
+		return jobs.Permanent(fmt.Errorf("gameroom: round payload: %w", err))
+	}
+
+	room, err := service.repository.RoomBySerial(ctx, payload.RoomSerial)
+	if errors.Is(err, ErrNotFound) {
+		return jobs.Permanent(err)
+	}
+	if err != nil {
+		return err
+	}
+
+	broadcast := RoundBroadcast{GameSerial: payload.GameSerial}
+	tally, inProgress, err := service.votes.CurrentVotes(ctx, room.ID, payload.GameSerial)
+	if err != nil {
+		return err
+	}
+	if inProgress {
+		broadcast.Votes = &tally
+	}
+
+	if err := service.broadcaster.Publish(ctx,
+		realtime.GameRoomChannel(room.Serial), RoundEvent, broadcast); err != nil {
+		return err
+	}
+
+	service.logger.Info("game_room_round_broadcast",
+		"room_serial", room.Serial,
+		"game_serial", payload.GameSerial,
+		"in_progress", inProgress,
+	)
+	return nil
+}
+
 // SettleMessage builds the message the vote path publishes once a round is decided.
 // Exported because the publisher is the API, not this package.
 func SettleMessage(payload SettlePayload) (queue.Message, error) {
@@ -354,4 +472,20 @@ func RefreshMessage(roomSerial string) (queue.Message, error) {
 		return queue.Message{}, fmt.Errorf("gameroom: encode refresh payload: %w", err)
 	}
 	return queue.Message{Queue: Queue, Type: TypeRankRefresh, Payload: body}, nil
+}
+
+// RoundMessage builds the message that broadcasts the pairing now on screen.
+//
+// No idempotency key. The same pairing broadcast twice only makes clients redraw what they
+// already have, and suppressing a redelivery would risk dropping the one event a room
+// needed to leave a match it has already lost.
+func RoundMessage(payload RoundPayload) (queue.Message, error) {
+	if err := payload.validate(); err != nil {
+		return queue.Message{}, fmt.Errorf("gameroom: round message: %w", err)
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return queue.Message{}, fmt.Errorf("gameroom: encode round payload: %w", err)
+	}
+	return queue.Message{Queue: Queue, Type: TypeRoundChanged, Payload: body}, nil
 }

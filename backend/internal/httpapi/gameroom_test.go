@@ -39,6 +39,10 @@ type fakeGameRoom struct {
 	joinCalls         int
 	betCalls          int
 	renameCalls       int
+	rebindCalls       int
+	lastRebindFrom    string
+	lastRebindTo      string
+	rebindErr         error
 	lastAnonymousID   string
 	lastLocale        string
 	lastUserID        *int64
@@ -90,6 +94,18 @@ func (fake *fakeGameRoom) BetOnCurrentRound(
 	fake.lastBetGameSerial = gameSerial
 	fake.lastBet = gameroom.PlacedBet{WinnerID: winnerID, LoserID: loserID}
 	return fake.betErr
+}
+
+func (fake *fakeGameRoom) Rebind(
+	_ context.Context, _, fromGameSerial, toGameSerial string, onScreen []int64,
+) (gameroom.Room, error) {
+	fake.rebindCalls++
+	fake.lastRebindFrom, fake.lastRebindTo = fromGameSerial, toGameSerial
+	fake.lastOnScreen = onScreen
+	if fake.rebindErr != nil {
+		return gameroom.Room{}, fake.rebindErr
+	}
+	return fake.room, nil
 }
 
 func (fake *fakeGameRoom) Rename(_ context.Context, _ gameroom.Participant, nickname string) error {
@@ -205,6 +221,87 @@ func TestCreateGameRoomReportsAnUnknownGame(t *testing.T) {
 
 	if response.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want 404", response.Code)
+	}
+}
+
+/**
+ * The restart case. The host's game serial changes and the room has to follow, keeping the
+ * serial already handed out on invite links and QR codes.
+ */
+func TestRebindGameRoomMovesTheRoomAndForwardsThePair(t *testing.T) {
+	fake := newFakeGameRoom()
+	response := httptest.NewRecorder()
+	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodPut,
+		"/api/v1/game-rooms/abcdefgh/game",
+		strings.NewReader(`{"from_game_serial":"old-game","game_serial":"new-game","current_candidates":[11,22]}`)))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	if fake.rebindCalls != 1 || fake.lastRebindFrom != "old-game" || fake.lastRebindTo != "new-game" {
+		t.Errorf("rebind calls = %d, %q -> %q; want one call old-game -> new-game",
+			fake.rebindCalls, fake.lastRebindFrom, fake.lastRebindTo)
+	}
+	if len(fake.lastOnScreen) != 2 || fake.lastOnScreen[0] != 11 || fake.lastOnScreen[1] != 22 {
+		t.Errorf("on-screen pair = %v, want [11 22]", fake.lastOnScreen)
+	}
+
+	var body struct {
+		Serial     string `json:"serial"`
+		GameSerial string `json:"game_serial"`
+	}
+	decodeData(t, response, &body)
+	if body.Serial != "abcdefgh" || body.GameSerial != "new-game" {
+		t.Errorf("body = %+v, want the same room on the new game", body)
+	}
+}
+
+// Both serials are required: without the source there is nothing to check the move against,
+// and any caller could drag the room onto a game of its choosing.
+func TestRebindGameRoomRequiresBothGameSerials(t *testing.T) {
+	for name, body := range map[string]string{
+		"no source": `{"game_serial":"new-game"}`,
+		"no target": `{"from_game_serial":"old-game","game_serial":"  "}`,
+	} {
+		fake := newFakeGameRoom()
+		response := httptest.NewRecorder()
+		gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodPut,
+			"/api/v1/game-rooms/abcdefgh/game", strings.NewReader(body)))
+
+		if response.Code != http.StatusUnprocessableEntity {
+			t.Errorf("%s: status = %d, want 422", name, response.Code)
+		}
+		if fake.rebindCalls != 0 {
+			t.Errorf("%s: the service was called %d times, want 0", name, fake.rebindCalls)
+		}
+	}
+}
+
+// A stale source serial and a game on another post both mean "this room is not yours to
+// move", and each keeps the status code it already has elsewhere in the room API: the
+// mismatch is 403 because the caller failed to prove which game it is on, the cross-post
+// move is 409 because the room and the game simply cannot be paired.
+func TestRebindGameRoomReportsARefusal(t *testing.T) {
+	for name, testCase := range map[string]struct {
+		err  error
+		want int
+	}{
+		"stale source": {gameroom.ErrRoomMismatch, http.StatusForbidden},
+		"another post": {gameroom.ErrRoomNotRebindable, http.StatusConflict},
+		"unknown room": {gameroom.ErrNotFound, http.StatusNotFound},
+		"unknown game": {gameroom.ErrGameNotFound, http.StatusNotFound},
+	} {
+		fake := newFakeGameRoom()
+		fake.rebindErr = testCase.err
+		response := httptest.NewRecorder()
+		gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodPut,
+			"/api/v1/game-rooms/abcdefgh/game",
+			strings.NewReader(`{"from_game_serial":"old-game","game_serial":"new-game"}`)))
+
+		if response.Code != testCase.want {
+			t.Errorf("%s: status = %d, want %d; body = %s",
+				name, response.Code, testCase.want, response.Body.String())
+		}
 	}
 }
 

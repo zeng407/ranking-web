@@ -480,15 +480,19 @@ func registerGameRoomHandlers(
 		Tracker:     tracker,
 		Legacy:      legacyCache,
 		Broadcaster: broadcaster,
-		Publisher:   publisher,
-		Scoring:     gameroom.DefaultScoring(),
-		Logger:      logger,
+		// The same reader the API serves the room's REST endpoints from, so the pairing a
+		// participant is pushed and the pairing they would have polled are one query.
+		Votes:     gameroom.NewMySQLParticipation(database),
+		Publisher: publisher,
+		Scoring:   gameroom.DefaultScoring(),
+		Logger:    logger,
 	})
 	if err != nil {
 		return fmt.Errorf("game room service: %w", err)
 	}
 
-	registry.MustRegister(service.SettleRegistration(), service.RefreshRegistration())
+	registry.MustRegister(service.SettleRegistration(), service.RefreshRegistration(),
+		service.RoundRegistration())
 	logger.Info("game_room_handlers_registered",
 		"pusher_host", configuration.Realtime.Host,
 		"pusher_port", configuration.Realtime.Port,

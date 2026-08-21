@@ -3,8 +3,57 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { APIError } from '../lib/api'
-import { POLL_INTERVAL_MS, boardRows, useGameRoom } from './useGameRoom'
+import {
+  LIVE_POLL_INTERVAL_MS,
+  POLL_INTERVAL_MS,
+  ROUND_EVENT,
+  boardRows,
+  useGameRoom,
+} from './useGameRoom'
 import type { GameRoomService, Leaderboard, RoomState } from '../services/gameRoom'
+import type { PusherState } from '../lib/pusher'
+
+/**
+ * The socket, captured rather than opened. The composable only ever subscribes when a key is
+ * configured, so the config is faked too — otherwise the live half of this file is dead code
+ * that no test can reach.
+ */
+const socket = {
+  handlers: {} as Record<string, (payload: unknown) => void>,
+  setState: undefined as ((state: PusherState) => void) | undefined,
+  leave: vi.fn(),
+}
+
+/** Fires one frame at whatever the composable subscribed for the pairing event. */
+function pushRound(payload: unknown): void {
+  const handler = socket.handlers[ROUND_EVENT]
+  if (!handler) throw new Error('the room never subscribed to the pairing event')
+  handler(payload)
+}
+
+vi.mock('../lib/pusher', () => ({
+  subscribe: (
+    _options: unknown,
+    _channel: string,
+    handlers: Record<string, (payload: unknown) => void>,
+    onState?: (state: PusherState) => void,
+  ) => {
+    socket.handlers = handlers
+    socket.setState = onState
+    return { leave: socket.leave }
+  },
+}))
+
+vi.mock('../config/runtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../config/runtime')>()
+  return {
+    ...actual,
+    getRuntimeConfig: () => ({
+      ...actual.getRuntimeConfig(),
+      realtime: { key: 'test-key', host: 'soketi', port: 6001, secure: false, cluster: '' },
+    }),
+  }
+})
 
 function board(overrides: Partial<Leaderboard> = {}): Leaderboard {
   return { total_users: 2, top_10: [], bottom_10: [], ...overrides }
@@ -54,6 +103,9 @@ function fakeService(overrides: Partial<GameRoomService> = {}): GameRoomService 
 describe('useGameRoom', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    socket.handlers = {}
+    socket.setState = undefined
+    socket.leave.mockClear()
   })
 
   afterEach(() => {
@@ -107,9 +159,9 @@ describe('useGameRoom', () => {
   })
 
   /**
-   * THE PAIRING HAS NO BROADCAST. The worker publishes the leaderboard and nothing else, so
-   * a participant only learns the host advanced the round by re-reading the room — which is
-   * why the poll reads the whole state rather than the board alone.
+   * THE POLL CARRIES THE PAIRING TOO, not just the board. The pairing is pushed as well, but
+   * a frame dropped while the socket was down is never redelivered — and a deployment with
+   * no Soketi has only this.
    */
   it('follows the host onto the next pairing', async () => {
     const next = state({
@@ -157,6 +209,107 @@ describe('useGameRoom', () => {
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
     expect(room.leaderboard.value).toBe(before)
     expect(room.votes.value).toBe(votes)
+  })
+
+  /**
+   * THE PAIRING IS PUSHED. The worker publishes it when the host settles a round and when
+   * they restart, carrying the same tally the REST endpoint returns — so the room moves at
+   * socket speed and the poll behind it never has to disagree.
+   */
+  it('applies a pushed pairing without re-reading the room', async () => {
+    const service = fakeService()
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+    expect(service.state).toHaveBeenCalledTimes(1)
+
+    pushRound({
+      game_serial: 'game-serial',
+      votes: {
+        first_candidate: 33, second_candidate: 44,
+        first_candidate_votes: 1, second_candidate_votes: 0,
+        remain_elements: 17, total_votes: 1, current_round: 32, of_round: 32,
+      },
+    })
+
+    expect(room.votes.value?.first_candidate).toBe(33)
+    expect(room.votes.value?.current_round).toBe(32)
+    expect(service.state).toHaveBeenCalledTimes(1)
+    room.leave()
+  })
+
+  // The restart. The room followed the host onto a new game, and the view needs the new
+  // serial to load that game's elements — without it the pairing draws as two bare ids.
+  it('follows the room onto the game a restart created', async () => {
+    const room = useGameRoom('abcdefgh', fakeService())
+    await room.join()
+    expect(room.gameSerial.value).toBe('game-serial')
+
+    pushRound({ game_serial: 'restarted-game', votes: null })
+
+    expect(room.gameSerial.value).toBe('restarted-game')
+    // Null is a real answer, not a malformed frame: between rounds there is no pairing.
+    expect(room.votes.value).toBeNull()
+    room.leave()
+  })
+
+  // The frame the host's settlement produced can land between our POST and the read that
+  // wager does itself, and would put the pre-wager counts back on screen.
+  it('ignores a pushed pairing while a wager is in flight', async () => {
+    let release: () => void = () => {}
+    const service = fakeService({
+      bet: vi.fn().mockReturnValue(new Promise<void>((resolve) => { release = resolve })),
+    })
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+
+    const wager = room.bet(11, 22)
+    pushRound({ game_serial: 'game-serial', votes: null })
+    expect(room.votes.value?.first_candidate).toBe(11)
+
+    release()
+    await wager
+    room.leave()
+  })
+
+  /**
+   * THE POLL SLOWS DOWN, IT DOES NOT STOP. With the pairing and the board both pushed it is
+   * a safety net rather than the room's source — but a socket that dies without closing
+   * reports nothing at all, and the poll is still the only thing that notices.
+   */
+  it('slows the poll while the socket is connected', async () => {
+    const service = fakeService()
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+
+    socket.setState?.('connected')
+    await vi.advanceTimersByTimeAsync(0)
+    // A connect owes a fresh read: whatever happened while the socket was down was never
+    // delivered to it.
+    const afterConnect = vi.mocked(service.state).mock.calls.length
+    expect(afterConnect).toBe(2)
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    expect(service.state).toHaveBeenCalledTimes(afterConnect)
+
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS - POLL_INTERVAL_MS)
+    expect(service.state).toHaveBeenCalledTimes(afterConnect + 1)
+    room.leave()
+  })
+
+  // And back to full speed when it drops: the poll is the whole story again.
+  it('speeds the poll back up when the socket drops', async () => {
+    const service = fakeService()
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+
+    socket.setState?.('connected')
+    await vi.advanceTimersByTimeAsync(0)
+    socket.setState?.('disconnected')
+    const before = vi.mocked(service.state).mock.calls.length
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    expect(service.state).toHaveBeenCalledTimes(before + 1)
+    room.leave()
   })
 
   it('sends only the pick, and the server confirms it', async () => {

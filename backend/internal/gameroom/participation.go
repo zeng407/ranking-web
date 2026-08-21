@@ -38,6 +38,9 @@ var (
 	// screen — a stale page, or a client inventing a matchup the settlement would never
 	// resolve.
 	ErrNotTheCurrentPairing = errors.New("gameroom: that is not the current pairing")
+	// ErrRoomNotRebindable means the room may not follow the caller's game: either it
+	// has already moved on, or the game named belongs to another post. See Rebind.
+	ErrRoomNotRebindable = errors.New("gameroom: the room cannot follow that game")
 )
 
 // MaxNicknameRunes is what a player may rename themselves to, counted in runes because
@@ -171,6 +174,9 @@ type ParticipationRepository interface {
 	// wager on the match in play rather than the one just decided. Must ignore a pair
 	// that is not two live elements of the game.
 	SetOnScreenPair(ctx context.Context, gameSerial string, first, second int64) error
+	// RebindRoom points a room at another game of the SAME POST, but only while it is
+	// still on fromGameSerial — see Participation.Rebind for why both halves matter.
+	RebindRoom(ctx context.Context, roomSerial, fromGameSerial, toGameSerial string) (Room, error)
 	// RoomByGameSerial finds the room hosting a game WITHOUT creating one. The vote
 	// path calls it on every batch, and most games have no room at all — creating one
 	// there would give every solo game a room nobody asked for.
@@ -269,6 +275,57 @@ func (participation *Participation) EnsureRoom(
 		}
 	}
 	return room, created, nil
+}
+
+// Rebind makes an open room follow its host into another game of the same post.
+//
+// WHY THIS EXISTS. A room belongs to a game, and restarting mints a new one — so before
+// this, a host who restarted left their room bound to a game that would never move again.
+// Their participants sat on a pairing whose match was already decided, with the host's
+// votes going somewhere the room could not see. Opening a second room would have worked
+// server-side and been useless in practice: the invite link and QR code are already handed
+// out, and a new room means a new serial.
+//
+// WHAT AUTHORIZES IT, HONESTLY. Nothing identifies a host. game_rooms records a game and a
+// serial and no owner, so the proof asked for here is knowledge of the game the room is
+// currently bound to, plus the new game belonging to the same post. That is the trust level
+// the rest of the room already runs at: the room's own state endpoint hands every
+// participant the game serial, and the vote endpoint takes a game serial from anyone — so
+// somebody who could abuse this can already play the host's game directly, which is a
+// bigger nuisance than moving their room. The same-post rule is the part that matters: it
+// means a room can never be pointed at unrelated content while people are sitting in it.
+//
+// onScreen is the pair the host has up in the new game, recorded for the same reason
+// EnsureRoom takes one: without it the room's participants are shown whatever the new
+// game's candidates column happens to hold, which for a game nobody has voted in yet is
+// nothing at all.
+func (participation *Participation) Rebind(
+	ctx context.Context, roomSerial, fromGameSerial, toGameSerial string, onScreen []int64,
+) (Room, error) {
+	roomSerial = strings.TrimSpace(roomSerial)
+	fromGameSerial = strings.TrimSpace(fromGameSerial)
+	toGameSerial = strings.TrimSpace(toGameSerial)
+	if roomSerial == "" {
+		return Room{}, ErrNotFound
+	}
+	if fromGameSerial == "" || toGameSerial == "" {
+		return Room{}, ErrGameNotFound
+	}
+
+	room, err := participation.repository.RebindRoom(ctx, roomSerial, fromGameSerial, toGameSerial)
+	if err != nil {
+		return Room{}, err
+	}
+
+	// Same treatment as EnsureRoom: a pair that cannot be recorded is not worth failing
+	// the move, because the host's next vote writes the column anyway.
+	if len(onScreen) == 2 {
+		if err := participation.repository.SetOnScreenPair(
+			ctx, toGameSerial, onScreen[0], onScreen[1]); err != nil {
+			return room, err
+		}
+	}
+	return room, nil
 }
 
 // Join returns the caller's participant row in a room, creating it on first visit.

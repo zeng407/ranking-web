@@ -22,22 +22,38 @@ import {
  * no close event, just silence. A stale-but-moving leaderboard is a far better failure than
  * a frozen one, and the poll is the only thing that turns the one into the other.
  *
- * The poll re-reads the WHOLE room state rather than the leaderboard alone, because the
- * pairing on screen is the host's and there is no broadcast for it: the only event the
- * worker publishes is the leaderboard. A participant left on a leaderboard-only poll sits
- * on last round's pairing until they reload, which is exactly what the old UI avoided by
- * re-reading the room on a five-second timer.
+ * The poll re-reads the WHOLE room state rather than the leaderboard alone, because a
+ * pairing can also change without any event reaching us: the frame may have been dropped
+ * while the socket was down, or the deployment may have no Soketi at all.
  */
 
 /** The broadcast event the worker publishes. Named for what Laravel's listeners emitted. */
 export const LEADERBOARD_EVENT = 'GameBetRank'
 
 /**
- * How often to re-read the room. Five seconds is what the old UI used for the same job:
+ * The pairing event. Published when the host settles a round and when they restart into a
+ * new game, and it carries the same tally the room's REST endpoint returns — so a pushed
+ * pairing and a polled one cannot disagree.
+ */
+export const ROUND_EVENT = 'GameRoomRound'
+
+/**
+ * How often to re-read the room with no live socket. Five seconds is what the old UI used:
  * fast enough that the host advancing a round feels immediate, slow enough to be free at
  * any plausible room size.
  */
 export const POLL_INTERVAL_MS = 5_000
+
+/**
+ * How often to re-read the room WHILE the socket is connected.
+ *
+ * The poll does not go away when the socket is up, because a socket that dies without
+ * closing reports nothing at all — no error, no close event, just silence — and the poll is
+ * the only thing that turns a frozen room into a slightly stale one. But with the pairing
+ * and the leaderboard both pushed, it no longer has to carry the room: it is a safety net,
+ * so it runs four times slower and costs four times less.
+ */
+export const LIVE_POLL_INTERVAL_MS = 20_000
 
 export type RoomStatus = 'loading' | 'ready' | 'not-found' | 'failed'
 
@@ -126,21 +142,55 @@ export function useGameRoom(
             leaderboard.value = board
           }
         },
+        [ROUND_EVENT]: (payload) => {
+          applyRound(payload as { game_serial?: string; votes?: RoomVotes | null } | null)
+        },
       },
       (state) => {
+        const wasConnected = live.value === 'connected'
         live.value = state
+        if (state === 'connected') {
+          // Whatever happened while the socket was down was never delivered, so a fresh
+          // read is owed on every connect — including a reconnect the poll has not reached.
+          if (!wasConnected) void refreshState()
+          startPolling()
+          return
+        }
+        // Off the socket, the poll is the room's only source again and goes back to full
+        // speed. A wager in flight is still skipped, see startPolling.
+        if (wasConnected) startPolling()
       },
     )
   }
 
+  /**
+   * Applies a pushed pairing.
+   *
+   * Not while a wager is in flight: the frame the host's settlement produced can land
+   * between our POST and the read that wager does itself, and would put the pre-wager
+   * counts back on screen.
+   */
+  function applyRound(payload: { game_serial?: string; votes?: RoomVotes | null } | null): void {
+    if (!payload || betting.value) return
+    // A game serial we have not seen means the host restarted: the room followed them onto
+    // a new game, and the view has to reload that game's elements before it can draw the
+    // pairing. Assigned first for that reason.
+    if (typeof payload.game_serial === 'string' && payload.game_serial) {
+      gameSerial.value = payload.game_serial
+    }
+    // votes is null between rounds, which is a real answer and not a malformed frame.
+    votes.value = payload.votes ?? null
+  }
+
   function startPolling(): void {
     if (pollTimer) clearInterval(pollTimer)
+    const interval = live.value === 'connected' ? LIVE_POLL_INTERVAL_MS : POLL_INTERVAL_MS
     pollTimer = setInterval(() => {
       // Not while a wager is in flight: the read would land between the POST and the
       // refresh that wager does itself, and put the pre-wager counts back on screen.
       if (betting.value) return
       void refreshState()
-    }, POLL_INTERVAL_MS)
+    }, interval)
   }
 
   async function refreshLeaderboard(): Promise<void> {

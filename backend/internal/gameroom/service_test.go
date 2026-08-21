@@ -12,6 +12,7 @@ import (
 
 	"2pick.app/backend/internal/jobs"
 	"2pick.app/backend/internal/queue"
+	"2pick.app/backend/internal/realtime"
 )
 
 // ---------- fakes ----------
@@ -258,6 +259,26 @@ type harness struct {
 	broadcaster *fakeBroadcaster
 	transport   *fakeTransport
 	legacy      *recordingLegacyCache
+	votes       *fakeVotes
+}
+
+// fakeVotes stands in for the tally the room's REST endpoint reads.
+type fakeVotes struct {
+	tally      VoteTally
+	inProgress bool
+	roomID     int64
+	gameSerial string
+	calls      int
+	err        error
+}
+
+func (fake *fakeVotes) CurrentVotes(_ context.Context, roomID int64, gameSerial string) (VoteTally, bool, error) {
+	fake.calls++
+	fake.roomID, fake.gameSerial = roomID, gameSerial
+	if fake.err != nil {
+		return VoteTally{}, false, fake.err
+	}
+	return fake.tally, fake.inProgress, nil
 }
 
 func newHarness(t *testing.T) *harness {
@@ -268,6 +289,7 @@ func newHarness(t *testing.T) *harness {
 	broadcaster := &fakeBroadcaster{}
 	transport := &fakeTransport{}
 	legacy := &recordingLegacyCache{}
+	votes := &fakeVotes{}
 
 	publisher, err := queue.NewPublisher(transport)
 	if err != nil {
@@ -279,6 +301,7 @@ func newHarness(t *testing.T) *harness {
 		Legacy:      legacy,
 		Broadcaster: broadcaster,
 		Publisher:   publisher,
+		Votes:       votes,
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	if err != nil {
@@ -286,7 +309,7 @@ func newHarness(t *testing.T) *harness {
 	}
 	return &harness{
 		service: service, repository: repository, tracker: tracker,
-		broadcaster: broadcaster, transport: transport, legacy: legacy,
+		broadcaster: broadcaster, transport: transport, legacy: legacy, votes: votes,
 	}
 }
 
@@ -300,6 +323,15 @@ func (h *harness) settle(t *testing.T, round int) error {
 		t.Fatalf("SettleMessage() error = %v", err)
 	}
 	return h.service.handleSettle(context.Background(), message)
+}
+
+func (h *harness) round(t *testing.T, gameSerial string) error {
+	t.Helper()
+	message, err := RoundMessage(RoundPayload{RoomSerial: testSerial, GameSerial: gameSerial})
+	if err != nil {
+		t.Fatalf("RoundMessage() error = %v", err)
+	}
+	return h.service.handleRound(context.Background(), message)
 }
 
 func (h *harness) refresh(t *testing.T) error {
@@ -773,12 +805,14 @@ func TestNewServiceRejectsMissingDependencies(t *testing.T) {
 		Tracker:     newFakeTracker(),
 		Broadcaster: &fakeBroadcaster{},
 		Publisher:   publisher,
+		Votes:       &fakeVotes{},
 	}
 	for name, mutate := range map[string]func(*Options){
 		"no repository":  func(o *Options) { o.Repository = nil },
 		"no tracker":     func(o *Options) { o.Tracker = nil },
 		"no broadcaster": func(o *Options) { o.Broadcaster = nil },
 		"no publisher":   func(o *Options) { o.Publisher = nil },
+		"no vote reader": func(o *Options) { o.Votes = nil },
 	} {
 		options := complete
 		mutate(&options)
@@ -794,5 +828,117 @@ func TestNewServiceRejectsMissingDependencies(t *testing.T) {
 	}
 	if service.scoring != DefaultScoring() {
 		t.Errorf("scoring = %+v, want the production values", service.scoring)
+	}
+}
+
+// ---------- the pairing broadcast ----------
+
+/**
+ * What a participant needs when the host moves on: the game the room now follows and the
+ * tally for the pair inside it. Both come from the same query the room's REST endpoint
+ * answers with, so a pushed pairing and a polled one cannot disagree.
+ */
+func TestRoundBroadcastsTheTallyForThePairingOnScreen(t *testing.T) {
+	h := newHarness(t)
+	h.votes.inProgress = true
+	h.votes.tally = VoteTally{
+		FirstCandidate: 11, SecondCandidate: 22,
+		FirstCandidateVotes: 2, SecondCandidateVote: 1,
+		TotalVotes: 3, CurrentRound: 5, OfRound: 8, RemainElements: 4,
+	}
+
+	if err := h.round(t, "game-serial"); err != nil {
+		t.Fatalf("handleRound() error = %v", err)
+	}
+
+	if h.votes.calls != 1 || h.votes.roomID != 77 || h.votes.gameSerial != "game-serial" {
+		t.Errorf("read votes %d times for room %d game %q, want once for room 77 game-serial",
+			h.votes.calls, h.votes.roomID, h.votes.gameSerial)
+	}
+	if len(h.broadcaster.sent) != 1 {
+		t.Fatalf("%d broadcasts, want 1", len(h.broadcaster.sent))
+	}
+	sent := h.broadcaster.sent[0]
+	if sent.channel != realtime.GameRoomChannel(testSerial) || sent.event != RoundEvent {
+		t.Errorf("broadcast %q on %q, want %q on the room channel", sent.event, sent.channel, RoundEvent)
+	}
+	payload, ok := sent.payload.(RoundBroadcast)
+	if !ok {
+		t.Fatalf("payload = %T, want RoundBroadcast", sent.payload)
+	}
+	if payload.GameSerial != "game-serial" {
+		t.Errorf("game serial = %q, want the one the message named", payload.GameSerial)
+	}
+	if payload.Votes == nil || *payload.Votes != h.votes.tally {
+		t.Errorf("votes = %+v, want the tally the store returned", payload.Votes)
+	}
+}
+
+// Between rounds there is no pair to tally, and the event still goes out: the game serial
+// alone is the news, because a participant holding a stale one has to reload the room.
+func TestRoundBroadcastsWithoutATallyBetweenRounds(t *testing.T) {
+	h := newHarness(t)
+	h.votes.inProgress = false
+
+	if err := h.round(t, "game-serial"); err != nil {
+		t.Fatalf("handleRound() error = %v", err)
+	}
+	if len(h.broadcaster.sent) != 1 {
+		t.Fatalf("%d broadcasts, want 1 even with no round in progress", len(h.broadcaster.sent))
+	}
+	payload, ok := h.broadcaster.sent[0].payload.(RoundBroadcast)
+	if !ok {
+		t.Fatalf("payload = %T, want RoundBroadcast", h.broadcaster.sent[0].payload)
+	}
+	if payload.Votes != nil {
+		t.Errorf("votes = %+v, want nothing when no round is in progress", payload.Votes)
+	}
+}
+
+// A message with no game serial names no pairing, so no retry can fix it. RoundMessage
+// refuses to build one, so this comes in over the wire — an older publisher, or a hand-fed
+// queue — and the handler has to refuse it too.
+func TestRoundRejectsAPayloadWithoutAGame(t *testing.T) {
+	h := newHarness(t)
+	message := queue.Message{
+		Type:    TypeRoundChanged,
+		Queue:   Queue,
+		Payload: []byte(`{"room_serial":"` + testSerial + `"}`),
+	}
+
+	err := h.service.handleRound(context.Background(), message)
+	if err == nil || !jobs.IsPermanent(err) {
+		t.Fatalf("handleRound() error = %v, want a permanent failure", err)
+	}
+	if h.broadcaster.count() != 0 || h.votes.calls != 0 {
+		t.Error("a malformed round message must not read or broadcast anything")
+	}
+}
+
+// A room that is gone stays gone: retrying the broadcast cannot bring it back.
+func TestRoundIsPermanentForARoomThatIsGone(t *testing.T) {
+	h := newHarness(t)
+	message, err := RoundMessage(RoundPayload{RoomSerial: "room-missing", GameSerial: "game-serial"})
+	if err != nil {
+		t.Fatalf("RoundMessage() error = %v", err)
+	}
+
+	if err := h.service.handleRound(context.Background(), message); err == nil || !jobs.IsPermanent(err) {
+		t.Fatalf("handleRound() error = %v, want a permanent failure", err)
+	}
+}
+
+// A broadcast failure is retryable — Pusher being briefly unreachable is not the message's
+// fault, and the pairing is still worth delivering a moment later.
+func TestRoundRetriesABroadcastFailure(t *testing.T) {
+	h := newHarness(t)
+	h.broadcaster.err = errors.New("pusher is unreachable")
+
+	err := h.round(t, "game-serial")
+	if err == nil {
+		t.Fatal("handleRound() should fail when the broadcast fails")
+	}
+	if jobs.IsPermanent(err) {
+		t.Errorf("error = %v, want it retryable", err)
 	}
 }

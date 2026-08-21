@@ -235,6 +235,30 @@ func (a *api) announceGameRoomRounds(r *http.Request, gameSerial string, rounds 
 	}
 }
 
+// announceRoomPairing tells a room to redraw the pairing its host now has up.
+//
+// Same best-effort treatment as announceGameRoomRounds and for the same reason: the move it
+// follows is already committed, and failing the response would have the client retry
+// something the server has accepted. What it costs to lose is one round of staleness — the
+// room's own poll re-reads the whole state on a timer and corrects itself.
+func (a *api) announceRoomPairing(r *http.Request, gameSerial string) {
+	if a.gameRoomAnnouncer == nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), announceTimeout)
+	defer cancel()
+
+	published, err := a.gameRoomAnnouncer.AnnounceRoom(ctx, gameSerial)
+	if err != nil {
+		a.logger.Error("game_room_pairing_announce_failed", "game_serial", gameSerial, "error", err)
+		return
+	}
+	if published {
+		a.logger.Info("game_room_pairing_announced", "game_serial", gameSerial)
+	}
+}
+
 // announceTimeout bounds the publish. Short: it is two or three Redis writes, and a slow
 // Redis must not hold the response open.
 const announceTimeout = 3 * time.Second

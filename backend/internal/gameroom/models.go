@@ -42,6 +42,11 @@ const (
 	// TypeRankRefresh recomputes the room's leaderboard and broadcasts it. Port of
 	// UpdateGameRoomRank, with ReUpdateGameRoomRank folded in.
 	TypeRankRefresh = "game_room.rank_refresh"
+	// TypeRoundChanged broadcasts the pairing the host now has on screen. Laravel did
+	// this with BroadcastGameRoomRefresh, dispatched from the RefreshGameCandidates
+	// listener; the Go stack had no equivalent, so a participant learned about a new
+	// match only by re-reading the room on a timer.
+	TypeRoundChanged = "game_room.round_changed"
 )
 
 // Room is the minimum a handler needs: the id for queries, the serial for the
@@ -162,3 +167,11 @@ type Broadcaster interface {
 // BroadcastEvent is the name the frontend listens for, from
 // BroadcastGameBetRank::broadcastAs.
 const BroadcastEvent = "GameBetRank"
+
+// RoundEvent is the name the frontend listens for when the pairing changes.
+//
+// NOT the Laravel name. BroadcastGameRoomRefresh called itself GameRoomRefresh and sent a
+// whole GameRoundResource — elements, images and all. This one sends the same tally the
+// room's REST endpoint returns, because the client already knows the elements and the two
+// paths agreeing by construction is worth more than the name matching.
+const RoundEvent = "GameRoomRound"

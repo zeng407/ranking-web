@@ -110,6 +110,35 @@ func (fixture *participationFixture) room(t *testing.T, ctx context.Context) Roo
 	return room
 }
 
+// game creates another game the tests can move a room onto. The cleanup deletes every
+// game in the namespace, so anything created here cascades away with the fixture.
+func (fixture *participationFixture) game(t *testing.T, ctx context.Context, suffix string, postID int64) string {
+	t.Helper()
+	serial := fixture.namespace + suffix
+	if _, err := fixture.database.ExecContext(ctx, `
+		INSERT INTO games (post_id, serial, element_count, candidates, created_at, updated_at)
+		VALUES (?, ?, 8, NULL, NOW(), NOW())`, postID, serial); err != nil {
+		t.Fatalf("create the game %q: %v", serial, err)
+	}
+	return serial
+}
+
+// otherPostID finds a post that is not the fixture's, for the cross-post refusal.
+func (fixture *participationFixture) otherPostID(t *testing.T, ctx context.Context) int64 {
+	t.Helper()
+	var postID int64
+	err := fixture.database.QueryRowContext(ctx, `
+		SELECT id FROM posts WHERE deleted_at IS NULL AND id <> ? ORDER BY id LIMIT 1`,
+		fixture.postID).Scan(&postID)
+	if errors.Is(err, sql.ErrNoRows) {
+		t.Skip("the restore has only one post; skipping the cross-post case")
+	}
+	if err != nil {
+		t.Fatalf("find a second post: %v", err)
+	}
+	return postID
+}
+
 func TestEnsureRoomCreatesOnceAndThenReturnsTheSameRoom(t *testing.T) {
 	fixture, ctx := newParticipationFixture(t)
 
@@ -624,5 +653,118 @@ func TestRoomSerialsAreLowercaseAlphanumericAndDistinct(t *testing.T) {
 			t.Errorf("serial %q was generated twice in 500 draws", serial)
 		}
 		seen[serial] = true
+	}
+}
+
+/**
+ * The restart. A restart mints a new game, and the room has to follow it while keeping the
+ * serial already on invite links and QR codes — re-opening would hand out a new one and
+ * strand everybody holding the old.
+ */
+func TestRebindRoomFollowsTheHostToANewGame(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+	restarted := fixture.game(t, ctx, "restart", fixture.postID)
+
+	moved, err := fixture.repository.RebindRoom(ctx, room.Serial, fixture.gameSer, restarted)
+	if err != nil {
+		t.Fatalf("RebindRoom() error = %v", err)
+	}
+	if moved.ID != room.ID || moved.Serial != room.Serial {
+		t.Errorf("room = %+v, want the same room as %+v", moved, room)
+	}
+
+	found, hosting, err := fixture.repository.RoomByGameSerial(ctx, restarted)
+	if err != nil || !hosting {
+		t.Fatalf("RoomByGameSerial(restarted) = %+v, %v, %v; want the room", found, hosting, err)
+	}
+	if found.ID != room.ID {
+		t.Errorf("the new game holds room %d, want %d", found.ID, room.ID)
+	}
+	// And nothing is left behind on the game the host abandoned.
+	if _, stillHosting, err := fixture.repository.RoomByGameSerial(ctx, fixture.gameSer); err != nil || stillHosting {
+		t.Errorf("the old game still hosts a room (hosting = %v, err = %v)", stillHosting, err)
+	}
+}
+
+// The reply can be lost — the host retries. The second attempt arrives naming a source game
+// the room has already left, and must be read as "already done", not as a mismatch.
+func TestRebindRoomIsIdempotent(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+	restarted := fixture.game(t, ctx, "restart", fixture.postID)
+
+	if _, err := fixture.repository.RebindRoom(ctx, room.Serial, fixture.gameSer, restarted); err != nil {
+		t.Fatalf("first RebindRoom() error = %v", err)
+	}
+	again, err := fixture.repository.RebindRoom(ctx, room.Serial, fixture.gameSer, restarted)
+	if err != nil {
+		t.Fatalf("second RebindRoom() error = %v", err)
+	}
+	if again.ID != room.ID {
+		t.Errorf("room = %+v, want the same room", again)
+	}
+}
+
+// The source serial is the only proof of hosting this stack has: no column records an owner
+// and every room route is optional-auth. A caller that cannot name the game the room is on
+// is not the host, and must not be able to drag the room anywhere.
+func TestRebindRoomRefusesAStaleSourceGame(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+	elsewhere := fixture.game(t, ctx, "elsewhere", fixture.postID)
+	target := fixture.game(t, ctx, "target", fixture.postID)
+
+	if _, err := fixture.repository.RebindRoom(ctx, room.Serial, elsewhere, target); !errors.Is(err, ErrRoomMismatch) {
+		t.Fatalf("error = %v, want ErrRoomMismatch", err)
+	}
+	if _, hosting, err := fixture.repository.RoomByGameSerial(ctx, fixture.gameSer); err != nil || !hosting {
+		t.Errorf("the room left its game after a refused move (hosting = %v, err = %v)", hosting, err)
+	}
+}
+
+// The invariant that protects seated participants: a room may only follow its host within
+// the same post. Otherwise a rebind swaps the content under everyone in the room.
+func TestRebindRoomRefusesAGameOnAnotherPost(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+	foreign := fixture.game(t, ctx, "foreign", fixture.otherPostID(t, ctx))
+
+	if _, err := fixture.repository.RebindRoom(ctx, room.Serial, fixture.gameSer, foreign); !errors.Is(err, ErrRoomNotRebindable) {
+		t.Fatalf("error = %v, want ErrRoomNotRebindable", err)
+	}
+}
+
+// One room per game — the unique index migration 00010 added. A game that already has its
+// own room cannot take another, and the duplicate key must surface as a refusal rather than
+// a raw driver error.
+func TestRebindRoomRefusesAGameThatAlreadyHasARoom(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+	occupied := fixture.game(t, ctx, "occupied", fixture.postID)
+
+	serial, err := NewRoomSerial()
+	if err != nil {
+		t.Fatalf("generate a serial: %v", err)
+	}
+	if _, _, err := fixture.repository.EnsureRoom(ctx, occupied, serial); err != nil {
+		t.Fatalf("EnsureRoom() error = %v", err)
+	}
+
+	if _, err := fixture.repository.RebindRoom(ctx, room.Serial, fixture.gameSer, occupied); !errors.Is(err, ErrRoomNotRebindable) {
+		t.Fatalf("error = %v, want ErrRoomNotRebindable", err)
+	}
+}
+
+func TestRebindRoomReportsWhatIsMissing(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+	target := fixture.game(t, ctx, "target", fixture.postID)
+
+	if _, err := fixture.repository.RebindRoom(ctx, "nosuchro", fixture.gameSer, target); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown room: error = %v, want ErrNotFound", err)
+	}
+	if _, err := fixture.repository.RebindRoom(ctx, room.Serial, fixture.gameSer, fixture.namespace+"nope"); !errors.Is(err, ErrGameNotFound) {
+		t.Errorf("unknown game: error = %v, want ErrGameNotFound", err)
 	}
 }

@@ -26,8 +26,15 @@ import { LEADERBOARD_EVENT } from './useGameRoom'
  * WHY THE SERIAL IS PERSISTED. Opening a room is idempotent server-side (the unique index
  * on game_rooms.game_id sees to that), so a reload could simply ask again. But the host's
  * page reloads often mid-game, and re-opening on every load would mean a request before the
- * invite link could be shown. Keyed by game serial rather than by post: a new game is a new
- * room.
+ * invite link could be shown. Keyed by game serial, because that is what the server keys a
+ * room on — but the key MOVES when the host restarts, see below.
+ *
+ * WHY THE ROOM FOLLOWS A RESTART. A restart mints a new game serial, and a room belongs to
+ * a game. Left alone, the host would silently stop hosting: their votes would go to a game
+ * the room cannot see, while the participants sat on a match that had already been decided.
+ * Opening a room for the new game instead would mint a new room serial and break every
+ * invite link and QR code already handed out. So the room is moved — same serial, new game
+ * — and the server broadcasts the new pairing to everybody sitting in it.
  */
 
 const STORAGE_PREFIX = 'gameroom_host_'
@@ -76,6 +83,14 @@ export function useHostedRoom(
   gameSerial: Ref<string>,
   locale: Ref<string>,
   service: GameRoomService = getGameRoomService(),
+  /**
+   * The pair on screen in the game the room is being moved onto, for a restart.
+   *
+   * The server cannot work it out: the client plays its bracket locally, and a game nobody
+   * has voted in yet has no pairing recorded at all. Without it the participants would be
+   * shown an empty column until the host's first vote of the new game lands.
+   */
+  onScreen?: () => number[] | undefined,
 ): UseHostedRoom {
   const serial = ref('')
   const status = ref<HostedRoomStatus>('closed')
@@ -104,14 +119,59 @@ export function useHostedRoom(
   // storage, after the view has mounted. Reading the stored room only once would mean a
   // host who reloads mid-game sees no room until they press the button again — and pressing
   // it would then re-open the same room, because opening is idempotent, hiding the fault.
-  watch(gameSerial, (value) => {
+  watch(gameSerial, (value, previous) => {
     const stored = readStored(value)
-    if (stored === serial.value) return
-    stopWatching()
-    serial.value = stored
-    status.value = stored ? 'open' : 'closed'
-    if (stored) startWatching()
+    if (stored) {
+      if (stored === serial.value) return
+      stopWatching()
+      serial.value = stored
+      status.value = 'open'
+      startWatching()
+      return
+    }
+    // No room stored for this game. If one is open on the game we just left, the host
+    // restarted and the room follows them; see the note at the top of the file.
+    if (previous && value && serial.value) {
+      void follow(previous, value)
+      return
+    }
+    if (serial.value) {
+      stopWatching()
+      serial.value = ''
+      status.value = 'closed'
+    }
   }, { immediate: true })
+
+  /**
+   * Moves the open room onto the game the host has just restarted into.
+   *
+   * The room serial does not change, so the socket, the timers and the invite link all keep
+   * working; only the stored key and the tally on screen belong to the old game.
+   */
+  async function follow(fromGameSerial: string, toGameSerial: string): Promise<void> {
+    const room = serial.value
+    // The old game's tally describes a match nobody is voting on any more.
+    votes.value = null
+    try {
+      await service.rebind(room, fromGameSerial, toGameSerial, onScreen?.())
+    } catch (error) {
+      if (!(error instanceof APIError)) throw error
+      // Refused: the room has already moved, or the new game belongs to another post. Stop
+      // claiming a room this page does not drive rather than keep a link that lies.
+      stopWatching()
+      serial.value = ''
+      status.value = 'closed'
+      clearStored(fromGameSerial)
+      return
+    }
+    // A further restart may have overtaken this one while the request was in flight; that
+    // later call owns the room now, and this one must not write its key back.
+    if (gameSerial.value !== toGameSerial || serial.value !== room) return
+    store(toGameSerial, room)
+    clearStored(fromGameSerial)
+    status.value = 'open'
+    if (blackBox.value) void refreshVotes()
+  }
 
   async function open(currentCandidates?: number[]): Promise<void> {
     if (!gameSerial.value || status.value === 'opening') return

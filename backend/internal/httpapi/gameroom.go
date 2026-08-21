@@ -17,6 +17,7 @@ import (
 // business recomputing a leaderboard inside a request.
 type GameRoomService interface {
 	EnsureRoom(ctx context.Context, gameSerial string, onScreen []int64) (gameroom.Room, bool, error)
+	Rebind(ctx context.Context, roomSerial, fromGameSerial, toGameSerial string, onScreen []int64) (gameroom.Room, error)
 	Join(ctx context.Context, roomID int64, anonymousID string, userID *int64, locale string) (gameroom.Participant, error)
 	BetOnCurrentRound(ctx context.Context, roomID int64, participant gameroom.Participant, gameSerial string, winnerID, loserID int64) error
 	Rename(ctx context.Context, participant gameroom.Participant, nickname string) error
@@ -36,6 +37,9 @@ type GameRoomReader interface {
 // because the symptom otherwise is a room whose leaderboard simply never moves.
 type GameRoomAnnouncer interface {
 	AnnounceRounds(ctx context.Context, gameSerial string, rounds []gameroom.DecidedRound) (int, error)
+	// AnnounceRoom broadcasts the pairing a room is on without settling anything, for the
+	// moves that change what a room shows outside a vote — a host restarting, above all.
+	AnnounceRoom(ctx context.Context, gameSerial string) (bool, error)
 }
 
 // GameRoomLeaderboard reads the standings.
@@ -180,6 +184,62 @@ func (a *api) createGameRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	// Private: a room serial is a capability, and this response hands one out.
 	writePrivateJSON(w, r, status, gameRoomResponse{Serial: room.Serial, GameSerial: request.GameSerial})
+}
+
+// rebindGameRoom makes an open room follow its host into a new game.
+//
+// THE RESTART CASE. Restarting mints a new game serial, and a room belongs to a game — so
+// without this the host walked away from their own room: their participants kept voting on
+// a match that was already decided while the host's votes went to a game the room could not
+// see. Re-opening instead of moving would mint a second room, and the invite link and QR
+// code for the first are already in people's hands.
+//
+// See gameroom.Participation.Rebind for what authorizes the move and why the same-post rule
+// is the part that matters.
+func (a *api) rebindGameRoom(w http.ResponseWriter, r *http.Request) {
+	if !a.requireGameRoom(w, r) {
+		return
+	}
+
+	roomSerial := strings.TrimSpace(r.PathValue("serial"))
+	if roomSerial == "" {
+		writeError(w, r, http.StatusNotFound, "room_not_found", "the room does not exist")
+		return
+	}
+
+	var request struct {
+		// FromGameSerial is the game the caller believes the room is on. Checked, not
+		// trusted: a caller working from a stale idea of the room must be refused rather
+		// than allowed to drag it off whatever game it has since moved to.
+		FromGameSerial string `json:"from_game_serial"`
+		GameSerial     string `json:"game_serial"`
+		// The pair on screen in the new game, for the same reason createGameRoom takes
+		// one: a game nobody has voted in yet has no pairing recorded at all.
+		CurrentCandidates []int64 `json:"current_candidates"`
+	}
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(request.GameSerial) == "" || strings.TrimSpace(request.FromGameSerial) == "" {
+		writeError(w, r, http.StatusUnprocessableEntity, "invalid_game_serial",
+			"from_game_serial and game_serial are required")
+		return
+	}
+
+	room, err := a.gameRooms.Rebind(r.Context(), roomSerial,
+		request.FromGameSerial, request.GameSerial, request.CurrentCandidates)
+	if err != nil {
+		a.writeGameRoomError(w, r, err)
+		return
+	}
+
+	// The participants are the reason this endpoint exists: they are sitting on the old
+	// game's pairing, and nothing else is coming to move them off it.
+	a.announceRoomPairing(r, request.GameSerial)
+
+	writePrivateJSON(w, r, http.StatusOK,
+		gameRoomResponse{Serial: room.Serial, GameSerial: request.GameSerial})
 }
 
 // gameRoomState is the one call a joining client makes.
@@ -456,6 +516,11 @@ func (a *api) writeGameRoomError(w http.ResponseWriter, r *http.Request, err err
 	case errors.Is(err, gameroom.ErrRoomMismatch):
 		writeError(w, r, http.StatusForbidden, "room_game_mismatch",
 			"the room does not belong to that game")
+	case errors.Is(err, gameroom.ErrRoomNotRebindable):
+		// 409 rather than 403: the caller is allowed to ask, the room simply cannot go
+		// there — another post's game, or one that already has a room of its own.
+		writeError(w, r, http.StatusConflict, "room_not_rebindable",
+			"the room cannot be moved to that game")
 	case errors.Is(err, gameroom.ErrNicknameTooSoon):
 		// 429 with the same code Laravel's threshold produced, so a client that already
 		// handles it does not need to change.

@@ -228,12 +228,22 @@ const visibleElements = computed(() => animationPair.value ?? currentElements.va
 /**
  * The game room this host has opened, if any.
  *
- * Keyed on the game serial rather than the post: a restart is a new game and therefore a new
- * room, and an invite link to the old one must not silently follow the host into it.
+ * Tracks the game serial, and a restart mints a new one: the composable then MOVES the room
+ * onto the new game rather than abandoning it, so the invite links and QR codes already
+ * handed out keep working and the people holding them are told about the new pairing.
+ *
+ * The pair on screen travels with that move for the same reason it travels with open(): the
+ * server never sees the bracket, and a game nobody has voted in yet has no pairing recorded
+ * at all.
  */
 const hostedRoom = useHostedRoom(
   computed(() => snapshot.value?.game_serial || ''),
   computed(() => localeDefinition(locale.value).prefix),
+  undefined,
+  () => {
+    const displayed = currentElements.value
+    return displayed ? [displayed[0].id, displayed[1].id] : undefined
+  },
 )
 /** The standings to show the host, best first. Empty until somebody joins. */
 const roomBoardRows = computed(() => boardRows(hostedRoom.board.value))

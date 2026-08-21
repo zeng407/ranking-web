@@ -63,7 +63,7 @@ func decidedRounds() []DecidedRound {
  * so a host playing through Go settled nobody's wagers — the worker sat waiting for a
  * message nothing published.
  */
-func TestAnnounceRoundsPublishesOneSettlePerRoundAndOneRefresh(t *testing.T) {
+func TestAnnounceRoundsPublishesSettlesARefreshAndTheNewPairing(t *testing.T) {
 	lookup := &fakeRoomLookup{room: Room{ID: 5, Serial: "abcdefgh"}, hosting: true}
 	announcer, transport := newTestAnnouncer(t, lookup)
 
@@ -75,18 +75,21 @@ func TestAnnounceRoundsPublishesOneSettlePerRoundAndOneRefresh(t *testing.T) {
 		t.Errorf("published = %d, want 2", published)
 	}
 
-	if len(transport.published) != 3 {
-		t.Fatalf("%d messages published, want 2 settles and 1 refresh", len(transport.published))
+	if len(transport.published) != 4 {
+		t.Fatalf("%d messages published, want 2 settles, 1 refresh and 1 round", len(transport.published))
 	}
 
 	settles := 0
 	refreshes := 0
+	rounds := 0
 	for _, message := range transport.published {
 		switch message.Type {
 		case TypeBetSettled:
 			settles++
 		case TypeRankRefresh:
 			refreshes++
+		case TypeRoundChanged:
+			rounds++
 		default:
 			t.Errorf("unexpected message type %q", message.Type)
 		}
@@ -109,6 +112,11 @@ func TestAnnounceRoundsPublishesOneSettlePerRoundAndOneRefresh(t *testing.T) {
 	// same standings N times.
 	if refreshes != 1 {
 		t.Errorf("%d refresh messages, want exactly 1 for the batch", refreshes)
+	}
+	// And one round message, naming the pairing the host moved on to. Without it a seated
+	// participant keeps voting on the match that was just decided until its poll comes round.
+	if rounds != 1 {
+		t.Errorf("%d round messages, want exactly 1 for the batch", rounds)
 	}
 }
 
@@ -228,6 +236,64 @@ func TestAnnounceRoundsSurfacesAPublishFailure(t *testing.T) {
 
 	if _, err := announcer.AnnounceRounds(context.Background(), "game-serial", decidedRounds()); err == nil {
 		t.Fatal("AnnounceRounds() succeeded with a failing transport")
+	}
+}
+
+/**
+ * The restart path. Nothing was decided — the host simply reshuffled and is now on a new
+ * game — so there is no settle to piggyback on and the pairing needs its own message.
+ */
+func TestAnnounceRoomPublishesJustThePairing(t *testing.T) {
+	lookup := &fakeRoomLookup{room: Room{ID: 5, Serial: "abcdefgh"}, hosting: true}
+	announcer, transport := newTestAnnouncer(t, lookup)
+
+	published, err := announcer.AnnounceRoom(context.Background(), "game-serial")
+	if err != nil {
+		t.Fatalf("AnnounceRoom() error = %v", err)
+	}
+	if !published {
+		t.Error("published = false, want the room's pairing announced")
+	}
+	if len(transport.published) != 1 {
+		t.Fatalf("%d messages published, want exactly the round message", len(transport.published))
+	}
+	message := transport.published[0]
+	if message.Type != TypeRoundChanged || message.Queue != Queue {
+		t.Errorf("published %q on %q, want %q on %q", message.Type, message.Queue, TypeRoundChanged, Queue)
+	}
+
+	var payload RoundPayload
+	if err := json.Unmarshal(message.Payload, &payload); err != nil {
+		t.Fatalf("decode round payload: %v", err)
+	}
+	if payload.RoomSerial != "abcdefgh" || payload.GameSerial != "game-serial" {
+		t.Errorf("payload = %+v, want the room and the game it now follows", payload)
+	}
+}
+
+// Solo games are the common case, and a host who never opened a room must not cost a message.
+func TestAnnounceRoomIsSilentForAGameWithNoRoom(t *testing.T) {
+	lookup := &fakeRoomLookup{hosting: false}
+	announcer, transport := newTestAnnouncer(t, lookup)
+
+	published, err := announcer.AnnounceRoom(context.Background(), "game-serial")
+	if err != nil {
+		t.Fatalf("AnnounceRoom() error = %v", err)
+	}
+	if published || len(transport.published) != 0 {
+		t.Errorf("published = %v with %d messages, want neither", published, len(transport.published))
+	}
+}
+
+func TestAnnounceRoomSurfacesALookupFailure(t *testing.T) {
+	failure := errors.New("the database is down")
+	announcer, transport := newTestAnnouncer(t, &fakeRoomLookup{err: failure})
+
+	if _, err := announcer.AnnounceRoom(context.Background(), "game-serial"); !errors.Is(err, failure) {
+		t.Fatalf("error = %v, want the lookup failure", err)
+	}
+	if len(transport.published) != 0 {
+		t.Error("messages were published after the lookup failed")
 	}
 }
 

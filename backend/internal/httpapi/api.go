@@ -329,6 +329,10 @@ func New(options Options) http.Handler {
 	// participant row but never required.
 	mux.HandleFunc("/api/v1/game-rooms", method(http.MethodPost, server.optionalAuth(server.createGameRoom)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}", method(http.MethodGet, server.optionalAuth(server.gameRoomState)))
+	// The room follows its host into a new game: what a restart needs, so the invite link
+	// already handed out keeps working.
+	mux.HandleFunc("/api/v1/game-rooms/{serial}/game",
+		method(http.MethodPut, server.optionalAuth(server.rebindGameRoom)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/leaderboard",
 		method(http.MethodGet, server.optionalAuth(server.gameRoomLeaderboard)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/votes",
