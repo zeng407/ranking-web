@@ -21,8 +21,10 @@ import { APIError } from '../lib/api'
 import { useAuth } from '../composables/useAuth'
 import { closeImageViewer, openImageViewer } from '../services/imageViewer'
 import { unlockPost } from '../services/postAccess'
+import { boardRows } from '../composables/useGameRoom'
 import { onScreenPairForBatch, useHostedRoom } from '../composables/useHostedRoom'
 import { getAnonymousID } from '../lib/anonymousId'
+import { downloadQRCode, drawQRCode } from '../lib/qrcode'
 import { shareOrCopyLink } from '../lib/share'
 import { localeDefinition, localizedPath, normalizeLocale, translate, type MessageKey } from '../i18n'
 import {
@@ -79,8 +81,8 @@ const rankOnly = computed(() => String(route.name || '').startsWith('rank'))
  * result keeps resolving to a result rather than to the community ranking.
  */
 const resultGameSerial = computed(() => {
-	const named = typeof route.query.g === 'string' ? route.query.g : route.query.s
-	return typeof named === 'string' ? named.trim() : ''
+  const named = typeof route.query.g === 'string' ? route.query.g : route.query.s
+  return typeof named === 'string' ? named.trim() : ''
 })
 const service = createGameplayService()
 const publicContentService = createPublicContentService()
@@ -184,6 +186,9 @@ const resultReady = ref(false)
 const shareCopied = ref(false)
 const roomLinkCopied = ref(false)
 let roomLinkCopiedTimer: number | undefined
+const roomQRCanvas = ref<HTMLCanvasElement | null>(null)
+/** Whether a code is drawn, so the download is offered only when there is one to save. */
+const roomQRReady = ref(false)
 const hoveredVideoID = ref<number | null>(null)
 const leaseToken = ref('')
 const legacyLeaseToken = ref(0)
@@ -230,6 +235,30 @@ const hostedRoom = useHostedRoom(
   computed(() => snapshot.value?.game_serial || ''),
   computed(() => localeDefinition(locale.value).prefix),
 )
+/** The standings to show the host, best first. Empty until somebody joins. */
+const roomBoardRows = computed(() => boardRows(hostedRoom.board.value))
+
+/**
+ * Wagers on the pairing on screen, by element id, or null when the tally is about some
+ * other match.
+ *
+ * The guard is the point. The tally is polled and the host votes locally, so between a vote
+ * and the next read the counts still describe the match before this one — drawing them on
+ * the new pair would credit other people's wagers to the wrong candidates. Either order of
+ * the two ids is accepted: which one the room calls "first" is the server's business.
+ */
+const blackBoxVotes = computed<Map<number, number> | null>(() => {
+  const tally = hostedRoom.votes.value
+  const pair = currentElements.value
+  if (!tally || !pair) return null
+  const counts = new Map<number, number>([
+    [tally.first_candidate, tally.first_candidate_votes],
+    [tally.second_candidate, tally.second_candidate_votes],
+  ])
+  if (!counts.has(pair[0].id) || !counts.has(pair[1].id)) return null
+  return counts
+})
+
 const activeCount = computed(() => snapshot.value?.elements.filter((item) => !item.local_eliminated).length ?? 0)
 const roundTitleCount = computed(() => Math.max(
   2,
@@ -263,14 +292,14 @@ const hasPersonalResult = computed(() => personalResultItems.value.length > 0)
 const personalPodiumItems = computed(() => personalResultItems.value.slice(0, 3))
 const personalRestItems = computed(() => personalResultItems.value.slice(3))
 const rankingExportItems = computed<RankingExportItem[]>(() => personalResultItems.value.map((item) => ({
-	rank: item.rank,
-	title: item.element.title,
-	imageUrl: preferredGameImage(item.element),
+  rank: item.rank,
+  title: item.element.title,
+  imageUrl: preferredGameImage(item.element),
 })))
 const canContinueCurrentGame = computed(() => !rankOnly.value && snapshot.value?.status === 'playing')
 const restartDialogTitle = computed(() => canContinueCurrentGame.value ? t('gameRefreshPrompt') : t('gameNewRound'))
 const localChampionLabels = computed(() => {
-	if (serverResult.value?.items[0]) return [serverResult.value.items[0].element.title]
+  if (serverResult.value?.items[0]) return [serverResult.value.items[0].element.title]
   if (winner.value) return [winner.value.title]
   const archived = restoreSnapshot(localStorage.getItem(resultStorageKey.value), postSerial.value)
   const archivedWinner = archived ? champion(archived) : null
@@ -341,7 +370,7 @@ function onPreviewImageError(event: Event, option: PreviewOption): void {
 const historyChartRankLimit = 5
 
 const trendPoints = computed<RankHistoryPoint[]>(() => (
-	rankDetails.value?.history.all ?? []
+  rankDetails.value?.history.all ?? []
 ).filter((point) => positiveRank(point.rank) !== null))
 /**
  * The standing shown above the chart. The selected list row carries it already,
@@ -415,15 +444,15 @@ async function loadPost(): Promise<void> {
       if (signInRequired.value) return
     }
     if (rankOnly.value) {
-			if (resultGameSerial.value) {
-				resultTab.value = 'mine'
-				const archived = restoreSnapshot(localStorage.getItem(resultStorageKey.value), postSerial.value)
-				if (archived?.game_serial === resultGameSerial.value && archived.status === 'completed') snapshot.value = archived
-				void loadPersonalResultPage()
-			} else {
-				void syncArchivedResult()
-				void loadCommunityRanks(1)
-			}
+      if (resultGameSerial.value) {
+        resultTab.value = 'mine'
+        const archived = restoreSnapshot(localStorage.getItem(resultStorageKey.value), postSerial.value)
+        if (archived?.game_serial === resultGameSerial.value && archived.status === 'completed') snapshot.value = archived
+        void loadPersonalResultPage()
+      } else {
+        void syncArchivedResult()
+        void loadCommunityRanks(1)
+      }
       return
     }
     const saved = readSavedSnapshot()
@@ -433,17 +462,17 @@ async function loadPost(): Promise<void> {
       if (!saved.post_title) saved.post_title = definition.value.title
       snapshot.value = saved
       selectedCount.value = saved.selected_count
-			const autoResumeSerial = sessionStorage.getItem(autoResumeKey.value)
-			if (autoResumeSerial === saved.game_serial) {
-				sessionStorage.removeItem(autoResumeKey.value)
-				resumeSnapshot(saved)
-			} else {
-				if (autoResumeSerial) sessionStorage.removeItem(autoResumeKey.value)
-				entryDecisionPending.value = true
-				showSavedGameDecision = true
-			}
-		} else {
-			sessionStorage.removeItem(autoResumeKey.value)
+      const autoResumeSerial = sessionStorage.getItem(autoResumeKey.value)
+      if (autoResumeSerial === saved.game_serial) {
+        sessionStorage.removeItem(autoResumeKey.value)
+        resumeSnapshot(saved)
+      } else {
+        if (autoResumeSerial) sessionStorage.removeItem(autoResumeKey.value)
+        entryDecisionPending.value = true
+        showSavedGameDecision = true
+      }
+    } else {
+      sessionStorage.removeItem(autoResumeKey.value)
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return
@@ -499,6 +528,7 @@ onBeforeUnmount(() => {
   if (shareCopiedTimer) window.clearTimeout(shareCopiedTimer)
   if (trendLoaderTimer) window.clearTimeout(trendLoaderTimer)
   cancelRestartHold()
+  hostedRoom.stopWatching()
   closeImageViewer()
   stopAllCandidateMedia()
   releaseLease()
@@ -513,12 +543,12 @@ function t(key: MessageKey, values: Record<string, string | number> = {}): strin
 }
 
 function positiveRank(rank: number | null | undefined): number | null {
-	return typeof rank === 'number' && Number.isFinite(rank) && rank > 0 ? rank : null
+  return typeof rank === 'number' && Number.isFinite(rank) && rank > 0 ? rank : null
 }
 
 function rankLabel(rank: number | null | undefined): string {
-	const value = positiveRank(rank)
-	return value === null ? t('gameNoRankData') : `#${value}`
+  const value = positiveRank(rank)
+  return value === null ? t('gameNoRankData') : `#${value}`
 }
 
 /**
@@ -528,9 +558,9 @@ function rankLabel(rank: number | null | undefined): string {
  * width no matter how it actually did.
  */
 function winRateBarWidth(rate: string | null | undefined): string {
-	const value = Number.parseFloat(rate ?? '')
-	if (!Number.isFinite(value)) return '0%'
-	return `${Math.min(100, Math.max(0, value))}%`
+  const value = Number.parseFloat(rate ?? '')
+  if (!Number.isFinite(value)) return '0%'
+  return `${Math.min(100, Math.max(0, value))}%`
 }
 
 function resumeSnapshot(saved: LocalGameSnapshot): void {
@@ -725,53 +755,53 @@ function restoreRankingScrollPosition(position: RankingScrollPosition): void {
 async function prepareCompletedResult(): Promise<void> {
   const gameSerial = snapshot.value?.game_serial
   if (!gameSerial || snapshot.value?.status !== 'completed' || rankOnly.value) return
-	++resultPreparationVersion
+  ++resultPreparationVersion
   resultPreparing.value = true
   resultReady.value = false
-	// Keep the durable archive sync alive while this component is replaced. The
-	// result route can still render the local archive if the network is offline.
-	void syncArchivedResult()
-	await router.replace({
-		path: localizedPath(`/r/${encodeURIComponent(postSerial.value)}`, locale.value),
-		query: { g: gameSerial },
-	})
+  // Keep the durable archive sync alive while this component is replaced. The
+  // result route can still render the local archive if the network is offline.
+  void syncArchivedResult()
+  await router.replace({
+    path: localizedPath(`/r/${encodeURIComponent(postSerial.value)}`, locale.value),
+    query: { g: gameSerial },
+  })
 }
 
 async function loadPersonalResultPage(): Promise<void> {
-	const gameSerial = resultGameSerial.value
-	if (!gameSerial) return
-	const preparationVersion = ++resultPreparationVersion
-	resultPreparing.value = true
-	resultReady.value = false
-	await Promise.all([
-		new Promise<void>((resolve) => window.setTimeout(resolve, resultMinimumLoadingDuration)),
-		(async () => {
-			await syncArchivedResult()
-			try {
-				const result = await service.result(gameSerial)
-				if (result.post_serial !== postSerial.value || result.game_serial !== gameSerial) throw new Error('game result mismatch')
-				serverResult.value = result
-			} catch {
-				// The local archive remains authoritative when a final batch cannot be
-				// synchronized. Shared devices simply fall back to the public ranking.
-			}
-			await loadCommunityRanks(1)
-			const urls = Array.from(new Set([
-				...personalResultItems.value.map((item) => preferredGameImage(item.element)),
-				...communityRanks.value.items.slice(0, 8).map(preferredRankImage),
-			].filter((url): url is string => Boolean(url))))
-			await Promise.all(urls.map(preloadResultImage))
-		})(),
-	])
-	if (preparationVersion !== resultPreparationVersion || resultGameSerial.value !== gameSerial) return
-	resultPreparing.value = false
-	resultReady.value = true
+  const gameSerial = resultGameSerial.value
+  if (!gameSerial) return
+  const preparationVersion = ++resultPreparationVersion
+  resultPreparing.value = true
+  resultReady.value = false
+  await Promise.all([
+    new Promise<void>((resolve) => window.setTimeout(resolve, resultMinimumLoadingDuration)),
+    (async () => {
+      await syncArchivedResult()
+      try {
+        const result = await service.result(gameSerial)
+        if (result.post_serial !== postSerial.value || result.game_serial !== gameSerial) throw new Error('game result mismatch')
+        serverResult.value = result
+      } catch {
+        // The local archive remains authoritative when a final batch cannot be
+        // synchronized. Shared devices simply fall back to the public ranking.
+      }
+      await loadCommunityRanks(1)
+      const urls = Array.from(new Set([
+        ...personalResultItems.value.map((item) => preferredGameImage(item.element)),
+        ...communityRanks.value.items.slice(0, 8).map(preferredRankImage),
+      ].filter((url): url is string => Boolean(url))))
+      await Promise.all(urls.map(preloadResultImage))
+    })(),
+  ])
+  if (preparationVersion !== resultPreparationVersion || resultGameSerial.value !== gameSerial) return
+  resultPreparing.value = false
+  resultReady.value = true
 }
 
 function resultShareURL(): string {
-	const url = new URL(localizedPath(`/r/${encodeURIComponent(postSerial.value)}`, locale.value), window.location.origin)
-	url.searchParams.set('g', resultGameSerial.value || serverResult.value?.game_serial || snapshot.value?.game_serial || '')
-	return url.toString()
+  const url = new URL(localizedPath(`/r/${encodeURIComponent(postSerial.value)}`, locale.value), window.location.origin)
+  url.searchParams.set('g', resultGameSerial.value || serverResult.value?.game_serial || snapshot.value?.game_serial || '')
+  return url.toString()
 }
 
 /**
@@ -787,12 +817,13 @@ function resultShareURL(): string {
  * so the mode was settled when it was opened and re-asking would suggest otherwise.
  */
 function openMultiplayerDialog(): void {
-	multiplayerStep.value = hostedRoom.hosting.value ? 'invite' : 'mode'
-	if (!multiplayerDialog.value?.open) multiplayerDialog.value?.showModal()
+  multiplayerStep.value = hostedRoom.hosting.value ? 'invite' : 'mode'
+  if (!multiplayerDialog.value?.open) multiplayerDialog.value?.showModal()
+  if (multiplayerStep.value === 'invite') void renderRoomQRCode()
 }
 
 function closeMultiplayerDialog(): void {
-	multiplayerDialog.value?.close()
+  multiplayerDialog.value?.close()
 }
 
 /**
@@ -802,44 +833,81 @@ function closeMultiplayerDialog(): void {
  * card that was pressed, and an invite step with no link to show would be a dead end.
  */
 async function chooseGuessPreferenceMode(): Promise<void> {
-	await openGameRoom()
-	if (hostedRoom.hosting.value) multiplayerStep.value = 'invite'
+  await openGameRoom()
+  if (!hostedRoom.hosting.value) return
+  multiplayerStep.value = 'invite'
+  await renderRoomQRCode()
+}
+
+/**
+ * Draws the invite code, after the step it lives on has been rendered.
+ *
+ * A failure is left silent on purpose: the link is on screen as text next to the code and a
+ * copy button, so a missing QR image costs a phone user one paste and nothing else.
+ */
+async function renderRoomQRCode(): Promise<void> {
+  roomQRReady.value = false
+  await nextTick()
+  const canvas = roomQRCanvas.value
+  const url = hostedRoom.inviteURL.value
+  if (!canvas || !url) return
+  try {
+    await drawQRCode(canvas, url)
+    roomQRReady.value = true
+  } catch {
+    // Left unready: the canvas stays hidden and the link is still there to copy.
+  }
+}
+
+/** This candidate's share of the wagers, as a whole percent. */
+function blackBoxShare(elementId: number): number {
+  const counts = blackBoxVotes.value
+  if (!counts) return 0
+  const total = [...counts.values()].reduce((sum, value) => sum + value, 0)
+  if (total === 0) return 0
+  return Math.round(((counts.get(elementId) ?? 0) / total) * 100)
+}
+
+function saveRoomQRCode(): void {
+  const canvas = roomQRCanvas.value
+  if (!canvas || !roomQRReady.value) return
+  downloadQRCode(canvas, `2pick-room-${hostedRoom.serial.value || 'invite'}.png`)
 }
 
 async function openGameRoom(): Promise<void> {
-	const displayed = currentElements.value
-	await hostedRoom.open(displayed ? [displayed[0].id, displayed[1].id] : undefined)
+  const displayed = currentElements.value
+  await hostedRoom.open(displayed ? [displayed[0].id, displayed[1].id] : undefined)
 }
 
 async function copyRoomLink(): Promise<void> {
-	const url = hostedRoom.inviteURL.value
-	if (!url) return
+  const url = hostedRoom.inviteURL.value
+  if (!url) return
 
-	if (await shareOrCopyLink(url, definition.value?.title || '2Pick') !== 'copied') return
-	roomLinkCopied.value = true
-	if (roomLinkCopiedTimer) window.clearTimeout(roomLinkCopiedTimer)
-	roomLinkCopiedTimer = window.setTimeout(() => { roomLinkCopied.value = false }, 2_000)
+  if (await shareOrCopyLink(url, definition.value?.title || '2Pick') !== 'copied') return
+  roomLinkCopied.value = true
+  if (roomLinkCopiedTimer) window.clearTimeout(roomLinkCopiedTimer)
+  roomLinkCopiedTimer = window.setTimeout(() => { roomLinkCopied.value = false }, 2_000)
 }
 
 async function sharePersonalResult(): Promise<void> {
-	await shareOrCopyLink(resultShareURL(), definition.value?.title || '2Pick')
+  await shareOrCopyLink(resultShareURL(), definition.value?.title || '2Pick')
 }
 
 // Shares the /g/<serial> short URL rather than the localized route, so the link
 // stays short and resolves for a recipient in any language.
 function postShareURL(): string {
-	return new URL(`/g/${encodeURIComponent(postSerial.value)}`, window.location.origin).toString()
+  return new URL(`/g/${encodeURIComponent(postSerial.value)}`, window.location.origin).toString()
 }
 
 async function sharePost(): Promise<void> {
-	if (await shareOrCopyLink(postShareURL(), definition.value?.title || '2Pick') !== 'copied') return
-	shareCopied.value = true
-	if (shareCopiedTimer) window.clearTimeout(shareCopiedTimer)
-	shareCopiedTimer = window.setTimeout(() => { shareCopied.value = false }, 2_000)
+  if (await shareOrCopyLink(postShareURL(), definition.value?.title || '2Pick') !== 'copied') return
+  shareCopied.value = true
+  if (shareCopiedTimer) window.clearTimeout(shareCopiedTimer)
+  shareCopiedTimer = window.setTimeout(() => { shareCopied.value = false }, 2_000)
 }
 
 function openPersonalResultExport(): void {
-	rankingExportOpen.value = true
+  rankingExportOpen.value = true
 }
 
 function preloadResultImage(url: string): Promise<void> {
@@ -1110,10 +1178,10 @@ async function restartGame(): Promise<void> {
   resultPreparing.value = false
   resultReady.value = false
   closeRestartDialog()
-	if (rankOnly.value && snapshot.value?.game_serial) {
-		sessionStorage.setItem(autoResumeKey.value, snapshot.value.game_serial)
-		await router.replace({ path: localizedPath(`/g/${encodeURIComponent(postSerial.value)}`, locale.value) })
-	}
+  if (rankOnly.value && snapshot.value?.game_serial) {
+    sessionStorage.setItem(autoResumeKey.value, snapshot.value.game_serial)
+    await router.replace({ path: localizedPath(`/g/${encodeURIComponent(postSerial.value)}`, locale.value) })
+  }
 }
 
 function takeOver(): void {
@@ -1661,7 +1729,7 @@ function preferredRankImage(report: RankReport): string | null {
         </div>
       </header>
 
-      <div class="game-layout">
+      <div class="game-layout" :class="{ 'has-room': hostedRoom.hosting.value }">
         <div class="game-arena" :class="{ disabled: readOnly }">
           <div
             v-for="(element, index) in visibleElements"
@@ -1705,6 +1773,12 @@ function preferredRankImage(report: RankReport): string | null {
                 <div v-else class="game-media-fallback">{{ index + 1 }}</div>
               </div>
               <h2>{{ element.title }}</h2>
+              <!-- The black box: what the room has wagered on this pairing. The host's
+                   own screen only — participants see the counts once they have bet. -->
+              <p v-if="hostedRoom.blackBox.value" class="game-candidate-bets">
+                <b>{{ blackBoxVotes ? blackBoxVotes.get(element.id) ?? 0 : '—' }}</b>
+                <span v-if="blackBoxVotes">{{ blackBoxShare(element.id) }}%</span>
+              </p>
               <button
                 class="game-vote-button"
                 type="button"
@@ -1751,7 +1825,57 @@ function preferredRankImage(report: RankReport): string | null {
           </ol>
         </aside>
 
-        <aside class="game-ad-slot" :aria-label="t('advertisement')">
+        <!-- The host's window into their own room. They never enter it — this is how they
+             see who is in there and how the standings are moving while they set matchups. -->
+        <aside v-if="hostedRoom.hosting.value" class="game-room-panel">
+          <div class="game-room-panel-head">
+            <h2>{{ t('gameRoom') }}</h2>
+            <!-- Honest about all three states: a room on its poll is working, just not
+                 instant, and saying so beats implying it is broken. -->
+            <p class="game-room-live" :data-state="hostedRoom.live.value">
+              <span class="game-room-live-dot" aria-hidden="true"></span>
+              {{ t(hostedRoom.live.value === 'connected' ? 'roomLive' : 'roomPolling') }}
+            </p>
+          </div>
+
+          <p class="game-room-players">
+            <span>{{ t('roomPlayers') }}</span>
+            <b>{{ hostedRoom.players.value }}</b>
+          </p>
+
+          <div class="game-room-panel-actions">
+            <button
+              type="button"
+              class="game-room-panel-button"
+              :class="{ 'is-on': hostedRoom.blackBox.value }"
+              :aria-pressed="hostedRoom.blackBox.value"
+              @click="hostedRoom.toggleBlackBox()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 8h16v11H4zM4 8l2-3h12l2 3M12 5v14" />
+              </svg>
+              {{ t(hostedRoom.blackBox.value ? 'roomBlackBoxClose' : 'roomBlackBoxOpen') }}
+            </button>
+            <button type="button" class="game-room-panel-button" @click="openMultiplayerDialog">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
+              </svg>
+              {{ t('roomInviteShow') }}
+            </button>
+          </div>
+
+          <h3>{{ t('roomLeaderboard') }}</h3>
+          <ol v-if="roomBoardRows.length" class="game-room-board">
+            <li v-for="row in roomBoardRows" :key="row.user_id">
+              <span class="game-room-board-rank">{{ row.rank || '—' }}</span>
+              <span class="game-room-board-name">{{ row.name }}</span>
+              <span class="game-room-board-score">{{ row.score }}</span>
+            </li>
+          </ol>
+          <p v-else class="game-room-board-empty">{{ t('roomNoPlayers') }}</p>
+        </aside>
+
+        <aside v-else class="game-ad-slot" :aria-label="t('advertisement')">
           <div><span>AD</span></div>
         </aside>
       </div>
@@ -1813,19 +1937,19 @@ function preferredRankImage(report: RankReport): string | null {
           <p class="eyebrow">2PICK · RANKING</p>
           <h1>{{ definition.title }}</h1>
         </div>
-			<div class="game-public-ranking-actions">
-				<button v-if="hasPersonalResult" class="button button-quiet game-share-result" type="button" @click="sharePersonalResult">
-					{{ t('gameShareResult') }}
-				</button>
-				<button v-if="hasPersonalResult" class="button button-quiet game-export-result" type="button" @click="openPersonalResultExport">
-					{{ t('gameDownloadResult') }}
-				</button>
-				<RouterLink class="button button-primary" :to="localizedPath(`/g/${encodeURIComponent(postSerial)}`, locale)">
-					{{ t('gameStart') }}
-				</RouterLink>
-			</div>
+      <div class="game-public-ranking-actions">
+        <button v-if="hasPersonalResult" class="button button-quiet game-share-result" type="button" @click="sharePersonalResult">
+          {{ t('gameShareResult') }}
+        </button>
+        <button v-if="hasPersonalResult" class="button button-quiet game-export-result" type="button" @click="openPersonalResultExport">
+          {{ t('gameDownloadResult') }}
+        </button>
+        <RouterLink class="button button-primary" :to="localizedPath(`/g/${encodeURIComponent(postSerial)}`, locale)">
+          {{ t('gameStart') }}
+        </RouterLink>
+      </div>
       </header>
-		<div v-if="hasPersonalResult" class="game-result-tabs" role="tablist" aria-label="Ranking">
+    <div v-if="hasPersonalResult" class="game-result-tabs" role="tablist" aria-label="Ranking">
           <button type="button" role="tab" :aria-selected="resultTab === 'mine'" :class="{ active: resultTab === 'mine' }" @click="selectResultTab('mine')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
             {{ t('gameMyRanking') }}
@@ -1835,56 +1959,56 @@ function preferredRankImage(report: RankReport): string | null {
             {{ t('gameCommunityRanking') }}
           </button>
       </div>
-		<div v-if="hasPersonalResult && resultTab === 'mine'" class="game-personal-ranking">
-			<div v-if="personalPodiumItems.length" class="game-personal-podium">
-				<article v-for="item in personalPodiumItems" :key="item.element.id" class="game-personal-hero">
-					<span class="game-personal-rank">{{ item.rank }}</span>
-					<button
-						class="game-personal-media"
-						type="button"
-						:disabled="!fullSizeImage(item.element)"
-						:aria-label="t('gameZoomRankImage', { title: item.element.title })"
-						@click="openRankMedia(item.rank, item.element)"
-					>
-						<div
-							v-if="imageBackdrop(preferredGameImage(item.element))"
-							class="game-personal-backdrop"
-							:style="{ backgroundImage: imageBackdrop(preferredGameImage(item.element)) || '' }"
-							aria-hidden="true"
-						></div>
-						<img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
-					</button>
-					<div class="game-personal-meta">
-						<strong>{{ item.element.title }}</strong>
-						<small>{{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
-					</div>
-				</article>
-			</div>
-			<ol v-if="personalRestItems.length" class="game-personal-rest">
-				<li v-for="item in personalRestItems" :key="item.element.id">
-					<span>{{ item.rank }}</span>
-					<button
-						class="game-personal-media"
-						type="button"
-						:disabled="!fullSizeImage(item.element)"
-						:aria-label="t('gameZoomRankImage', { title: item.element.title })"
-						@click="openRankMedia(item.rank, item.element)"
-					>
-						<div
-							v-if="imageBackdrop(preferredGameImage(item.element))"
-							class="game-personal-backdrop"
-							:style="{ backgroundImage: imageBackdrop(preferredGameImage(item.element)) || '' }"
-							aria-hidden="true"
-						></div>
-						<img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
-					</button>
-					<div>
-						<strong>{{ item.element.title }}</strong>
-						<small>{{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
-					</div>
-				</li>
-			</ol>
-		</div>
+    <div v-if="hasPersonalResult && resultTab === 'mine'" class="game-personal-ranking">
+      <div v-if="personalPodiumItems.length" class="game-personal-podium">
+        <article v-for="item in personalPodiumItems" :key="item.element.id" class="game-personal-hero">
+          <span class="game-personal-rank">{{ item.rank }}</span>
+          <button
+            class="game-personal-media"
+            type="button"
+            :disabled="!fullSizeImage(item.element)"
+            :aria-label="t('gameZoomRankImage', { title: item.element.title })"
+            @click="openRankMedia(item.rank, item.element)"
+          >
+            <div
+              v-if="imageBackdrop(preferredGameImage(item.element))"
+              class="game-personal-backdrop"
+              :style="{ backgroundImage: imageBackdrop(preferredGameImage(item.element)) || '' }"
+              aria-hidden="true"
+            ></div>
+            <img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
+          </button>
+          <div class="game-personal-meta">
+            <strong>{{ item.element.title }}</strong>
+            <small>{{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
+          </div>
+        </article>
+      </div>
+      <ol v-if="personalRestItems.length" class="game-personal-rest">
+        <li v-for="item in personalRestItems" :key="item.element.id">
+          <span>{{ item.rank }}</span>
+          <button
+            class="game-personal-media"
+            type="button"
+            :disabled="!fullSizeImage(item.element)"
+            :aria-label="t('gameZoomRankImage', { title: item.element.title })"
+            @click="openRankMedia(item.rank, item.element)"
+          >
+            <div
+              v-if="imageBackdrop(preferredGameImage(item.element))"
+              class="game-personal-backdrop"
+              :style="{ backgroundImage: imageBackdrop(preferredGameImage(item.element)) || '' }"
+              aria-hidden="true"
+            ></div>
+            <img v-if="preferredGameImage(item.element)" :src="preferredGameImage(item.element) || ''" :alt="item.element.title" loading="lazy">
+          </button>
+          <div>
+            <strong>{{ item.element.title }}</strong>
+            <small>{{ t('gameGlobalRank', { rank: rankLabel(item.global_rank) }) }}</small>
+          </div>
+        </li>
+      </ol>
+    </div>
       <div v-else class="game-community-ranking" role="tabpanel">
           <p v-if="communityLoading && !communityRanks.items.length" class="game-ranking-state">{{ t('gameCommunityLoading') }}</p>
           <div v-else-if="communityError && !communityRanks.items.length" class="game-ranking-state">
@@ -2122,13 +2246,13 @@ function preferredRankImage(report: RankReport): string | null {
     />
   </section>
 
-	<RankingExportDialog
-		:open="rankingExportOpen"
-		:title="definition?.title || '2Pick'"
-		:items="rankingExportItems"
-		:locale="locale"
-		@close="rankingExportOpen = false"
-	/>
+  <RankingExportDialog
+    :open="rankingExportOpen"
+    :title="definition?.title || '2Pick'"
+    :items="rankingExportItems"
+    :locale="locale"
+    @close="rankingExportOpen = false"
+  />
 
   <!-- Multiplayer. Two steps: pick the mode, then hand out the link. The host stays on
        their own game throughout — there is nothing for them inside the room, and walking
@@ -2190,12 +2314,31 @@ function preferredRankImage(report: RankReport): string | null {
       <section v-else class="game-room-invite">
         <p class="game-room-invite-host">{{ t('roomHostYou') }}</p>
         <p class="game-room-invite-hint">{{ t('roomInviteHint') }}</p>
+        <!-- Hidden until a code is drawn, so a failed encode leaves no empty white square
+             behind. The link below is the fallback either way. -->
+        <canvas
+          v-show="roomQRReady"
+          ref="roomQRCanvas"
+          class="game-room-invite-qr"
+          :aria-label="t('roomInviteTitle')"
+          role="img"
+        ></canvas>
         <!-- The link is shown as text as well as copied: clipboard access is refused often
              enough that a copy button alone leaves people stuck. -->
         <p class="game-room-invite-url">{{ hostedRoom.inviteURL.value }}</p>
-        <button class="button button-primary" type="button" @click="copyRoomLink">
-          {{ roomLinkCopied ? t('roomInviteCopied') : t('roomInviteCopy') }}
-        </button>
+        <div class="game-room-invite-actions">
+          <button class="button button-primary" type="button" @click="copyRoomLink">
+            {{ roomLinkCopied ? t('roomInviteCopied') : t('roomInviteCopy') }}
+          </button>
+          <button
+            v-if="roomQRReady"
+            class="button button-ghost"
+            type="button"
+            @click="saveRoomQRCode"
+          >
+            {{ t('roomQrDownload') }}
+          </button>
+        </div>
       </section>
     </form>
   </dialog>
@@ -2210,18 +2353,18 @@ function preferredRankImage(report: RankReport): string | null {
       <header>
         <div>
           <p class="eyebrow">2PICK · GAME</p>
-			  <h2 id="game-restart-title">{{ restartDialogTitle }}</h2>
+        <h2 id="game-restart-title">{{ restartDialogTitle }}</h2>
         </div>
         <button type="button" :aria-label="t('close')" @click="dismissRestartDialog">×</button>
       </header>
 
-		<button v-if="canContinueCurrentGame" class="game-continue-option" type="button" @click="continueGame">
+    <button v-if="canContinueCurrentGame" class="game-continue-option" type="button" @click="continueGame">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" /></svg>
         <span><strong>{{ t('gameContinue') }}</strong><small>{{ snapshot?.post_title }}</small></span>
       </button>
 
-		<RouterLink
-			v-if="canContinueCurrentGame"
+    <RouterLink
+      v-if="canContinueCurrentGame"
         class="game-dialog-ranking-link"
         :to="localizedPath(`/r/${encodeURIComponent(postSerial)}`, locale)"
         @click="closeRestartDialog"
@@ -2245,7 +2388,7 @@ function preferredRankImage(report: RankReport): string | null {
         <small v-if="canContinueCurrentGame" id="game-restart-hold-hint">{{ t('gameHoldRestartHint') }}</small>
         <p v-if="restartError" class="game-restart-error" role="alert">{{ t('gameRestartError') }}</p>
         <button
-			v-if="canContinueCurrentGame"
+      v-if="canContinueCurrentGame"
           class="button button-primary game-restart-confirm"
           :class="{ 'is-holding': restartHoldActive }"
           type="button"
@@ -2261,13 +2404,13 @@ function preferredRankImage(report: RankReport): string | null {
           @blur="cancelRestartHold"
           @contextmenu.prevent
         ><span>{{ creating ? t('gameCreating') : t('gameHoldRestart') }}</span></button>
-		<button
-			v-else
-			class="button button-primary game-restart-confirm"
-			type="button"
-			:disabled="creating || syncing"
-			@click="restartGame"
-		><span>{{ creating ? t('gameCreating') : t('gameNewRound') }}</span></button>
+    <button
+      v-else
+      class="button button-primary game-restart-confirm"
+      type="button"
+      :disabled="creating || syncing"
+      @click="restartGame"
+    ><span>{{ creating ? t('gameCreating') : t('gameNewRound') }}</span></button>
       </section>
     </form>
   </dialog>

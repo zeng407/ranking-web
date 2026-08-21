@@ -3188,7 +3188,8 @@ the transparent edge blur leaves behind.
 .game-page.is-playing .game-candidate,
 .game-page.is-playing .game-history,
 .game-page.is-playing .game-ad-slot,
-.game-page.is-playing .game-ad-slot > div {
+.game-page.is-playing .game-ad-slot > div,
+.game-page.is-playing .game-room-panel {
   height: 100%;
 }
 
@@ -3495,6 +3496,23 @@ button.game-sync-indicator {
   word-break: break-all;
 }
 
+/* Scanned off a phone camera, so it stays a fixed comfortable size rather than
+   filling the dialog. Centred with the link it encodes. */
+.game-room-invite-qr {
+  width: 11rem;
+  height: 11rem;
+  align-self: center;
+  justify-self: center;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.game-room-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .game-room-invite-error {
   margin: 0.75rem 0 0;
   font-size: 0.85rem;
@@ -3522,6 +3540,12 @@ button.game-sync-indicator {
   grid-template-columns: clamp(13rem, 15vw, 15rem) minmax(0, 1fr) clamp(8.5rem, 10vw, 10rem);
   align-items: stretch;
   gap: 1rem;
+}
+
+/* While hosting, the room panel takes the ad rail's place and needs more of it:
+   names and scores do not fit in a column sized for a banner. */
+.game-layout.has-room {
+  grid-template-columns: clamp(13rem, 15vw, 15rem) minmax(0, 1fr) clamp(12rem, 16vw, 16rem);
 }
 
 .game-arena {
@@ -3896,6 +3920,189 @@ button.game-sync-indicator {
   height: 5rem;
   opacity: 0.62;
   filter: grayscale(0.85);
+}
+
+/* The host's view of their own room: who is in it and how the standings are moving.
+   Stands in the ad rail's grid area, because a host watching their room has no use
+   for one and the two are never both on screen. */
+.game-room-panel {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  grid-area: ad;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+}
+
+.game-room-panel-head {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.game-room-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.game-room-panel h3 {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.game-room-live {
+  display: flex;
+  margin: 0;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-soft);
+  font-size: 0.75rem;
+}
+
+.game-room-live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+/* Only a live connection pulses. A room on its poll is working, just not instant,
+   and a steady dot says that without claiming more than it should. */
+.game-room-live[data-state='connected'] .game-room-live-dot {
+  background: #16a34a;
+  animation: game-room-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes game-room-live-pulse {
+  50% { opacity: 0.45; }
+}
+
+.game-room-players {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.8rem;
+  background: var(--surface-strong);
+  font-size: 0.8rem;
+}
+
+.game-room-players b {
+  font-size: 1.15rem;
+}
+
+.game-room-panel-actions {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.game-room-panel-button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--text);
+  background: var(--surface-strong);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.game-room-panel-button:hover {
+  border-color: var(--border-strong);
+}
+
+.game-room-panel-button.is-on {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent, #2563eb) 14%, var(--surface-strong));
+}
+
+.game-room-panel-button svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.game-room-board {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  align-content: start;
+  gap: 0.3rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.game-room-board li {
+  display: grid;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.6rem;
+  background: var(--surface-strong);
+  font-size: 0.8rem;
+  grid-template-columns: 1.35rem minmax(0, 1fr) auto;
+}
+
+.game-room-board-rank {
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-room-board-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-room-board-score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-room-board-empty {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+/* What the room has wagered on this option, on the host's screen only. */
+.game-candidate-bets {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 0.9rem 0.35rem;
+  color: color-mix(in srgb, var(--vote-color) 80%, var(--text));
+}
+
+.game-candidate-bets b {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-candidate-bets span {
+  color: var(--text-soft);
+  font-size: 0.85rem;
 }
 
 .game-ad-slot {
@@ -5447,6 +5654,39 @@ button.game-sync-indicator {
     grid-template-columns: clamp(12rem, 18vw, 14rem) minmax(0, 1fr);
   }
 
+  /* The ad rail is dropped at this width; the room panel is not, because a host
+     with no view of their room cannot run it. It spans below instead. */
+  .game-layout.has-room {
+    grid-template-areas:
+      "history arena"
+      "ad ad";
+    grid-template-columns: clamp(12rem, 18vw, 14rem) minmax(0, 1fr);
+  }
+
+  .game-page.is-playing .game-room-panel {
+    height: auto;
+  }
+
+  /* Spanning the width, it reads as a bar rather than a tall column: the head, the
+     count and the buttons sit beside the standings instead of above them, and it
+     takes only the height it needs. */
+  .game-layout.has-room .game-room-panel {
+    align-self: start;
+    align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    grid-template-rows: none;
+  }
+
+  .game-layout.has-room .game-room-panel h3 {
+    grid-column: 1 / -1;
+  }
+
+  .game-layout.has-room .game-room-board,
+  .game-layout.has-room .game-room-board-empty {
+    grid-column: 1 / -1;
+    max-height: 12rem;
+  }
+
   .game-ad-slot {
     display: none;
   }
@@ -5500,6 +5740,14 @@ button.game-sync-indicator {
   .game-layout {
     grid-template-areas:
       "arena"
+      "history";
+    grid-template-columns: 1fr;
+  }
+
+  .game-layout.has-room {
+    grid-template-areas:
+      "arena"
+      "ad"
       "history";
     grid-template-columns: 1fr;
   }

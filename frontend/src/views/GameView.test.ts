@@ -56,12 +56,30 @@ vi.mock('viewerjs', () => ({
 
 const roomMocks = vi.hoisted(() => ({
 	open: vi.fn(),
+	leaderboard: vi.fn(),
+	votes: vi.fn(),
 }))
 
 vi.mock('../services/gameRoom', async (importOriginal) => ({
 	...await importOriginal<typeof import('../services/gameRoom')>(),
-	getGameRoomService: () => ({ open: roomMocks.open }),
+	getGameRoomService: () => ({
+		open: roomMocks.open,
+		leaderboard: roomMocks.leaderboard,
+		votes: roomMocks.votes,
+	}),
 }))
+
+/*
+The encoder is mocked: it draws to a real canvas, and happy-dom has no 2d context. What
+the view owes it is the invite URL, and what it owes the host is a download of whatever
+was drawn — both of which these mocks record.
+*/
+const qrMocks = vi.hoisted(() => ({
+	drawQRCode: vi.fn(),
+	downloadQRCode: vi.fn(),
+}))
+
+vi.mock('../lib/qrcode', () => qrMocks)
 
 const exportMocks = vi.hoisted(() => ({
 	createPersonalRankingExport: vi.fn(),
@@ -107,6 +125,13 @@ beforeEach(() => {
 	Reflect.deleteProperty(navigator, 'userAgentData')
 	roomMocks.open.mockReset()
 	roomMocks.open.mockResolvedValue({ serial: 'room-1' })
+	roomMocks.leaderboard.mockReset()
+	roomMocks.leaderboard.mockResolvedValue({ total_users: 0, top_10: [], bottom_10: [] })
+	roomMocks.votes.mockReset()
+	roomMocks.votes.mockResolvedValue(null)
+	qrMocks.drawQRCode.mockReset()
+	qrMocks.drawQRCode.mockResolvedValue(undefined)
+	qrMocks.downloadQRCode.mockReset()
 	localStorage.clear()
 })
 
@@ -882,11 +907,115 @@ describe('GameView restart regression', () => {
     expect(wrapper.get('.game-room-invite-url').text()).toContain('/zh-tw/room/room-1')
     expect(wrapper.get('.game-multiplayer-dialog').text()).not.toContain('進入房間')
 
+    // The same link as a code, for the phone standing next to the host.
+    expect(qrMocks.drawQRCode).toHaveBeenCalledWith(
+      wrapper.get('.game-room-invite-qr').element,
+      expect.stringContaining('/zh-tw/room/room-1'),
+    )
+    await wrapper.get('.game-room-invite-actions button:nth-child(2)').trigger('click')
+    expect(qrMocks.downloadQRCode).toHaveBeenCalledWith(
+      wrapper.get('.game-room-invite-qr').element, '2pick-room-room-1.png')
+
     // Desktop jsdom: no share sheet, so the link goes straight to the clipboard.
     await wrapper.get('.game-room-invite button').trigger('click')
     await flushPromises()
     expect(clipboard).toHaveBeenCalledWith(expect.stringContaining('/zh-tw/room/room-1'))
     expect(wrapper.get('.game-room-invite button').text()).toBe('已複製')
+
+    wrapper.unmount()
+  })
+
+  it('offers no download when the code could not be drawn', async () => {
+    qrMocks.drawQRCode.mockRejectedValue(new Error('no canvas'))
+    const wrapper = await mountStartedGame()
+
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await flushPromises()
+
+    // The link is still there to copy; only the code and its download are gone.
+    expect(wrapper.get('.game-room-invite-url').text()).toContain('/zh-tw/room/room-1')
+    expect(wrapper.findAll('.game-room-invite-actions button')).toHaveLength(1)
+
+    wrapper.unmount()
+  })
+
+  it('shows the host their own room without joining it', async () => {
+    roomMocks.leaderboard.mockResolvedValue({
+      total_users: 3,
+      top_10: [
+        { user_id: 7, name: '快樂的貓', score: 9, rank: 1 },
+        { user_id: 8, name: '生氣的狗', score: 4, rank: 2 },
+      ],
+      bottom_10: [],
+    })
+    const wrapper = await mountStartedGame()
+    expect(wrapper.find('.game-room-panel').exists()).toBe(false)
+    expect(wrapper.find('.game-ad-slot').exists()).toBe(true)
+
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await flushPromises()
+
+    // The panel stands where the ad rail was: a host watching their room has no use for one.
+    const panel = wrapper.get('.game-room-panel')
+    expect(wrapper.find('.game-ad-slot').exists()).toBe(false)
+    expect(panel.get('.game-room-players').text()).toContain('3')
+    expect(panel.get('.game-room-board').text()).toContain('快樂的貓')
+    expect(panel.get('.game-room-board').text()).toContain('生氣的狗')
+
+    // Reading the room must never make the host a player in it.
+    expect(serviceMocks.resume).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('opens the black box on the pairing the host has up, and only on that one', async () => {
+    roomMocks.votes.mockResolvedValue({
+      first_candidate: 1,
+      second_candidate: 2,
+      first_candidate_votes: 3,
+      second_candidate_votes: 1,
+      remain_elements: 2,
+      total_votes: 4,
+      current_round: 1,
+      of_round: 1,
+    })
+    const wrapper = await mountStartedGame()
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await flushPromises()
+
+    // Closed by default: the tally is not even read until it is asked for.
+    expect(wrapper.find('.game-candidate-bets').exists()).toBe(false)
+    expect(roomMocks.votes).not.toHaveBeenCalled()
+
+    await wrapper.get('.game-room-panel-actions button').trigger('click')
+    await flushPromises()
+
+    const bets = wrapper.findAll('.game-candidate-bets')
+    expect(bets).toHaveLength(2)
+    expect(bets.map((bet) => bet.text())).toEqual([
+      expect.stringContaining('75%'),
+      expect.stringContaining('25%'),
+    ])
+    expect(bets[0]?.text()).toContain('3')
+
+    // A tally about a pairing that is no longer up says nothing about this one.
+    roomMocks.votes.mockResolvedValue({
+      first_candidate: 41,
+      second_candidate: 42,
+      first_candidate_votes: 9,
+      second_candidate_votes: 9,
+      remain_elements: 2,
+      total_votes: 18,
+      current_round: 2,
+      of_round: 2,
+    })
+    await wrapper.get('.game-room-panel-actions button').trigger('click')
+    await wrapper.get('.game-room-panel-actions button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('.game-candidate-bets').text()).not.toContain('9')
 
     wrapper.unmount()
   })

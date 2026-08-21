@@ -331,6 +331,8 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("/api/v1/game-rooms/{serial}", method(http.MethodGet, server.optionalAuth(server.gameRoomState)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/leaderboard",
 		method(http.MethodGet, server.optionalAuth(server.gameRoomLeaderboard)))
+	mux.HandleFunc("/api/v1/game-rooms/{serial}/votes",
+		method(http.MethodGet, server.optionalAuth(server.gameRoomVotes)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/bets", method(http.MethodPost, server.optionalAuth(server.placeGameRoomBet)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/player", method(http.MethodPut, server.optionalAuth(server.renameGameRoomPlayer)))
 	mux.HandleFunc("/api/v1/posts/{serial}/comments", server.optionalAuth(server.commentsCollection))

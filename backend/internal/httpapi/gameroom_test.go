@@ -531,6 +531,67 @@ func TestTheLeaderboardPollEndpointAnswersTheBoard(t *testing.T) {
 	}
 }
 
+func TestTheVotesEndpointAnswersTheTallyWithoutJoining(t *testing.T) {
+	fake := newFakeGameRoom()
+	fake.votes = gameroom.VoteTally{
+		FirstCandidate: 11, SecondCandidate: 12,
+		FirstCandidateVotes: 4, SecondCandidateVote: 2,
+		RemainElements: 8, TotalVotes: 6, CurrentRound: 3, OfRound: 4,
+	}
+	fake.votesFound = true
+	response := httptest.NewRecorder()
+	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet,
+		"/api/v1/game-rooms/abcdefgh/votes?game_serial=game-serial", nil))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	var body struct {
+		Votes *gameroom.VoteTally `json:"votes"`
+	}
+	decodeData(t, response, &body)
+	if body.Votes == nil {
+		t.Fatal("votes = null, want the tally")
+	}
+	if body.Votes.TotalVotes != fake.votes.TotalVotes {
+		t.Errorf("total_votes = %d, want %d", body.Votes.TotalVotes, fake.votes.TotalVotes)
+	}
+	// The host reads their own room with this. Joining would put them on its leaderboard.
+	if fake.joinCalls != 0 {
+		t.Error("the votes endpoint created a participant")
+	}
+}
+
+func TestTheVotesEndpointAnswersNullBetweenRounds(t *testing.T) {
+	fake := newFakeGameRoom()
+	fake.votesFound = false
+	response := httptest.NewRecorder()
+	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet,
+		"/api/v1/game-rooms/abcdefgh/votes", nil))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	var body struct {
+		Votes *gameroom.VoteTally `json:"votes"`
+	}
+	decodeData(t, response, &body)
+	if body.Votes != nil {
+		t.Errorf("votes = %+v, want null", body.Votes)
+	}
+}
+
+func TestTheVotesEndpointRejectsAMismatchedGameSerial(t *testing.T) {
+	fake := newFakeGameRoom()
+	response := httptest.NewRecorder()
+	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet,
+		"/api/v1/game-rooms/abcdefgh/votes?game_serial=another-game", nil))
+
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403; body = %s", response.Code, response.Body.String())
+	}
+}
+
 func TestGameRoomEndpointsAnswer503WhenUnconfigured(t *testing.T) {
 	handler := New(Options{
 		Environment: "test",
@@ -539,6 +600,7 @@ func TestGameRoomEndpointsAnswer503WhenUnconfigured(t *testing.T) {
 	for _, target := range []string{
 		"/api/v1/game-rooms/abcdefgh?anonymous_id=browser-a",
 		"/api/v1/game-rooms/abcdefgh/leaderboard",
+		"/api/v1/game-rooms/abcdefgh/votes",
 	} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, target, nil))

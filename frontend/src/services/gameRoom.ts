@@ -120,6 +120,25 @@ export function createGameRoomService(client: APIClient = getAPIClient()) {
     },
 
     /**
+     * The tally for the pairing on screen, without joining the room.
+     *
+     * This is what a host's black box reads. state() would also carry it, but that call
+     * joins: it would put the host on the leaderboard of their own room.
+     *
+     * Null means no pairing is in progress, which is a normal answer between rounds.
+     */
+    async votes(
+      roomSerial: string, gameSerial?: string, signal?: AbortSignal,
+    ): Promise<RoomVotes | null> {
+      const query = new URLSearchParams()
+      if (gameSerial) query.set('game_serial', gameSerial)
+      const suffix = query.size > 0 ? `?${query}` : ''
+      const body = await client.get<{ votes: RoomVotes | null }>(
+        `/game-rooms/${encodeURIComponent(roomSerial)}/votes${suffix}`, signal)
+      return body.votes
+    },
+
+    /**
      * The standings on their own.
      *
      * Used by the room's slow poll, which runs even when the websocket is connected: a

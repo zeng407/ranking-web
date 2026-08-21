@@ -111,6 +111,13 @@ type gameRoomPlayer struct {
 	Combo        int    `json:"combo"`
 }
 
+// gameRoomVotesResponse wraps the tally rather than returning it bare, because "no
+// pairing in progress" is a normal answer and a wrapper carries it as null without the
+// caller having to tell an empty tally from a real one full of zeroes.
+type gameRoomVotesResponse struct {
+	Votes *gameroom.VoteTally `json:"votes"`
+}
+
 type gameRoomBet struct {
 	WinnerID       int64 `json:"winner_id"`
 	LoserID        int64 `json:"loser_id"`
@@ -191,11 +198,7 @@ func (a *api) gameRoomState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// game_serial is optional here and checked when supplied: a client holding a stale
-	// link would otherwise silently join a different game's room.
-	if requested := strings.TrimSpace(r.URL.Query().Get("game_serial")); requested != "" && requested != gameSerial {
-		writeError(w, r, http.StatusForbidden, "room_game_mismatch",
-			"the room does not belong to that game")
+	if !a.roomBelongsToRequestedGame(w, r, gameSerial) {
 		return
 	}
 
@@ -265,6 +268,36 @@ func (a *api) gameRoomLeaderboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writePrivateJSON(w, r, http.StatusOK, board)
+}
+
+// gameRoomVotes is the tally for the pairing on screen, and nothing else.
+//
+// This is what the host's black box reads. It is separate from gameRoomState because that
+// call joins: it creates a participant row for its caller, which is right for someone who
+// came to bet and wrong for the host, who would appear on the leaderboard of their own
+// room. Read-only, so it needs no anonymous id at all.
+func (a *api) gameRoomVotes(w http.ResponseWriter, r *http.Request) {
+	if !a.requireGameRoom(w, r) {
+		return
+	}
+	room, gameSerial, ok := a.resolveRoom(w, r)
+	if !ok {
+		return
+	}
+	if !a.roomBelongsToRequestedGame(w, r, gameSerial) {
+		return
+	}
+
+	response := gameRoomVotesResponse{}
+	votes, present, err := a.gameRoomReader.CurrentVotes(r.Context(), room.ID, gameSerial)
+	if err != nil {
+		a.writeGameRoomError(w, r, err)
+		return
+	}
+	if present {
+		response.Votes = &votes
+	}
+	writePrivateJSON(w, r, http.StatusOK, response)
 }
 
 // placeGameRoomBet records a wager on the round in progress.
@@ -382,6 +415,20 @@ func (a *api) resolveRoom(w http.ResponseWriter, r *http.Request) (gameroom.Room
 		return gameroom.Room{}, "", false
 	}
 	return room, gameSerial, true
+}
+
+// roomBelongsToRequestedGame checks the caller's idea of which game the room is for.
+//
+// game_serial is optional and only checked when supplied: a client holding a stale link
+// would otherwise silently act on a different game's room.
+func (a *api) roomBelongsToRequestedGame(w http.ResponseWriter, r *http.Request, gameSerial string) bool {
+	requested := strings.TrimSpace(r.URL.Query().Get("game_serial"))
+	if requested != "" && requested != gameSerial {
+		writeError(w, r, http.StatusForbidden, "room_game_mismatch",
+			"the room does not belong to that game")
+		return false
+	}
+	return true
 }
 
 // optionalUserID reads the caller's account when they happen to be signed in.

@@ -4,22 +4,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { APIError } from '../lib/api'
+import { POLL_INTERVAL_MS } from './useGameRoom'
 import { onScreenPairForBatch, useHostedRoom } from './useHostedRoom'
-import type { GameRoomService } from '../services/gameRoom'
+import type { GameRoomService, Leaderboard, RoomVotes } from '../services/gameRoom'
 
 function fakeService(overrides: Partial<GameRoomService> = {}): GameRoomService {
   return {
     open: vi.fn().mockResolvedValue({ serial: 'abcdefgh', game_serial: 'game-1' }),
     state: vi.fn(),
-    leaderboard: vi.fn(),
+    leaderboard: vi.fn().mockResolvedValue(board(0)),
+    votes: vi.fn().mockResolvedValue(null),
     bet: vi.fn(),
     rename: vi.fn(),
     ...overrides,
   } as unknown as GameRoomService
 }
 
+function board(total: number): Leaderboard {
+  return { total_users: total, top_10: [], bottom_10: [] }
+}
+
 function apiError(status: number): APIError {
   return new APIError(status, { error: { code: 'x', message: 'no' } } as never)
+}
+
+/** Lets the watch callback and the first reads settle. */
+function flush(): Promise<void> {
+  return new Promise((resolve) => { setTimeout(resolve, 0) })
 }
 
 describe('useHostedRoom', () => {
@@ -100,6 +111,113 @@ describe('useHostedRoom', () => {
 
     await room.open()
     expect(service.open).not.toHaveBeenCalled()
+  })
+
+  it('follows the room it opened', async () => {
+    const service = fakeService({ leaderboard: vi.fn().mockResolvedValue(board(4)) })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+
+    await room.open()
+    await flush()
+
+    expect(service.leaderboard).toHaveBeenCalledWith('abcdefgh')
+    expect(room.players.value).toBe(4)
+    room.stopWatching()
+  })
+
+  /*
+  The game serial is not known at setup: it arrives with the snapshot. Reading the stored
+  room only once would leave a host who reloaded mid-game with no room on screen — and the
+  button would then re-open the same room, because opening is idempotent, hiding the fault.
+  */
+  it('picks up a stored room when the game serial arrives', async () => {
+    await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).open()
+
+    const serial = ref('')
+    const service = fakeService({ leaderboard: vi.fn().mockResolvedValue(board(2)) })
+    const room = useHostedRoom(serial, ref('zh-tw'), service)
+    expect(room.hosting.value).toBe(false)
+
+    serial.value = 'game-1'
+    await flush()
+
+    expect(room.serial.value).toBe('abcdefgh')
+    expect(room.players.value).toBe(2)
+    room.stopWatching()
+  })
+
+  it('reads the tally only while the black box is open', async () => {
+    const tally: RoomVotes = {
+      first_candidate: 11,
+      second_candidate: 22,
+      first_candidate_votes: 3,
+      second_candidate_votes: 1,
+      remain_elements: 2,
+      total_votes: 4,
+      current_round: 1,
+      of_round: 1,
+    }
+    const service = fakeService({ votes: vi.fn().mockResolvedValue(tally) })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    expect(service.votes).not.toHaveBeenCalled()
+
+    room.toggleBlackBox()
+    await flush()
+    expect(service.votes).toHaveBeenCalledWith('abcdefgh', 'game-1')
+    expect(room.votes.value).toEqual(tally)
+
+    // Dropped on close, so reopening shows the round in play rather than an old one.
+    room.toggleBlackBox()
+    expect(room.blackBox.value).toBe(false)
+    expect(room.votes.value).toBeNull()
+    room.stopWatching()
+  })
+
+  it('keeps the last board it managed to read when a poll fails', async () => {
+    const leaderboard = vi.fn()
+      .mockResolvedValueOnce(board(5))
+      .mockRejectedValue(apiError(503))
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService({ leaderboard }))
+
+    await room.open()
+    await flush()
+    expect(room.players.value).toBe(5)
+
+    vi.useFakeTimers()
+    try {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 1)
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(room.players.value).toBe(5)
+    room.stopWatching()
+  })
+
+  it('stops following a room it has forgotten', async () => {
+    const service = fakeService()
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    room.toggleBlackBox()
+    await flush()
+
+    room.forget()
+    const boards = (service.leaderboard as ReturnType<typeof vi.fn>).mock.calls.length
+    const tallies = (service.votes as ReturnType<typeof vi.fn>).mock.calls.length
+
+    vi.useFakeTimers()
+    try {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect((service.leaderboard as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(boards)
+    expect((service.votes as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(tallies)
+    expect(room.blackBox.value).toBe(false)
+    expect(room.board.value).toBeNull()
   })
 
   it('forgets a room locally without asking the server', async () => {
