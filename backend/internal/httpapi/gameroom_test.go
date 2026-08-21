@@ -135,15 +135,39 @@ func (fake *fakeGameRoom) Leaderboard(_ context.Context, _ int64) (gameroom.Lead
 	return fake.board, fake.readErr
 }
 
+// recordingAnnouncer counts what the handlers asked to be broadcast. The publishing itself
+// is covered in internal/gameroom; what matters here is which requests announce at all.
+type recordingAnnouncer struct {
+	rooms  []string
+	rounds int
+}
+
+func (announcer *recordingAnnouncer) AnnounceRounds(
+	_ context.Context, _ string, rounds []gameroom.DecidedRound,
+) (int, error) {
+	announcer.rounds += len(rounds)
+	return len(rounds), nil
+}
+
+func (announcer *recordingAnnouncer) AnnounceRoom(_ context.Context, gameSerial string) (bool, error) {
+	announcer.rooms = append(announcer.rooms, gameSerial)
+	return true, nil
+}
+
 func gameRoomHandler(fake *fakeGameRoom) http.Handler {
+	return gameRoomHandlerWith(fake, &recordingAnnouncer{})
+}
+
+func gameRoomHandlerWith(fake *fakeGameRoom, announcer GameRoomAnnouncer) http.Handler {
 	return New(Options{
-		Environment:    "test",
-		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
-		AllowedOrigins: []string{"http://localhost:4173"},
-		GameRooms:      fake,
-		GameRoomReader: fake,
-		GameRoomBoard:  fake,
-		AuthVerifier:   staticTokenVerifier{identity: auth.Identity{Subject: "42"}},
+		Environment:       "test",
+		Logger:            slog.New(slog.NewTextHandler(io.Discard, nil)),
+		AllowedOrigins:    []string{"http://localhost:4173"},
+		GameRooms:         fake,
+		GameRoomReader:    fake,
+		GameRoomBoard:     fake,
+		GameRoomAnnouncer: announcer,
+		AuthVerifier:      staticTokenVerifier{identity: auth.Identity{Subject: "42"}},
 	})
 }
 
@@ -718,5 +742,68 @@ func TestGameRoomStateIsNotCacheable(t *testing.T) {
 	if control := response.Header().Get("Cache-Control"); !strings.Contains(control, "private") &&
 		!strings.Contains(control, "no-store") {
 		t.Errorf("Cache-Control = %q, want it private", control)
+	}
+}
+
+/*
+THE RELOAD. Opening is idempotent and the host's page calls it on every load, which is also
+the only moment a resumed game can say "the pairing changed without a vote" — a reload picks
+another of the stage's ready candidates. The people already seated are shown whatever the
+server last recorded, so this call has to announce or they sit on the pre-reload match.
+*/
+func TestOpeningAnExistingRoomWithAPairAnnouncesIt(t *testing.T) {
+	fake := newFakeGameRoom()
+	fake.created = false
+	announcer := &recordingAnnouncer{}
+	response := httptest.NewRecorder()
+	gameRoomHandlerWith(fake, announcer).ServeHTTP(response, httptest.NewRequest(http.MethodPost,
+		"/api/v1/game-rooms",
+		strings.NewReader(`{"game_serial":"game-serial","current_candidates":[11,22]}`)))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	if len(announcer.rooms) != 1 || announcer.rooms[0] != "game-serial" {
+		t.Errorf("announced %v, want exactly the game the room is on", announcer.rooms)
+	}
+	if announcer.rounds != 0 {
+		t.Errorf("%d rounds announced; opening a room settles nothing", announcer.rounds)
+	}
+}
+
+// A room that has just been created has nobody in it, so there is nobody to tell — and the
+// pair is recorded by the same call regardless.
+func TestOpeningANewRoomAnnouncesNothing(t *testing.T) {
+	fake := newFakeGameRoom()
+	fake.created = true
+	announcer := &recordingAnnouncer{}
+	response := httptest.NewRecorder()
+	gameRoomHandlerWith(fake, announcer).ServeHTTP(response, httptest.NewRequest(http.MethodPost,
+		"/api/v1/game-rooms",
+		strings.NewReader(`{"game_serial":"game-serial","current_candidates":[11,22]}`)))
+
+	if response.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want 201; body = %s", response.Code, response.Body.String())
+	}
+	if len(announcer.rooms) != 0 {
+		t.Errorf("announced %v for a room nobody has joined", announcer.rooms)
+	}
+}
+
+// No pair named, nothing changed: announcing would tell the room to redraw the pairing the
+// server already holds, and the tally query behind it is not free.
+func TestOpeningARoomWithoutAPairAnnouncesNothing(t *testing.T) {
+	fake := newFakeGameRoom()
+	fake.created = false
+	announcer := &recordingAnnouncer{}
+	response := httptest.NewRecorder()
+	gameRoomHandlerWith(fake, announcer).ServeHTTP(response, httptest.NewRequest(http.MethodPost,
+		"/api/v1/game-rooms", strings.NewReader(`{"game_serial":"game-serial"}`)))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	if len(announcer.rooms) != 0 {
+		t.Errorf("announced %v without a pair to announce", announcer.rooms)
 	}
 }

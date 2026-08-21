@@ -42,6 +42,23 @@ Wagers still open on the game the room left never settle — the host abandoned 
 bracket, so nothing will ever decide those rounds. Participants keep the score
 they had.
 
+## What a reload does to the room
+
+A reload used to move the host's pairing and nobody else's. The resumed game re-picked the
+match on screen — legal, since it had not been voted on — while the server still held the
+pair reported by the last vote sync, so everybody seated kept looking at the pre-reload
+match and their poll kept confirming it.
+
+Two things stop that now:
+
+- **While a room is open for the game, a resume keeps the pairing it had.** Re-picking would
+  strand every wager already placed on that match, since it would never be played.
+- **Picking the room back up reports the pairing anyway.** `POST /api/v1/game-rooms` is
+  idempotent and the host's page calls it on load; with `current_candidates` it also
+  broadcasts `GameRoomRound` to a room that already existed. That covers the pair the server
+  never heard about — a vote sync that failed before the reload, for instance. A room created
+  by that same call announces nothing: nobody has joined it yet.
+
 ## Turning the websocket on
 
 The room is fully playable with no websocket at all: it falls back to the poll and

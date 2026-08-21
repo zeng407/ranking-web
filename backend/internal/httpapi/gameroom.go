@@ -182,6 +182,17 @@ func (a *api) createGameRoom(w http.ResponseWriter, r *http.Request) {
 	if created {
 		status = http.StatusCreated
 	}
+
+	// A HOST WHO RELOADS GETS A DIFFERENT PAIRING. The match on screen has not been voted
+	// on, so the game view is free to pick another of the stage's ready candidates on the
+	// way back up, and it does. This idempotent call is how the host says so, and the
+	// people already seated have to be told — nothing else will, because the vote sync
+	// only speaks when a vote is cast, so they would sit on the pre-reload pair until the
+	// host voted. A room just created has nobody in it to tell.
+	if !created && len(request.CurrentCandidates) == 2 {
+		a.announceRoomPairing(r, request.GameSerial)
+	}
+
 	// Private: a room serial is a capability, and this response hands one out.
 	writePrivateJSON(w, r, status, gameRoomResponse{Serial: room.Serial, GameSerial: request.GameSerial})
 }

@@ -120,13 +120,14 @@ export function useHostedRoom(
   // host who reloads mid-game sees no room until they press the button again — and pressing
   // it would then re-open the same room, because opening is idempotent, hiding the fault.
   watch(gameSerial, (value, previous) => {
-    const stored = readStored(value)
+    const stored = storedRoomSerial(value)
     if (stored) {
       if (stored === serial.value) return
       stopWatching()
       serial.value = stored
       status.value = 'open'
       startWatching()
+      void reportPair()
       return
     }
     // No room stored for this game. If one is open on the game we just left, the host
@@ -141,6 +142,30 @@ export function useHostedRoom(
       status.value = 'closed'
     }
   }, { immediate: true })
+
+  /**
+   * Tells the room which pair the host has up, when nothing else would.
+   *
+   * A RELOAD RE-PICKS THE PAIRING. The match on screen has not been voted on, so the game
+   * view is free to choose another of the stage's ready candidates when it resumes, and it
+   * does. The room would never hear about it: the vote sync carries the pair only when a
+   * vote is cast, so the people seated would keep looking at the pre-reload match — and
+   * their poll would keep confirming it, because the server's own record is what went
+   * stale.
+   *
+   * Opening is idempotent, so it doubles as the report; the server broadcasts the pairing
+   * to the room when a pair comes with it. Best effort: the host is mid-game, and their
+   * next vote records the pair anyway.
+   */
+  async function reportPair(): Promise<void> {
+    const pair = onScreen?.()
+    if (!gameSerial.value || !pair || pair.length !== 2) return
+    try {
+      await service.open(gameSerial.value, pair)
+    } catch (error) {
+      if (!(error instanceof APIError)) throw error
+    }
+  }
 
   /**
    * Moves the open room onto the game the host has just restarted into.
@@ -320,7 +345,14 @@ function storageKey(gameSerial: string): string {
   return STORAGE_PREFIX + gameSerial
 }
 
-function readStored(gameSerial: string): string {
+/**
+ * The room this browser has open for a game, or '' for none.
+ *
+ * Exported because the game view needs it before the composable can tell it anything: a
+ * resume decides whether to re-pick the pairing, and it must not re-pick one that people
+ * are already looking at and wagering on.
+ */
+export function storedRoomSerial(gameSerial: string): string {
   if (!gameSerial || typeof localStorage === 'undefined') return ''
   try {
     return localStorage.getItem(storageKey(gameSerial)) || ''
@@ -336,7 +368,7 @@ function store(gameSerial: string, roomSerial: string): void {
   try {
     localStorage.setItem(storageKey(gameSerial), roomSerial)
   } catch {
-    // See readStored.
+    // See storedRoomSerial.
   }
 }
 
@@ -345,6 +377,6 @@ function clearStored(gameSerial: string): void {
   try {
     localStorage.removeItem(storageKey(gameSerial))
   } catch {
-    // See readStored.
+    // See storedRoomSerial.
   }
 }

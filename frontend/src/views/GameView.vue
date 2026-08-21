@@ -22,7 +22,7 @@ import { useAuth } from '../composables/useAuth'
 import { closeImageViewer, openImageViewer } from '../services/imageViewer'
 import { unlockPost } from '../services/postAccess'
 import { boardRows } from '../composables/useGameRoom'
-import { onScreenPairForBatch, useHostedRoom } from '../composables/useHostedRoom'
+import { onScreenPairForBatch, storedRoomSerial, useHostedRoom } from '../composables/useHostedRoom'
 import { getAnonymousID } from '../lib/anonymousId'
 import { downloadQRCode, drawQRCode } from '../lib/qrcode'
 import { shareOrCopyLink } from '../lib/share'
@@ -584,9 +584,11 @@ function resumeSnapshot(saved: LocalGameSnapshot): void {
   readOnly.value = false
   saved.writer_id = writerId
   saved.lease_token = leaseToken.value
-  if (saved.status === 'playing') {
-    // The current pair has not been voted on, so a reload may choose any
-    // still-ready candidates from this stage without changing progress.
+  // The current pair has not been voted on, so a reload may choose any still-ready
+  // candidates from this stage without changing progress — EXCEPT while hosting a room.
+  // There, other people are looking at that pair and have wagered on it: re-picking would
+  // strand every one of those wagers on a match that now never happens.
+  if (saved.status === 'playing' && (!saved.current_match || !storedRoomSerial(saved.game_serial))) {
     saved.current_match = null
     chooseNextMatch(saved, Math.random, true)
     saved.revision += 1

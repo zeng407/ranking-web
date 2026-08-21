@@ -204,6 +204,62 @@ describe('useHostedRoom', () => {
     room.stopWatching()
   })
 
+  /*
+  The reload, from the room's point of view. The server's record of the pairing came from the
+  host's last vote sync, and a resume can legitimately land on a different pair — so picking
+  the room back up has to say which pair is on screen now, or everybody seated keeps looking
+  at the pre-reload match and their poll keeps confirming it.
+  */
+  it('reports the pairing when it picks a stored room back up', async () => {
+    await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).open()
+
+    const serial = ref('')
+    const service = fakeService()
+    const room = useHostedRoom(serial, ref('zh-tw'), service, () => [33, 44])
+
+    serial.value = 'game-1'
+    await flush()
+
+    expect(service.open).toHaveBeenCalledWith('game-1', [33, 44])
+    expect(room.serial.value).toBe('abcdefgh')
+    expect(room.status.value).toBe('open')
+    room.stopWatching()
+  })
+
+  // Nothing to report between rounds, and a request that named no pair would broadcast a
+  // pairing change that did not happen.
+  it('reports no pairing when none is on screen', async () => {
+    await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).open()
+
+    const serial = ref('')
+    const service = fakeService()
+    const room = useHostedRoom(serial, ref('zh-tw'), service, () => undefined)
+
+    serial.value = 'game-1'
+    await flush()
+
+    expect(service.open).not.toHaveBeenCalled()
+    expect(room.hosting.value).toBe(true)
+    room.stopWatching()
+  })
+
+  // The report is a courtesy, not a precondition: a host whose room the server has forgotten
+  // keeps playing, and the room's own state read is what will notice.
+  it('keeps hosting when the pairing report fails', async () => {
+    await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).open()
+
+    const serial = ref('')
+    const service = fakeService({ open: vi.fn().mockRejectedValue(apiError(500)) })
+    const room = useHostedRoom(serial, ref('zh-tw'), service, () => [33, 44])
+
+    serial.value = 'game-1'
+    await flush()
+
+    expect(room.serial.value).toBe('abcdefgh')
+    expect(room.status.value).toBe('open')
+    room.stopWatching()
+  })
+
   it('reads the tally only while the black box is open', async () => {
     const tally: RoomVotes = {
       first_candidate: 11,
