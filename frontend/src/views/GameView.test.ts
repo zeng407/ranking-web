@@ -342,6 +342,24 @@ describe('GameView restart regression', () => {
     play.mockRestore()
   })
 
+  /**
+   * Answering the question replaces the pairing either way — continuing re-picks it,
+   * restarting mints a new game — so drawing the stored one first only flashes a match
+   * nobody will vote on and fetches its media for nothing.
+   */
+  it('draws no pairing until the saved-game question is answered', async () => {
+    const wrapper = await mountSavedGame()
+
+    expect((wrapper.get('.game-restart-dialog').element as HTMLDialogElement).open).toBe(true)
+    expect(wrapper.findAll('.game-candidate-panel')).toHaveLength(0)
+
+    await wrapper.get('.game-continue-option').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('.game-candidate-panel')).toHaveLength(2)
+
+    wrapper.unmount()
+  })
+
   it('opens the restart decision without discarding the current local game', async () => {
     const wrapper = await mountStartedGame()
     const savedBefore = localStorage.getItem('2pick:game:post-1')

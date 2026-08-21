@@ -223,7 +223,18 @@ const currentElements = computed<[LocalGameElement, LocalGameElement] | null>(()
   const right = snapshot.value.elements.find((item) => item.id === snapshot.value?.current_match?.right_id)
   return left && right ? [left, right] : null
 })
-const visibleElements = computed(() => animationPair.value ?? currentElements.value)
+/**
+ * The pairing to draw, or null when there is none to draw yet.
+ *
+ * Nothing is drawn while the host is being asked continue-or-restart. Their answer replaces
+ * the match either way — continuing re-picks it, restarting mints a new game — so the stored
+ * one is a match nobody will ever vote on, and drawing it only flashes two entries and pulls
+ * their media down for nothing.
+ */
+const visibleElements = computed(() => {
+  if (entryDecisionPending.value) return null
+  return animationPair.value ?? currentElements.value
+})
 
 /**
  * The game room this host has opened, if any.
@@ -241,7 +252,10 @@ const hostedRoom = useHostedRoom(
   computed(() => localeDefinition(locale.value).prefix),
   undefined,
   () => {
-    const displayed = currentElements.value
+    // visibleElements, not currentElements: a pair the host is not being shown is not a pair
+    // to tell the room about. It keeps the reload down to one broadcast — the re-pick's —
+    // instead of announcing the stored match first and replacing it a moment later.
+    const displayed = visibleElements.value
     return displayed ? [displayed[0].id, displayed[1].id] : undefined
   },
 )
