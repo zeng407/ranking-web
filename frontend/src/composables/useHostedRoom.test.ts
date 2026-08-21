@@ -4,8 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { APIError } from '../lib/api'
-import { POLL_INTERVAL_MS } from './useGameRoom'
-import { onScreenPairForBatch, useHostedRoom } from './useHostedRoom'
+import { BOARD_POLL_INTERVAL_MS, onScreenPairForBatch, useHostedRoom } from './useHostedRoom'
 import type { GameRoomService, Leaderboard, RoomVotes } from '../services/gameRoom'
 
 function fakeService(overrides: Partial<GameRoomService> = {}): GameRoomService {
@@ -188,7 +187,7 @@ describe('useHostedRoom', () => {
 
     vi.useFakeTimers()
     try {
-      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 1)
+      await vi.advanceTimersByTimeAsync(BOARD_POLL_INTERVAL_MS + 1)
     } finally {
       vi.useRealTimers()
     }
@@ -209,7 +208,7 @@ describe('useHostedRoom', () => {
 
     vi.useFakeTimers()
     try {
-      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+      await vi.advanceTimersByTimeAsync(BOARD_POLL_INTERVAL_MS * 3)
     } finally {
       vi.useRealTimers()
     }

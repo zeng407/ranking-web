@@ -993,13 +993,15 @@ describe('GameView restart regression', () => {
     await wrapper.get('.game-room-panel-actions button').trigger('click')
     await flushPromises()
 
-    const bets = wrapper.findAll('.game-candidate-bets')
-    expect(bets).toHaveLength(2)
-    expect(bets.map((bet) => bet.text())).toEqual([
-      expect.stringContaining('75%'),
-      expect.stringContaining('25%'),
-    ])
-    expect(bets[0]?.text()).toContain('3')
+    // Read by title, not by position: the bracket is shuffled, so which option stands on
+    // the left is not fixed — what has to hold is that each count follows its own option.
+    const bets = new Map(wrapper.findAll('.game-candidate').map((card) =>
+      [card.get('h2').text(), card.get('.game-candidate-bets').text()]))
+    expect(bets.size).toBe(2)
+    expect(bets.get('舊選項 1')).toContain('3')
+    expect(bets.get('舊選項 1')).toContain('75%')
+    expect(bets.get('舊選項 2')).toContain('1')
+    expect(bets.get('舊選項 2')).toContain('25%')
 
     // A tally about a pairing that is no longer up says nothing about this one.
     roomMocks.votes.mockResolvedValue({

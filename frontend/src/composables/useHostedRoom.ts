@@ -9,7 +9,7 @@ import {
   type Leaderboard,
   type RoomVotes,
 } from '../services/gameRoom'
-import { LEADERBOARD_EVENT, POLL_INTERVAL_MS } from './useGameRoom'
+import { LEADERBOARD_EVENT } from './useGameRoom'
 
 /**
  * The host's side of a game room: open one for the game being played, and remember it.
@@ -38,6 +38,12 @@ const STORAGE_PREFIX = 'gameroom_host_'
  * nothing about them and there is nothing to be live off.
  */
 export const VOTES_POLL_INTERVAL_MS = 5_000
+
+/**
+ * How often to re-read the leaderboard. Slower than the room's own poll: the host is not
+ * waiting on a pairing, and the broadcast already moves the board on every settlement.
+ */
+export const BOARD_POLL_INTERVAL_MS = 15_000
 
 export type HostedRoomStatus = 'closed' | 'opening' | 'open' | 'failed'
 
@@ -128,7 +134,7 @@ export function useHostedRoom(
     if (!serial.value) return
     void refreshBoard()
     startLive()
-    if (!boardTimer) boardTimer = setInterval(() => void refreshBoard(), POLL_INTERVAL_MS)
+    if (!boardTimer) boardTimer = setInterval(() => void refreshBoard(), BOARD_POLL_INTERVAL_MS)
   }
 
   function startLive(): void {

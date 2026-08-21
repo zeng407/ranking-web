@@ -38,11 +38,50 @@ const pairing = computed(() => {
   }
 })
 
+/**
+ * The two options on screen, in the host's order, each with its preview resolved once.
+ */
+const sides = computed(() => {
+  const current = pairing.value
+  if (!current) return []
+  const { votes } = current
+  return [
+    {
+      element: current.first,
+      id: votes.first_candidate,
+      other: votes.second_candidate,
+      votes: votes.first_candidate_votes,
+    },
+    {
+      element: current.second,
+      id: votes.second_candidate,
+      other: votes.first_candidate,
+      votes: votes.second_candidate_votes,
+    },
+  ].map((side) => ({
+    ...side,
+    image: gamePreviewImage(side.element ?? ({} as GameElement)) ?? '',
+  }))
+})
+
 const rows = computed(() => boardRows(room.leaderboard.value))
 const ownPlayerId = computed(() => room.player.value?.player_id ?? '')
 
-/** Which side the caller wagered on, so the pick can be highlighted. */
-const ownPick = computed(() => room.ownBet.value?.winner_id ?? 0)
+/**
+ * Which side the caller wagered on, so the pick can be highlighted.
+ *
+ * Checked against the pairing on screen, because the server hands back the newest wager
+ * whatever round it belongs to: once the host advances, last round's pick must stop
+ * highlighting or the new pairing arrives looking as though it were already voted on.
+ */
+const ownPick = computed(() => {
+  const bet = room.ownBet.value
+  const votes = room.votes.value
+  if (!bet || !votes) return 0
+  const onScreen = [votes.first_candidate, votes.second_candidate]
+  if (!onScreen.includes(bet.winner_id) || !onScreen.includes(bet.loser_id)) return 0
+  return bet.winner_id
+})
 
 /**
  * Loads the game's elements once the room tells us which game it is.
@@ -142,17 +181,11 @@ watchEffect(() => {
         <p class="room-round">
           {{ translate(locale, 'roomRound') }}
           {{ pairing.votes.current_round }} / {{ pairing.votes.of_round }}
-          <span class="room-votes-total">
-            {{ translate(locale, 'roomTotalVotes') }} {{ pairing.votes.total_votes }}
-          </span>
         </p>
 
         <div class="room-candidates">
           <button
-            v-for="side in [
-              { element: pairing.first, id: pairing.votes.first_candidate, other: pairing.votes.second_candidate, votes: pairing.votes.first_candidate_votes },
-              { element: pairing.second, id: pairing.votes.second_candidate, other: pairing.votes.first_candidate, votes: pairing.votes.second_candidate_votes },
-            ]"
+            v-for="side in sides"
             :key="side.id"
             type="button"
             class="room-candidate"
@@ -161,12 +194,20 @@ watchEffect(() => {
             :aria-pressed="ownPick === side.id"
             @click="pick(side.id, side.other)"
           >
-            <img
-              v-if="gamePreviewImage(side.element ?? ({} as GameElement))"
-              :src="gamePreviewImage(side.element ?? ({} as GameElement)) ?? ''"
-              :alt="elementLabel(side.element, side.id)"
-              loading="lazy"
-            >
+            <span class="room-candidate-media">
+              <span
+                v-if="side.image"
+                class="room-candidate-backdrop"
+                :style="{ backgroundImage: `url(${side.image})` }"
+                aria-hidden="true"
+              ></span>
+              <img
+                v-if="side.image"
+                :src="side.image"
+                :alt="elementLabel(side.element, side.id)"
+                loading="lazy"
+              >
+            </span>
             <span class="room-candidate-title">{{ elementLabel(side.element, side.id) }}</span>
             <span class="room-candidate-votes">{{ side.votes }}</span>
           </button>
@@ -283,11 +324,6 @@ watchEffect(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.room-votes-total {
-  margin-left: 0.75rem;
-  opacity: 0.7;
-}
-
 .room-candidates {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -316,11 +352,34 @@ watchEffect(() => {
   border-color: #22c55e;
 }
 
-.room-candidate img {
-  width: 100%;
+/* Contained, not cropped. A participant is wagering on the whole picture, so the frame
+   keeps a fixed shape and the blurred copy behind it fills whatever the aspect ratio
+   leaves over — the same treatment the host's arena gives an option. */
+.room-candidate-media {
+  position: relative;
+  overflow: hidden;
   aspect-ratio: 4 / 3;
-  object-fit: cover;
   border-radius: 0.5rem;
+  background: rgba(127, 127, 127, 0.14);
+}
+
+.room-candidate-backdrop {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(22px) saturate(140%);
+  opacity: 0.5;
+  transform: scale(1.15);
+}
+
+.room-candidate-media img {
+  position: absolute;
+  display: block;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .room-candidate-votes {

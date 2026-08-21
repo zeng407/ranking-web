@@ -18,20 +18,26 @@ import {
  *
  * TWO SOURCES FOR THE LEADERBOARD, ON PURPOSE. The websocket carries the worker's
  * broadcast after each settlement, which is what makes the room feel live. The poll runs
- * anyway, on a slow interval, because a websocket that dies without closing reports
- * nothing at all — no error, no close event, just silence. A stale-but-moving leaderboard
- * is a far better failure than a frozen one, and the poll is the only thing that turns the
- * one into the other.
+ * anyway, because a websocket that dies without closing reports nothing at all — no error,
+ * no close event, just silence. A stale-but-moving leaderboard is a far better failure than
+ * a frozen one, and the poll is the only thing that turns the one into the other.
+ *
+ * The poll re-reads the WHOLE room state rather than the leaderboard alone, because the
+ * pairing on screen is the host's and there is no broadcast for it: the only event the
+ * worker publishes is the leaderboard. A participant left on a leaderboard-only poll sits
+ * on last round's pairing until they reload, which is exactly what the old UI avoided by
+ * re-reading the room on a five-second timer.
  */
 
 /** The broadcast event the worker publishes. Named for what Laravel's listeners emitted. */
 export const LEADERBOARD_EVENT = 'GameBetRank'
 
 /**
- * How often to poll. Fifteen seconds is slow enough to be free at any plausible room size
- * and fast enough that a dead socket is a nuisance rather than a broken page.
+ * How often to re-read the room. Five seconds is what the old UI used for the same job:
+ * fast enough that the host advancing a round feels immediate, slow enough to be free at
+ * any plausible room size.
  */
-export const POLL_INTERVAL_MS = 15_000
+export const POLL_INTERVAL_MS = 5_000
 
 export type RoomStatus = 'loading' | 'ready' | 'not-found' | 'failed'
 
@@ -130,7 +136,10 @@ export function useGameRoom(
   function startPolling(): void {
     if (pollTimer) clearInterval(pollTimer)
     pollTimer = setInterval(() => {
-      void refreshLeaderboard()
+      // Not while a wager is in flight: the read would land between the POST and the
+      // refresh that wager does itself, and put the pre-wager counts back on screen.
+      if (betting.value) return
+      void refreshState()
     }, POLL_INTERVAL_MS)
   }
 
@@ -138,8 +147,8 @@ export function useGameRoom(
     try {
       leaderboard.value = await service.leaderboard(roomSerial)
     } catch {
-      // A failed poll is not worth surfacing: the next one is fifteen seconds away and the
-      // board already on screen is still the best answer available.
+      // A failed read is not worth surfacing: the board already on screen is still the best
+      // answer available, and the poll comes round again in seconds.
     }
   }
 

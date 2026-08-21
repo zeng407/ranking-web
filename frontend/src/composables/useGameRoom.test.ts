@@ -92,16 +92,43 @@ describe('useGameRoom', () => {
    * reports nothing — no error, no close event — so the poll is the only thing standing
    * between "slightly stale" and "frozen forever".
    */
-  it('polls the leaderboard on an interval', async () => {
+  it('polls the room state on an interval', async () => {
     const service = fakeService()
     const room = useGameRoom('abcdefgh', service)
     await room.join()
 
-    expect(service.leaderboard).not.toHaveBeenCalled()
+    expect(service.state).toHaveBeenCalledTimes(1)
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
-    expect(service.leaderboard).toHaveBeenCalledTimes(1)
+    expect(service.state).toHaveBeenCalledTimes(2)
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
-    expect(service.leaderboard).toHaveBeenCalledTimes(2)
+    expect(service.state).toHaveBeenCalledTimes(3)
+
+    room.leave()
+  })
+
+  /**
+   * THE PAIRING HAS NO BROADCAST. The worker publishes the leaderboard and nothing else, so
+   * a participant only learns the host advanced the round by re-reading the room — which is
+   * why the poll reads the whole state rather than the board alone.
+   */
+  it('follows the host onto the next pairing', async () => {
+    const next = state({
+      votes: {
+        first_candidate: 33, second_candidate: 44,
+        first_candidate_votes: 0, second_candidate_votes: 0,
+        remain_elements: 17, total_votes: 0, current_round: 32, of_round: 32,
+      },
+    })
+    const service = fakeService({
+      state: vi.fn().mockResolvedValueOnce(state()).mockResolvedValue(next),
+    })
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+    expect(room.votes.value?.first_candidate).toBe(11)
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    expect(room.votes.value?.first_candidate).toBe(33)
+    expect(room.votes.value?.current_round).toBe(32)
 
     room.leave()
   })
@@ -113,21 +140,23 @@ describe('useGameRoom', () => {
     room.leave()
 
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
-    expect(service.leaderboard).not.toHaveBeenCalled()
+    expect(service.state).toHaveBeenCalledTimes(1)
   })
 
-  // A failed poll leaves the board that is on screen: it is stale, but it is still the best
+  // A failed poll leaves the room that is on screen: it is stale, but it is still the best
   // answer available, and blanking it would be worse.
-  it('keeps the current board when a poll fails', async () => {
+  it('keeps the current state when a poll fails', async () => {
     const service = fakeService({
-      leaderboard: vi.fn().mockRejectedValue(apiError(503)),
+      state: vi.fn().mockResolvedValueOnce(state()).mockRejectedValue(apiError(503)),
     })
     const room = useGameRoom('abcdefgh', service)
     await room.join()
     const before = room.leaderboard.value
+    const votes = room.votes.value
 
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
     expect(room.leaderboard.value).toBe(before)
+    expect(room.votes.value).toBe(votes)
   })
 
   it('sends only the pick, and the server confirms it', async () => {
