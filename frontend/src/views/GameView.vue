@@ -1936,7 +1936,10 @@ function preferredRankImage(report: RankReport): string | null {
           <p v-else class="game-room-board-empty">{{ t('roomNoPlayers') }}</p>
         </aside>
 
-        <aside v-else class="game-ad-slot" :aria-label="t('advertisement')">
+        <!-- Always rendered, unlike the room panel it used to take turns with: on a narrow
+             screen the history is capped and the rail fits beside it even while hosting. Which
+             widths show it is a layout question, so CSS answers it. -->
+        <aside class="game-ad-slot" :aria-label="t('advertisement')">
           <div><span>AD</span></div>
         </aside>
       </div>

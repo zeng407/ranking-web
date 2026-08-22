@@ -1031,9 +1031,11 @@ describe('GameView restart regression', () => {
     await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
     await flushPromises()
 
-    // The panel stands where the ad rail was: a host watching their room has no use for one.
+    // The panel stands where the ad rail was on a wide screen. The rail stays in the markup
+    // regardless, because the narrow layout puts it beside the history even while hosting,
+    // and which widths show it is settled in CSS rather than here.
     const panel = wrapper.get('.game-room-panel')
-    expect(wrapper.find('.game-ad-slot').exists()).toBe(false)
+    expect(wrapper.find('.game-ad-slot').exists()).toBe(true)
     expect(panel.get('.game-room-players').text()).toContain('3')
     expect(panel.get('.game-room-board').text()).toContain('快樂的貓')
     expect(panel.get('.game-room-board').text()).toContain('生氣的狗')

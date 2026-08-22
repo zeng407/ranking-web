@@ -3548,9 +3548,16 @@ button.game-sync-indicator {
 }
 
 /* While hosting, the room panel takes the ad rail's place and needs more of it:
-   names and scores do not fit in a column sized for a banner. */
+   names and scores do not fit in a column sized for a banner. The ad is rendered
+   anyway — the narrow layout finds room for it beside the history — so it is hidden
+   here rather than left out of the markup. */
 .game-layout.has-room {
+  grid-template-areas: "history arena room";
   grid-template-columns: clamp(13rem, 15vw, 15rem) minmax(0, 1fr) clamp(12rem, 16vw, 16rem);
+}
+
+.game-layout.has-room > .game-ad-slot {
+  display: none;
 }
 
 .game-arena {
@@ -3928,8 +3935,8 @@ button.game-sync-indicator {
 }
 
 /* The host's view of their own room: who is in it and how the standings are moving.
-   Stands in the ad rail's grid area, because a host watching their room has no use
-   for one and the two are never both on screen. */
+   Takes the rail on a wide screen, where the ad is dropped instead; on a narrow one it
+   becomes a bar and the ad moves in beside the history. */
 .game-room-panel {
   display: grid;
   min-width: 0;
@@ -3940,7 +3947,7 @@ button.game-sync-indicator {
   border: 1px solid var(--border);
   border-radius: 1.25rem;
   background: color-mix(in srgb, var(--surface) 88%, transparent);
-  grid-area: ad;
+  grid-area: room;
   grid-template-rows: auto auto auto auto minmax(0, 1fr);
 }
 
@@ -5664,7 +5671,7 @@ button.game-sync-indicator {
   .game-layout.has-room {
     grid-template-areas:
       "history arena"
-      "ad ad";
+      "room room";
     grid-template-columns: clamp(12rem, 18vw, 14rem) minmax(0, 1fr);
   }
 
@@ -5742,19 +5749,38 @@ button.game-sync-indicator {
     width: min(100%, 34rem);
   }
 
+  /* The arena has the width to itself here, which leaves the history a whole row and
+     more of it than the cards can use: stretched that wide, a pick is a letterbox strip.
+     So the history is capped and the rail moves into what is left over.
+
+     The cap is expressed as a column so the leftover is exactly the ad's width, and
+     min() keeps that leftover at 6.25rem (100px) or more — narrower than that is not
+     worth showing, and below 640px the rail is dropped entirely rather than squeezed. */
   .game-layout {
     grid-template-areas:
-      "arena"
-      "history";
-    grid-template-columns: 1fr;
+      "arena arena"
+      "history ad";
+    grid-template-columns: minmax(0, min(30rem, 100% - 7.25rem)) minmax(0, 1fr);
   }
 
   .game-layout.has-room {
     grid-template-areas:
-      "arena"
-      "ad"
-      "history";
-    grid-template-columns: 1fr;
+      "arena arena"
+      "room room"
+      "history ad";
+    grid-template-columns: minmax(0, min(30rem, 100% - 7.25rem)) minmax(0, 1fr);
+  }
+
+  /* Back on screen, including while hosting: the room bar spans its own row above. */
+  .game-layout > .game-ad-slot,
+  .game-layout.has-room > .game-ad-slot {
+    display: block;
+  }
+
+  /* The rail is as tall as the history beside it, not the full-height column it is on a
+     wide screen. */
+  .game-ad-slot > div {
+    min-height: 8rem;
   }
 
   .game-history {
@@ -5808,6 +5834,28 @@ button.game-sync-indicator {
 	.game-public-ranking-actions,
 	.game-public-ranking-actions .button {
     width: 100%;
+  }
+
+  /* A phone has no width to share: a 100px rail beside a 260px history serves neither,
+     so the history takes the row back and the ad is dropped. */
+  .game-layout {
+    grid-template-areas:
+      "arena"
+      "history";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .game-layout.has-room {
+    grid-template-areas:
+      "arena"
+      "room"
+      "history";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .game-layout > .game-ad-slot,
+  .game-layout.has-room > .game-ad-slot {
+    display: none;
   }
 
   .game-setup {
