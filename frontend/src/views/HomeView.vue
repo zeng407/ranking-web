@@ -31,6 +31,20 @@ const tags = ref<Tag[]>([])
 const carouselItems = ref<CarouselItem[]>([])
 const champions = ref<Champion[]>([])
 const loading = ref(true)
+/**
+ * True until the rail and the tag strip have been answered for.
+ *
+ * They are fetched apart from the feed and arrive later, and each one appears above or
+ * beside content the reader is already looking at. The flag is what lets their space be
+ * held while they load instead of being taken from whatever is on screen.
+ */
+const extrasLoading = ref(true)
+/** How many placeholder cards to hold the feed's space with: more than one screenful. */
+const feedSkeletonCards = 6
+/** Enough placeholder cards to fill the marquee's viewport, upright or on its side. */
+const championSkeletonCards = 4
+/** Placeholder chips in the tag strip. Uneven, because tags are words, not blocks. */
+const tagSkeletonWidths = ['3rem', '4rem', '3.25rem', '4.5rem', '2.75rem', '3.75rem', '3.25rem']
 const refreshing = ref(false)
 const loadingMore = ref(false)
 const loadError = ref(false)
@@ -169,6 +183,7 @@ async function loadHomeExtras(): Promise<void> {
     service.carouselItems(),
     service.champions(),
   ])
+  extrasLoading.value = false
   if (tagsResult.status === 'fulfilled') {
     tags.value = Object.entries(tagsResult.value)
       .map(([name, count]) => ({ name, count }))
@@ -301,9 +316,7 @@ function showNextCarouselItem(): void {
         </div>
         <div v-if="activeCarouselItem.title || activeCarouselItem.description" class="highlight-carousel-copy">
           <h3 v-if="activeCarouselItem.title">{{ activeCarouselItem.title }}</h3>
-          <p v-if="activeCarouselItem.description && activeCarouselItem.description !== activeCarouselItem.title">
-            {{ activeCarouselItem.description }}
-          </p>
+          <p>{{ activeCarouselItem.description !== activeCarouselItem.title ? activeCarouselItem.description : '' }}</p>
         </div>
       </article>
       <button
@@ -331,6 +344,38 @@ function showNextCarouselItem(): void {
         />
       </div>
     </div>
+      </section>
+
+      <!-- The same section, drawn empty. The rail is fetched after the feed, and
+           on a narrow screen it sits above the feed: without this the votes were
+           pushed down the page a moment after the reader started reading them. -->
+      <section v-else-if="extrasLoading" class="highlight-section home-highlight-section" aria-hidden="true">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow"><span class="skeleton-line is-short is-latin" /></p>
+            <h2><span class="skeleton-line is-half" /></h2>
+          </div>
+        </div>
+        <div class="highlight-carousel-shell">
+          <article class="highlight-carousel-card">
+            <div class="highlight-carousel-media skeleton" />
+            <div class="highlight-carousel-copy">
+              <h3>
+                <span class="skeleton-line" />
+                <span class="skeleton-line is-half" />
+              </h3>
+              <p><span class="skeleton-line is-half" /></p>
+            </div>
+          </article>
+        </div>
+        <div class="highlight-carousel-position">
+          <span class="skeleton-line is-short is-latin" />
+          <!-- Placeholder dots, because on a phone they carry a finger-sized hit
+               box and so decide this row's height. -->
+          <div class="highlight-dots">
+            <span v-for="dot in 3" :key="dot" />
+          </div>
+        </div>
       </section>
 
       <AdSlot name="homeRail" shape="rectangle" :locale="locale" />
@@ -377,6 +422,36 @@ function showNextCarouselItem(): void {
     </div>
       </section>
 
+      <section v-else-if="extrasLoading" class="champion-marquee-section" aria-hidden="true">
+        <!-- This heading is sized by its own words, so a line asking for all of it
+             asks for nothing; these two carry the width the words would have had. -->
+        <div class="champion-marquee-heading">
+          <p class="eyebrow"><span class="skeleton-line is-latin" style="width: 4rem" /></p>
+          <h2><span class="skeleton-line" style="width: 7rem" /></h2>
+        </div>
+        <div class="champion-marquee-viewport">
+          <div class="champion-marquee-track is-static">
+            <!-- Anchors without an href: not links, not focusable, but sized by
+                 the very rules that will size the real cards. -->
+            <a v-for="card in championSkeletonCards" :key="card">
+              <small class="champion-marquee-title"><span class="skeleton-line is-half" /></small>
+              <span class="champion-marquee-finalists">
+                <template v-for="side in 2" :key="side">
+                  <b v-if="side > 1">vs</b>
+                  <span class="champion-marquee-candidate">
+                    <span class="skeleton" />
+                    <span>
+                      <em><span class="skeleton-line is-half" /></em>
+                      <strong><span class="skeleton-line" /></strong>
+                    </span>
+                  </span>
+                </template>
+              </span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       <AdSlot name="homeRailBottom" shape="vertical" :locale="locale" />
     </aside>
 
@@ -416,23 +491,56 @@ function showNextCarouselItem(): void {
       </div>
     </div>
 
-    <div v-if="tags.length" class="tag-strip" :aria-label="translate(locale, 'hotTopics')">
+    <!-- The strip's own label needs no request, so it is written straight away and
+         only the chips wait. The row keeps its height either way, which is what
+         stops the feed sliding down when the tags land. -->
+    <div v-if="tags.length || extrasLoading" class="tag-strip" :aria-label="translate(locale, 'hotTopics')">
       <span>{{ translate(locale, 'hotTopics') }}</span>
-      <button
-        v-for="tag in tags.slice(0, 9)"
-        :key="tag.name"
-        class="tag-chip"
-        :class="{ active: activeKeyword.toLowerCase() === tag.name.toLowerCase() }"
-        type="button"
-        @click="selectTag(tag.name)"
-      >#{{ tag.name }}</button>
+      <template v-if="tags.length">
+        <button
+          v-for="tag in tags.slice(0, 9)"
+          :key="tag.name"
+          class="tag-chip"
+          :class="{ active: activeKeyword.toLowerCase() === tag.name.toLowerCase() }"
+          type="button"
+          @click="selectTag(tag.name)"
+        >#{{ tag.name }}</button>
+      </template>
+      <template v-else>
+        <span v-for="width in tagSkeletonWidths" :key="width" class="tag-chip" aria-hidden="true">
+          <span class="skeleton-line" :style="{ width }" />
+        </span>
+      </template>
     </div>
 
     <AdSlot name="homeTop" shape="horizontal" :locale="locale" />
 
-    <div v-if="loading" class="content-state">
-      <span class="loading-dot" aria-hidden="true" />
-      {{ translate(locale, 'loadingVotes') }}
+    <!-- The feed's own shape rather than a loading box a fraction of its height:
+         the cards below the placeholder cards no longer jump when the votes land. -->
+    <div v-if="loading" class="vote-grid" role="status" :aria-label="translate(locale, 'loadingVotes')">
+      <article v-for="card in feedSkeletonCards" :key="card" class="vote-card" aria-hidden="true">
+        <div class="vote-card-main">
+          <div class="vote-card-media">
+            <div v-for="side in 2" :key="side" class="skeleton" />
+          </div>
+          <div class="vote-card-copy">
+            <h3>
+              <span class="skeleton-line" />
+              <span class="skeleton-line is-half" />
+            </h3>
+            <div class="vote-card-meta">
+              <span class="skeleton-line is-half" />
+              <span class="skeleton-line is-half" />
+            </div>
+          </div>
+        </div>
+        <div class="vote-card-actions">
+          <a class="skeleton" />
+          <!-- The second column is sized by its content, so this one names the
+               width the real button takes. -->
+          <a class="skeleton vote-card-action-quiet" style="width: 7rem" />
+        </div>
+      </article>
     </div>
     <div v-else-if="loadError" class="content-state content-state-error">
       <span>{{ translate(locale, 'loadVotesError') }}</span>

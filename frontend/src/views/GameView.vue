@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdSlot from '../components/AdSlot.vue'
 import CommentSection from '../components/CommentSection.vue'
 import RankingExportDialog from '../components/RankingExportDialog.vue'
+import RankingSkeleton from '../components/RankingSkeleton.vue'
 import {
   applyLocalVote,
   champion,
@@ -1604,7 +1605,26 @@ function preferredRankImage(report: RankReport): string | null {
 </script>
 
 <template>
-  <section v-if="loading" class="game-state-card">{{ t('gameLoading') }}</section>
+  <template v-if="loading">
+    <!-- A ranking page is a ranking: it opens on the shape of one rather than on a
+         waiting box a sixth of its height, so nothing the reader is looking at moves
+         when the rows arrive. A game has no such shape to promise yet. -->
+    <section v-if="rankOnly" class="game-ranking" role="status" :aria-label="t('gameLoading')">
+      <header class="game-public-ranking-heading" aria-hidden="true">
+        <div>
+          <p class="eyebrow">2PICK · RANKING</p>
+          <!-- A width of its own: this heading is sized by its title, so a share
+               of it is a share of nothing. -->
+          <h1><span class="skeleton-line" style="width: 16rem" /></h1>
+        </div>
+        <div class="game-public-ranking-actions">
+          <span class="button skeleton" style="width: 7rem" />
+        </div>
+      </header>
+      <RankingSkeleton />
+    </section>
+    <section v-else class="game-state-card">{{ t('gameLoading') }}</section>
+  </template>
   <!-- The door code. Shown instead of the error card, because a 404 on a protected post
        and a 404 on a wrong link are the same answer from the server. -->
   <section v-else-if="doorCodeRequired" class="game-state-card game-door-code">
@@ -2074,7 +2094,10 @@ function preferredRankImage(report: RankReport): string | null {
       </ol>
     </div>
       <div v-else class="game-community-ranking" role="tabpanel">
-          <p v-if="communityLoading && !communityRanks.items.length" class="game-ranking-state">{{ t('gameCommunityLoading') }}</p>
+          <template v-if="communityLoading && !communityRanks.items.length">
+            <RankingSkeleton />
+            <span class="sr-only" role="status">{{ t('gameCommunityLoading') }}</span>
+          </template>
           <div v-else-if="communityError && !communityRanks.items.length" class="game-ranking-state">
             <p>{{ t('gameCommunityError') }}</p>
             <button class="button button-quiet" type="button" @click="loadCommunityRanks(communityRanks.page)">{{ t('retry') }}</button>

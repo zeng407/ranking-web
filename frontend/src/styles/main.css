@@ -149,6 +149,79 @@ p {
   white-space: nowrap;
 }
 
+/* Placeholders that stand in for content that is still loading.
+
+   They carry no size of their own on purpose: each one is dropped in wearing the
+   class of the element it replaces, so the real rules give it the real size and
+   the two cannot drift apart as the layout changes. Alone they mean nothing to a
+   screen reader, so whatever renders them owns the status message. The shimmer is
+   the same one the result loader uses, and the global reduced-motion rule at the
+   end of this file parks it. */
+.skeleton,
+.skeleton-line {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--text) 8%, var(--surface-strong));
+  /* Wearing another element's class brings its cursor along; nothing here is
+     clickable. */
+  pointer-events: none;
+}
+
+/* Said twice so it outweighs whatever the borrowed class paints. A placeholder
+   wears the real element's class, and several of those carry a background of their
+   own — a black video frame, a white tile — which would otherwise win on order or
+   specificity and leave a solid block where the shimmer should be. */
+.skeleton.skeleton,
+.skeleton-line.skeleton-line {
+  background: color-mix(in srgb, var(--text) 8%, var(--surface-strong));
+}
+
+.skeleton::after,
+.skeleton-line::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(105deg, transparent 30%, color-mix(in srgb, white 45%, transparent) 48%, transparent 66%);
+  transform: translateX(-110%);
+  animation: game-result-shimmer 1.35s ease-in-out infinite;
+}
+
+.skeleton-line {
+  display: block;
+  width: 100%;
+  border-radius: 999px;
+  /* Scaled rather than spaced: real glyphs sit inside their line box with room
+     above and below, so the bar is squeezed the same way. The gap between two
+     stacked bars comes out of that room instead of out of a margin, which keeps a
+     run of them exactly as tall as the same number of real lines. */
+  transform: scaleY(0.78);
+}
+
+/* The bar's height, taken from a real line box rather than from a number. The
+   character is an ideographic space: a line of Latin metrics alone came out
+   several pixels short of any line that has CJK glyphs in it, and every line
+   this stands in for may have them. */
+.skeleton-line::before {
+  content: '\3000';
+}
+
+/* For a line whose real text is Latin only: a no-break space, so the box is built
+   from the Latin strut the way those lines are. An eyebrow reading DISCOVER came
+   out 3px taller with the ideographic character in it, and an empty string is not
+   a line at all — it leaves no box behind. */
+.skeleton-line.is-latin::before {
+  content: '\00a0';
+}
+
+.skeleton-line.is-half {
+  width: 50%;
+}
+
+.skeleton-line.is-short {
+  width: 30%;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -917,6 +990,10 @@ the transparent edge blur leaves behind.
 
 .tag-chip {
   padding: 0.5rem 0.75rem;
+  /* A chip is one line of text at its own natural height. Spelled out because a
+     button gets this from the browser and a plain element does not, and the two
+     have to come out the same height. */
+  line-height: normal;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -1316,6 +1393,13 @@ the transparent edge blur leaves behind.
   stroke-width: 2;
 }
 
+/* The middle column, said out loud rather than left to source order: the arrows
+   are only there when there is more than one item, and without them the card
+   fell into the 2.5rem arrow column. */
+.highlight-carousel-shell > .highlight-carousel-card {
+  grid-column: 2;
+}
+
 .highlight-carousel-card {
   width: 100%;
   overflow: hidden;
@@ -1347,13 +1431,29 @@ the transparent edge blur leaves behind.
   padding: 0.75rem 1rem 0.85rem;
 }
 
+/* Two lines, whatever the title is: clamped so a long one cannot grow the card,
+   and floored so a short one cannot shrink it. The height of this card is the
+   height of everything under it in the rail. */
 .highlight-carousel-copy h3 {
+  display: -webkit-box;
+  min-height: 2lh;
   margin-bottom: 0.25rem;
+  overflow: hidden;
   font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+  /* Stated so that 2lh and two rendered lines are the same number. Left at normal,
+     lh followed the Latin strut while a wrapped CJK title took several pixels more,
+     and the floor came out shorter than the thing it was flooring. */
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
+/* One line, kept even when there is nothing to say: most items carry no
+   description, and letting the line come and go moved every card under the
+   carousel by its height. */
 .highlight-carousel-copy p {
   display: -webkit-box;
+  min-height: 1lh;
   overflow: hidden;
   margin: 0;
   color: var(--text-soft);
@@ -1372,7 +1472,7 @@ the transparent edge blur leaves behind.
 /* background-color, never the background shorthand: on a phone the dots carry a
    padded hit box and paint only their content box, and the shorthand would reset
    that background-clip back to border-box. */
-.highlight-dots button {
+.highlight-dots :is(button, span) {
   width: 0.55rem;
   height: 0.55rem;
   padding: 0;
@@ -1546,6 +1646,12 @@ the transparent edge blur leaves behind.
   animation-play-state: paused;
 }
 
+/* The placeholder track holds the viewport's space; scrolling it would only move
+   grey boxes past each other. */
+.champion-marquee-track.is-static {
+  animation: none;
+}
+
 .champion-marquee-track a {
   display: block;
   width: 23rem;
@@ -1593,7 +1699,8 @@ the transparent edge blur leaves behind.
 }
 
 .champion-marquee-candidate img,
-.champion-marquee-candidate video {
+.champion-marquee-candidate video,
+.champion-marquee-candidate > .skeleton {
   display: block;
   width: 2.45rem;
   height: 2.45rem;
@@ -1679,13 +1786,6 @@ the transparent edge blur leaves behind.
     box-shadow: 0 12px 34px rgb(43 34 27 / 8%);
   }
 
-  .home-discovery-rail .highlight-carousel-copy h3 {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
   .home-discovery-rail .champion-marquee-section {
     display: block;
     margin-top: 1.25rem;
@@ -1726,7 +1826,8 @@ the transparent edge blur leaves behind.
   }
 
   .home-discovery-rail .champion-marquee-candidate img,
-  .home-discovery-rail .champion-marquee-candidate video {
+  .home-discovery-rail .champion-marquee-candidate video,
+  .home-discovery-rail .champion-marquee-candidate > .skeleton {
     width: 2rem;
     height: 2rem;
   }
@@ -2362,7 +2463,7 @@ the transparent edge blur leaves behind.
     gap: 0;
   }
 
-  .highlight-dots button {
+  .highlight-dots :is(button, span) {
     box-sizing: content-box;
     width: 0.7rem;
     height: 0.7rem;
