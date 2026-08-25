@@ -41,6 +41,9 @@ var (
 	// ErrRoomNotRebindable means the room may not follow the caller's game: either it
 	// has already moved on, or the game named belongs to another post. See Rebind.
 	ErrRoomNotRebindable = errors.New("gameroom: the room cannot follow that game")
+	// ErrInvalidVoting means the voting settings asked for are not a mode this package
+	// knows, or a round length outside what a party game can sit through.
+	ErrInvalidVoting = errors.New("gameroom: the voting settings are not valid")
 )
 
 // MaxNicknameRunes is what a player may rename themselves to, counted in runes because
@@ -161,6 +164,65 @@ func matchesFor(elements int) int {
 	return (elements + 1) / 2
 }
 
+// How a room decides a round.
+const (
+	// VoteModeHost is the original behaviour and the default for every room: the host
+	// picks a side and the participants are only wagering on what they will pick.
+	VoteModeHost = "host"
+	// VoteModeMajority hands the decision to the room. The side with more votes wins and
+	// a tie is broken at random — including the 0-0 tie of a round nobody voted in, so an
+	// unwatched room still advances rather than stalling on its own timer.
+	VoteModeMajority = "majority"
+)
+
+// Round length bounds, in seconds.
+//
+// The floor is what a phone user needs to read two candidates and tap one; the ceiling is
+// five minutes, past which a round has stopped being a round. Zero is outside both and
+// means something else entirely: no countdown, the host ends each round by hand.
+const (
+	MinRoundSeconds = 5
+	MaxRoundSeconds = 300
+)
+
+// VotingSettings is how a room decides its rounds, and how long the one in progress has
+// left.
+//
+// SECONDS REMAINING, NOT A DEADLINE. Everyone in the room has to count down to the same
+// instant, and their device clocks are not comparable — a phone two minutes fast would
+// settle two minutes early off an absolute timestamp. The server does the subtraction
+// against its own clock and sends the remainder, so a wrong client clock costs nothing.
+//
+// SecondsLeft is nil when no countdown is armed: host mode, manual mode, or a round that
+// has not started one yet.
+type VotingSettings struct {
+	Mode         string   `json:"mode"`
+	RoundSeconds int      `json:"round_seconds"`
+	SecondsLeft  *float64 `json:"seconds_left"`
+}
+
+// Majority reports whether the room decides its own rounds.
+func (settings VotingSettings) Majority() bool {
+	return settings.Mode == VoteModeMajority
+}
+
+// ValidVoting reports whether a mode and round length may be stored together.
+//
+// Exported and pure so the handler can refuse a bad request without a database round trip,
+// and so the rule is testable on its own.
+func ValidVoting(mode string, seconds int) bool {
+	switch mode {
+	case VoteModeHost:
+		// Host mode has no round of its own to time, so the only length that means
+		// anything is none.
+		return seconds == 0
+	case VoteModeMajority:
+		return seconds == 0 || (seconds >= MinRoundSeconds && seconds <= MaxRoundSeconds)
+	default:
+		return false
+	}
+}
+
 // ParticipationRepository is the request-side half of the store.
 type ParticipationRepository interface {
 	// EnsureRoom returns the game's room, creating it if the game has none. Must be
@@ -198,6 +260,17 @@ type ParticipationRepository interface {
 	RoundInProgress(ctx context.Context, gameSerial string) (RoundInProgress, error)
 	// LatestBet returns the caller's most recent wager, for rehydrating a reloaded page.
 	LatestBet(ctx context.Context, participantID int64) (PlacedBet, bool, error)
+	// Voting reads how the room decides its rounds and what is left of the one in
+	// progress.
+	Voting(ctx context.Context, roomID int64) (VotingSettings, error)
+	// SetVoting stores the mode and round length. It must also clear any deadline the
+	// old settings left armed, or a room switched back to host mode would keep counting
+	// down to a settlement nothing is going to perform.
+	SetVoting(ctx context.Context, roomID int64, mode string, seconds int) error
+	// ArmRoundDeadline starts the clock on the round now on screen, or clears it when
+	// the room is not on a countdown. Called on every round change, so it must be one
+	// statement rather than a read followed by a write.
+	ArmRoundDeadline(ctx context.Context, roomID int64) error
 }
 
 // RenameLimiter remembers when a player last renamed themselves.
@@ -273,6 +346,12 @@ func (participation *Participation) EnsureRoom(
 		if err := participation.repository.SetOnScreenPair(ctx, gameSerial, onScreen[0], onScreen[1]); err != nil {
 			return room, created, err
 		}
+		// A new pair is a new round, and in a majority room a round is a countdown. The
+		// host reports the pair on every load, so this is also what re-arms the clock for
+		// somebody who reloaded mid-round.
+		if err := participation.repository.ArmRoundDeadline(ctx, room.ID); err != nil {
+			return room, created, err
+		}
 	}
 	return room, created, nil
 }
@@ -324,8 +403,82 @@ func (participation *Participation) Rebind(
 			ctx, toGameSerial, onScreen[0], onScreen[1]); err != nil {
 			return room, err
 		}
+		// See EnsureRoom: the restart put a new pair on screen, so the countdown starts
+		// over rather than expiring against the game that has been left behind.
+		if err := participation.repository.ArmRoundDeadline(ctx, room.ID); err != nil {
+			return room, err
+		}
 	}
 	return room, nil
+}
+
+// Voting reads how a room decides its rounds.
+func (participation *Participation) Voting(ctx context.Context, roomID int64) (VotingSettings, error) {
+	return participation.repository.Voting(ctx, roomID)
+}
+
+// SetVoting changes how a room decides its rounds.
+//
+// WHAT AUTHORIZES IT. The same thing that authorizes Rebind, for the same reason: nothing
+// in this stack records who hosts a room, so naming the game the room is currently bound to
+// is the only proof of hosting there is. See Rebind for why that is the honest trust level
+// here — somebody who could abuse this can already play the host's game directly.
+//
+// The deadline is armed as part of the change rather than left to the next round. Without
+// that, switching a live room to a countdown would leave the match already on screen with
+// no clock, and the mode would appear not to work until the host settled that round by
+// hand — which is precisely what they just asked not to have to do.
+func (participation *Participation) SetVoting(
+	ctx context.Context, roomSerial, gameSerial, mode string, seconds int,
+) (VotingSettings, error) {
+	roomSerial = strings.TrimSpace(roomSerial)
+	gameSerial = strings.TrimSpace(gameSerial)
+	if roomSerial == "" {
+		return VotingSettings{}, ErrNotFound
+	}
+	if gameSerial == "" {
+		return VotingSettings{}, ErrGameNotFound
+	}
+	if !ValidVoting(mode, seconds) {
+		return VotingSettings{}, ErrInvalidVoting
+	}
+
+	room, currentGame, found, err := participation.repository.RoomBySerialWithGame(ctx, roomSerial)
+	if err != nil {
+		return VotingSettings{}, err
+	}
+	if !found {
+		return VotingSettings{}, ErrNotFound
+	}
+	if currentGame != gameSerial {
+		return VotingSettings{}, ErrRoomMismatch
+	}
+
+	if err := participation.repository.SetVoting(ctx, room.ID, mode, seconds); err != nil {
+		return VotingSettings{}, err
+	}
+	if err := participation.repository.ArmRoundDeadline(ctx, room.ID); err != nil {
+		return VotingSettings{}, err
+	}
+	return participation.repository.Voting(ctx, room.ID)
+}
+
+// ArmRound starts the countdown for the round a game has just moved onto.
+//
+// Called from the vote path, which is where a round changes for every reason other than a
+// host opening or moving a room. A game with no room is the common case and not an error:
+// most games are played solo, and creating a room here would give every one of them a room
+// nobody asked for.
+func (participation *Participation) ArmRound(ctx context.Context, gameSerial string) error {
+	gameSerial = strings.TrimSpace(gameSerial)
+	if gameSerial == "" {
+		return nil
+	}
+	room, hosting, err := participation.repository.RoomByGameSerial(ctx, gameSerial)
+	if err != nil || !hosting {
+		return err
+	}
+	return participation.repository.ArmRoundDeadline(ctx, room.ID)
 }
 
 // Join returns the caller's participant row in a room, creating it on first visit.

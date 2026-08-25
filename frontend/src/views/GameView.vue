@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AdSlot from '../components/AdSlot.vue'
@@ -23,7 +23,13 @@ import { useAuth } from '../composables/useAuth'
 import { closeImageViewer, openImageViewer } from '../services/imageViewer'
 import { unlockPost } from '../services/postAccess'
 import { boardRows } from '../composables/useGameRoom'
-import { onScreenPairForBatch, useHostedRoom } from '../composables/useHostedRoom'
+import {
+  DEFAULT_ROUND_SECONDS,
+  MAX_ROUND_SECONDS,
+  MIN_ROUND_SECONDS,
+  onScreenPairForBatch,
+  useHostedRoom,
+} from '../composables/useHostedRoom'
 import { getAnonymousID } from '../lib/anonymousId'
 import { downloadQRCode, drawQRCode } from '../lib/qrcode'
 import { shareOrCopyLink } from '../lib/share'
@@ -172,12 +178,26 @@ const trendError = ref(false)
 const restartDialog = ref<HTMLDialogElement | null>(null)
 const multiplayerDialog = ref<HTMLDialogElement | null>(null)
 /**
- * Which half of the multiplayer dialog is on screen.
+ * Which part of the multiplayer dialog is on screen.
  *
- * `mode` is the choice of game mode, `invite` is the link to hand out. A host never leaves
- * their own game for a room, so these two steps are the whole of hosting.
+ * `mode` is the choice of game mode, `settings` is how a majority room ends its rounds, and
+ * `invite` is the link to hand out. A host never leaves their own game for a room, so these
+ * three steps are the whole of hosting.
  */
-const multiplayerStep = ref<'mode' | 'invite'>('mode')
+const multiplayerStep = ref<'mode' | 'settings' | 'invite'>('mode')
+/** Whether a majority room runs on a clock. False means the host ends every round by hand. */
+const roundTimed = ref(true)
+/** The countdown the host is about to set, in seconds. Clamped when it is sent. */
+const roundSeconds = ref(DEFAULT_ROUND_SECONDS)
+const votingPending = ref(false)
+const votingError = ref(false)
+/**
+ * True while a round is being settled by the room.
+ *
+ * The winner is read from the server, so settling is not instant, and both triggers — the
+ * countdown hitting zero and the button — can fire inside that window.
+ */
+const settlingRound = ref(false)
 const rankingExportOpen = ref(false)
 const restartError = ref(false)
 const entryDecisionPending = ref(false)
@@ -871,6 +891,95 @@ async function chooseGuessPreferenceMode(): Promise<void> {
   multiplayerStep.value = 'invite'
   await renderRoomQRCode()
 }
+
+/**
+ * Starts the majority mode, which asks how rounds end before handing out the link.
+ *
+ * The room is opened first so the settings have something to be written to, and it opens in
+ * the ordinary host-decides mode: a room whose link is not out yet has nobody to decide
+ * anything, and the mode is written the moment the host confirms the settings.
+ */
+async function chooseMajorityMode(): Promise<void> {
+  await openGameRoom()
+  if (!hostedRoom.hosting.value) return
+  openRoundSettings()
+}
+
+/** Shows the round settings, prefilled from what the room is running on now. */
+function openRoundSettings(): void {
+  const current = hostedRoom.voting.value
+  roundTimed.value = !(current?.mode === 'majority' && current.round_seconds === 0)
+  if (current && current.round_seconds > 0) roundSeconds.value = current.round_seconds
+  votingError.value = false
+  multiplayerStep.value = 'settings'
+}
+
+/**
+ * Writes the settings and moves on to the invite.
+ *
+ * The seconds are clamped rather than validated: the server refuses anything outside the
+ * range, and a host who typed 3 meant "as short as it goes", not "fail".
+ */
+async function confirmRoundSettings(): Promise<void> {
+  if (votingPending.value) return
+  votingPending.value = true
+  votingError.value = false
+  const seconds = roundTimed.value
+    ? Math.min(MAX_ROUND_SECONDS, Math.max(MIN_ROUND_SECONDS, Math.round(roundSeconds.value) || DEFAULT_ROUND_SECONDS))
+    : 0
+  try {
+    await hostedRoom.setVoting('majority', seconds)
+    roundSeconds.value = seconds || roundSeconds.value
+    multiplayerStep.value = 'invite'
+    await renderRoomQRCode()
+  } catch {
+    votingError.value = true
+  } finally {
+    votingPending.value = false
+  }
+}
+
+/**
+ * Whether the room may decide the pairing on screen right now.
+ *
+ * Everything `voteFor` refuses is refused here too, and for the same reasons: the settled
+ * round becomes a local vote like any other.
+ */
+const canSettleRound = computed(() => Boolean(
+  hostedRoom.majority.value
+  && snapshot.value?.status === 'playing'
+  && currentElements.value
+  && !readOnly.value
+  && !animating.value
+  && !settlingRound.value,
+))
+
+/**
+ * Lets the room decide the round on screen.
+ *
+ * The winner comes from a fresh read of the tally, so the pairing is checked again once it
+ * arrives: a round that settled while the request was in flight has already moved on, and
+ * voting again would eliminate a candidate nobody was shown.
+ */
+async function settleRound(): Promise<void> {
+  const pair = currentElements.value
+  if (!canSettleRound.value || !pair) return
+  settlingRound.value = true
+  try {
+    const winnerId = await hostedRoom.majorityWinner([pair[0].id, pair[1].id])
+    const shown = currentElements.value
+    if (!shown || shown[0].id !== pair[0].id || shown[1].id !== pair[1].id) return
+    voteFor(winnerId)
+  } finally {
+    settlingRound.value = false
+  }
+}
+
+// The countdown is the server's, but the bracket is this browser's, so the only place that
+// can act on a round running out is here.
+watch(() => hostedRoom.roundExpired.value, (expired) => {
+  if (expired) void settleRound()
+})
 
 /**
  * Draws the invite code, after the step it lives on has been rendered.
@@ -1860,10 +1969,13 @@ function preferredRankImage(report: RankReport): string | null {
                 <b>{{ blackBoxVotes ? blackBoxVotes.get(element.id) ?? 0 : '—' }}</b>
                 <span v-if="blackBoxVotes">{{ blackBoxShare(element.id) }}%</span>
               </p>
+              <!-- Locked while the room decides: two ways to settle a round would be two
+                   sources of truth, and a host clicking through would leave the votes
+                   they asked the room for unread. -->
               <button
                 class="game-vote-button"
                 type="button"
-                :disabled="readOnly || animating"
+                :disabled="readOnly || animating || hostedRoom.majority.value"
                 :aria-label="t('gameVoteFor', { title: element.title })"
                 @click="voteFor(element.id)"
               >
@@ -1923,6 +2035,22 @@ function preferredRankImage(report: RankReport): string | null {
             <span>{{ t('roomPlayers') }}</span>
             <b>{{ hostedRoom.players.value }}</b>
           </p>
+
+          <!-- The round clock, and the way out of it. The button is offered on a timed
+               round too: cutting one short is useful whether or not one was going to end
+               on its own. -->
+          <div v-if="hostedRoom.majority.value" class="game-room-round">
+            <p class="game-room-round-clock">
+              <span>{{ hostedRoom.secondsLeft.value === null ? t('roomRoundManual') : t('roomRoundRemaining') }}</span>
+              <b v-if="hostedRoom.secondsLeft.value !== null">{{ hostedRoom.secondsLeft.value }}</b>
+            </p>
+            <button
+              type="button"
+              class="game-room-round-settle"
+              :disabled="!canSettleRound"
+              @click="settleRound"
+            >{{ t('roomRoundSettle') }}</button>
+          </div>
 
           <div class="game-room-panel-actions">
             <button
@@ -2356,7 +2484,9 @@ function preferredRankImage(report: RankReport): string | null {
         <div>
           <p class="eyebrow">2PICK · {{ t('gameRoom') }}</p>
           <h2 id="game-multiplayer-title">
-            {{ multiplayerStep === 'invite' ? t('roomInviteFriends') : t('roomChooseMode') }}
+            {{ multiplayerStep === 'invite'
+              ? t('roomInviteFriends')
+              : multiplayerStep === 'settings' ? t('roomRoundSettings') : t('roomChooseMode') }}
           </h2>
         </div>
         <button type="button" :aria-label="t('close')" @click="closeMultiplayerDialog">×</button>
@@ -2380,17 +2510,25 @@ function preferredRankImage(report: RankReport): string | null {
               <li>{{ t('roomModeCombo') }}</li>
             </ul>
           </button>
-          <!-- Not a disabled button: there is nothing to press, and a button that can never
-               be pressed still takes keyboard focus. -->
-          <div class="game-mode-card is-upcoming">
+          <button
+            class="game-mode-card"
+            type="button"
+            :disabled="hostedRoom.status.value === 'opening'"
+            @click="chooseMajorityMode"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
               <path d="M3.5 19a5.5 5.5 0 0 1 11 0M15 19a4 4 0 0 1 5.5-3.7" />
             </svg>
             <strong>{{ t('roomModeMajority') }}</strong>
             <p>{{ t('roomModeMajorityDescription') }}</p>
-            <span class="game-mode-upcoming">{{ t('roomModeComingSoon') }}</span>
-          </div>
+            <ul>
+              <li>{{ t('roomModeMajorityTimer') }}</li>
+              <li>{{ t('roomModeMajorityTie') }}</li>
+              <li>{{ t('roomModeBlackBox') }}</li>
+              <li>{{ t('roomModePoints') }}</li>
+            </ul>
+          </button>
         </div>
         <p
           v-if="hostedRoom.status.value === 'failed'"
@@ -2398,6 +2536,52 @@ function preferredRankImage(report: RankReport): string | null {
           role="alert"
         >{{ t('roomHostFailed') }}</p>
       </template>
+
+      <section v-else-if="multiplayerStep === 'settings'" class="game-room-round-settings">
+        <p class="game-room-invite-hint">{{ t('roomRoundSettingsHint') }}</p>
+        <div class="game-room-round-modes">
+          <button
+            type="button"
+            class="game-room-round-mode"
+            :class="{ 'is-on': roundTimed }"
+            :aria-pressed="roundTimed"
+            @click="roundTimed = true"
+          >
+            <strong>{{ t('roomRoundTimed') }}</strong>
+            <span>{{ t('roomRoundTimedDescription') }}</span>
+          </button>
+          <button
+            type="button"
+            class="game-room-round-mode"
+            :class="{ 'is-on': !roundTimed }"
+            :aria-pressed="!roundTimed"
+            @click="roundTimed = false"
+          >
+            <strong>{{ t('roomRoundManualMode') }}</strong>
+            <span>{{ t('roomRoundManualDescription') }}</span>
+          </button>
+        </div>
+        <label v-if="roundTimed" class="game-room-round-seconds">
+          <span>{{ t('roomRoundSeconds') }}</span>
+          <input
+            v-model.number="roundSeconds"
+            type="number"
+            inputmode="numeric"
+            :min="MIN_ROUND_SECONDS"
+            :max="MAX_ROUND_SECONDS"
+            step="1"
+          >
+        </label>
+        <p v-if="votingError" class="game-room-invite-error" role="alert">{{ t('roomRoundSettingsFailed') }}</p>
+        <div class="game-room-invite-actions">
+          <button
+            class="button button-primary"
+            type="button"
+            :disabled="votingPending"
+            @click="confirmRoundSettings"
+          >{{ t('roomRoundConfirm') }}</button>
+        </div>
+      </section>
 
       <section v-else class="game-room-invite">
         <p class="game-room-invite-host">{{ t('roomHostYou') }}</p>
@@ -2425,6 +2609,14 @@ function preferredRankImage(report: RankReport): string | null {
             @click="saveRoomQRCode"
           >
             {{ t('roomQrDownload') }}
+          </button>
+          <button
+            v-if="hostedRoom.majority.value"
+            class="button button-ghost"
+            type="button"
+            @click="openRoundSettings"
+          >
+            {{ t('roomRoundSettings') }}
           </button>
         </div>
       </section>

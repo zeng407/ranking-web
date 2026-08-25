@@ -1,4 +1,4 @@
-import { ref, shallowRef, type Ref } from 'vue'
+import { computed, ref, shallowRef, type Ref } from 'vue'
 
 import { getRuntimeConfig } from '../config/runtime'
 import { APIError } from '../lib/api'
@@ -10,8 +10,10 @@ import {
   type RoomBet,
   type RoomPlayer,
   type RoomState,
+  type RoomVoting,
   type RoomVotes,
 } from '../services/gameRoom'
+import { useRoundCountdown } from './useRoundCountdown'
 
 /**
  * Drives one game room: joins it, keeps the leaderboard current, and places wagers.
@@ -37,6 +39,13 @@ export const LEADERBOARD_EVENT = 'GameBetRank'
  */
 export const ROUND_EVENT = 'GameRoomRound'
 
+/** What the worker publishes on ROUND_EVENT. Every field is optional over the wire. */
+interface RoundFrame {
+  game_serial?: string
+  votes?: RoomVotes | null
+  voting?: RoomVoting | null
+}
+
 /**
  * How often to re-read the room with no live socket. Five seconds is what the old UI used:
  * fast enough that the host advancing a round feels immediate, slow enough to be free at
@@ -61,6 +70,15 @@ export interface UseGameRoom {
   status: Ref<RoomStatus>
   player: Ref<RoomPlayer | null>
   votes: Ref<RoomVotes | null>
+  /** How the room decides its rounds. Carried by the state read and by every pairing frame. */
+  voting: Ref<RoomVoting | null>
+  /** True while the room decides its own rounds rather than the host. */
+  majority: Ref<boolean>
+  /**
+   * Whole seconds left in this round, or null when nothing is counting down — a
+   * host-decided room, or a majority round the host ends by hand.
+   */
+  secondsLeft: Ref<number | null>
   leaderboard: Ref<Leaderboard | null>
   ownBet: Ref<RoomBet | null>
   gameSerial: Ref<string>
@@ -83,6 +101,7 @@ export function useGameRoom(
   const status = ref<RoomStatus>('loading')
   const player = ref<RoomPlayer | null>(null)
   const votes = ref<RoomVotes | null>(null)
+  const voting = ref<RoomVoting | null>(null)
   const leaderboard = ref<Leaderboard | null>(null)
   const ownBet = ref<RoomBet | null>(null)
   const gameSerial = ref('')
@@ -96,9 +115,15 @@ export function useGameRoom(
   let pollTimer: ReturnType<typeof setInterval> | undefined
   let controller: AbortController | null = null
 
+  const majority = computed(() => voting.value?.mode === 'majority')
+  // A participant only watches this clock: the round is settled in the host's browser,
+  // which is the only place that knows which pair comes next.
+  const countdown = useRoundCountdown()
+
   function applyState(state: RoomState): void {
     player.value = state.player
     votes.value = state.votes
+    applyVoting(state.voting)
     ownBet.value = state.latest_bet
     leaderboard.value = state.leaderboard
     gameSerial.value = state.game_serial
@@ -143,7 +168,7 @@ export function useGameRoom(
           }
         },
         [ROUND_EVENT]: (payload) => {
-          applyRound(payload as { game_serial?: string; votes?: RoomVotes | null } | null)
+          applyRound(payload as RoundFrame | null)
         },
       },
       (state) => {
@@ -170,7 +195,7 @@ export function useGameRoom(
    * between our POST and the read that wager does itself, and would put the pre-wager
    * counts back on screen.
    */
-  function applyRound(payload: { game_serial?: string; votes?: RoomVotes | null } | null): void {
+  function applyRound(payload: RoundFrame | null): void {
     if (!payload || betting.value) return
     // A game serial we have not seen means the host restarted: the room followed them onto
     // a new game, and the view has to reload that game's elements before it can draw the
@@ -180,6 +205,19 @@ export function useGameRoom(
     }
     // votes is null between rounds, which is a real answer and not a malformed frame.
     votes.value = payload.votes ?? null
+    applyVoting(payload.voting ?? null)
+  }
+
+  /**
+   * Takes the room's settings and re-seeds the clock from them.
+   *
+   * The remainder is the server's, measured by the clock that armed the deadline, because
+   * this device's own clock is not comparable to the host's. Between reads it is counted
+   * down locally, so every read corrects the drift rather than letting it accumulate.
+   */
+  function applyVoting(next: RoomVoting | null | undefined): void {
+    voting.value = next ?? null
+    countdown.seed(next?.seconds_left ?? null)
   }
 
   function startPolling(): void {
@@ -263,6 +301,9 @@ export function useGameRoom(
     status,
     player,
     votes,
+    voting,
+    majority,
+    secondsLeft: countdown.display,
     leaderboard,
     ownBet,
     gameSerial,

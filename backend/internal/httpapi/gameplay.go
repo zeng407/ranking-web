@@ -206,7 +206,19 @@ func (a *api) submitGameVotes(w http.ResponseWriter, r *http.Request) {
 // Logged at error level even so — if this starts failing steadily, rooms silently stop
 // updating and nothing else reveals it.
 func (a *api) announceGameRoomRounds(r *http.Request, gameSerial string, rounds []gameplay.SettledRound) {
-	if a.gameRoomAnnouncer == nil || len(rounds) == 0 {
+	if len(rounds) == 0 {
+		return
+	}
+
+	// The round the host has just moved onto is a new round, and in a majority room that
+	// means a new countdown. Done here because this is the seam every settled round
+	// already passes through, and before the announce below so the frame the worker
+	// builds from it carries the deadline that was just armed. Ahead of the announcer
+	// check because a room is playable by polling alone, and its clock has to run either
+	// way.
+	a.armGameRoomRound(r, gameSerial)
+
+	if a.gameRoomAnnouncer == nil {
 		return
 	}
 
@@ -232,6 +244,24 @@ func (a *api) announceGameRoomRounds(r *http.Request, gameSerial string, rounds 
 	}
 	if published > 0 {
 		a.logger.Info("game_room_rounds_announced", "game_serial", gameSerial, "rounds", published)
+	}
+}
+
+// armGameRoomRound restarts the round clock for a room whose host has advanced the game.
+//
+// Best effort, like everything else on this path: the votes are committed, and failing the
+// response over a clock would make the client retry a batch the server has accepted. What a
+// lost arming costs is one round whose countdown reads as already expired, which the host's
+// client settles at once — the room moves on rather than stalling.
+func (a *api) armGameRoomRound(r *http.Request, gameSerial string) {
+	if a.gameRooms == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), announceTimeout)
+	defer cancel()
+
+	if err := a.gameRooms.ArmRound(ctx, gameSerial); err != nil {
+		a.logger.Error("game_room_arm_round_failed", "game_serial", gameSerial, "error", err)
 	}
 }
 

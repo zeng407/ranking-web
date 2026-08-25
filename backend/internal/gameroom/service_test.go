@@ -266,6 +266,7 @@ type harness struct {
 type fakeVotes struct {
 	tally      VoteTally
 	inProgress bool
+	voting     VotingSettings
 	roomID     int64
 	gameSerial string
 	calls      int
@@ -279,6 +280,14 @@ func (fake *fakeVotes) CurrentVotes(_ context.Context, roomID int64, gameSerial 
 		return VoteTally{}, false, fake.err
 	}
 	return fake.tally, fake.inProgress, nil
+}
+
+func (fake *fakeVotes) Voting(_ context.Context, roomID int64) (VotingSettings, error) {
+	fake.roomID = roomID
+	if fake.err != nil {
+		return VotingSettings{}, fake.err
+	}
+	return fake.voting, nil
 }
 
 func newHarness(t *testing.T) *harness {
@@ -892,6 +901,37 @@ func TestRoundBroadcastsWithoutATallyBetweenRounds(t *testing.T) {
 	}
 	if payload.Votes != nil {
 		t.Errorf("votes = %+v, want nothing when no round is in progress", payload.Votes)
+	}
+}
+
+/**
+ * The countdown rides on the same frame as the pairing.
+ *
+ * It has to: the clock the room counts down to is the server's, and this is the moment the
+ * server has just restarted it. A participant who learned the mode only by polling would
+ * spend the gap between reads counting down to the previous round's deadline.
+ */
+func TestRoundBroadcastsTheVotingSettings(t *testing.T) {
+	h := newHarness(t)
+	h.votes.inProgress = false
+	remaining := 12.5
+	h.votes.voting = VotingSettings{Mode: VoteModeMajority, RoundSeconds: 15, SecondsLeft: &remaining}
+
+	if err := h.round(t, "game-serial"); err != nil {
+		t.Fatalf("handleRound() error = %v", err)
+	}
+	payload, ok := h.broadcaster.sent[0].payload.(RoundBroadcast)
+	if !ok {
+		t.Fatalf("payload = %T, want RoundBroadcast", h.broadcaster.sent[0].payload)
+	}
+	if payload.Voting == nil {
+		t.Fatalf("voting = nil, want the settings the store returned")
+	}
+	if !payload.Voting.Majority() || payload.Voting.RoundSeconds != 15 {
+		t.Errorf("voting = %+v, want majority at 15 seconds", *payload.Voting)
+	}
+	if payload.Voting.SecondsLeft == nil || *payload.Voting.SecondsLeft != remaining {
+		t.Errorf("seconds left = %v, want %v", payload.Voting.SecondsLeft, remaining)
 	}
 }
 

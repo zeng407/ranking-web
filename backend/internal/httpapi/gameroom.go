@@ -21,6 +21,11 @@ type GameRoomService interface {
 	Join(ctx context.Context, roomID int64, anonymousID string, userID *int64, locale string) (gameroom.Participant, error)
 	BetOnCurrentRound(ctx context.Context, roomID int64, participant gameroom.Participant, gameSerial string, winnerID, loserID int64) error
 	Rename(ctx context.Context, participant gameroom.Participant, nickname string) error
+	SetVoting(ctx context.Context, roomSerial, gameSerial, mode string, seconds int) (gameroom.VotingSettings, error)
+	// ArmRound restarts the round clock after the vote path advances a game. Lives on
+	// this interface rather than the announcer's because it is a write to the room, not
+	// a broadcast about it.
+	ArmRound(ctx context.Context, gameSerial string) error
 }
 
 // GameRoomReader is the read half: resolving a room and its current state.
@@ -28,6 +33,7 @@ type GameRoomReader interface {
 	RoomBySerialWithGame(ctx context.Context, roomSerial string) (gameroom.Room, string, bool, error)
 	CurrentVotes(ctx context.Context, roomID int64, gameSerial string) (gameroom.VoteTally, bool, error)
 	LatestBet(ctx context.Context, participantID int64) (gameroom.PlacedBet, bool, error)
+	Voting(ctx context.Context, roomID int64) (gameroom.VotingSettings, error)
 }
 
 // GameRoomAnnouncer publishes the settlement work a host's votes create.
@@ -96,10 +102,14 @@ type gameRoomResponse struct {
 	// GameSerial lets a client that only has a room link find the game it belongs to,
 	// which the old UI needed a separate request for.
 	GameSerial  string                `json:"game_serial"`
-	Player      *gameRoomPlayer       `json:"player"`
-	Votes       *gameroom.VoteTally   `json:"votes"`
-	LatestBet   *gameRoomBet          `json:"latest_bet"`
-	Leaderboard *gameroom.Leaderboard `json:"leaderboard"`
+	Player *gameRoomPlayer     `json:"player"`
+	Votes  *gameroom.VoteTally `json:"votes"`
+	// Voting sits beside the tally rather than inside it because it has to be readable
+	// between rounds, when there is no tally at all: a client that has just joined needs
+	// to know it is in a majority room before the next pairing appears.
+	Voting      *gameroom.VotingSettings `json:"voting"`
+	LatestBet   *gameRoomBet             `json:"latest_bet"`
+	Leaderboard *gameroom.Leaderboard    `json:"leaderboard"`
 }
 
 // gameRoomPlayer mirrors GameRoomUserResource, including the digest instead of the row
@@ -119,7 +129,8 @@ type gameRoomPlayer struct {
 // pairing in progress" is a normal answer and a wrapper carries it as null without the
 // caller having to tell an empty tally from a real one full of zeroes.
 type gameRoomVotesResponse struct {
-	Votes *gameroom.VoteTally `json:"votes"`
+	Votes  *gameroom.VoteTally      `json:"votes"`
+	Voting *gameroom.VotingSettings `json:"voting"`
 }
 
 type gameRoomBet struct {
@@ -194,7 +205,23 @@ func (a *api) createGameRoom(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Private: a room serial is a capability, and this response hands one out.
-	writePrivateJSON(w, r, status, gameRoomResponse{Serial: room.Serial, GameSerial: request.GameSerial})
+	response := gameRoomResponse{Serial: room.Serial, GameSerial: request.GameSerial}
+	a.attachRoomVoting(r, room.ID, &response)
+	writePrivateJSON(w, r, status, response)
+}
+
+// attachRoomVoting reports how the room decides its rounds, best-effort.
+//
+// Best-effort because the caller here has already succeeded at what it was asked to do:
+// the room exists, or has moved, and failing that request over a settings read would be a
+// worse answer than a host whose clock starts one poll later than it could have.
+func (a *api) attachRoomVoting(r *http.Request, roomID int64, response *gameRoomResponse) {
+	voting, err := a.gameRoomReader.Voting(r.Context(), roomID)
+	if err != nil {
+		a.logger.WarnContext(r.Context(), "game_room_voting_read_failed", "error", err)
+		return
+	}
+	response.Voting = &voting
 }
 
 // rebindGameRoom makes an open room follow its host into a new game.
@@ -249,8 +276,9 @@ func (a *api) rebindGameRoom(w http.ResponseWriter, r *http.Request) {
 	// game's pairing, and nothing else is coming to move them off it.
 	a.announceRoomPairing(r, request.GameSerial)
 
-	writePrivateJSON(w, r, http.StatusOK,
-		gameRoomResponse{Serial: room.Serial, GameSerial: request.GameSerial})
+	response := gameRoomResponse{Serial: room.Serial, GameSerial: request.GameSerial}
+	a.attachRoomVoting(r, room.ID, &response)
+	writePrivateJSON(w, r, http.StatusOK, response)
 }
 
 // gameRoomState is the one call a joining client makes.
@@ -298,6 +326,13 @@ func (a *api) gameRoomState(w http.ResponseWriter, r *http.Request) {
 	} else if present {
 		response.Votes = &votes
 	}
+
+	voting, err := a.gameRoomReader.Voting(r.Context(), room.ID)
+	if err != nil {
+		a.writeGameRoomError(w, r, err)
+		return
+	}
+	response.Voting = &voting
 
 	if bet, found, err := a.gameRoomReader.LatestBet(r.Context(), participant.ID); err != nil {
 		a.writeGameRoomError(w, r, err)
@@ -368,7 +403,66 @@ func (a *api) gameRoomVotes(w http.ResponseWriter, r *http.Request) {
 	if present {
 		response.Votes = &votes
 	}
+	voting, err := a.gameRoomReader.Voting(r.Context(), room.ID)
+	if err != nil {
+		a.writeGameRoomError(w, r, err)
+		return
+	}
+	response.Voting = &voting
 	writePrivateJSON(w, r, http.StatusOK, response)
+}
+
+// setGameRoomVoting changes how a room decides its rounds.
+//
+// MAJORITY MODE, AND WHY THE SERVER HOLDS THE CLOCK. The bracket is played in the host's
+// browser — the server never learns which pair comes next — so the server cannot settle a
+// round itself, and the host's client remains the only thing that can. What it cannot do is
+// own the deadline: the host and every participant have to be counting down to the same
+// instant, and their device clocks are not comparable. So the deadline is stored with the
+// room and handed out as seconds remaining, and the host's client acts on it.
+//
+// Authorized the way rebindGameRoom is: naming the game the room is bound to. See
+// gameroom.Participation.SetVoting.
+func (a *api) setGameRoomVoting(w http.ResponseWriter, r *http.Request) {
+	if !a.requireGameRoom(w, r) {
+		return
+	}
+
+	roomSerial := strings.TrimSpace(r.PathValue("serial"))
+	if roomSerial == "" {
+		writeError(w, r, http.StatusNotFound, "room_not_found", "the room does not exist")
+		return
+	}
+
+	var request struct {
+		GameSerial string `json:"game_serial"`
+		Mode       string `json:"mode"`
+		// RoundSeconds is the countdown, or 0 for a round the host ends by hand. One
+		// field for both because they are one setting: a flag beside the number would be
+		// able to disagree with it.
+		RoundSeconds int `json:"round_seconds"`
+	}
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(request.GameSerial) == "" {
+		writeError(w, r, http.StatusUnprocessableEntity, "invalid_game_serial", "game_serial is required")
+		return
+	}
+
+	settings, err := a.gameRooms.SetVoting(
+		r.Context(), roomSerial, request.GameSerial, strings.TrimSpace(request.Mode), request.RoundSeconds)
+	if err != nil {
+		a.writeGameRoomError(w, r, err)
+		return
+	}
+
+	// The people already seated are the reason the deadline is server-side at all, and
+	// nothing else is coming to tell them the rules just changed.
+	a.announceRoomPairing(r, request.GameSerial)
+
+	writePrivateJSON(w, r, http.StatusOK, gameRoomVotesResponse{Voting: &settings})
 }
 
 // placeGameRoomBet records a wager on the round in progress.
@@ -545,6 +639,9 @@ func (a *api) writeGameRoomError(w http.ResponseWriter, r *http.Request, err err
 	case errors.Is(err, gameroom.ErrNotTheCurrentPairing):
 		writeError(w, r, http.StatusConflict, "stale_pairing",
 			"that is not the pairing currently on screen")
+	case errors.Is(err, gameroom.ErrInvalidVoting):
+		writeError(w, r, http.StatusUnprocessableEntity, "invalid_voting",
+			"mode must be host or majority, and a majority round must last 0 or 5 to 300 seconds")
 	case errors.Is(err, gameroom.ErrInvalidNickname):
 		writeError(w, r, http.StatusUnprocessableEntity, "invalid_nickname",
 			"a nickname is required and must contain at most 10 characters")

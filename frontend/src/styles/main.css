@@ -3550,24 +3550,67 @@ button.game-sync-indicator {
   font-size: 0.7rem;
 }
 
-/* The unbuilt mode. Shown so the roadmap is visible, dimmed so it is not mistaken for a
-   choice, and not a button at all so it never takes focus. */
-.game-mode-card.is-upcoming {
-  cursor: default;
-  opacity: 0.55;
+/* How a majority room ends its rounds, asked once between the mode and the invite. */
+.game-room-round-settings {
+  display: grid;
+  gap: 0.65rem;
 }
 
-.game-mode-card.is-upcoming svg {
-  stroke: var(--text-soft);
+.game-room-round-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 
-.game-mode-upcoming {
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  color: var(--text-soft);
+.game-room-round-mode {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  color: var(--text);
   background: var(--surface-strong);
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.game-room-round-mode:hover {
+  border-color: var(--border-strong);
+}
+
+.game-room-round-mode.is-on {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, var(--surface-strong));
+}
+
+.game-room-round-mode span {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+}
+
+.game-room-round-seconds {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.8rem;
+  background: var(--surface-strong);
+  font-size: 0.8rem;
+}
+
+.game-room-round-seconds input {
+  width: 5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* Handing out the link. The host reads this and stays on their own game. */
@@ -4112,6 +4155,51 @@ button.game-sync-indicator {
 
 .game-room-players b {
   font-size: 1.15rem;
+}
+
+/* The round the room is deciding: how long is left, and the way to cut it short. */
+.game-room-round {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--accent, #2563eb) 10%, var(--surface-strong));
+}
+
+.game-room-round-clock {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-room-round-clock b {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.game-room-round-settle {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 55%, var(--border));
+  border-radius: 0.7rem;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.game-room-round-settle:hover:not(:disabled) {
+  background: var(--surface-strong);
+}
+
+.game-room-round-settle:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .game-room-panel-actions {

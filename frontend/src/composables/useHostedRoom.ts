@@ -7,9 +7,11 @@ import {
   getGameRoomService,
   type GameRoomService,
   type Leaderboard,
+  type RoomVoting,
   type RoomVotes,
 } from '../services/gameRoom'
 import { LEADERBOARD_EVENT } from './useGameRoom'
+import { useRoundCountdown } from './useRoundCountdown'
 
 /**
  * The host's side of a game room: open one for the game being played, and remember it.
@@ -52,6 +54,16 @@ export const VOTES_POLL_INTERVAL_MS = 5_000
  */
 export const BOARD_POLL_INTERVAL_MS = 15_000
 
+/**
+ * The default round length the settings offer. Fifteen seconds: long enough to read two
+ * names and pick, short enough that a room of strangers does not lose interest.
+ */
+export const DEFAULT_ROUND_SECONDS = 15
+
+/** The range the server accepts. Mirrors gameroom.MinRoundSeconds / MaxRoundSeconds. */
+export const MIN_ROUND_SECONDS = 5
+export const MAX_ROUND_SECONDS = 300
+
 export type HostedRoomStatus = 'closed' | 'opening' | 'open' | 'failed'
 
 export interface UseHostedRoom {
@@ -66,10 +78,36 @@ export interface UseHostedRoom {
   players: Ref<number>
   /** The tally for the pairing on screen, or null between rounds and while closed. */
   votes: Ref<RoomVotes | null>
+  /** How the room decides its rounds, as the server last reported it. */
+  voting: Ref<RoomVoting | null>
+  /** True while the room is deciding its own rounds. */
+  majority: Ref<boolean>
+  /** Whole seconds left in this round, or null when nothing is counting down. */
+  secondsLeft: Ref<number | null>
+  /**
+   * True once a running countdown has reached zero and until the next round is armed.
+   *
+   * The host's view watches this and settles, because the bracket is played in their
+   * browser: the server holds the clock, but it does not know which pair comes next and
+   * cannot decide the round itself.
+   */
+  roundExpired: Ref<boolean>
   /** Whether the black box is open. Only then is the tally read. */
   blackBox: Ref<boolean>
   live: Ref<PusherState>
   open(currentCandidates?: number[]): Promise<void>
+  /**
+   * Hands the decision to the room, or takes it back. Also arms the clock for the round
+   * already on screen, so the setting takes effect now rather than next round.
+   */
+  setVoting(mode: RoomVoting['mode'], roundSeconds: number): Promise<void>
+  /**
+   * Who wins the round on screen, decided by the room.
+   *
+   * Reads the tally fresh rather than trusting the polled copy, and breaks a tie — 0-0
+   * included — at random, so an unwatched room still advances.
+   */
+  majorityWinner(pair: readonly [number, number], random?: () => number): Promise<number>
   /**
    * Tells the room which pair is on screen now. Does nothing when no room is open, so the
    * game view can call it on every re-pick without asking whether it is hosting.
@@ -101,6 +139,7 @@ export function useHostedRoom(
   const status = ref<HostedRoomStatus>('closed')
   const board = ref<Leaderboard | null>(null)
   const votes = ref<RoomVotes | null>(null)
+  const voting = ref<RoomVoting | null>(null)
   const blackBox = ref(false)
   const live = ref<PusherState>('disconnected')
   const players = computed(() => board.value?.total_users ?? 0)
@@ -110,6 +149,11 @@ export function useHostedRoom(
   const channel = shallowRef<PusherChannel | null>(null)
   let boardTimer: ReturnType<typeof setInterval> | undefined
   let votesTimer: ReturnType<typeof setInterval> | undefined
+
+  const majority = computed(() => voting.value?.mode === 'majority')
+  // The countdown is seeded from every read; onExpire is the view's business, so this one
+  // only keeps the number. GameView watches `expired` and settles.
+  const countdown = useRoundCountdown()
 
   const hosting = computed(() => Boolean(serial.value))
   const inviteURL = computed(() => {
@@ -185,6 +229,8 @@ export function useHostedRoom(
     const room = serial.value
     // The old game's tally describes a match nobody is voting on any more.
     votes.value = null
+    // The clock too: the round it was counting down belongs to the game just left.
+    countdown.reset()
     try {
       await service.rebind(room, fromGameSerial, toGameSerial, onScreen?.())
     } catch (error) {
@@ -203,7 +249,7 @@ export function useHostedRoom(
     store(toGameSerial, room)
     clearStored(fromGameSerial)
     status.value = 'open'
-    if (blackBox.value) void refreshVotes()
+    if (blackBox.value || majority.value) void refreshVotes()
   }
 
   async function open(currentCandidates?: number[]): Promise<void> {
@@ -215,6 +261,9 @@ export function useHostedRoom(
       store(gameSerial.value, room.serial)
       status.value = 'open'
       startWatching()
+      // The room may already have a mode: opening is idempotent, so this is also the path
+      // a host takes back into a room they set up before reloading.
+      void refreshVotes()
     } catch (error) {
       // Nothing partial to undo: the room either exists server-side or it does not, and a
       // retry is idempotent.
@@ -226,8 +275,24 @@ export function useHostedRoom(
   function startWatching(): void {
     if (!serial.value) return
     void refreshBoard()
+    void refreshVotes()
     startLive()
     if (!boardTimer) boardTimer = setInterval(() => void refreshBoard(), BOARD_POLL_INTERVAL_MS)
+  }
+
+  /**
+   * Keeps the tally poll running for as long as anything needs it.
+   *
+   * The black box needs it to show counts. A majority room needs it whether or not the box
+   * is open, because the countdown is re-seeded from the same read — without it the host's
+   * clock would free-run from whenever the mode was set and drift away from the room's.
+   */
+  function syncVotesPoll(): void {
+    if (!serial.value || (!blackBox.value && !majority.value)) {
+      stopVotesPoll()
+      return
+    }
+    votesTimer ??= setInterval(() => void refreshVotes(), VOTES_POLL_INTERVAL_MS)
   }
 
   function startLive(): void {
@@ -256,15 +321,16 @@ export function useHostedRoom(
 
   function toggleBlackBox(): void {
     blackBox.value = !blackBox.value
-    if (!blackBox.value) {
+    if (!blackBox.value && !majority.value) {
       stopVotesPoll()
       // Dropped rather than left on screen: reopening it should show the round in play,
-      // not whatever was up when it was last closed.
+      // not whatever was up when it was last closed. Kept in a majority room, where the
+      // same read drives the clock.
       votes.value = null
       return
     }
     void refreshVotes()
-    votesTimer ??= setInterval(() => void refreshVotes(), VOTES_POLL_INTERVAL_MS)
+    syncVotesPoll()
   }
 
   function stopWatching(): void {
@@ -294,17 +360,75 @@ export function useHostedRoom(
   async function refreshVotes(): Promise<void> {
     if (!serial.value) return
     try {
-      votes.value = await service.votes(serial.value, gameSerial.value)
+      const read = await service.votes(serial.value, gameSerial.value)
+      // The counts only go on screen when the black box is open. A majority room reads
+      // them every tick regardless, because the same call carries the clock — but the host
+      // asked not to see the votes, and this is where that is honoured.
+      votes.value = blackBox.value ? read.votes : null
+      voting.value = read.voting
+      // Re-seeded on every read, so local drift lasts at most one poll interval and is
+      // corrected rather than accumulated.
+      countdown.seed(read.voting?.seconds_left ?? null)
+      syncVotesPoll()
     } catch {
-      // See refreshBoard. The panel keeps showing the last tally it managed to read.
+      // See refreshBoard. The panel keeps showing the last tally it managed to read, and
+      // the clock keeps ticking down from the last remainder the server gave it.
     }
+  }
+
+  async function setVoting(mode: RoomVoting['mode'], roundSeconds: number): Promise<void> {
+    if (!serial.value || !gameSerial.value) return
+    voting.value = await service.setVoting(serial.value, gameSerial.value, mode, roundSeconds)
+    // Not from the response: SetVoting clears the deadline and arms a fresh one, and the
+    // remainder it returns was measured before the round trip home. Reading again costs one
+    // request and starts the host's clock from the same number everybody else will get.
+    await refreshVotes()
+  }
+
+  /**
+   * The room's verdict on the pair currently on screen.
+   *
+   * Read fresh rather than taken from the polled copy: up to five seconds of wagers can be
+   * sitting between the last poll and this moment, and settling on a stale tally would
+   * discard exactly the votes cast while the countdown was running out.
+   *
+   * A tie goes to chance — including 0-0, which is a tie like any other and is what an
+   * unwatched room produces every round. Deciding it any other way (always the left, always
+   * the incumbent) would quietly bias every bracket a quiet room ever played.
+   */
+  async function majorityWinner(
+    pair: readonly [number, number], random: () => number = Math.random,
+  ): Promise<number> {
+    const [first, second] = pair
+    if (!serial.value) return random() < 0.5 ? first : second
+    let tally: RoomVotes | null = null
+    try {
+      const read = await service.votes(serial.value, gameSerial.value)
+      if (blackBox.value) votes.value = read.votes
+      voting.value = read.voting
+      tally = read.votes
+    } catch {
+      // Unreadable: the round still has to end, and a coin toss is the honest answer when
+      // the votes cannot be counted at all. Stalling the game would be worse.
+    }
+    if (!tally) return random() < 0.5 ? first : second
+    // The tally names its own candidates, and they are what the counts belong to. A pair
+    // the server has not caught up with yet must not have its votes read off the wrong
+    // side, so anything that does not match the pair on screen is treated as no votes.
+    const forFirst = candidateVotes(tally, first)
+    const forSecond = candidateVotes(tally, second)
+    if (forFirst > forSecond) return first
+    if (forSecond > forFirst) return second
+    return random() < 0.5 ? first : second
   }
 
   function forget(): void {
     stopWatching()
+    countdown.reset()
     blackBox.value = false
     board.value = null
     votes.value = null
+    voting.value = null
     serial.value = ''
     status.value = 'closed'
     clearStored(gameSerial.value)
@@ -318,9 +442,15 @@ export function useHostedRoom(
     board,
     players,
     votes,
+    voting,
+    majority,
+    secondsLeft: countdown.display,
+    roundExpired: countdown.expired,
     blackBox,
     live,
     open,
+    setVoting,
+    majorityWinner,
     reportPair,
     startWatching,
     stopWatching,
@@ -348,6 +478,16 @@ export function onScreenPairForBatch(
 ): number[] | undefined {
   if (!displayed || batchLength !== outboxLength) return undefined
   return [displayed[0].id, displayed[1].id]
+}
+
+/**
+ * How many votes a tally records for one candidate, or 0 when the tally is about some other
+ * pair. See majorityWinner for why a mismatch counts as no votes rather than as a guess.
+ */
+function candidateVotes(tally: RoomVotes, candidateID: number): number {
+  if (tally.first_candidate === candidateID) return tally.first_candidate_votes
+  if (tally.second_candidate === candidateID) return tally.second_candidate_votes
+  return 0
 }
 
 function storageKey(gameSerial: string): string {

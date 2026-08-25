@@ -221,6 +221,87 @@ const setOnScreenPairStatement = `
 	   AND EXISTS (SELECT 1 FROM game_elements AS ge
 	                WHERE ge.game_id = g.id AND ge.element_id = ? AND ge.is_eliminated = 0)`
 
+const votingQuery = `
+	SELECT vote_mode, round_seconds,
+	       TIMESTAMPDIFF(MICROSECOND, NOW(3), round_ends_at)
+	  FROM game_rooms
+	 WHERE id = ?
+	 LIMIT 1`
+
+// Voting reads a room's settings and what is left of the round in progress.
+//
+// The remainder is computed by MySQL rather than in Go, so the subtraction happens against
+// the same clock and the same session timezone the deadline was written with. Reading the
+// deadline out and comparing it to time.Now() here would compare a database timestamp to an
+// application host's clock, which are two different machines in every deployment that
+// matters.
+func (repository *MySQLParticipation) Voting(
+	ctx context.Context, roomID int64,
+) (VotingSettings, error) {
+	var settings VotingSettings
+	var remaining sql.NullInt64
+	err := repository.database.QueryRowContext(ctx, votingQuery, roomID).
+		Scan(&settings.Mode, &settings.RoundSeconds, &remaining)
+	if errors.Is(err, sql.ErrNoRows) {
+		return VotingSettings{}, ErrNotFound
+	}
+	if err != nil {
+		return VotingSettings{}, fmt.Errorf("gameroom: read the voting settings for room %d: %w", roomID, err)
+	}
+	if remaining.Valid {
+		// Clamped at zero: an expired deadline means "no time left", and a negative
+		// number would have every client render its own idea of what that means.
+		seconds := float64(remaining.Int64) / 1e6
+		if seconds < 0 {
+			seconds = 0
+		}
+		settings.SecondsLeft = &seconds
+	}
+	return settings, nil
+}
+
+const setVotingStatement = `
+	UPDATE game_rooms
+	   SET vote_mode = ?, round_seconds = ?, round_ends_at = NULL, updated_at = NOW()
+	 WHERE id = ?`
+
+// SetVoting stores the mode and round length, and clears whatever deadline the old
+// settings had armed.
+//
+// Clearing is not tidiness. A room switched back to host mode with a deadline still set
+// would go on counting down for its participants, towards a settlement that nothing is
+// going to perform. The caller arms the new one immediately afterwards when the new mode
+// calls for it.
+func (repository *MySQLParticipation) SetVoting(
+	ctx context.Context, roomID int64, mode string, seconds int,
+) error {
+	if _, err := repository.database.ExecContext(ctx, setVotingStatement, mode, seconds, roomID); err != nil {
+		return fmt.Errorf("gameroom: store the voting settings for room %d: %w", roomID, err)
+	}
+	return nil
+}
+
+const armRoundDeadlineStatement = `
+	UPDATE game_rooms
+	   SET round_ends_at = CASE WHEN vote_mode = ? AND round_seconds > 0
+	                            THEN NOW(3) + INTERVAL round_seconds SECOND END,
+	       updated_at = NOW()
+	 WHERE id = ?`
+
+// ArmRoundDeadline starts the clock on the round now on screen.
+//
+// One statement with the mode inside it, rather than a read of the settings followed by a
+// write of the deadline: this runs on every round change of every room, and the CASE also
+// makes the clearing automatic — a room that is not on a countdown ends up with NULL,
+// which is exactly what "no deadline" means everywhere else.
+func (repository *MySQLParticipation) ArmRoundDeadline(ctx context.Context, roomID int64) error {
+	if _, err := repository.database.ExecContext(ctx,
+		armRoundDeadlineStatement, VoteModeMajority, roomID); err != nil {
+		return fmt.Errorf("gameroom: arm the round deadline for room %d: %w", roomID, err)
+	}
+	return nil
+}
+
 func (repository *MySQLParticipation) SetOnScreenPair(
 	ctx context.Context, gameSerial string, first, second int64,
 ) error {

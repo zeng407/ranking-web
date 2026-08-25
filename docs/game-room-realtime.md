@@ -66,6 +66,69 @@ can simply pick again — the wager row is keyed on the round, so a second pick 
 first — and a wager left on a pairing the round never presented is discarded by the
 settlement rather than counted as a loss.
 
+## Majority mode (多數決)
+
+A room decides its own rounds when `game_rooms.vote_mode = 'majority'`. The side with more
+wagers on the pairing wins it; a tie — 0-0 included, which is what an unwatched room produces
+every round — is broken by a coin toss, so a quiet room still advances instead of stalling or
+quietly favouring one side.
+
+`round_seconds` carries both of the settings the host is offered:
+
+| `round_seconds` | What the host chose | `round_ends_at` |
+| --- | --- | --- |
+| 5–300 | A countdown of that many seconds | armed on every round change |
+| 0 | Manual end only | always `NULL` |
+
+One column rather than a flag plus a duration, so the two can never disagree.
+
+**The server holds the clock; the host's browser settles the round.** The bracket is played
+locally in the host's page — the server never learns which pair comes next and so cannot
+decide a round on its own. But the deadline has to be the server's, because the host and
+every participant must count down to the same instant and their device clocks are not
+comparable.
+
+That is also why the API reports **`seconds_left`, never an absolute timestamp**. MySQL
+computes it with `TIMESTAMPDIFF(MICROSECOND, NOW(3), round_ends_at)`, so the subtraction uses
+the same clock that wrote the deadline, and each client counts that number down locally
+between reads. Every read and every pushed frame re-seeds it, so local drift lasts at most
+one poll interval and is corrected rather than accumulated.
+
+The deadline is armed in three places, all of them best-effort and none of them able to fail
+a request:
+
+- `POST /api/v1/game-rooms` (`EnsureRoom`) and `PUT .../game` (`Rebind`) — room opened,
+  reloaded, or followed onto a restarted game.
+- `announceGameRoomRounds`, on every settled round. It runs **before** the broadcast is
+  published, so the `GameRoomRound` frame carries the fresh deadline, and **before** the
+  announcer nil-check, because a room is playable by polling alone and its clock has to run
+  either way.
+
+`voting` (`{mode, round_seconds, seconds_left}`) rides at the top level of the room state,
+the votes response and the `GameRoomRound` frame — not inside the tally, because it must be
+readable between rounds when there is no tally at all.
+
+`PUT /api/v1/game-rooms/{serial}/voting` writes the settings. Like every other room route it
+is `optionalAuth` and there is no host identity: naming the game serial the room is bound to
+right now is the only proof of hosting, and a caller who names a different one is refused
+with 403. Bad mode or out-of-range seconds is 422 `invalid_voting`.
+
+While a room is in majority mode the host's own vote buttons are disabled. Two ways to settle
+a round would be two sources of truth, and a host clicking through would leave the votes they
+asked the room for unread. 「結束回合」 is offered in both settings, since cutting a round
+short is useful whether or not one was going to end on its own.
+
+### Deploying it
+
+- **Run migration `00016_game_room_voting.sql`.** It adds `vote_mode`, `round_seconds` and
+  `round_ends_at` to `game_rooms`. Existing rooms default to `vote_mode = 'host'`, which is
+  the behaviour they already had, so the migration is safe to run ahead of the deploy.
+- Nothing new is needed from Soketi, the worker, or `app-config.js`: the countdown travels on
+  the `GameRoomRound` frame that already exists, and on the poll behind it.
+- The host's votes poll now runs whenever the room is in majority mode, not only while the
+  black box is open — the same call carries the clock. The counts still only reach the screen
+  when the box is open.
+
 ## How fast the pairing travels
 
 Measured end to end in a browser, from the host's click to the participant's DOM changing:

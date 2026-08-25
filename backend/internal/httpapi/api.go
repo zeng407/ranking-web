@@ -337,6 +337,10 @@ func New(options Options) http.Handler {
 		method(http.MethodGet, server.optionalAuth(server.gameRoomLeaderboard)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/votes",
 		method(http.MethodGet, server.optionalAuth(server.gameRoomVotes)))
+	// How the room decides a round: the host picking, or the majority of the room with a
+	// countdown the server holds. See setGameRoomVoting for why the clock lives here.
+	mux.HandleFunc("/api/v1/game-rooms/{serial}/voting",
+		method(http.MethodPut, server.optionalAuth(server.setGameRoomVoting)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/bets", method(http.MethodPost, server.optionalAuth(server.placeGameRoomBet)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/player", method(http.MethodPut, server.optionalAuth(server.renameGameRoomPlayer)))
 	mux.HandleFunc("/api/v1/posts/{serial}/comments", server.optionalAuth(server.commentsCollection))

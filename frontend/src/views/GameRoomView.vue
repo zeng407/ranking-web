@@ -192,6 +192,16 @@ watchEffect(() => {
           {{ pairing.votes.current_round }} / {{ pairing.votes.of_round }}
         </p>
 
+        <!-- The clock the host set. It is the server's remainder, so this counts to the
+             same moment the host's panel does, whatever this device thinks the time is. -->
+        <p v-if="room.majority.value" class="room-round-clock" role="status">
+          <template v-if="room.secondsLeft.value !== null">
+            <span>{{ translate(locale, 'roomRoundRemaining') }}</span>
+            <b>{{ room.secondsLeft.value }}</b>
+          </template>
+          <span v-else>{{ translate(locale, 'roomRoundWaitHost') }}</span>
+        </p>
+
         <div class="room-candidates">
           <button
             v-for="side in sides"
@@ -331,6 +341,26 @@ watchEffect(() => {
 .room-round {
   margin: 0 0 0.75rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* The host's clock, counting the server's remainder rather than this device's idea of the
+   time, so it hits zero at the same moment the host's does. */
+.room-round-clock {
+  display: flex;
+  margin: 0 0 0.75rem;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.12);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.room-round-clock b {
+  font-size: 1.4rem;
+  line-height: 1;
 }
 
 .room-candidates {

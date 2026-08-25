@@ -106,17 +106,24 @@ func (payload RoundPayload) validate() error {
 // participant has to reload that game's elements before the ids in the tally mean
 // anything. Votes is null between rounds, which is a normal answer — the client keeps
 // what it has and waits for the next event rather than blanking the board.
+//
+// Voting rides along because a new round is also a new deadline: the countdown every client
+// is showing has just been re-armed, and this frame is what tells them so. Null only when
+// the settings could not be read, which leaves the client on the last ones it had.
 type RoundBroadcast struct {
-	GameSerial string     `json:"game_serial"`
-	Votes      *VoteTally `json:"votes"`
+	GameSerial string          `json:"game_serial"`
+	Votes      *VoteTally      `json:"votes"`
+	Voting     *VotingSettings `json:"voting"`
 }
 
-// VoteReader reads the tally for the pairing a room's host has on screen.
+// VoteReader reads the tally for the pairing a room's host has on screen, and the settings
+// the room is voting under.
 //
 // Satisfied by MySQLParticipation, which the API also reads through: one query, one
 // meaning of "the match in progress".
 type VoteReader interface {
 	CurrentVotes(ctx context.Context, roomID int64, gameSerial string) (VoteTally, bool, error)
+	Voting(ctx context.Context, roomID int64) (VotingSettings, error)
 }
 
 // Options wires the service.
@@ -427,6 +434,11 @@ func (service *Service) handleRound(ctx context.Context, message queue.Message) 
 	if inProgress {
 		broadcast.Votes = &tally
 	}
+	voting, err := service.votes.Voting(ctx, room.ID)
+	if err != nil {
+		return err
+	}
+	broadcast.Voting = &voting
 
 	if err := service.broadcaster.Publish(ctx,
 		realtime.GameRoomChannel(room.Serial), RoundEvent, broadcast); err != nil {

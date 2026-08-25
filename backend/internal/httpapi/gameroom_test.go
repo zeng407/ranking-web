@@ -50,6 +50,14 @@ type fakeGameRoom struct {
 	lastBetGameSerial string
 	lastNickname      string
 	lastOnScreen      []int64
+
+	voting         gameroom.VotingSettings
+	votingErr      error
+	lastVotingMode string
+	lastVotingSecs int
+	lastVotingGame string
+	armCalls       int
+	lastArmedGame  string
 }
 
 func newFakeGameRoom() *fakeGameRoom {
@@ -133,6 +141,27 @@ func (fake *fakeGameRoom) LatestBet(_ context.Context, _ int64) (gameroom.Placed
 
 func (fake *fakeGameRoom) Leaderboard(_ context.Context, _ int64) (gameroom.Leaderboard, error) {
 	return fake.board, fake.readErr
+}
+
+func (fake *fakeGameRoom) Voting(_ context.Context, _ int64) (gameroom.VotingSettings, error) {
+	return fake.voting, fake.readErr
+}
+
+func (fake *fakeGameRoom) SetVoting(
+	_ context.Context, _, gameSerial, mode string, seconds int,
+) (gameroom.VotingSettings, error) {
+	fake.lastVotingGame, fake.lastVotingMode, fake.lastVotingSecs = gameSerial, mode, seconds
+	if fake.votingErr != nil {
+		return gameroom.VotingSettings{}, fake.votingErr
+	}
+	fake.voting = gameroom.VotingSettings{Mode: mode, RoundSeconds: seconds}
+	return fake.voting, nil
+}
+
+func (fake *fakeGameRoom) ArmRound(_ context.Context, gameSerial string) error {
+	fake.armCalls++
+	fake.lastArmedGame = gameSerial
+	return nil
 }
 
 // recordingAnnouncer counts what the handlers asked to be broadcast. The publishing itself
@@ -805,5 +834,137 @@ func TestOpeningARoomWithoutAPairAnnouncesNothing(t *testing.T) {
 	}
 	if len(announcer.rooms) != 0 {
 		t.Errorf("announced %v without a pair to announce", announcer.rooms)
+	}
+}
+
+// ---------- how the room decides its rounds ----------
+
+/**
+ * The host hands the decision to the room, and everybody seated is told at once — the
+ * countdown they are about to watch is the server's, so learning about it on the next poll
+ * would mean counting down to the previous round's deadline in the meantime.
+ */
+func TestSetGameRoomVotingStoresTheSettingsAndTellsTheRoom(t *testing.T) {
+	fake := newFakeGameRoom()
+	announcer := &recordingAnnouncer{}
+	response := httptest.NewRecorder()
+	gameRoomHandlerWith(fake, announcer).ServeHTTP(response, httptest.NewRequest(http.MethodPut,
+		"/api/v1/game-rooms/abcdefgh/voting",
+		strings.NewReader(`{"game_serial":"game-serial","mode":"majority","round_seconds":15}`)))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	if fake.lastVotingGame != "game-serial" || fake.lastVotingMode != "majority" || fake.lastVotingSecs != 15 {
+		t.Errorf("stored %q/%q/%d, want game-serial/majority/15",
+			fake.lastVotingGame, fake.lastVotingMode, fake.lastVotingSecs)
+	}
+	if len(announcer.rooms) != 1 || announcer.rooms[0] != "game-serial" {
+		t.Errorf("announced %v, want the room told once", announcer.rooms)
+	}
+
+	var body struct {
+		Voting *struct {
+			Mode         string `json:"mode"`
+			RoundSeconds int    `json:"round_seconds"`
+		} `json:"voting"`
+	}
+	decodeData(t, response, &body)
+	if body.Voting == nil {
+		t.Fatal("no voting settings in the response")
+	}
+	if body.Voting.Mode != "majority" || body.Voting.RoundSeconds != 15 {
+		t.Errorf("voting = %+v, want majority at 15 seconds", *body.Voting)
+	}
+}
+
+// The game serial is what proves the caller is hosting this room, so a request without one
+// never reaches the service.
+func TestSetGameRoomVotingRequiresTheGameSerial(t *testing.T) {
+	fake := newFakeGameRoom()
+	response := httptest.NewRecorder()
+	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodPut,
+		"/api/v1/game-rooms/abcdefgh/voting", strings.NewReader(`{"mode":"majority"}`)))
+
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422; body = %s", response.Code, response.Body.String())
+	}
+	if fake.lastVotingMode != "" {
+		t.Errorf("the service was called with %q, want no call at all", fake.lastVotingMode)
+	}
+}
+
+// The refusals keep the codes the rest of the room API already uses: a bad setting is 422,
+// naming another game is 403 because the caller failed to prove which game it is on.
+func TestSetGameRoomVotingReportsARefusal(t *testing.T) {
+	for name, testCase := range map[string]struct {
+		err  error
+		want int
+	}{
+		"bad setting":  {gameroom.ErrInvalidVoting, http.StatusUnprocessableEntity},
+		"another game": {gameroom.ErrRoomMismatch, http.StatusForbidden},
+		"unknown room": {gameroom.ErrNotFound, http.StatusNotFound},
+	} {
+		fake := newFakeGameRoom()
+		fake.votingErr = testCase.err
+		response := httptest.NewRecorder()
+		gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodPut,
+			"/api/v1/game-rooms/abcdefgh/voting",
+			strings.NewReader(`{"game_serial":"game-serial","mode":"majority","round_seconds":15}`)))
+
+		if response.Code != testCase.want {
+			t.Errorf("%s: status = %d, want %d; body = %s",
+				name, response.Code, testCase.want, response.Body.String())
+		}
+	}
+}
+
+/**
+ * Both reads carry the settings, and they carry them beside the tally rather than inside
+ * it: between rounds there is no tally at all, and a client still has to know whether it is
+ * in a room that decides its own rounds.
+ */
+func TestGameRoomReadsCarryTheVotingSettings(t *testing.T) {
+	remaining := 8.25
+	for name, path := range map[string]string{
+		"state": "/api/v1/game-rooms/abcdefgh?anonymous_id=browser-a",
+		"votes": "/api/v1/game-rooms/abcdefgh/votes",
+	} {
+		t.Run(name, func(t *testing.T) {
+			fake := newFakeGameRoom()
+			// No round in progress, so there is no tally to hide the settings inside.
+			fake.votesFound = false
+			fake.voting = gameroom.VotingSettings{
+				Mode: "majority", RoundSeconds: 15, SecondsLeft: &remaining,
+			}
+
+			response := httptest.NewRecorder()
+			gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+			}
+
+			var body struct {
+				Votes  *json.RawMessage `json:"votes"`
+				Voting *struct {
+					Mode         string   `json:"mode"`
+					RoundSeconds int      `json:"round_seconds"`
+					SecondsLeft  *float64 `json:"seconds_left"`
+				} `json:"voting"`
+			}
+			decodeData(t, response, &body)
+			if body.Votes != nil {
+				t.Errorf("votes = %s, want none with no round in progress", *body.Votes)
+			}
+			if body.Voting == nil {
+				t.Fatal("no voting settings in the response")
+			}
+			if body.Voting.Mode != "majority" || body.Voting.RoundSeconds != 15 {
+				t.Errorf("voting = %+v, want majority at 15 seconds", *body.Voting)
+			}
+			if body.Voting.SecondsLeft == nil || *body.Voting.SecondsLeft != remaining {
+				t.Errorf("seconds left = %v, want %v", body.Voting.SecondsLeft, remaining)
+			}
+		})
 	}
 }

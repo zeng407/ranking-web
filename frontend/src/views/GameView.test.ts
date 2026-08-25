@@ -58,6 +58,7 @@ const roomMocks = vi.hoisted(() => ({
 	open: vi.fn(),
 	leaderboard: vi.fn(),
 	votes: vi.fn(),
+	setVoting: vi.fn(),
 }))
 
 vi.mock('../services/gameRoom', async (importOriginal) => ({
@@ -66,6 +67,7 @@ vi.mock('../services/gameRoom', async (importOriginal) => ({
 		open: roomMocks.open,
 		leaderboard: roomMocks.leaderboard,
 		votes: roomMocks.votes,
+		setVoting: roomMocks.setVoting,
 	}),
 }))
 
@@ -128,7 +130,9 @@ beforeEach(() => {
 	roomMocks.leaderboard.mockReset()
 	roomMocks.leaderboard.mockResolvedValue({ total_users: 0, top_10: [], bottom_10: [] })
 	roomMocks.votes.mockReset()
-	roomMocks.votes.mockResolvedValue(null)
+	roomMocks.votes.mockResolvedValue({ votes: null, voting: null })
+	roomMocks.setVoting.mockReset()
+	roomMocks.setVoting.mockResolvedValue({ mode: 'majority', round_seconds: 15, seconds_left: 15 })
 	qrMocks.drawQRCode.mockReset()
 	qrMocks.drawQRCode.mockResolvedValue(undefined)
 	qrMocks.downloadQRCode.mockReset()
@@ -964,14 +968,13 @@ describe('GameView restart regression', () => {
     expect(dialog().open).toBe(false)
     await wrapper.get('button[title="開啟多人模式"]').trigger('click')
 
-    // Mode first: the one built mode is pressable, the other is only announced.
+    // Mode first: both modes are pressable, and this one skips straight to the invite
+    // because the host decides every round themselves.
     expect(dialog().open).toBe(true)
     expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('選擇遊戲模式')
     expect(wrapper.findAll('.game-mode-card')).toHaveLength(2)
-    expect(wrapper.get('.game-mode-card.is-upcoming').text()).toContain('敬請期待')
-    expect(wrapper.get('.game-mode-card.is-upcoming').element.tagName).not.toBe('BUTTON')
 
-    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await wrapper.get('.game-mode-card').trigger('click')
     await flushPromises()
 
     // The host is handed a link and stays on their own game: no way in from here.
@@ -1004,7 +1007,7 @@ describe('GameView restart regression', () => {
     const wrapper = await mountStartedGame()
 
     await wrapper.get('button[title="開啟多人模式"]').trigger('click')
-    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await wrapper.get('.game-mode-card').trigger('click')
     await flushPromises()
 
     // The link is still there to copy; only the code and its download are gone.
@@ -1028,7 +1031,7 @@ describe('GameView restart regression', () => {
     expect(wrapper.find('.game-ad-slot').exists()).toBe(true)
 
     await wrapper.get('button[title="開啟多人模式"]').trigger('click')
-    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await wrapper.get('.game-mode-card').trigger('click')
     await flushPromises()
 
     // The panel stands where the ad rail was on a wide screen. The rail stays in the markup
@@ -1048,23 +1051,26 @@ describe('GameView restart regression', () => {
 
   it('opens the black box on the pairing the host has up, and only on that one', async () => {
     roomMocks.votes.mockResolvedValue({
-      first_candidate: 1,
-      second_candidate: 2,
-      first_candidate_votes: 3,
-      second_candidate_votes: 1,
-      remain_elements: 2,
-      total_votes: 4,
-      current_round: 1,
-      of_round: 1,
+      votes: {
+        first_candidate: 1,
+        second_candidate: 2,
+        first_candidate_votes: 3,
+        second_candidate_votes: 1,
+        remain_elements: 2,
+        total_votes: 4,
+        current_round: 1,
+        of_round: 1,
+      },
+      voting: null,
     })
     const wrapper = await mountStartedGame()
     await wrapper.get('button[title="開啟多人模式"]').trigger('click')
-    await wrapper.get('.game-mode-card:not(.is-upcoming)').trigger('click')
+    await wrapper.get('.game-mode-card').trigger('click')
     await flushPromises()
 
-    // Closed by default: the tally is not even read until it is asked for.
+    // Closed by default: the counts stay off screen until the box is opened, even though
+    // the room itself is read once to learn how it decides its rounds.
     expect(wrapper.find('.game-candidate-bets').exists()).toBe(false)
-    expect(roomMocks.votes).not.toHaveBeenCalled()
 
     await wrapper.get('.game-room-panel-actions button').trigger('click')
     await flushPromises()
@@ -1081,14 +1087,17 @@ describe('GameView restart regression', () => {
 
     // A tally about a pairing that is no longer up says nothing about this one.
     roomMocks.votes.mockResolvedValue({
-      first_candidate: 41,
-      second_candidate: 42,
-      first_candidate_votes: 9,
-      second_candidate_votes: 9,
-      remain_elements: 2,
-      total_votes: 18,
-      current_round: 2,
-      of_round: 2,
+      votes: {
+        first_candidate: 41,
+        second_candidate: 42,
+        first_candidate_votes: 9,
+        second_candidate_votes: 9,
+        remain_elements: 2,
+        total_votes: 18,
+        current_round: 2,
+        of_round: 2,
+      },
+      voting: null,
     })
     await wrapper.get('.game-room-panel-actions button').trigger('click')
     await wrapper.get('.game-room-panel-actions button').trigger('click')
@@ -1096,6 +1105,93 @@ describe('GameView restart regression', () => {
     expect(wrapper.get('.game-candidate-bets').text()).not.toContain('9')
 
     wrapper.unmount()
+  })
+
+  it('hands the round to the room, on the terms the host sets', async () => {
+    roomMocks.votes.mockResolvedValue({
+      votes: {
+        first_candidate: 1,
+        second_candidate: 2,
+        first_candidate_votes: 3,
+        second_candidate_votes: 1,
+        remain_elements: 2,
+        total_votes: 4,
+        current_round: 1,
+        of_round: 1,
+      },
+      voting: { mode: 'majority', round_seconds: 20, seconds_left: 20 },
+    })
+    const wrapper = await mountStartedGame()
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+    await wrapper.findAll('.game-mode-card')[1]!.trigger('click')
+    await flushPromises()
+
+    // The settings come before the invite: a room that decides by vote has to know how its
+    // rounds end before anybody is handed a link to one.
+    expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('回合設定')
+    await wrapper.get('.game-room-round-seconds input').setValue(20)
+    await wrapper.get('.game-room-round-settings .button-primary').trigger('click')
+    await flushPromises()
+
+    expect(roomMocks.setVoting).toHaveBeenCalledWith('room-1', 'game-old', 'majority', 20)
+    expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('邀請朋友加入遊戲')
+
+    // The clock is the server's remainder, read back after the write rather than taken from
+    // the response, which was measured before the round trip home.
+    expect(wrapper.get('.game-room-round-clock').text()).toContain('20')
+
+    // The host has handed the decision over: leaving their own buttons live would be a
+    // second way to settle a round, and would ignore the votes they asked for.
+    const votes = wrapper.findAll('.game-vote-button')
+    expect(votes).toHaveLength(2)
+    expect(votes.every((button) => (button.element as HTMLButtonElement).disabled)).toBe(true)
+
+    await wrapper.get('.game-room-round-settle').trigger('click')
+    await flushPromises()
+
+    // 3 to 1, so the round goes to the option the room picked, not to either side's position.
+    expect(wrapper.get('.game-candidate-winner h2').text()).toBe('舊選項 1')
+
+    wrapper.unmount()
+  })
+
+  it('settles the round by itself when the clock runs out', async () => {
+    vi.useFakeTimers()
+    roomMocks.votes.mockResolvedValue({
+      votes: {
+        first_candidate: 1,
+        second_candidate: 2,
+        first_candidate_votes: 0,
+        second_candidate_votes: 6,
+        remain_elements: 2,
+        total_votes: 6,
+        current_round: 1,
+        of_round: 1,
+      },
+      voting: { mode: 'majority', round_seconds: 5, seconds_left: 1 },
+    })
+    roomMocks.setVoting.mockResolvedValue({ mode: 'majority', round_seconds: 5, seconds_left: 5 })
+    try {
+      const wrapper = await mountStartedGame()
+      await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+      await wrapper.findAll('.game-mode-card')[1]!.trigger('click')
+      await flushPromises()
+      await wrapper.get('.game-room-round-settings .button-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.game-candidate-winner').exists()).toBe(false)
+
+      // The server holds the clock, but the bracket is played here, so the host's browser is
+      // the only place that can act on it running out.
+      await vi.advanceTimersByTimeAsync(1_500)
+      await flushPromises()
+
+      expect(wrapper.get('.game-candidate-winner h2').text()).toBe('舊選項 2')
+
+      wrapper.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('starts candidate videos muted and plays only the hovered side after the hover delay', async () => {

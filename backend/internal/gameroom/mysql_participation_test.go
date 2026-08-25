@@ -768,3 +768,111 @@ func TestRebindRoomReportsWhatIsMissing(t *testing.T) {
 		t.Errorf("unknown game: error = %v, want ErrGameNotFound", err)
 	}
 }
+
+/**
+ * A new room decides its rounds the way every room did before this existed, so opening one
+ * cannot change a host's game under them.
+ */
+func TestNewRoomsAreHostDecided(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+
+	settings, err := fixture.repository.Voting(ctx, room.ID)
+	if err != nil {
+		t.Fatalf("Voting() error = %v", err)
+	}
+	if settings.Mode != VoteModeHost || settings.RoundSeconds != 0 {
+		t.Errorf("settings = %+v, want the host deciding with no clock", settings)
+	}
+	if settings.SecondsLeft != nil {
+		t.Errorf("seconds left = %v, want none: nothing is counting down", *settings.SecondsLeft)
+	}
+}
+
+/**
+ * The clock is the one part of this the server has to own, because the host and everybody
+ * watching have to be counting down to the same instant and their device clocks are not
+ * comparable. So what a read returns is time remaining, measured by the same clock that
+ * wrote the deadline.
+ */
+func TestArmRoundDeadlineStartsTheClockForMajorityRooms(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+
+	// Host mode has nothing to count down, so arming is a no-op for it.
+	if err := fixture.repository.ArmRoundDeadline(ctx, room.ID); err != nil {
+		t.Fatalf("ArmRoundDeadline() error = %v", err)
+	}
+	settings, err := fixture.repository.Voting(ctx, room.ID)
+	if err != nil {
+		t.Fatalf("Voting() error = %v", err)
+	}
+	if settings.SecondsLeft != nil {
+		t.Errorf("a host-decided room was given a deadline: %v", *settings.SecondsLeft)
+	}
+
+	if err := fixture.repository.SetVoting(ctx, room.ID, VoteModeMajority, 30); err != nil {
+		t.Fatalf("SetVoting() error = %v", err)
+	}
+	// Writing the settings clears the deadline: the previous round's clock has nothing to
+	// do with the mode that has just been chosen.
+	if settings, err = fixture.repository.Voting(ctx, room.ID); err != nil {
+		t.Fatalf("Voting() error = %v", err)
+	}
+	if settings.Mode != VoteModeMajority || settings.RoundSeconds != 30 {
+		t.Fatalf("settings = %+v, want majority at 30 seconds", settings)
+	}
+	if settings.SecondsLeft != nil {
+		t.Errorf("seconds left = %v, want none until a round is armed", *settings.SecondsLeft)
+	}
+
+	if err := fixture.repository.ArmRoundDeadline(ctx, room.ID); err != nil {
+		t.Fatalf("ArmRoundDeadline() error = %v", err)
+	}
+	if settings, err = fixture.repository.Voting(ctx, room.ID); err != nil {
+		t.Fatalf("Voting() error = %v", err)
+	}
+	if settings.SecondsLeft == nil {
+		t.Fatalf("seconds left = nil, want a running clock")
+	}
+	// A round of 30 seconds read back immediately: allow for the round trip, but it must
+	// not have been armed to some other length.
+	if *settings.SecondsLeft > 30 || *settings.SecondsLeft < 25 {
+		t.Errorf("seconds left = %v, want just under 30", *settings.SecondsLeft)
+	}
+}
+
+/**
+ * Manual rounds are the other half of what the host can ask for. The mode is majority, so
+ * the room decides the winner, but nothing expires on its own — the host says when.
+ */
+func TestManualMajorityRoundsHaveNoDeadline(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+	room := fixture.room(t, ctx)
+
+	if err := fixture.repository.SetVoting(ctx, room.ID, VoteModeMajority, 0); err != nil {
+		t.Fatalf("SetVoting() error = %v", err)
+	}
+	if err := fixture.repository.ArmRoundDeadline(ctx, room.ID); err != nil {
+		t.Fatalf("ArmRoundDeadline() error = %v", err)
+	}
+
+	settings, err := fixture.repository.Voting(ctx, room.ID)
+	if err != nil {
+		t.Fatalf("Voting() error = %v", err)
+	}
+	if !settings.Majority() || settings.RoundSeconds != 0 {
+		t.Fatalf("settings = %+v, want majority with no round length", settings)
+	}
+	if settings.SecondsLeft != nil {
+		t.Errorf("seconds left = %v, want none: the host ends this round by hand", *settings.SecondsLeft)
+	}
+}
+
+func TestVotingReportsAMissingRoom(t *testing.T) {
+	fixture, ctx := newParticipationFixture(t)
+
+	if _, err := fixture.repository.Voting(ctx, -1); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("Voting() error = %v, want ErrNotFound", err)
+	}
+}

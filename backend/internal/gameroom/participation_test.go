@@ -36,6 +36,11 @@ type fakeParticipation struct {
 	rebindTo       string
 	rebindErr      error
 
+	voting     VotingSettings
+	votingMode string
+	votingSecs int
+	armCalls   int
+
 	err error
 }
 
@@ -130,6 +135,27 @@ func (fake *fakeParticipation) CurrentVotes(_ context.Context, _ int64, _ string
 
 func (fake *fakeParticipation) LatestBet(_ context.Context, _ int64) (PlacedBet, bool, error) {
 	return PlacedBet{}, false, fake.err
+}
+
+func (fake *fakeParticipation) Voting(_ context.Context, _ int64) (VotingSettings, error) {
+	if fake.err != nil {
+		return VotingSettings{}, fake.err
+	}
+	return fake.voting, nil
+}
+
+func (fake *fakeParticipation) SetVoting(_ context.Context, _ int64, mode string, seconds int) error {
+	fake.votingMode, fake.votingSecs = mode, seconds
+	if fake.err != nil {
+		return fake.err
+	}
+	fake.voting = VotingSettings{Mode: mode, RoundSeconds: seconds}
+	return nil
+}
+
+func (fake *fakeParticipation) ArmRoundDeadline(_ context.Context, _ int64) error {
+	fake.armCalls++
+	return fake.err
 }
 
 func newParticipationService(t *testing.T, store *fakeParticipation, limiter RenameLimiter) *Participation {
@@ -596,5 +622,96 @@ func TestNextRoundAdvancesWithinABracketAndStartsTheNextOne(t *testing.T) {
 func TestNewParticipationRejectsAMissingRepository(t *testing.T) {
 	if _, err := NewParticipation(ParticipationOptions{}); err == nil {
 		t.Fatal("NewParticipation() succeeded with no repository")
+	}
+}
+
+/**
+ * The settings a host is allowed to ask for. A majority round is either a countdown within
+ * the range the client offers, or 0 meaning the host ends it by hand; a host-decided room
+ * has no round length at all, because there is nothing to count down to.
+ */
+func TestSetVotingValidatesTheSettings(t *testing.T) {
+	for name, testCase := range map[string]struct {
+		mode    string
+		seconds int
+		wantErr error
+	}{
+		"host":                   {mode: VoteModeHost, seconds: 0},
+		"majority with a clock":  {mode: VoteModeMajority, seconds: 15},
+		"majority ended by hand": {mode: VoteModeMajority, seconds: 0},
+		"shortest round":         {mode: VoteModeMajority, seconds: MinRoundSeconds},
+		"longest round":          {mode: VoteModeMajority, seconds: MaxRoundSeconds},
+		"too short":              {mode: VoteModeMajority, seconds: MinRoundSeconds - 1, wantErr: ErrInvalidVoting},
+		"too long":               {mode: VoteModeMajority, seconds: MaxRoundSeconds + 1, wantErr: ErrInvalidVoting},
+		"negative":               {mode: VoteModeMajority, seconds: -5, wantErr: ErrInvalidVoting},
+		"a clock the host cannot use": {
+			mode: VoteModeHost, seconds: 15, wantErr: ErrInvalidVoting,
+		},
+		"unknown mode": {mode: "democracy", seconds: 0, wantErr: ErrInvalidVoting},
+	} {
+		t.Run(name, func(t *testing.T) {
+			store := &fakeParticipation{room: Room{ID: 7, Serial: "ROOMSERIAL"}, gameSerial: "game-serial"}
+			service := newParticipationService(t, store, nil)
+
+			_, err := service.SetVoting(context.Background(),
+				"ROOMSERIAL", "game-serial", testCase.mode, testCase.seconds)
+			if !errors.Is(err, testCase.wantErr) {
+				t.Fatalf("SetVoting() error = %v, want %v", err, testCase.wantErr)
+			}
+			if testCase.wantErr != nil {
+				return
+			}
+			if store.votingMode != testCase.mode || store.votingSecs != testCase.seconds {
+				t.Errorf("stored %q/%d, want %q/%d",
+					store.votingMode, store.votingSecs, testCase.mode, testCase.seconds)
+			}
+			// The round already on screen starts counting, rather than the mode
+			// appearing not to work until the host settles that round by hand.
+			if store.armCalls != 1 {
+				t.Errorf("ArmRoundDeadline calls = %d, want 1", store.armCalls)
+			}
+		})
+	}
+}
+
+/**
+ * Naming the room's current game is the only proof of hosting this stack has, so a caller
+ * working from a stale idea of the room is refused rather than allowed to change how a room
+ * it no longer follows decides its rounds.
+ */
+func TestSetVotingRefusesAnotherGame(t *testing.T) {
+	store := &fakeParticipation{room: Room{ID: 7, Serial: "ROOMSERIAL"}, gameSerial: "current-game"}
+	service := newParticipationService(t, store, nil)
+
+	_, err := service.SetVoting(context.Background(), "ROOMSERIAL", "some-other-game", VoteModeMajority, 15)
+	if !errors.Is(err, ErrRoomMismatch) {
+		t.Fatalf("SetVoting() error = %v, want ErrRoomMismatch", err)
+	}
+	if store.votingMode != "" || store.armCalls != 0 {
+		t.Errorf("the room was written to anyway: mode %q, arm calls %d", store.votingMode, store.armCalls)
+	}
+}
+
+/**
+ * Most games are played solo. Arming a round for one must be a no-op rather than an error,
+ * because it runs on the vote path every game passes through.
+ */
+func TestArmRoundIsQuietWithoutARoom(t *testing.T) {
+	store := &fakeParticipation{hosting: false}
+	service := newParticipationService(t, store, nil)
+
+	if err := service.ArmRound(context.Background(), "game-serial"); err != nil {
+		t.Fatalf("ArmRound() error = %v", err)
+	}
+	if store.armCalls != 0 {
+		t.Errorf("ArmRoundDeadline calls = %d, want none for a game with no room", store.armCalls)
+	}
+
+	store.hosting = true
+	if err := service.ArmRound(context.Background(), "game-serial"); err != nil {
+		t.Fatalf("ArmRound() error = %v", err)
+	}
+	if store.armCalls != 1 {
+		t.Errorf("ArmRoundDeadline calls = %d, want 1", store.armCalls)
 	}
 }

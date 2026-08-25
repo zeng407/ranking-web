@@ -79,6 +79,7 @@ function state(overrides: Partial<RoomState> = {}): RoomState {
       first_candidate_votes: 2, second_candidate_votes: 1,
       remain_elements: 34, total_votes: 3, current_round: 31, of_round: 32,
     },
+    voting: null,
     latest_bet: null,
     leaderboard: board(),
     ...overrides,
@@ -234,6 +235,55 @@ describe('useGameRoom', () => {
     expect(room.votes.value?.first_candidate).toBe(33)
     expect(room.votes.value?.current_round).toBe(32)
     expect(service.state).toHaveBeenCalledTimes(1)
+    room.leave()
+  })
+
+  it('takes the round clock from the state read and from the pushed frame alike', async () => {
+    const service = fakeService({
+      state: vi.fn().mockResolvedValue(state({
+        voting: { mode: 'majority', round_seconds: 20, seconds_left: 12.4 },
+      })),
+    })
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+
+    // Rounded up, so this pill and the host's read the same number all the way down.
+    expect(room.majority.value).toBe(true)
+    expect(room.secondsLeft.value).toBe(13)
+
+    // The pushed frame carries the deadline the server armed for the round it announces, so
+    // a socket-speed room never counts down from the previous round's remainder.
+    pushRound({
+      game_serial: 'game-serial',
+      votes: null,
+      voting: { mode: 'majority', round_seconds: 20, seconds_left: 20 },
+    })
+    expect(room.secondsLeft.value).toBe(20)
+
+    room.leave()
+  })
+
+  it('shows no clock in a room the host decides', async () => {
+    const room = useGameRoom('abcdefgh', fakeService())
+    await room.join()
+
+    expect(room.majority.value).toBe(false)
+    expect(room.secondsLeft.value).toBeNull()
+    room.leave()
+  })
+
+  it('shows no clock in a manually ended room', async () => {
+    const service = fakeService({
+      state: vi.fn().mockResolvedValue(state({
+        voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+      })),
+    })
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+
+    // Majority, but nothing is counting: the round ends when the host says so.
+    expect(room.majority.value).toBe(true)
+    expect(room.secondsLeft.value).toBeNull()
     room.leave()
   })
 

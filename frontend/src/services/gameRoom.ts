@@ -65,6 +65,26 @@ export interface RoomVotes {
   of_round: number
 }
 
+/**
+ * How a room decides its rounds.
+ *
+ * `host` is the original behaviour: the host clicks a candidate and that is the result.
+ * `majority` hands the decision to the room — more votes wins, a tie is broken at random.
+ *
+ * `round_seconds` is the countdown, or 0 for a round the host ends by hand. One field
+ * rather than a length beside a flag, because two fields could disagree.
+ *
+ * `seconds_left` is TIME REMAINING, not a deadline. The host and everybody watching have
+ * to count down to the same instant, and their device clocks are not comparable, so the
+ * server sends the remainder measured by the clock that armed it. Null when nothing is
+ * counting down.
+ */
+export interface RoomVoting {
+  mode: 'host' | 'majority'
+  round_seconds: number
+  seconds_left: number | null
+}
+
 export interface RoomBet {
   winner_id: number
   loser_id: number
@@ -79,6 +99,11 @@ export interface RoomState {
   player: RoomPlayer | null
   /** Null when no pairing is in progress — distinct from "nobody has voted yet". */
   votes: RoomVotes | null
+  /**
+   * How this room decides its rounds. Beside the tally rather than inside it: between
+   * rounds there is no tally, and a client still has to know which mode it is in.
+   */
+  voting: RoomVoting | null
   /** The caller's own last wager, for rehydrating a reloaded page. */
   latest_bet: RoomBet | null
   leaderboard: Leaderboard | null
@@ -149,17 +174,35 @@ export function createGameRoomService(client: APIClient = getAPIClient()) {
      * This is what a host's black box reads. state() would also carry it, but that call
      * joins: it would put the host on the leaderboard of their own room.
      *
-     * Null means no pairing is in progress, which is a normal answer between rounds.
+     * A null tally means no pairing is in progress, which is a normal answer between
+     * rounds — and why the voting settings ride beside it rather than inside it.
      */
     async votes(
       roomSerial: string, gameSerial?: string, signal?: AbortSignal,
-    ): Promise<RoomVotes | null> {
+    ): Promise<{ votes: RoomVotes | null; voting: RoomVoting | null }> {
       const query = new URLSearchParams()
       if (gameSerial) query.set('game_serial', gameSerial)
       const suffix = query.size > 0 ? `?${query}` : ''
-      const body = await client.get<{ votes: RoomVotes | null }>(
+      const body = await client.get<{ votes: RoomVotes | null; voting: RoomVoting | null }>(
         `/game-rooms/${encodeURIComponent(roomSerial)}/votes${suffix}`, signal)
-      return body.votes
+      return { votes: body.votes ?? null, voting: body.voting ?? null }
+    },
+
+    /**
+     * Changes how the room decides its rounds, and arms the clock for the round already on
+     * screen so the new mode takes effect now rather than next round.
+     *
+     * gameSerial proves the caller is hosting, the same way rebind() does: nothing records
+     * who owns a room, so naming the game it is currently bound to is the only proof there
+     * is.
+     */
+    async setVoting(
+      roomSerial: string, gameSerial: string, mode: RoomVoting['mode'], roundSeconds: number,
+    ): Promise<RoomVoting> {
+      const body = await client.put<{ voting: RoomVoting }>(
+        `/game-rooms/${encodeURIComponent(roomSerial)}/voting`,
+        { game_serial: gameSerial, mode, round_seconds: roundSeconds })
+      return body.voting
     },
 
     /**

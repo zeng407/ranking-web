@@ -13,7 +13,8 @@ function fakeService(overrides: Partial<GameRoomService> = {}): GameRoomService 
     rebind: vi.fn().mockResolvedValue({ serial: 'abcdefgh', game_serial: 'game-2' }),
     state: vi.fn(),
     leaderboard: vi.fn().mockResolvedValue(board(0)),
-    votes: vi.fn().mockResolvedValue(null),
+    votes: vi.fn().mockResolvedValue({ votes: null, voting: null }),
+    setVoting: vi.fn(),
     bet: vi.fn(),
     rename: vi.fn(),
     ...overrides,
@@ -301,12 +302,16 @@ describe('useHostedRoom', () => {
       current_round: 1,
       of_round: 1,
     }
-    const service = fakeService({ votes: vi.fn().mockResolvedValue(tally) })
+    const service = fakeService({
+      votes: vi.fn().mockResolvedValue({ votes: tally, voting: null }),
+    })
     const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
     await room.open()
     await flush()
 
-    expect(service.votes).not.toHaveBeenCalled()
+    // Opening reads once, because the same call is what reports whether this room decides
+    // its own rounds — but the counts stay off screen until they are asked for.
+    expect(room.votes.value).toBeNull()
 
     room.toggleBlackBox()
     await flush()
@@ -317,6 +322,147 @@ describe('useHostedRoom', () => {
     room.toggleBlackBox()
     expect(room.blackBox.value).toBe(false)
     expect(room.votes.value).toBeNull()
+    room.stopWatching()
+  })
+
+  it('hands the round to the room and starts the clock the server armed', async () => {
+    const service = fakeService({
+      setVoting: vi.fn().mockResolvedValue({ mode: 'majority', round_seconds: 20, seconds_left: 20 }),
+      votes: vi.fn().mockResolvedValue({
+        votes: null,
+        voting: { mode: 'majority', round_seconds: 20, seconds_left: 18.5 },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    await room.setVoting('majority', 20)
+    expect(service.setVoting).toHaveBeenCalledWith('abcdefgh', 'game-1', 'majority', 20)
+    expect(room.majority.value).toBe(true)
+
+    // 18.5 and not the 20 the write returned: SetVoting arms a fresh deadline, and the
+    // remainder it reports was measured before the response travelled home. Rounded up, so
+    // the pill and everybody else's pill read the same number.
+    expect(room.secondsLeft.value).toBe(19)
+    room.stopWatching()
+  })
+
+  it('leaves the clock alone in a manually ended room', async () => {
+    const service = fakeService({
+      setVoting: vi.fn().mockResolvedValue({ mode: 'majority', round_seconds: 0, seconds_left: null }),
+      votes: vi.fn().mockResolvedValue({
+        votes: null,
+        voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    await room.setVoting('majority', 0)
+    expect(room.majority.value).toBe(true)
+    expect(room.secondsLeft.value).toBeNull()
+    expect(room.roundExpired.value).toBe(false)
+    room.stopWatching()
+  })
+
+  it('gives the round to the side the room voted for', async () => {
+    const service = fakeService({
+      votes: vi.fn().mockResolvedValue({
+        votes: {
+          first_candidate: 11,
+          second_candidate: 22,
+          first_candidate_votes: 2,
+          second_candidate_votes: 7,
+          remain_elements: 2,
+          total_votes: 9,
+          current_round: 1,
+          of_round: 1,
+        },
+        voting: { mode: 'majority', round_seconds: 10, seconds_left: 4 },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    // Either order of the pair: which one the server calls "first" is its own business.
+    expect(await room.majorityWinner([11, 22])).toBe(22)
+    expect(await room.majorityWinner([22, 11])).toBe(22)
+
+    // The counts stay off screen: the black box is shut, and settling is not a reason to
+    // show the host what they asked not to see.
+    expect(room.votes.value).toBeNull()
+    room.stopWatching()
+  })
+
+  it('tosses a coin on a tie, and on a room nobody voted in', async () => {
+    const tally = (first: number, second: number): unknown => ({
+      votes: {
+        first_candidate: 11,
+        second_candidate: 22,
+        first_candidate_votes: first,
+        second_candidate_votes: second,
+        remain_elements: 2,
+        total_votes: first + second,
+        current_round: 1,
+        of_round: 1,
+      },
+      voting: { mode: 'majority', round_seconds: 10, seconds_left: 4 },
+    })
+    const service = fakeService({ votes: vi.fn().mockResolvedValue(tally(4, 4)) })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    expect(await room.majorityWinner([11, 22], () => 0.2)).toBe(11)
+    expect(await room.majorityWinner([11, 22], () => 0.8)).toBe(22)
+
+    // 0-0 is a tie like any other, and it is what an unwatched room produces every round.
+    // Deciding it any other way would bias every bracket a quiet room ever played.
+    service.votes = vi.fn().mockResolvedValue(tally(0, 0))
+    expect(await room.majorityWinner([11, 22], () => 0.2)).toBe(11)
+    expect(await room.majorityWinner([11, 22], () => 0.8)).toBe(22)
+    room.stopWatching()
+  })
+
+  it('reads no votes off a tally about some other pairing', async () => {
+    const service = fakeService({
+      votes: vi.fn().mockResolvedValue({
+        votes: {
+          first_candidate: 41,
+          second_candidate: 42,
+          first_candidate_votes: 9,
+          second_candidate_votes: 0,
+          remain_elements: 2,
+          total_votes: 9,
+          current_round: 2,
+          of_round: 2,
+        },
+        voting: { mode: 'majority', round_seconds: 10, seconds_left: 4 },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    // A pair the server has not caught up with has no votes yet — reading the ones it does
+    // have would credit them to whichever side happened to be listed in the same slot.
+    expect(await room.majorityWinner([11, 22], () => 0.2)).toBe(11)
+    expect(await room.majorityWinner([11, 22], () => 0.8)).toBe(22)
+    room.stopWatching()
+  })
+
+  it('still ends the round when the tally cannot be read at all', async () => {
+    const service = fakeService({ votes: vi.fn().mockRejectedValue(apiError(500)) })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    // Stalling the bracket on a failed read would be worse than a coin toss: the game stops.
+    expect(await room.majorityWinner([11, 22], () => 0.2)).toBe(11)
+    expect(await room.majorityWinner([11, 22], () => 0.8)).toBe(22)
     room.stopWatching()
   })
 
