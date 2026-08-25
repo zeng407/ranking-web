@@ -42,6 +42,24 @@ describe('comments service', () => {
     expect(document.cookie).not.toContain('short-lived-token')
   })
 
+  it('deletes through the same credentialed channel that issued the delete key', async () => {
+    const remove = vi.fn().mockResolvedValue(undefined)
+    const client = { get: vi.fn(), post: vi.fn(), delete: remove } as unknown as APIClient
+    const service = createCommentsService(client, async () => 'short-lived-token')
+
+    await service.remove('post/serial', 12, 'zh_TW')
+
+    // credentials: 'include' is the point of the call: the delete key is an httpOnly
+    // cookie, so a request that leaves it behind cannot prove the comment is ours.
+    expect(remove).toHaveBeenCalledWith(
+      '/posts/post%2Fserial/comments/12',
+      undefined,
+      undefined,
+      'include',
+      { Authorization: 'Bearer short-lived-token' },
+    )
+  })
+
   it('omits the Authorization header entirely when nobody is signed in', async () => {
     const get = vi.fn().mockResolvedValue({ items: [], page: 1 })
     const client = { get, post: vi.fn() } as unknown as APIClient

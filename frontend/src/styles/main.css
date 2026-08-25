@@ -5535,6 +5535,123 @@ button.game-sync-indicator {
   white-space: pre-wrap;
 }
 
+.comment-floor {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.5rem;
+  color: color-mix(in srgb, var(--accent) 86%, var(--text));
+  background: var(--accent-soft);
+  font-size: 0.68rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.comment-card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.15rem;
+}
+
+.comment-delete-button svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.comment-delete-button:hover {
+  color: var(--danger, #e5484d);
+}
+
+/* A deleted comment keeps its floor and its place in the thread, and says nothing else. */
+.comment-card.is-deleted {
+  border-style: dashed;
+  background: transparent;
+}
+
+.comment-card.is-deleted .comment-avatar {
+  border-style: dashed;
+  opacity: 0.55;
+  background: var(--surface-strong);
+}
+
+.comment-deleted {
+  margin: 0.75rem 0 0;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.comment-mention {
+  margin-right: 0.35rem;
+  color: color-mix(in srgb, var(--accent) 86%, var(--text));
+  font-weight: 750;
+}
+
+.comment-reply-button {
+  margin-top: 0.55rem;
+  padding: 0.2rem 0;
+  border: 0;
+  color: var(--text-faint);
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.comment-reply-button:hover {
+  color: var(--text);
+}
+
+.comment-reply-form {
+  display: grid;
+  margin-top: 0.6rem;
+  gap: 0.45rem;
+}
+
+.comment-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* The indent and the rule down its left are what say "this answers the line above". */
+.comment-replies {
+  display: grid;
+  margin: 0.75rem 0 0;
+  padding: 0 0 0 0.9rem;
+  gap: 0.6rem;
+  border-left: 1px solid var(--border);
+  list-style: none;
+}
+
+.comment-card.is-reply {
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.comment-card.is-reply > .comment-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.78rem;
+}
+
+.comment-card.is-reply.is-deleted {
+  border: 0;
+}
+
+.comment-delete-warning {
+  margin: 0.25rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
 .comment-pagination {
   display: flex;
   align-items: center;
@@ -6092,6 +6209,10 @@ button.game-sync-indicator {
   .comment-avatar {
     width: 2.5rem;
     height: 2.5rem;
+  }
+
+  .comment-replies {
+    padding-left: 0.6rem;
   }
 
   .comment-profile {

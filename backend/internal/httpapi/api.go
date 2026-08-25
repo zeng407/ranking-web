@@ -340,6 +340,7 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/bets", method(http.MethodPost, server.optionalAuth(server.placeGameRoomBet)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/player", method(http.MethodPut, server.optionalAuth(server.renameGameRoomPlayer)))
 	mux.HandleFunc("/api/v1/posts/{serial}/comments", server.optionalAuth(server.commentsCollection))
+	mux.HandleFunc("/api/v1/posts/{serial}/comments/{commentID}", method(http.MethodDelete, server.optionalAuth(server.deleteComment)))
 	mux.HandleFunc("/api/v1/posts/{serial}/comments/{commentID}/report", method(http.MethodPost, server.optionalAuth(server.reportComment)))
 	mux.HandleFunc("/", server.notFound)
 

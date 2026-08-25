@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, provide, reactive, ref } from 'vue'
 
 import { APIError } from '../lib/api'
-import { htmlLanguage, translate, type Locale, type MessageKey } from '../i18n'
+import { translate, type Locale, type MessageKey } from '../i18n'
 import {
   createCommentsService,
   type CommentItem,
-  type CommentProfile,
   type CommentsPage,
 } from '../services/comments'
+import CommentNode from './CommentNode.vue'
+import {
+  avatarInitial,
+  buildThreads,
+  commentThreadKey,
+  type CommentThreadContext,
+  type ReplyState,
+} from './commentThread'
 
 const props = withDefaults(defineProps<{
   postSerial: string
@@ -22,6 +29,7 @@ const maxLength = 200
 const service = createCommentsService()
 const section = ref<HTMLElement | null>(null)
 const reportDialog = ref<HTMLDialogElement | null>(null)
+const deleteDialog = ref<HTMLDialogElement | null>(null)
 const page = ref<CommentsPage>({
   items: [], page: 1, per_page: 10, total: 0, total_pages: 0,
   profile: { nickname: 'Anonymous', avatar_url: null, champions: [], is_auth: false },
@@ -38,7 +46,12 @@ const reportOther = ref('')
 const reporting = ref(false)
 const reportError = ref('')
 const reportSuccess = ref(false)
+const reply = reactive<ReplyState>({ targetID: null, input: '', submitting: false, error: '' })
+const deleteTarget = ref<CommentItem | null>(null)
+const deleting = ref(false)
+const deleteError = ref('')
 
+const threads = computed(() => buildThreads(page.value.items))
 const inputLength = computed(() => Array.from(input.value).length)
 const validInput = computed(() => input.value.trim().length > 0 && inputLength.value <= maxLength)
 const profileChampions = computed(() => page.value.profile.champions.length
@@ -52,6 +65,20 @@ const reportReasons = computed(() => [
   { value: 'Harassment', label: t('commentReasonHarassment') },
   { value: 'Other', label: t('commentReasonOther') },
 ])
+
+// Handed to every comment in the tree, however deep, instead of being threaded through
+// three levels of props and events. The locale is read through a getter so a language
+// change still reaches comments that were provided this object long before.
+const threadContext: CommentThreadContext = {
+  get locale() { return props.locale },
+  reply,
+  openReply,
+  cancelReply,
+  submitReply,
+  openReport,
+  confirmDelete,
+}
+provide(commentThreadKey, threadContext)
 
 onMounted(() => { void loadComments(1, false) })
 
@@ -94,6 +121,72 @@ async function submitComment(): Promise<void> {
   }
 }
 
+function openReply(comment: CommentItem): void {
+  reply.targetID = comment.id
+  reply.input = ''
+  reply.error = ''
+}
+
+function cancelReply(): void {
+  if (reply.submitting) return
+  reply.targetID = null
+  reply.input = ''
+  reply.error = ''
+}
+
+async function submitReply(): Promise<void> {
+  const parentID = reply.targetID
+  const content = reply.input.trim()
+  if (parentID === null || !content || reply.submitting) return
+  reply.submitting = true
+  reply.error = ''
+  try {
+    await service.create(props.postSerial, {
+      content,
+      anonymous: anonymous.value,
+      parent_id: parentID,
+    }, props.locale)
+    reply.targetID = null
+    reply.input = ''
+    // The reply belongs to a floor on this page, so the page it appears on is this one.
+    await loadComments(page.value.page, false)
+  } catch (error) {
+    reply.error = errorMessage(error, 'commentReplyError')
+  } finally {
+    reply.submitting = false
+  }
+}
+
+function confirmDelete(comment: CommentItem): void {
+  deleteTarget.value = comment
+  deleteError.value = ''
+  deleteDialog.value?.showModal()
+}
+
+function closeDelete(): void {
+  if (deleting.value) return
+  deleteDialog.value?.close()
+  deleteTarget.value = null
+}
+
+async function submitDelete(): Promise<void> {
+  const target = deleteTarget.value
+  if (!target || deleting.value) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await service.remove(props.postSerial, target.id, props.locale)
+    deleting.value = false
+    closeDelete()
+    // A deleted floor keeps its place, so the page being read does not shift under it.
+    await loadComments(page.value.page, false)
+  } catch (error) {
+    deleteError.value = errorMessage(error, 'commentDeleteError')
+  } finally {
+    deleting.value = false
+  }
+}
+
 function openReport(comment: CommentItem): void {
   reportTarget.value = comment
   reportReason.value = ''
@@ -126,25 +219,8 @@ async function submitReport(): Promise<void> {
 
 function errorMessage(error: unknown, fallback: MessageKey): string {
   if (error instanceof APIError && error.code === 'rate_limited') return t('commentRateLimited')
+  if (error instanceof APIError && error.code === 'invalid_parent') return t('commentReplyError')
   return t(fallback)
-}
-
-function avatarInitial(profile: Pick<CommentProfile, 'nickname'> | Pick<CommentItem, 'nickname'>): string {
-  return Array.from(profile.nickname.trim())[0]?.toUpperCase() || '2'
-}
-
-function relativeTime(value: string): string {
-  const timestamp = Date.parse(value)
-  if (!Number.isFinite(timestamp)) return value
-  const seconds = Math.round((timestamp - Date.now()) / 1_000)
-  const absolute = Math.abs(seconds)
-  const formatter = new Intl.RelativeTimeFormat(htmlLanguage(props.locale), { numeric: 'auto' })
-  if (absolute < 60) return formatter.format(seconds, 'second')
-  if (absolute < 3_600) return formatter.format(Math.round(seconds / 60), 'minute')
-  if (absolute < 86_400) return formatter.format(Math.round(seconds / 3_600), 'hour')
-  if (absolute < 2_592_000) return formatter.format(Math.round(seconds / 86_400), 'day')
-  if (absolute < 31_536_000) return formatter.format(Math.round(seconds / 2_592_000), 'month')
-  return formatter.format(Math.round(seconds / 31_536_000), 'year')
 }
 </script>
 
@@ -164,30 +240,7 @@ function relativeTime(value: string): string {
     </div>
     <p v-else-if="!loading && !page.items.length" class="comments-state">{{ t('commentEmpty') }}</p>
     <ol v-else class="comments-list" :aria-busy="loading">
-      <li v-for="comment in page.items" :key="comment.id" class="comment-card">
-        <div class="comment-avatar" aria-hidden="true">
-          <img v-if="comment.avatar_url" :src="comment.avatar_url" alt="" loading="lazy">
-          <span v-else>{{ avatarInitial(comment) }}</span>
-        </div>
-        <article>
-          <header>
-            <div>
-              <strong class="comment-author">{{ comment.nickname }}</strong>
-              <time :datetime="comment.created_at" :title="comment.created_at">{{ relativeTime(comment.created_at) }}</time>
-            </div>
-            <button class="comment-report-button" type="button" :aria-label="t('commentReport')" :title="t('commentReport')" @click="openReport(comment)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
-            </button>
-          </header>
-          <div v-if="comment.champions.length" class="comment-champions">
-            <span v-for="champion in comment.champions" :key="champion" class="comment-champion">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM6 6H3v1a4 4 0 0 0 5 4M18 6h3v1a4 4 0 0 1-5 4M12 12v4M8 20h8M9 16h6"/></svg>
-              {{ champion }}
-            </span>
-          </div>
-          <p class="comment-content">{{ comment.content }}</p>
-        </article>
-      </li>
+      <CommentNode v-for="thread in threads" :key="thread.comment.id" :node="thread" />
     </ol>
 
     <nav v-if="page.total_pages > 1" class="comment-pagination" :aria-label="t('commentTitle')">
@@ -200,7 +253,7 @@ function relativeTime(value: string): string {
       <div class="comment-profile">
         <div class="comment-avatar" aria-hidden="true">
           <img v-if="page.profile.avatar_url" :src="page.profile.avatar_url" alt="">
-          <span v-else>{{ avatarInitial(page.profile) }}</span>
+          <span v-else>{{ avatarInitial(page.profile.nickname) }}</span>
         </div>
         <div>
           <small>{{ t('commentNickname') }}</small>
@@ -261,6 +314,27 @@ function relativeTime(value: string): string {
         <button class="button button-quiet" type="button" :disabled="reporting" @click="closeReport">{{ t('commentCancel') }}</button>
         <button class="button button-primary comment-report-submit" type="button" :disabled="!reportValue || reporting || reportSuccess" @click="submitReport">
           {{ reporting ? t('commentReporting') : t('commentReportSubmit') }}
+        </button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog ref="deleteDialog" class="comment-report-dialog comment-delete-dialog" @cancel.prevent="closeDelete">
+    <form method="dialog" @submit.prevent="submitDelete">
+      <header>
+        <div>
+          <p class="eyebrow">2PICK · DELETE</p>
+          <h2>{{ t('commentDeleteTitle') }}</h2>
+        </div>
+        <button type="button" :aria-label="t('commentCancel')" @click="closeDelete">×</button>
+      </header>
+      <blockquote v-if="deleteTarget">{{ deleteTarget.content }}</blockquote>
+      <p class="comment-delete-warning">{{ t('commentDeleteWarning') }}</p>
+      <p v-if="deleteError" class="comment-error" role="alert">{{ deleteError }}</p>
+      <footer>
+        <button class="button button-quiet" type="button" :disabled="deleting" @click="closeDelete">{{ t('commentCancel') }}</button>
+        <button class="button button-primary comment-delete-submit" type="button" :disabled="deleting" @click="submitDelete">
+          {{ deleting ? t('commentDeleting') : t('commentDeleteSubmit') }}
         </button>
       </footer>
     </form>
