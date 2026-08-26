@@ -86,6 +86,12 @@
         <i class="fas fa-code-branch mr-1"></i>@{{ $t('game.multi_tab.local_branch') }}
       </div>
 
+      @if (!$post->is_censored)
+        <div v-show="game && !creatingGame && !finishingGame">
+          @include('ads.gam_togawa_300x250')
+        </div>
+      @endif
+
       @if (
           !$post->is_censored &&
               config('services.google_ad.enabled') &&
@@ -114,12 +120,6 @@
           <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
             @include('ads.game_ad_mobile')
           </div>
-        </div>
-      @endif
-
-      @if (!$post->is_censored)
-        <div v-show="game && !creatingGame && !finishingGame">
-          @include('ads.gam_togawa_300x250')
         </div>
       @endif
 
