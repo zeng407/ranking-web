@@ -20,7 +20,9 @@
     </script>
   @endif
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
-  @if (config('services.google_ad.enabled') && config('services.google_ad.game_page') && !is_skip_ad())
+  @if (config('services.google_ad.enabled') &&
+          (config('services.google_ad.game_page') || config('services.google_ad.togawa_html.enabled')) &&
+          !is_skip_ad())
     {{-- ads --}}
     <script data-cfasync="false" async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous">
     </script>
@@ -112,6 +114,12 @@
           <div v-if="!refreshAD && game" id="google-ad" class="my-2 text-center">
             @include('ads.game_ad_mobile')
           </div>
+        </div>
+      @endif
+
+      @if (!$post->is_censored)
+        <div v-show="game && !creatingGame && !finishingGame">
+          @include('ads.gam_togawa_300x250')
         </div>
       @endif
 
