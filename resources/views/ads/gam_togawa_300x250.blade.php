@@ -14,11 +14,17 @@
   </div>
 
   @push('scripts')
-    <script>
+    <script data-cfasync="false">
       window.googletag = window.googletag || { cmd: [] };
       googletag.cmd.push(function() {
         var slotId = @json($togawaSlotId);
-        var wrapper = document.querySelector('.gam-togawa-ad');
+        var container = document.getElementById(slotId);
+
+        if (!container) {
+          return;
+        }
+
+        var wrapper = container.closest('.gam-togawa-ad');
         var slot = googletag.defineSlot(@json($togawaAdUnit), [300, 250], slotId);
 
         if (!slot) {
@@ -32,8 +38,9 @@
           }
         });
 
-        if (!googletag.pubadsReady) {
+        if (!window.__rankingWebGptServicesEnabled) {
           googletag.enableServices();
+          window.__rankingWebGptServicesEnabled = true;
         }
 
         googletag.display(slotId);
