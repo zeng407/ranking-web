@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'v
 import { useRoute } from 'vue-router'
 
 import { normalizeLocale, translate } from '../i18n'
-import { boardRows, useGameRoom } from '../composables/useGameRoom'
+import { boardRows, popularRows, uniqueRows, useGameRoom } from '../composables/useGameRoom'
 import { createGameplayService, gamePreviewImage, type GameElement } from '../services/gameplay'
 import { MaxNicknameLength } from '../services/gameRoom'
 
@@ -64,7 +64,33 @@ const sides = computed(() => {
   }))
 })
 
-const rows = computed(() => boardRows(room.leaderboard.value))
+/**
+ * Which boards this room shows.
+ *
+ * A majority room scores taste: siding with the room adds points, going alone subtracts
+ * them, so the same column read from both ends is two rankings. A room the host decides has
+ * only one direction worth reading and keeps the single merged list.
+ */
+const boards = computed(() => {
+  const board = room.leaderboard.value
+  if (!room.majority.value) {
+    return [{ key: 'all', title: 'roomLeaderboard' as const, hint: '' as const, rows: boardRows(board) }]
+  }
+  return [
+    {
+      key: 'popular',
+      title: 'roomBoardPopular' as const,
+      hint: 'roomBoardPopularHint' as const,
+      rows: popularRows(board),
+    },
+    {
+      key: 'unique',
+      title: 'roomBoardUnique' as const,
+      hint: 'roomBoardUniqueHint' as const,
+      rows: uniqueRows(board),
+    },
+  ]
+})
 const ownPlayerId = computed(() => room.player.value?.player_id ?? '')
 
 /**
@@ -242,7 +268,10 @@ watchEffect(() => {
       <section v-if="room.player.value" class="room-me">
         <h2>{{ translate(locale, 'roomYou') }}</h2>
         <dl class="room-stats">
-          <div><dt>{{ translate(locale, 'roomScore') }}</dt><dd>{{ room.player.value.score }}</dd></div>
+          <div>
+            <dt>{{ translate(locale, room.majority.value ? 'roomTasteScore' : 'roomScore') }}</dt>
+            <dd>{{ room.player.value.score }}</dd>
+          </div>
           <div><dt>{{ translate(locale, 'roomRank') }}</dt><dd>{{ room.player.value.rank || '—' }}</dd></div>
           <div><dt>{{ translate(locale, 'roomAccuracy') }}</dt><dd>{{ room.player.value.accuracy }}%</dd></div>
           <div><dt>{{ translate(locale, 'roomCombo') }}</dt><dd>{{ room.player.value.combo }}</dd></div>
@@ -264,16 +293,17 @@ watchEffect(() => {
         </form>
       </section>
 
-      <section class="room-board">
+      <section v-for="(board, index) in boards" :key="board.key" class="room-board">
         <h2>
-          {{ translate(locale, 'roomLeaderboard') }}
-          <span v-if="room.leaderboard.value" class="room-board-count">
+          {{ translate(locale, board.title) }}
+          <span v-if="index === 0 && room.leaderboard.value" class="room-board-count">
             {{ room.leaderboard.value.total_users }}
           </span>
         </h2>
+        <p v-if="board.hint" class="room-board-hint">{{ translate(locale, board.hint) }}</p>
         <ol class="room-board-list">
           <li
-            v-for="row in rows"
+            v-for="row in board.rows"
             :key="row.user_id"
             :class="{ 'is-me': row.user_id === ownPlayerId }"
           >
@@ -283,7 +313,9 @@ watchEffect(() => {
             <span class="room-board-accuracy">{{ row.accuracy }}%</span>
           </li>
         </ol>
-        <p v-if="rows.length === 0" class="room-status">{{ translate(locale, 'roomNoPlayers') }}</p>
+        <p v-if="board.rows.length === 0" class="room-status">
+          {{ translate(locale, 'roomNoPlayers') }}
+        </p>
       </section>
     </template>
   </div>
@@ -460,6 +492,12 @@ watchEffect(() => {
   display: grid;
   gap: 0.25rem;
   font-size: 0.85rem;
+}
+
+.room-board-hint {
+  margin: -0.5rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
 .room-board-list {

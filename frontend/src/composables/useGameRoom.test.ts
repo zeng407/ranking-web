@@ -8,6 +8,8 @@ import {
   POLL_INTERVAL_MS,
   ROUND_EVENT,
   boardRows,
+  popularRows,
+  uniqueRows,
   useGameRoom,
 } from './useGameRoom'
 import type { GameRoomService, Leaderboard, RoomState } from '../services/gameRoom'
@@ -496,5 +498,31 @@ describe('boardRows', () => {
 
   it('is empty for a missing board', () => {
     expect(boardRows(null)).toEqual([])
+  })
+})
+
+describe('the two readings of one score column', () => {
+  it('ranks popular taste from the top and unique taste from the bottom', () => {
+    // The same room, read both ways. bottom_10 arrives worst first, and worst by score is
+    // most unique, so the first row of it is unique rank 1 however far down the popular
+    // board it sits.
+    const read = board({
+      total_users: 40,
+      top_10: [player('a', 1, 1300), player('b', 2, 1200)],
+      bottom_10: [player('z', 37, 700), player('y', 36, 800)],
+    })
+
+    expect(popularRows(read).map((row) => [row.user_id, row.rank])).toEqual([['a', 1], ['b', 2]])
+    expect(uniqueRows(read).map((row) => [row.user_id, row.rank])).toEqual([['z', 1], ['y', 2]])
+  })
+
+  it('leaves everything but the rank of a unique row alone', () => {
+    const [row] = uniqueRows(board({ bottom_10: [player('z', 37, 700)] }))
+    expect(row).toMatchObject({ user_id: 'z', name: 'player-z', score: 700, rank: 1 })
+  })
+
+  it('is empty for a missing board', () => {
+    expect(popularRows(null)).toEqual([])
+    expect(uniqueRows(null)).toEqual([])
   })
 })

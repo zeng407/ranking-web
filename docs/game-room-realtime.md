@@ -118,6 +118,31 @@ a round would be two sources of truth, and a host clicking through would leave t
 asked the room for unread. 「結束回合」 is offered in both settings, since cutting a round
 short is useful whether or not one was going to end on its own.
 
+### The two taste boards
+
+Nothing about scoring changes for this mode, because the existing engine already says what it
+needs to. A wager on the side that wins pays `last_combo * 10 + 10` and a wager on the side
+that loses costs 10 (`Scoring`, from `config/setting.php`), and in a majority room the side
+that wins *is* the majority. So siding with the room adds to a player's score and going alone
+subtracts from it, with no new column and no second settlement path.
+
+That makes one score column readable from both ends, which is the two rankings the mode is
+named for:
+
+| Board | Read from | Rank shown |
+| --- | --- | --- |
+| 大眾品味排行榜 | `top_10`, highest score first | the row's own `rank` |
+| 獨特品味排行榜 | `bottom_10`, lowest score first | its position in that list |
+
+`bottom_10` arrives worst first, and worst by score is exactly most unique, so the first row
+of it is unique rank 1. The `rank` those rows carry is their place on the popular board and
+would read here as a large number, so `uniqueRows` replaces it. It cannot be inverted from
+`total_users` either: that count includes players no refresh has ranked yet, and each one
+would shift the whole board by one.
+
+A room the host decides keeps the single merged list it has always had — there the score
+measures agreement with one person's taste, which has only one direction worth reading.
+
 ### Deploying it
 
 - **Run migration `00016_game_room_voting.sql`.** It adds `vote_mode`, `round_seconds` and

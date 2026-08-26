@@ -22,7 +22,7 @@ import { APIError } from '../lib/api'
 import { useAuth } from '../composables/useAuth'
 import { closeImageViewer, openImageViewer } from '../services/imageViewer'
 import { unlockPost } from '../services/postAccess'
-import { boardRows } from '../composables/useGameRoom'
+import { boardRows, popularRows, uniqueRows } from '../composables/useGameRoom'
 import {
   DEFAULT_ROUND_SECONDS,
   MAX_ROUND_SECONDS,
@@ -280,8 +280,23 @@ const hostedRoom = useHostedRoom(
     return displayed ? [displayed[0].id, displayed[1].id] : undefined
   },
 )
-/** The standings to show the host, best first. Empty until somebody joins. */
-const roomBoardRows = computed(() => boardRows(hostedRoom.board.value))
+/**
+ * The standings to show the host. Empty until somebody joins.
+ *
+ * A majority room scores taste — siding with the room adds, going alone subtracts — so the
+ * same column read from both ends is two rankings rather than one list with a dull middle.
+ * A room the host decides has only one direction worth reading and keeps the merged list.
+ */
+const roomBoards = computed(() => {
+  const board = hostedRoom.board.value
+  if (!hostedRoom.majority.value) {
+    return [{ key: 'all', title: 'roomLeaderboard' as const, rows: boardRows(board) }]
+  }
+  return [
+    { key: 'popular', title: 'roomBoardPopular' as const, rows: popularRows(board) },
+    { key: 'unique', title: 'roomBoardUnique' as const, rows: uniqueRows(board) },
+  ]
+})
 
 /**
  * Wagers on the pairing on screen, by element id, or null when the tally is about some
@@ -2073,15 +2088,17 @@ function preferredRankImage(report: RankReport): string | null {
             </button>
           </div>
 
-          <h3>{{ t('roomLeaderboard') }}</h3>
-          <ol v-if="roomBoardRows.length" class="game-room-board">
-            <li v-for="row in roomBoardRows" :key="row.user_id">
-              <span class="game-room-board-rank">{{ row.rank || '—' }}</span>
-              <span class="game-room-board-name">{{ row.name }}</span>
-              <span class="game-room-board-score">{{ row.score }}</span>
-            </li>
-          </ol>
-          <p v-else class="game-room-board-empty">{{ t('roomNoPlayers') }}</p>
+          <template v-for="board in roomBoards" :key="board.key">
+            <h3>{{ t(board.title) }}</h3>
+            <ol v-if="board.rows.length" class="game-room-board">
+              <li v-for="row in board.rows" :key="row.user_id">
+                <span class="game-room-board-rank">{{ row.rank || '—' }}</span>
+                <span class="game-room-board-name">{{ row.name }}</span>
+                <span class="game-room-board-score">{{ row.score }}</span>
+              </li>
+            </ol>
+            <p v-else class="game-room-board-empty">{{ t('roomNoPlayers') }}</p>
+          </template>
         </aside>
 
         <!-- Always rendered, unlike the room panel it used to take turns with: on a narrow
@@ -2524,8 +2541,8 @@ function preferredRankImage(report: RankReport): string | null {
             <p>{{ t('roomModeMajorityDescription') }}</p>
             <ul>
               <li>{{ t('roomModeMajorityTimer') }}</li>
-              <li>{{ t('roomModeMajorityTie') }}</li>
-              <li>{{ t('roomModeBlackBox') }}</li>
+              <li>{{ t('roomBoardPopular') }}</li>
+              <li>{{ t('roomBoardUnique') }}</li>
               <li>{{ t('roomModePoints') }}</li>
             </ul>
           </button>

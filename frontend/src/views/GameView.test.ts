@@ -1155,6 +1155,43 @@ describe('GameView restart regression', () => {
     wrapper.unmount()
   })
 
+  it('reads one score column as a popular board and a unique one', async () => {
+    roomMocks.votes.mockResolvedValue({
+      votes: null,
+      voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+    })
+    roomMocks.leaderboard.mockResolvedValue({
+      total_users: 40,
+      top_10: [{ user_id: 7, name: '快樂的貓', score: 1300, rank: 1 }],
+      bottom_10: [
+        { user_id: 9, name: '孤僻的鳥', score: 700, rank: 37 },
+        { user_id: 8, name: '生氣的狗', score: 800, rank: 36 },
+      ],
+    })
+    const wrapper = await mountStartedGame()
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+    await wrapper.findAll('.game-mode-card')[1]!.trigger('click')
+    await flushPromises()
+    await wrapper.get('.game-room-round-settings .button-primary').trigger('click')
+    await flushPromises()
+
+    const headings = wrapper.findAll('.game-room-panel h3').map((heading) => heading.text())
+    expect(headings).toEqual(['大眾品味排行榜', '獨特品味排行榜'])
+
+    const boards = wrapper.findAll('.game-room-board')
+    expect(boards[0]!.text()).toContain('快樂的貓')
+
+    // The unique board is numbered from its own end: the lowest score in the room is first
+    // there, whatever place it holds on the popular board.
+    const unique = boards[1]!.findAll('li').map((row) => [
+      row.get('.game-room-board-rank').text(),
+      row.get('.game-room-board-name').text(),
+    ])
+    expect(unique).toEqual([['1', '孤僻的鳥'], ['2', '生氣的狗']])
+
+    wrapper.unmount()
+  })
+
   it('settles the round by itself when the clock runs out', async () => {
     vi.useFakeTimers()
     roomMocks.votes.mockResolvedValue({

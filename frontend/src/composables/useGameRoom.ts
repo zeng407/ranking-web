@@ -358,6 +358,30 @@ export function boardRows(board: Leaderboard | null) {
   })
 }
 
+/**
+ * The board read from the top: the players who most often sided with the room.
+ *
+ * top_10 already arrives best first, and the rank each row carries is its place on this
+ * board, so both are used as they come.
+ */
+export function popularRows(board: Leaderboard | null) {
+  return board ? board.top_10 : []
+}
+
+/**
+ * The same column read from the bottom: the players who most often went their own way.
+ *
+ * bottom_10 arrives worst first, and worst by score is exactly most unique, so a row's
+ * position in this list is its unique rank. The rank it carries is its place on the
+ * popular board and would read here as a large number, so it is replaced. It cannot be
+ * inverted from total_users either: that count includes players no refresh has ranked yet,
+ * and every one of them would shift the whole board by one.
+ */
+export function uniqueRows(board: Leaderboard | null) {
+  if (!board) return []
+  return board.bottom_10.map((row, index) => ({ ...row, rank: index + 1 }))
+}
+
 /** True when the caller's own row is the one being rendered. */
 export function isOwnRow(playerId: string | undefined, rowId: string): boolean {
   return Boolean(playerId) && playerId === rowId
