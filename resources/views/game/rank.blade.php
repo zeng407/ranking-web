@@ -9,8 +9,12 @@
 
 @section('header')
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
-  @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
+  @if (config('services.google_ad.enabled') &&
+          (config('services.google_ad.rank_page') || config('services.google_ad.togawa_html.enabled')) &&
+          !is_skip_ad())
   <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
+  @endif
+  @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
   <script>
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
@@ -114,6 +118,11 @@
                 </script>
               </div>
             </div>
+            @endif
+
+            @if (!$post->is_censored)
+              {{-- Optional GAM custom HTML campaign placement (300x250). --}}
+              @include('ads.gam_togawa_300x250')
             @endif
 
             {{-- Title & Description --}}
