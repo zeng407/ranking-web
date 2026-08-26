@@ -34,6 +34,9 @@ type GameRoomReader interface {
 	CurrentVotes(ctx context.Context, roomID int64, gameSerial string) (gameroom.VoteTally, bool, error)
 	LatestBet(ctx context.Context, participantID int64) (gameroom.PlacedBet, bool, error)
 	Voting(ctx context.Context, roomID int64) (gameroom.VotingSettings, error)
+	// RoundHistory reads the rounds the room has already decided, newest first, with
+	// the caller's own pick marked. It must not seat the caller in the room.
+	RoundHistory(ctx context.Context, roomID int64, anonymousID string, limit int) ([]gameroom.RoundVotes, error)
 }
 
 // GameRoomAnnouncer publishes the settlement work a host's votes create.
@@ -101,9 +104,9 @@ type gameRoomResponse struct {
 	Serial string `json:"serial"`
 	// GameSerial lets a client that only has a room link find the game it belongs to,
 	// which the old UI needed a separate request for.
-	GameSerial  string                `json:"game_serial"`
-	Player *gameRoomPlayer     `json:"player"`
-	Votes  *gameroom.VoteTally `json:"votes"`
+	GameSerial string              `json:"game_serial"`
+	Player     *gameRoomPlayer     `json:"player"`
+	Votes      *gameroom.VoteTally `json:"votes"`
 	// Voting sits beside the tally rather than inside it because it has to be readable
 	// between rounds, when there is no tally at all: a client that has just joined needs
 	// to know it is in a majority room before the next pairing appears.
@@ -131,6 +134,12 @@ type gameRoomPlayer struct {
 type gameRoomVotesResponse struct {
 	Votes  *gameroom.VoteTally      `json:"votes"`
 	Voting *gameroom.VotingSettings `json:"voting"`
+}
+
+// gameRoomHistoryResponse wraps the rounds in an object so the payload can grow — a
+// bare array cannot gain a field without breaking every reader of it.
+type gameRoomHistoryResponse struct {
+	Rounds []gameroom.RoundVotes `json:"rounds"`
 }
 
 type gameRoomBet struct {
@@ -410,6 +419,45 @@ func (a *api) gameRoomVotes(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Voting = &voting
 	writePrivateJSON(w, r, http.StatusOK, response)
+}
+
+// gameRoomHistory is how the room voted on the rounds it has already decided.
+//
+// Read-only like gameRoomVotes, and for the same reason it does not go through
+// gameRoomState: reading a room must not seat the reader on its leaderboard. The optional
+// anonymous_id is matched against the participants that already exist, so a player sees
+// which side they took and a spectator simply sees none marked.
+//
+// It spans the room's whole life, including a bracket the host restarted away from: those
+// rounds were really voted on, and dropping them would silently shorten the history every
+// time somebody reloaded.
+func (a *api) gameRoomHistory(w http.ResponseWriter, r *http.Request) {
+	if !a.requireGameRoom(w, r) {
+		return
+	}
+	room, gameSerial, ok := a.resolveRoom(w, r)
+	if !ok {
+		return
+	}
+	if !a.roomBelongsToRequestedGame(w, r, gameSerial) {
+		return
+	}
+
+	limit, ok := positiveQueryInt(
+		r.URL.Query().Get("limit"), gameroom.DefaultHistoryRounds, 1, gameroom.MaxHistoryRounds)
+	if !ok {
+		writeError(w, r, http.StatusUnprocessableEntity, "invalid_query",
+			"limit must be between 1 and 50")
+		return
+	}
+
+	rounds, err := a.gameRoomReader.RoundHistory(
+		r.Context(), room.ID, roomAnonymousID(r.URL.Query().Get("anonymous_id")), limit)
+	if err != nil {
+		a.writeGameRoomError(w, r, err)
+		return
+	}
+	writePrivateJSON(w, r, http.StatusOK, gameRoomHistoryResponse{Rounds: rounds})
 }
 
 // setGameRoomVoting changes how a room decides its rounds.

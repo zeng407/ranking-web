@@ -98,6 +98,7 @@ function fakeService(overrides: Partial<GameRoomService> = {}): GameRoomService 
     state: vi.fn().mockResolvedValue(state()),
     leaderboard: vi.fn().mockResolvedValue(board()),
     bet: vi.fn().mockResolvedValue(undefined),
+    history: vi.fn().mockResolvedValue([]),
     rename: vi.fn(),
     ...overrides,
   } as unknown as GameRoomService
@@ -361,6 +362,41 @@ describe('useGameRoom', () => {
 
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
     expect(service.state).toHaveBeenCalledTimes(before + 1)
+    room.leave()
+  })
+
+  /*
+  The history is read per pairing, not per poll: a round can end on the clock, on the host,
+  or on a restart, and all three reach a participant the same way — as a different pair on
+  screen. Re-reading on every poll instead would cost a query every few seconds to answer a
+  list that only changes when a round ends.
+  */
+  it('re-reads the vote history when the pairing changes, and not before', async () => {
+    const round = {
+      winner_id: 11, loser_id: 22, winner_votes: 2, loser_votes: 1,
+      current_round: 31, of_round: 32, remain_elements: 34, your_pick: 11,
+    }
+    const service = fakeService({ history: vi.fn().mockResolvedValue([round]) })
+    const room = useGameRoom('abcdefgh', service)
+    await room.join()
+
+    expect(service.history).toHaveBeenCalledTimes(1)
+    expect(room.history.value).toEqual([round])
+
+    // Same pairing on the next poll: nothing has been decided since.
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    expect(service.history).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    vi.mocked(service.state).mockResolvedValue(state({
+      votes: {
+        first_candidate: 11, second_candidate: 33,
+        first_candidate_votes: 0, second_candidate_votes: 0,
+        remain_elements: 33, total_votes: 0, current_round: 32, of_round: 32,
+      },
+    }))
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    expect(service.history).toHaveBeenCalledTimes(2)
     room.leave()
   })
 

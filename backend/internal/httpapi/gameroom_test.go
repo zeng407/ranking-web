@@ -58,6 +58,11 @@ type fakeGameRoom struct {
 	lastVotingGame string
 	armCalls       int
 	lastArmedGame  string
+
+	history          []gameroom.RoundVotes
+	lastHistoryAnon  string
+	lastHistoryLimit int
+	historyCalls     int
 }
 
 func newFakeGameRoom() *fakeGameRoom {
@@ -137,6 +142,14 @@ func (fake *fakeGameRoom) CurrentVotes(_ context.Context, _ int64, _ string) (ga
 
 func (fake *fakeGameRoom) LatestBet(_ context.Context, _ int64) (gameroom.PlacedBet, bool, error) {
 	return fake.latestBet, fake.betFound, fake.readErr
+}
+
+func (fake *fakeGameRoom) RoundHistory(
+	_ context.Context, _ int64, anonymousID string, limit int,
+) ([]gameroom.RoundVotes, error) {
+	fake.historyCalls++
+	fake.lastHistoryAnon, fake.lastHistoryLimit = anonymousID, limit
+	return fake.history, fake.readErr
 }
 
 func (fake *fakeGameRoom) Leaderboard(_ context.Context, _ int64) (gameroom.Leaderboard, error) {
@@ -736,6 +749,85 @@ func TestTheVotesEndpointRejectsAMismatchedGameSerial(t *testing.T) {
 	response := httptest.NewRecorder()
 	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet,
 		"/api/v1/game-rooms/abcdefgh/votes?game_serial=another-game", nil))
+
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403; body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestTheHistoryEndpointAnswersTheDecidedRoundsWithoutJoining(t *testing.T) {
+	fake := newFakeGameRoom()
+	fake.history = []gameroom.RoundVotes{{
+		WinnerID: 11, LoserID: 12, WinnerVotes: 7, LoserVotes: 3,
+		CurrentRound: 3, OfRound: 4, RemainElements: 8, YourPick: 12,
+	}}
+	response := httptest.NewRecorder()
+	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet,
+		"/api/v1/game-rooms/abcdefgh/history?game_serial=game-serial&anonymous_id=browser-a", nil))
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+	}
+	var body struct {
+		Rounds []gameroom.RoundVotes `json:"rounds"`
+	}
+	decodeData(t, response, &body)
+	if len(body.Rounds) != 1 || body.Rounds[0].WinnerVotes != 7 || body.Rounds[0].YourPick != 12 {
+		t.Fatalf("rounds = %+v, want the 7/3 round with the caller's pick", body.Rounds)
+	}
+	if fake.lastHistoryAnon != "browser-a" {
+		t.Errorf("anonymous id = %q, want the caller's", fake.lastHistoryAnon)
+	}
+	// Both screens read this, the host's included. Joining would seat whoever looked.
+	if fake.joinCalls != 0 {
+		t.Error("the history endpoint created a participant")
+	}
+}
+
+func TestTheHistoryEndpointDefaultsAndBoundsItsLimit(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		query string
+		want  int
+		// status is what the request answers; 0 means 200 with `want` rounds asked for.
+		status int
+	}{
+		{name: "absent", query: "", want: gameroom.DefaultHistoryRounds},
+		{name: "given", query: "&limit=5", want: 5},
+		{name: "over the cap", query: "&limit=500", status: http.StatusUnprocessableEntity},
+		{name: "not a number", query: "&limit=all", status: http.StatusUnprocessableEntity},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fake := newFakeGameRoom()
+			response := httptest.NewRecorder()
+			gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet,
+				"/api/v1/game-rooms/abcdefgh/history?anonymous_id=browser-a"+test.query, nil))
+
+			if test.status != 0 {
+				if response.Code != test.status {
+					t.Fatalf("status = %d, want %d; body = %s",
+						response.Code, test.status, response.Body.String())
+				}
+				if fake.historyCalls != 0 {
+					t.Error("a refused limit still reached the database")
+				}
+				return
+			}
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
+			}
+			if fake.lastHistoryLimit != test.want {
+				t.Errorf("limit = %d, want %d", fake.lastHistoryLimit, test.want)
+			}
+		})
+	}
+}
+
+func TestTheHistoryEndpointRejectsAMismatchedGameSerial(t *testing.T) {
+	fake := newFakeGameRoom()
+	response := httptest.NewRecorder()
+	gameRoomHandler(fake).ServeHTTP(response, httptest.NewRequest(http.MethodGet,
+		"/api/v1/game-rooms/abcdefgh/history?game_serial=another-game", nil))
 
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403; body = %s", response.Code, response.Body.String())

@@ -3901,6 +3901,14 @@ button.game-sync-indicator {
   opacity: 0.55;
 }
 
+/* The host's own wager in a majority room. The round is not decided yet, so the mark says
+   "this is where my vote is", not "this one won". */
+.game-vote-button.is-picked {
+  outline: 3px solid #fff;
+  outline-offset: -5px;
+  filter: saturate(1.15) brightness(1.06);
+}
+
 .game-vote-button svg {
   width: 1.8rem;
   height: 1.8rem;
@@ -4078,6 +4086,45 @@ button.game-sync-indicator {
   filter: grayscale(0.85);
 }
 
+/* Which side this browser wagered on, in a room that voted on the match. */
+.game-history-yours {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.4rem;
+  color: #0f172a;
+  background: #fde047;
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* How the room voted on a match it decided. */
+.game-history-votes {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-history-votes b {
+  font-size: 0.95rem;
+}
+
+.game-history-votes span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgb(255 255 255 / 78%);
+}
+
+.game-history-votes-loser {
+  opacity: 0.62;
+}
+
 /* The host's view of their own room: who is in it and how the standings are moving.
    Takes the rail on a wide screen, where the ad is dropped instead; on a narrow one it
    becomes a bar and the ad moves in beside the history. */
@@ -4157,9 +4204,11 @@ button.game-sync-indicator {
   font-size: 1.15rem;
 }
 
-/* The round the room is deciding: how long is left, and the way to cut it short. */
+/* The round the room is deciding: how long is left, the way to cut it short, and the
+   settings that decide the next one. */
 .game-room-round {
   display: grid;
+  grid-template-columns: 1fr auto;
   gap: 0.4rem;
   padding: 0.5rem 0.65rem;
   border-radius: 0.8rem;
@@ -4167,6 +4216,7 @@ button.game-sync-indicator {
 }
 
 .game-room-round-clock {
+  grid-column: 1 / -1;
   display: flex;
   margin: 0;
   align-items: baseline;
@@ -4200,6 +4250,34 @@ button.game-sync-indicator {
 .game-room-round-settle:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.game-room-round-settings-button {
+  display: grid;
+  width: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  color: var(--text-soft);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.game-room-round-settings-button:hover {
+  color: var(--text);
+  background: var(--surface-strong);
+}
+
+.game-room-round-settings-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
 .game-room-panel-actions {

@@ -30,6 +30,7 @@ import {
   onScreenPairForBatch,
   useHostedRoom,
 } from '../composables/useHostedRoom'
+import type { RoundVotes } from '../services/gameRoom'
 import { getAnonymousID } from '../lib/anonymousId'
 import { downloadQRCode, drawQRCode } from '../lib/qrcode'
 import { shareOrCopyLink } from '../lib/share'
@@ -307,7 +308,7 @@ const roomBoards = computed(() => {
  * the new pair would credit other people's wagers to the wrong candidates. Either order of
  * the two ids is accepted: which one the room calls "first" is the server's business.
  */
-const blackBoxVotes = computed<Map<number, number> | null>(() => {
+const roundVotes = computed<Map<number, number> | null>(() => {
   const tally = hostedRoom.votes.value
   const pair = currentElements.value
   if (!tally || !pair) return null
@@ -365,15 +366,49 @@ const localChampionLabels = computed(() => {
   const archivedWinner = archived ? champion(archived) : null
   return archivedWinner ? [archivedWinner.title] : []
 })
+/**
+ * How the room voted on each pairing it has decided, keyed by the pairing itself.
+ *
+ * Keyed on the pair rather than on the round numbers because that is what the local history
+ * knows: it records matches, not the room's bracket position. The key is order-independent,
+ * so the room calling a side "winner" and the local history agreeing is not assumed.
+ *
+ * Newest first from the server, so the first entry for a pairing wins — a bracket replayed
+ * after a restart annotates its rounds with the replay rather than with the abandoned run.
+ */
+const roomRoundVotes = computed(() => {
+  const rounds = new Map<string, RoundVotes>()
+  for (const round of hostedRoom.history.value) {
+    const key = pairKey(round.winner_id, round.loser_id)
+    if (!rounds.has(key)) rounds.set(key, round)
+  }
+  return rounds
+})
+
 const historyItems = computed(() => {
   const game = snapshot.value
   if (!game) return []
+  const rounds = roomRoundVotes.value
   return game.match_history.map((item) => ({
     ...item,
     winner: game.elements.find((element) => element.id === item.winner_id) ?? null,
     loser: game.elements.find((element) => element.id === item.loser_id) ?? null,
+    // Null for a match played before the room opened, or in a room the host decides alone.
+    roomRound: rounds.get(pairKey(item.winner_id, item.loser_id)) ?? null,
   }))
 })
+
+/** One key for a pairing, whichever way round it is given. */
+function pairKey(one: number, other: number): string {
+  return one < other ? `${one}:${other}` : `${other}:${one}`
+}
+
+/** The winning side's share of a decided round, as a whole percent. */
+function roundShare(round: RoundVotes): number {
+  const total = round.winner_votes + round.loser_votes
+  if (total === 0) return 0
+  return Math.round((round.winner_votes / total) * 100)
+}
 
 interface PreviewOption {
   key: string | number
@@ -715,6 +750,24 @@ async function createNewGame(forceLease: boolean, discardLegacyOnSuccess: boolea
   }
 }
 
+/**
+ * A click on a candidate.
+ *
+ * IN A MAJORITY ROOM IT IS A WAGER, NOT A VERDICT. The room decides the round, so the host's
+ * click joins the tally and then waits like everybody else's; settling stays with the clock
+ * and with 結束回合, which keeps one source of truth for who won. Everywhere else — a solo
+ * game, or a room the host decides — the click IS the verdict and votes locally.
+ */
+function pickCandidate(elementId: number): void {
+  if (!hostedRoom.majority.value) {
+    voteFor(elementId)
+    return
+  }
+  const pair = currentElements.value
+  if (!pair || readOnly.value || animating.value) return
+  void hostedRoom.placeBet(elementId, pair[0].id === elementId ? pair[1].id : pair[0].id)
+}
+
 function voteFor(winnerId: number): void {
   const game = snapshot.value
   const match = game?.current_match
@@ -879,10 +932,13 @@ function resultShareURL(): string {
  * Opens the multiplayer dialog.
  *
  * A host who already has a room lands on the invite directly: there is one room per game,
- * so the mode was settled when it was opened and re-asking would suggest otherwise.
+ * so the mode was settled when it was opened and re-asking would suggest otherwise. The
+ * step argument is how the gear beside the round clock gets straight to the settings,
+ * rather than through the invite the host is not looking for.
  */
-function openMultiplayerDialog(): void {
-  multiplayerStep.value = hostedRoom.hosting.value ? 'invite' : 'mode'
+function openMultiplayerDialog(step?: 'settings'): void {
+  if (step === 'settings' && hostedRoom.hosting.value) openRoundSettings()
+  else multiplayerStep.value = hostedRoom.hosting.value ? 'invite' : 'mode'
   if (!multiplayerDialog.value?.open) {
     multiplayerDialog.value?.showModal()
     setModalOpen(true)
@@ -1017,8 +1073,8 @@ async function renderRoomQRCode(): Promise<void> {
 }
 
 /** This candidate's share of the wagers, as a whole percent. */
-function blackBoxShare(elementId: number): number {
-  const counts = blackBoxVotes.value
+function voteShare(elementId: number): number {
+  const counts = roundVotes.value
   if (!counts) return 0
   const total = [...counts.values()].reduce((sum, value) => sum + value, 0)
   if (total === 0) return 0
@@ -1901,7 +1957,7 @@ function preferredRankImage(report: RankReport): string | null {
               :disabled="hostedRoom.status.value === 'opening'"
               :title="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
               :aria-label="hostedRoom.hosting.value ? t('roomInviteTitle') : t('roomHostStart')"
-              @click="openMultiplayerDialog"
+              @click="openMultiplayerDialog()"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
@@ -1978,21 +2034,22 @@ function preferredRankImage(report: RankReport): string | null {
                 <div v-else class="game-media-fallback">{{ index + 1 }}</div>
               </div>
               <h2>{{ element.title }}</h2>
-              <!-- The black box: what the room has wagered on this pairing. The host's
-                   own screen only — participants see the counts once they have bet. -->
-              <p v-if="hostedRoom.blackBox.value" class="game-candidate-bets">
-                <b>{{ blackBoxVotes ? blackBoxVotes.get(element.id) ?? 0 : '—' }}</b>
-                <span v-if="blackBoxVotes">{{ blackBoxShare(element.id) }}%</span>
+              <!-- What the room has wagered on this pairing: behind the black box in a
+                   room the host decides, always on where the room decides for itself. -->
+              <p v-if="hostedRoom.showVotes.value" class="game-candidate-bets">
+                <b>{{ roundVotes ? roundVotes.get(element.id) ?? 0 : '—' }}</b>
+                <span v-if="roundVotes">{{ voteShare(element.id) }}%</span>
               </p>
-              <!-- Locked while the room decides: two ways to settle a round would be two
-                   sources of truth, and a host clicking through would leave the votes
-                   they asked the room for unread. -->
+              <!-- The host votes too. In a majority room the click is a wager and the
+                   round still ends on the clock; see pickCandidate. -->
               <button
                 class="game-vote-button"
                 type="button"
-                :disabled="readOnly || animating || hostedRoom.majority.value"
+                :class="{ 'is-picked': hostedRoom.ownPick.value === element.id }"
+                :disabled="readOnly || animating"
+                :aria-pressed="hostedRoom.majority.value ? hostedRoom.ownPick.value === element.id : undefined"
                 :aria-label="t('gameVoteFor', { title: element.title })"
-                @click="voteFor(element.id)"
+                @click="pickCandidate(element.id)"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 10.5v10H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3.5Zm0 0 4.2-7.1a1.8 1.8 0 0 1 3.3 1.2v4.1h4.2a2.8 2.8 0 0 1 2.7 3.5l-1.7 6.2a2.8 2.8 0 0 1-2.7 2.1h-10" /></svg>
               </button>
@@ -2019,6 +2076,7 @@ function preferredRankImage(report: RankReport): string | null {
                 <figcaption>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM6 6H3v1a4 4 0 0 0 5 4M18 6h3v1a4 4 0 0 1-5 4M12 12v4M8 20h8M9 16h6" /></svg>
                   <strong>{{ item.winner_title }}</strong>
+                  <em v-if="item.roomRound?.your_pick === item.winner_id" class="game-history-yours">{{ t('roomHistoryYourPick') }}</em>
                 </figcaption>
               </figure>
               <figure class="game-history-pick game-history-loser">
@@ -2027,8 +2085,16 @@ function preferredRankImage(report: RankReport): string | null {
                 <figcaption>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   <span>{{ item.loser_title }}</span>
+                  <em v-if="item.roomRound?.your_pick === item.loser_id" class="game-history-yours">{{ t('roomHistoryYourPick') }}</em>
                 </figcaption>
               </figure>
+              <!-- How the room voted on this match. Absent for a match played before the
+                   room opened, and for a room that has no votes to report. -->
+              <p v-if="item.roomRound" class="game-history-votes">
+                <b>{{ item.roomRound.winner_votes }}</b>
+                <span>{{ t('roomHistoryShare', { share: roundShare(item.roomRound), title: item.winner_title }) }}</span>
+                <b class="game-history-votes-loser">{{ item.roomRound.loser_votes }}</b>
+              </p>
             </li>
           </ol>
         </aside>
@@ -2065,10 +2131,27 @@ function preferredRankImage(report: RankReport): string | null {
               :disabled="!canSettleRound"
               @click="settleRound"
             >{{ t('roomRoundSettle') }}</button>
+            <!-- Beside the clock it changes, rather than buried in the invite dialog the
+                 host only opens once. -->
+            <button
+              type="button"
+              class="game-room-round-settings-button"
+              :title="t('roomRoundSettings')"
+              :aria-label="t('roomRoundSettings')"
+              @click="openMultiplayerDialog('settings')"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+              </svg>
+            </button>
           </div>
 
           <div class="game-room-panel-actions">
+            <!-- A host-mode device: it hides the counts from the person running a
+                 猜喜好 game. A majority room shows them to everybody by design. -->
             <button
+              v-if="!hostedRoom.majority.value"
               type="button"
               class="game-room-panel-button"
               :class="{ 'is-on': hostedRoom.blackBox.value }"
@@ -2080,7 +2163,7 @@ function preferredRankImage(report: RankReport): string | null {
               </svg>
               {{ t(hostedRoom.blackBox.value ? 'roomBlackBoxClose' : 'roomBlackBoxOpen') }}
             </button>
-            <button type="button" class="game-room-panel-button" @click="openMultiplayerDialog">
+            <button type="button" class="game-room-panel-button" @click="openMultiplayerDialog()">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
               </svg>

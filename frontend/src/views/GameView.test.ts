@@ -59,6 +59,8 @@ const roomMocks = vi.hoisted(() => ({
 	leaderboard: vi.fn(),
 	votes: vi.fn(),
 	setVoting: vi.fn(),
+	bet: vi.fn(),
+	history: vi.fn(),
 }))
 
 vi.mock('../services/gameRoom', async (importOriginal) => ({
@@ -68,6 +70,8 @@ vi.mock('../services/gameRoom', async (importOriginal) => ({
 		leaderboard: roomMocks.leaderboard,
 		votes: roomMocks.votes,
 		setVoting: roomMocks.setVoting,
+		bet: roomMocks.bet,
+		history: roomMocks.history,
 	}),
 }))
 
@@ -133,6 +137,10 @@ beforeEach(() => {
 	roomMocks.votes.mockResolvedValue({ votes: null, voting: null })
 	roomMocks.setVoting.mockReset()
 	roomMocks.setVoting.mockResolvedValue({ mode: 'majority', round_seconds: 15, seconds_left: 15 })
+	roomMocks.bet.mockReset()
+	roomMocks.bet.mockResolvedValue(undefined)
+	roomMocks.history.mockReset()
+	roomMocks.history.mockResolvedValue([])
 	qrMocks.drawQRCode.mockReset()
 	qrMocks.drawQRCode.mockResolvedValue(undefined)
 	qrMocks.downloadQRCode.mockReset()
@@ -1140,17 +1148,108 @@ describe('GameView restart regression', () => {
     // the response, which was measured before the round trip home.
     expect(wrapper.get('.game-room-round-clock').text()).toContain('20')
 
-    // The host has handed the decision over: leaving their own buttons live would be a
-    // second way to settle a round, and would ignore the votes they asked for.
+    // The host votes too, and their click is a wager: it goes to the room and the round
+    // still ends on the clock or on 結束回合, so there is one way to settle a round.
     const votes = wrapper.findAll('.game-vote-button')
     expect(votes).toHaveLength(2)
-    expect(votes.every((button) => (button.element as HTMLButtonElement).disabled)).toBe(true)
+    expect(votes.every((button) => (button.element as HTMLButtonElement).disabled)).toBe(false)
+
+    await votes[0]!.trigger('click')
+    await flushPromises()
+    expect(roomMocks.bet).toHaveBeenCalledTimes(1)
+    // Still the same pairing: the wager did not decide anything.
+    expect(wrapper.findAll('.game-candidate')).toHaveLength(2)
+    expect(wrapper.find('.game-candidate-winner').exists()).toBe(false)
+    expect(wrapper.findAll('.game-vote-button.is-picked')).toHaveLength(1)
+
+    // The counts are the mechanism in this mode, so they are on screen with no black box
+    // to open — and there is no button offering one.
+    const bets = new Map(wrapper.findAll('.game-candidate').map((card) =>
+      [card.get('h2').text(), card.get('.game-candidate-bets').text()]))
+    expect(bets.get('舊選項 1')).toContain('75%')
+    expect(bets.get('舊選項 2')).toContain('25%')
+    expect(wrapper.findAll('.game-room-panel-actions button')).toHaveLength(1)
 
     await wrapper.get('.game-room-round-settle').trigger('click')
     await flushPromises()
 
     // 3 to 1, so the round goes to the option the room picked, not to either side's position.
     expect(wrapper.get('.game-candidate-winner h2').text()).toBe('舊選項 1')
+
+    wrapper.unmount()
+  })
+
+  it('reopens the round settings from the gear beside the clock', async () => {
+    roomMocks.votes.mockResolvedValue({
+      votes: null,
+      voting: { mode: 'majority', round_seconds: 20, seconds_left: 20 },
+    })
+    const wrapper = await mountStartedGame()
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+    await wrapper.findAll('.game-mode-card')[1]!.trigger('click')
+    await flushPromises()
+    await wrapper.get('.game-room-round-settings .button-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('邀請朋友加入遊戲')
+
+    // Beside the clock they change, rather than back through the invite dialog: a host who
+    // wants a shorter round is not looking for the link they already handed out.
+    await wrapper.get('.game-room-round-settings-button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('回合設定')
+
+    wrapper.unmount()
+  })
+
+  it('annotates the match history with how the room voted', async () => {
+    roomMocks.votes.mockResolvedValue({
+      votes: null,
+      voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+    })
+    const wrapper = await mountStartedGame()
+    await wrapper.get('button[title="開啟多人模式"]').trigger('click')
+    await wrapper.findAll('.game-mode-card')[1]!.trigger('click')
+    await flushPromises()
+    await wrapper.get('.game-room-round-settings .button-primary').trigger('click')
+    await flushPromises()
+
+    // The bracket is shuffled, so the pairing is read off the screen rather than assumed.
+    const ids = new Map([['舊選項 1', 1], ['舊選項 2', 2]])
+    const shown = wrapper.findAll('.game-candidate h2').map((title) => ids.get(title.text())!)
+    roomMocks.votes.mockResolvedValue({
+      votes: {
+        first_candidate: shown[0]!,
+        second_candidate: shown[1]!,
+        first_candidate_votes: 7,
+        second_candidate_votes: 3,
+        remain_elements: 2,
+        total_votes: 10,
+        current_round: 1,
+        of_round: 1,
+      },
+      voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+    })
+    roomMocks.history.mockResolvedValue([{
+      winner_id: shown[0]!,
+      loser_id: shown[1]!,
+      winner_votes: 7,
+      loser_votes: 3,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      your_pick: shown[0]!,
+    }])
+
+    // Settling the round is what puts the match in the local history; the room's split is
+    // then matched onto it by the pairing.
+    await wrapper.get('.game-room-round-settle').trigger('click')
+    await flushPromises()
+
+    const line = wrapper.get('.game-history-votes').text()
+    expect(line).toContain('7')
+    expect(line).toContain('3')
+    expect(line).toContain('70%')
+    expect(wrapper.get('.game-history-winner .game-history-yours').text()).toBe('你的選擇')
 
     wrapper.unmount()
   })

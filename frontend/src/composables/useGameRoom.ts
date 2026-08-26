@@ -12,6 +12,7 @@ import {
   type RoomState,
   type RoomVoting,
   type RoomVotes,
+  type RoundVotes,
 } from '../services/gameRoom'
 import { useRoundCountdown } from './useRoundCountdown'
 
@@ -70,6 +71,8 @@ export interface UseGameRoom {
   status: Ref<RoomStatus>
   player: Ref<RoomPlayer | null>
   votes: Ref<RoomVotes | null>
+  /** The rounds this room has already decided, newest first. */
+  history: Ref<RoundVotes[]>
   /** How the room decides its rounds. Carried by the state read and by every pairing frame. */
   voting: Ref<RoomVoting | null>
   /** True while the room decides its own rounds rather than the host. */
@@ -101,6 +104,7 @@ export function useGameRoom(
   const status = ref<RoomStatus>('loading')
   const player = ref<RoomPlayer | null>(null)
   const votes = ref<RoomVotes | null>(null)
+  const history = ref<RoundVotes[]>([])
   const voting = ref<RoomVoting | null>(null)
   const leaderboard = ref<Leaderboard | null>(null)
   const ownBet = ref<RoomBet | null>(null)
@@ -114,6 +118,9 @@ export function useGameRoom(
   const channel = shallowRef<PusherChannel | null>(null)
   let pollTimer: ReturnType<typeof setInterval> | undefined
   let controller: AbortController | null = null
+  // The pairing the history was last read for. Null until the first read, so a room joined
+  // between rounds still gets its history.
+  let historyPairing: string | null = null
 
   const majority = computed(() => voting.value?.mode === 'majority')
   // A participant only watches this clock: the round is settled in the host's browser,
@@ -122,7 +129,7 @@ export function useGameRoom(
 
   function applyState(state: RoomState): void {
     player.value = state.player
-    votes.value = state.votes
+    applyVotes(state.votes)
     applyVoting(state.voting)
     ownBet.value = state.latest_bet
     leaderboard.value = state.leaderboard
@@ -204,8 +211,24 @@ export function useGameRoom(
       gameSerial.value = payload.game_serial
     }
     // votes is null between rounds, which is a real answer and not a malformed frame.
-    votes.value = payload.votes ?? null
+    applyVotes(payload.votes ?? null)
     applyVoting(payload.voting ?? null)
+  }
+
+  /**
+   * Puts a tally on screen, and re-reads the history when the round has moved.
+   *
+   * The pairing is the trigger because it is the only observable one: a round can be
+   * decided by the clock, by the host, or by a restart, and all three reach this page as a
+   * different pair to vote on. Between rounds there is no tally at all, which is also a
+   * move — the round that just ended is the row the history has gained.
+   */
+  function applyVotes(next: RoomVotes | null): void {
+    votes.value = next
+    const pairing = next ? `${next.first_candidate}:${next.second_candidate}` : ''
+    if (pairing === historyPairing) return
+    historyPairing = pairing
+    void refreshHistory()
   }
 
   /**
@@ -229,6 +252,15 @@ export function useGameRoom(
       if (betting.value) return
       void refreshState()
     }, interval)
+  }
+
+  async function refreshHistory(): Promise<void> {
+    try {
+      history.value = await service.history(roomSerial)
+    } catch {
+      // See refreshLeaderboard: the rounds already listed are still true, and the next
+      // settled round asks again.
+    }
   }
 
   async function refreshLeaderboard(): Promise<void> {
@@ -301,6 +333,7 @@ export function useGameRoom(
     status,
     player,
     votes,
+    history,
     voting,
     majority,
     secondsLeft: countdown.display,

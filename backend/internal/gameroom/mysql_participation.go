@@ -635,6 +635,70 @@ func (repository *MySQLParticipation) CurrentVotes(
 	}, true, nil
 }
 
+// roundHistoryQuery reads the rounds a room has already decided, newest first.
+//
+// THE ROUND IS RECONSTRUCTED FROM THE WAGERS, because that is the only place it was ever
+// written: settling a round marks the wagers on the winning element won_at and flips the
+// pair on the losing ones, so counting the two flags counts the two sides.
+//
+// GROUPED BY THE ROUND KEY *AND* THE PAIRING. current_round/of_round/remain_elements repeat
+// when a host restarts and the room follows them onto a new bracket, and two different
+// matches that happen to share those numbers must stay two rows rather than merge into one
+// impossible round. LEAST/GREATEST rather than the pair itself, so the winners and the
+// losers of the same match — who hold it in opposite orders — group together.
+//
+// THE WINNING ELEMENT HAS A FALLBACK for a host-decided room, where every voter can be
+// wrong: with no won_at row to read it from, the losers' loser_id is the element that won.
+//
+// your_pick rides along on a join instead of a second query, and matching an anonymous id
+// never creates a participant, so reading a room's history leaves the reader off its
+// leaderboard.
+const roundHistoryQuery = `
+	SELECT COALESCE(MAX(CASE WHEN bet.won_at IS NOT NULL THEN bet.winner_id END),
+	                MAX(CASE WHEN bet.lost_at IS NOT NULL THEN bet.loser_id END)),
+	       COALESCE(MAX(CASE WHEN bet.won_at IS NOT NULL THEN bet.loser_id END),
+	                MAX(CASE WHEN bet.lost_at IS NOT NULL THEN bet.winner_id END)),
+	       COALESCE(SUM(bet.won_at IS NOT NULL), 0),
+	       COALESCE(SUM(bet.lost_at IS NOT NULL), 0),
+	       bet.current_round, bet.of_round, bet.remain_elements,
+	       COALESCE(MAX(CASE WHEN player.anonymous_id = ? THEN bet.winner_id END), 0)
+	  FROM game_room_user_bets bet
+	  JOIN game_room_users player ON player.id = bet.game_room_user_id
+	 WHERE bet.game_room_id = ?
+	   AND (bet.won_at IS NOT NULL OR bet.lost_at IS NOT NULL)
+	 GROUP BY bet.current_round, bet.of_round, bet.remain_elements,
+	          LEAST(bet.winner_id, bet.loser_id), GREATEST(bet.winner_id, bet.loser_id)
+	 ORDER BY MAX(bet.id) DESC
+	 LIMIT ?`
+
+func (repository *MySQLParticipation) RoundHistory(
+	ctx context.Context, roomID int64, anonymousID string, limit int,
+) ([]RoundVotes, error) {
+	rows, err := repository.database.QueryContext(ctx, roundHistoryQuery, anonymousID, roomID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("gameroom: read the round history: %w", err)
+	}
+	defer rows.Close()
+
+	history := make([]RoundVotes, 0, limit)
+	for rows.Next() {
+		var round RoundVotes
+		if err := rows.Scan(
+			&round.WinnerID, &round.LoserID,
+			&round.WinnerVotes, &round.LoserVotes,
+			&round.CurrentRound, &round.OfRound, &round.RemainElements,
+			&round.YourPick,
+		); err != nil {
+			return nil, fmt.Errorf("gameroom: read the round history: %w", err)
+		}
+		history = append(history, round)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("gameroom: read the round history: %w", err)
+	}
+	return history, nil
+}
+
 // parseCandidatePair reads the comma-separated pair the games table stores.
 func parseCandidatePair(value string) (first, second int64, ok bool) {
 	parts := strings.Split(strings.TrimSpace(value), ",")

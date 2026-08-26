@@ -133,6 +133,12 @@ func (fake *fakeParticipation) CurrentVotes(_ context.Context, _ int64, _ string
 	return VoteTally{}, false, fake.err
 }
 
+func (fake *fakeParticipation) RoundHistory(
+	_ context.Context, _ int64, _ string, _ int,
+) ([]RoundVotes, error) {
+	return nil, fake.err
+}
+
 func (fake *fakeParticipation) LatestBet(_ context.Context, _ int64) (PlacedBet, bool, error) {
 	return PlacedBet{}, false, fake.err
 }

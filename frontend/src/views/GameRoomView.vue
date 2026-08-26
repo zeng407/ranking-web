@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { normalizeLocale, translate } from '../i18n'
+import { normalizeLocale, translate, type MessageKey } from '../i18n'
 import { boardRows, popularRows, uniqueRows, useGameRoom } from '../composables/useGameRoom'
 import { createGameplayService, gamePreviewImage, type GameElement } from '../services/gameplay'
 import { MaxNicknameLength } from '../services/gameRoom'
@@ -94,6 +94,35 @@ const boards = computed(() => {
 const ownPlayerId = computed(() => room.player.value?.player_id ?? '')
 
 /**
+ * The rounds this room has already decided, ready to draw.
+ *
+ * Titles come from the same element map the pairing uses, and fall back to the id: the
+ * history spans the room's whole life, so it can name a candidate from a bracket the host
+ * restarted out of, whose game this page never loaded.
+ */
+const historyRows = computed(() => room.history.value.map((round) => {
+  const total = round.winner_votes + round.loser_votes
+  const winnerTitle = elementLabel(elements.value.get(round.winner_id) ?? null, round.winner_id)
+  const loserTitle = elementLabel(elements.value.get(round.loser_id) ?? null, round.loser_id)
+  return {
+    // The round key plus the pairing, which is what the server groups on: a bracket
+    // replayed after a restart repeats the round numbers.
+    key: `${round.current_round}-${round.of_round}-${round.remain_elements}-${round.winner_id}-${round.loser_id}`,
+    winnerId: round.winner_id,
+    loserId: round.loser_id,
+    winnerTitle,
+    loserTitle,
+    winnerVotes: round.winner_votes,
+    loserVotes: round.loser_votes,
+    share: total === 0 ? 0 : Math.round((round.winner_votes / total) * 100),
+    // 0 when this browser did not wager on the round — one played before it joined, or
+    // one it sat out.
+    yourPick: round.your_pick,
+    yourPickTitle: round.your_pick === round.winner_id ? winnerTitle : loserTitle,
+  }
+}))
+
+/**
  * Which side the caller wagered on, so the pick can be highlighted.
  *
  * Checked against the pairing on screen, because the server hands back the newest wager
@@ -166,6 +195,14 @@ function pick(winnerId: number, loserId: number): void {
 
 function elementLabel(element: GameElement | null, fallbackId: number): string {
   return element?.title || `#${fallbackId}`
+}
+
+/** translate() with {placeholders} filled in. */
+function say(key: MessageKey, values: Record<string, string | number>): string {
+  return Object.entries(values).reduce(
+    (message, [name, value]) => message.replaceAll(`{${name}}`, String(value)),
+    translate(locale.value, key),
+  )
 }
 
 onMounted(() => {
@@ -320,6 +357,34 @@ watchEffect(() => {
         <p v-if="board.rows.length === 0" class="room-status">
           {{ translate(locale, 'roomNoPlayers') }}
         </p>
+      </section>
+
+      <!-- How the room has voted so far. Its own section rather than a line under the
+           pairing: the record of the room's taste is what a taste room is for, and it
+           outlives the round on screen. -->
+      <section class="room-history">
+        <h2>{{ translate(locale, 'roomHistoryTitle') }}</h2>
+        <p v-if="historyRows.length === 0" class="room-status">
+          {{ translate(locale, 'roomHistoryEmpty') }}
+        </p>
+        <ol v-else class="room-history-list">
+          <li v-for="round in historyRows" :key="round.key">
+            <p class="room-history-pair">
+              <b :class="{ 'is-mine': round.yourPick === round.winnerId }">{{ round.winnerTitle }}</b>
+              <span class="room-history-count">{{ round.winnerVotes }} : {{ round.loserVotes }}</span>
+              <span
+                class="room-history-loser"
+                :class="{ 'is-mine': round.yourPick === round.loserId }"
+              >{{ round.loserTitle }}</span>
+            </p>
+            <p class="room-history-share">
+              {{ say('roomHistoryShare', { share: round.share, title: round.winnerTitle }) }}
+              <em v-if="round.yourPick">
+                · {{ translate(locale, 'roomHistoryYourPick') }}：{{ round.yourPickTitle }}
+              </em>
+            </p>
+          </li>
+        </ol>
       </section>
     </template>
   </div>
@@ -533,6 +598,64 @@ watchEffect(() => {
 
 .room-status {
   opacity: 0.75;
+}
+
+.room-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.room-history-list li {
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.room-history-pair {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.room-history-pair b,
+.room-history-pair span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-history-count {
+  flex: 0 0 auto;
+  opacity: 0.75;
+}
+
+.room-history-loser {
+  opacity: 0.6;
+}
+
+/* The side this browser wagered on. */
+.room-history-pair .is-mine {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  opacity: 1;
+}
+
+.room-history-share {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.room-history-share em {
+  font-style: normal;
+  font-weight: 600;
 }
 
 @media (max-width: 30rem) {

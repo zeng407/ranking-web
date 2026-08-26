@@ -16,6 +16,7 @@ function fakeService(overrides: Partial<GameRoomService> = {}): GameRoomService 
     votes: vi.fn().mockResolvedValue({ votes: null, voting: null }),
     setVoting: vi.fn(),
     bet: vi.fn(),
+    history: vi.fn().mockResolvedValue([]),
     rename: vi.fn(),
     ...overrides,
   } as unknown as GameRoomService
@@ -391,9 +392,93 @@ describe('useHostedRoom', () => {
     expect(await room.majorityWinner([11, 22])).toBe(22)
     expect(await room.majorityWinner([22, 11])).toBe(22)
 
-    // The counts stay off screen: the black box is shut, and settling is not a reason to
-    // show the host what they asked not to see.
-    expect(room.votes.value).toBeNull()
+    // The counts are on screen without anyone opening a black box: in this mode they are
+    // the rule the round was decided by, not a hint the host is hiding from guessers.
+    expect(room.blackBox.value).toBe(false)
+    expect(room.showVotes.value).toBe(true)
+    expect(room.votes.value?.second_candidate_votes).toBe(7)
+    room.stopWatching()
+  })
+
+  /*
+  The host's own vote. In host mode a click IS the verdict, so the buttons were locked; in a
+  majority room it is a wager like everybody else's and has to be counted like one — which
+  means it must not end the round it was cast in.
+  */
+  it('places the host\'s own vote as a wager, and settles nothing', async () => {
+    const service = fakeService({
+      votes: vi.fn().mockResolvedValue({
+        votes: {
+          first_candidate: 11,
+          second_candidate: 22,
+          first_candidate_votes: 1,
+          second_candidate_votes: 0,
+          remain_elements: 2,
+          total_votes: 1,
+          current_round: 1,
+          of_round: 1,
+        },
+        voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    await room.placeBet(11, 22)
+    expect(service.bet).toHaveBeenCalledWith('abcdefgh', { winner_id: 11, loser_id: 22 })
+    expect(room.ownPick.value).toBe(11)
+    // The vote went into the tally the round will be decided by, and nothing else moved.
+    expect(room.votes.value?.first_candidate_votes).toBe(1)
+    room.stopWatching()
+  })
+
+  // A candidate that wins carries into the next round, so "my pick" cannot be remembered by
+  // its id alone: the mark would follow the survivor onto a match never wagered on.
+  it('takes the host\'s mark off a pick once the pairing moves on', async () => {
+    const tally = (first: number, second: number): unknown => ({
+      votes: {
+        first_candidate: first,
+        second_candidate: second,
+        first_candidate_votes: 1,
+        second_candidate_votes: 0,
+        remain_elements: 2,
+        total_votes: 1,
+        current_round: 1,
+        of_round: 1,
+      },
+      voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+    })
+    const service = fakeService({ votes: vi.fn().mockResolvedValue(tally(11, 22)) })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    await room.placeBet(11, 22)
+    expect(room.ownPick.value).toBe(11)
+
+    // 11 survived into a match against 33, which nobody has wagered on yet.
+    service.votes = vi.fn().mockResolvedValue(tally(11, 33))
+    await room.majorityWinner([11, 33])
+    expect(room.ownPick.value).toBeNull()
+    room.stopWatching()
+  })
+
+  it('refuses to place a bet the server rejects', async () => {
+    const service = fakeService({
+      bet: vi.fn().mockRejectedValue(apiError(409)),
+      votes: vi.fn().mockResolvedValue({
+        votes: null,
+        voting: { mode: 'majority', round_seconds: 0, seconds_left: null },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+
+    await room.placeBet(11, 22)
+    // No mark: a wager the room never recorded must not be shown as one that was.
+    expect(room.ownPick.value).toBeNull()
     room.stopWatching()
   })
 

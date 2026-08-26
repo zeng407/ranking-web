@@ -876,3 +876,177 @@ func TestVotingReportsAMissingRoom(t *testing.T) {
 		t.Fatalf("Voting() error = %v, want ErrNotFound", err)
 	}
 }
+
+// ---------- the vote history ----------
+//
+// These borrow syntheticRoom from the settlement tests rather than the fixture above,
+// because the history is an aggregate over what a real settlement wrote and asserting it
+// against hand-written won_at columns would only prove the test agrees with itself.
+
+// historyOf is the read under test, for a room and a caller.
+func historyOf(t *testing.T, room syntheticRoom, database *sql.DB, caller string, limit int) []RoundVotes {
+	t.Helper()
+	anonymousID := ""
+	if caller != "" {
+		anonymousID = "anon-" + caller + "-" + room.serial
+	}
+	history, err := NewMySQLParticipation(database).
+		RoundHistory(context.Background(), room.roomID, anonymousID, limit)
+	if err != nil {
+		t.Fatalf("RoundHistory() error = %v", err)
+	}
+	return history
+}
+
+// settleRound decides one round the way the worker does.
+func settleRound(
+	t *testing.T, database *sql.DB, room Room,
+	winnerID, loserID int64, currentRound, ofRound, remainElements int,
+) {
+	t.Helper()
+	if _, err := NewMySQLRepository(database, DefaultScoring()).SettleBets(
+		context.Background(), BetOutcome{
+			RoomID: room.ID, WinnerID: winnerID, LoserID: loserID,
+			CurrentRound: currentRound, OfRound: ofRound, RemainElements: remainElements,
+			VoteMode: room.VoteMode,
+		}); err != nil {
+		t.Fatalf("SettleBets() error = %v", err)
+	}
+}
+
+func TestRoundHistoryReportsTheSplitThatDecidedTheRound(t *testing.T) {
+	database := testDatabase(t)
+	room := newSyntheticRoom(t, database)
+	settled := room.majorityRoom(t, database)
+
+	// Seven for the winner, three for the loser: the 70/30 split the taste boards pay
+	// ±17 for, and the one a player wants to see again afterwards.
+	majority := []string{"winner", "maj1", "maj2", "maj3", "maj4", "maj5", "maj6"}
+	minority := []string{"loser", "min1", "min2"}
+	for _, name := range append(append([]string{}, majority[1:]...), minority[1:]...) {
+		room.seat(t, database, name)
+	}
+	for _, name := range majority {
+		room.placeBet(t, database, name, room.winnerID, room.loserID, 1, 4, 8, 0)
+	}
+	for _, name := range minority {
+		room.placeBet(t, database, name, room.loserID, room.winnerID, 1, 4, 8, 0)
+	}
+	settleRound(t, database, settled, room.winnerID, room.loserID, 1, 4, 7)
+
+	history := historyOf(t, room, database, "min1", DefaultHistoryRounds)
+	if len(history) != 1 {
+		t.Fatalf("history = %+v, want one round", history)
+	}
+	round := history[0]
+	if round.WinnerID != room.winnerID || round.LoserID != room.loserID {
+		t.Errorf("pairing = %d/%d, want %d/%d",
+			round.WinnerID, round.LoserID, room.winnerID, room.loserID)
+	}
+	if round.WinnerVotes != 7 || round.LoserVotes != 3 {
+		t.Errorf("votes = %d/%d, want 7/3", round.WinnerVotes, round.LoserVotes)
+	}
+	// The bracket numbers are the ones the wagers were placed under, which is why
+	// remain_elements reads 8 for a round settled down to 7.
+	if round.CurrentRound != 1 || round.OfRound != 4 || round.RemainElements != 8 {
+		t.Errorf("round = %d of %d with %d remaining, want 1 of 4 with 8",
+			round.CurrentRound, round.OfRound, round.RemainElements)
+	}
+	// A minority voter's own pick is the element that lost, not the one that won.
+	if round.YourPick != room.loserID {
+		t.Errorf("your pick = %d, want the minority element %d", round.YourPick, room.loserID)
+	}
+
+	if majorityView := historyOf(t, room, database, "maj3", DefaultHistoryRounds); majorityView[0].YourPick != room.winnerID {
+		t.Errorf("majority voter's pick = %d, want %d", majorityView[0].YourPick, room.winnerID)
+	}
+	// Somebody reading a room they never played sees the split and no pick of their own.
+	stranger := historyOf(t, room, database, "", DefaultHistoryRounds)
+	if len(stranger) != 1 || stranger[0].YourPick != 0 || stranger[0].WinnerVotes != 7 {
+		t.Errorf("stranger's view = %+v, want the same split with no pick", stranger)
+	}
+}
+
+// The fallback that only a host-decided room needs: with no winning wager to read the
+// winning element from, the losers' rows still name it.
+func TestRoundHistoryNamesTheWinnerWhenEveryVoterWasWrong(t *testing.T) {
+	database := testDatabase(t)
+	room := newSyntheticRoom(t, database)
+
+	for _, name := range []string{"winner", "loser"} {
+		room.placeBet(t, database, name, room.loserID, room.winnerID, 1, 4, 8, 0)
+	}
+	settleRound(t, database, room.hostRoom(), room.winnerID, room.loserID, 1, 4, 7)
+
+	history := historyOf(t, room, database, "loser", DefaultHistoryRounds)
+	if len(history) != 1 {
+		t.Fatalf("history = %+v, want one round", history)
+	}
+	round := history[0]
+	if round.WinnerID != room.winnerID || round.LoserID != room.loserID {
+		t.Errorf("pairing = %d/%d, want %d/%d",
+			round.WinnerID, round.LoserID, room.winnerID, room.loserID)
+	}
+	if round.WinnerVotes != 0 || round.LoserVotes != 2 {
+		t.Errorf("votes = %d/%d, want 0/2", round.WinnerVotes, round.LoserVotes)
+	}
+}
+
+func TestRoundHistoryIsNewestFirstAndOnlyDecidedRounds(t *testing.T) {
+	database := testDatabase(t)
+	room := newSyntheticRoom(t, database)
+
+	room.placeBet(t, database, "winner", room.winnerID, room.loserID, 1, 4, 8, 0)
+	settleRound(t, database, room.hostRoom(), room.winnerID, room.loserID, 1, 4, 7)
+
+	room.placeBet(t, database, "winner", room.winnerID, room.otherID, 2, 4, 7, 0)
+	settleRound(t, database, room.hostRoom(), room.winnerID, room.otherID, 2, 4, 6)
+
+	// A round still being voted on. It has no split yet, so it belongs to the tally
+	// rather than to the history.
+	room.placeBet(t, database, "winner", room.loserID, room.otherID, 3, 4, 6, 0)
+
+	history := historyOf(t, room, database, "winner", DefaultHistoryRounds)
+	if len(history) != 2 {
+		t.Fatalf("history = %+v, want the two decided rounds", history)
+	}
+	if history[0].CurrentRound != 2 || history[1].CurrentRound != 1 {
+		t.Errorf("rounds = %d then %d, want 2 then 1",
+			history[0].CurrentRound, history[1].CurrentRound)
+	}
+
+	if limited := historyOf(t, room, database, "winner", 1); len(limited) != 1 || limited[0].CurrentRound != 2 {
+		t.Errorf("limited history = %+v, want only the newest round", limited)
+	}
+}
+
+// A restarted bracket repeats the round numbers, and two different matches carrying the
+// same ones must stay two rounds rather than merge into one impossible pairing.
+//
+// Two players, because the unique index allows a player only one wager per round key: a
+// player who votes again after the restart has their pre-restart wager overwritten, so the
+// rounds that survive a replay are held by whoever did not vote in it.
+func TestRoundHistoryKeepsARepeatedRoundNumberApart(t *testing.T) {
+	database := testDatabase(t)
+	room := newSyntheticRoom(t, database)
+
+	room.placeBet(t, database, "winner", room.winnerID, room.loserID, 1, 4, 8, 0)
+	settleRound(t, database, room.hostRoom(), room.winnerID, room.loserID, 1, 4, 7)
+
+	room.placeBet(t, database, "loser", room.winnerID, room.otherID, 1, 4, 8, 0)
+	settleRound(t, database, room.hostRoom(), room.winnerID, room.otherID, 1, 4, 7)
+
+	history := historyOf(t, room, database, "winner", DefaultHistoryRounds)
+	if len(history) != 2 {
+		t.Fatalf("history = %+v, want the two matches kept apart", history)
+	}
+	if history[0].LoserID != room.otherID || history[1].LoserID != room.loserID {
+		t.Errorf("losers = %d then %d, want %d then %d",
+			history[0].LoserID, history[1].LoserID, room.otherID, room.loserID)
+	}
+	// The reader wagered only on the first of them.
+	if history[0].YourPick != 0 || history[1].YourPick != room.winnerID {
+		t.Errorf("picks = %d then %d, want none then %d",
+			history[0].YourPick, history[1].YourPick, room.winnerID)
+	}
+}

@@ -59,6 +59,17 @@ const NicknameColumnRunes = 20
 // CacheService::putUpdateGameUserNameThreashold.
 const NicknameCooldown = 30 * time.Second
 
+// DefaultHistoryRounds and MaxHistoryRounds bound the vote history a client may ask for.
+//
+// The history is what a taste room is for, but it is also an aggregate over every wager the
+// room has ever taken, so the page size is capped rather than left to the caller — the API
+// refuses anything outside these bounds before it reaches SQL as a LIMIT. Twenty is roughly
+// one bracket's worth of recent rounds on screen.
+const (
+	DefaultHistoryRounds = 20
+	MaxHistoryRounds     = 50
+)
+
 // RoomSerialLength is the length of a generated room serial, matching
 // SerialGenerator::genGameRoomSerial.
 const RoomSerialLength = 8
@@ -114,6 +125,27 @@ type VoteTally struct {
 	// "31 of 32" without computing it. See RoundInProgress for why it cannot.
 	CurrentRound int `json:"current_round"`
 	OfRound      int `json:"of_round"`
+}
+
+// RoundVotes is one decided round, as the room voted on it.
+//
+// An aggregate over game_room_user_bets rather than a stored row: a settled round leaves
+// one wager per voter, winners holding won_at with their own (winner_id, loser_id) and
+// losers holding lost_at with the pair flipped, so both counts and the winning element are
+// already recorded and no table had to be added for this.
+type RoundVotes struct {
+	WinnerID    int64 `json:"winner_id"`
+	LoserID     int64 `json:"loser_id"`
+	WinnerVotes int   `json:"winner_votes"`
+	LoserVotes  int   `json:"loser_votes"`
+	// CurrentRound, OfRound and RemainElements place the round in its bracket, the same
+	// numbers VoteTally carries for the round in progress.
+	CurrentRound   int `json:"current_round"`
+	OfRound        int `json:"of_round"`
+	RemainElements int `json:"remain_elements"`
+	// YourPick is the element the caller wagered on, or 0 when they did not wager on this
+	// round — which includes everyone reading a room they never played.
+	YourPick int64 `json:"your_pick"`
 }
 
 // RoundInProgress is the match the room is voting on right now.
@@ -255,6 +287,11 @@ type ParticipationRepository interface {
 	Rename(ctx context.Context, participantID int64, nickname string) error
 	// CurrentVotes tallies the room's wagers on the round in progress.
 	CurrentVotes(ctx context.Context, roomID int64, gameSerial string) (VoteTally, bool, error)
+	// RoundHistory reads the rounds this room has already decided, newest first, with
+	// the caller's own pick marked. Read-only: it matches anonymousID against the
+	// participants that exist and must never create one, so watching a room's history
+	// does not put the watcher on its leaderboard.
+	RoundHistory(ctx context.Context, roomID int64, anonymousID string, limit int) ([]RoundVotes, error)
 	// RoundInProgress reports the match the room is voting on, so a wager can be
 	// recorded against the same round numbers everyone else's is.
 	RoundInProgress(ctx context.Context, gameSerial string) (RoundInProgress, error)

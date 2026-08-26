@@ -337,6 +337,10 @@ func New(options Options) http.Handler {
 		method(http.MethodGet, server.optionalAuth(server.gameRoomLeaderboard)))
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/votes",
 		method(http.MethodGet, server.optionalAuth(server.gameRoomVotes)))
+	// The rounds the room has already decided. Read-only and identity-optional: an
+	// anonymous_id only marks which side the caller took, and never joins the room.
+	mux.HandleFunc("/api/v1/game-rooms/{serial}/history",
+		method(http.MethodGet, server.optionalAuth(server.gameRoomHistory)))
 	// How the room decides a round: the host picking, or the majority of the room with a
 	// countdown the server holds. See setGameRoomVoting for why the clock lives here.
 	mux.HandleFunc("/api/v1/game-rooms/{serial}/voting",

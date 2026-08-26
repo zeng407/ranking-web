@@ -85,6 +85,26 @@ export interface RoomVoting {
   seconds_left: number | null
 }
 
+/**
+ * One round the room has already decided, as it voted on it.
+ *
+ * Reconstructed from the wagers rather than stored: a settled round leaves one row per
+ * voter, so the counts, the winner and the caller's own pick are all readable from them.
+ *
+ * `your_pick` is the element THIS browser wagered on, or 0 when it did not wager — a
+ * round played before joining, or one sat out.
+ */
+export interface RoundVotes {
+  winner_id: number
+  loser_id: number
+  winner_votes: number
+  loser_votes: number
+  current_round: number
+  of_round: number
+  remain_elements: number
+  your_pick: number
+}
+
 export interface RoomBet {
   winner_id: number
   loser_id: number
@@ -186,6 +206,28 @@ export function createGameRoomService(client: APIClient = getAPIClient()) {
       const body = await client.get<{ votes: RoomVotes | null; voting: RoomVoting | null }>(
         `/game-rooms/${encodeURIComponent(roomSerial)}/votes${suffix}`, signal)
       return { votes: body.votes ?? null, voting: body.voting ?? null }
+    },
+
+    /**
+     * The rounds this room has already decided, newest first.
+     *
+     * Read-only and identity-optional: the anonymous id only marks which side this browser
+     * took, and reading never seats the reader in the room — a host watching their own
+     * room's history does not land on its leaderboard for it.
+     *
+     * The history spans the room's whole life, including a bracket it played before a
+     * restart, so gameSerial is sent only as the same anti-stale-link check every other
+     * room call makes.
+     */
+    async history(
+      roomSerial: string, gameSerial?: string, limit?: number, signal?: AbortSignal,
+    ): Promise<RoundVotes[]> {
+      const query = new URLSearchParams({ anonymous_id: getAnonymousID() })
+      if (gameSerial) query.set('game_serial', gameSerial)
+      if (limit) query.set('limit', String(limit))
+      const body = await client.get<{ rounds: RoundVotes[] | null }>(
+        `/game-rooms/${encodeURIComponent(roomSerial)}/history?${query}`, signal)
+      return body.rounds ?? []
     },
 
     /**

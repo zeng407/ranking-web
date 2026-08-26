@@ -18,8 +18,9 @@ socket: every 5 seconds while it is down or unavailable, every 20 seconds while 
 is connected. It also re-reads the state once on every fresh connect, to recover
 the frames that were missed while the socket was away.
 
-The host's own panel in the game view polls its leaderboard every 15 seconds and,
-while the black box is open, the vote tally every 5 seconds.
+The host's own panel in the game view polls its leaderboard every 15 seconds and the
+vote tally every 5 seconds — the tally whenever the counts are on screen, which is a
+majority room always and a host-mode room only while the black box is open.
 
 ## What a restart does to the room
 
@@ -113,10 +114,53 @@ is `optionalAuth` and there is no host identity: naming the game serial the room
 right now is the only proof of hosting, and a caller who names a different one is refused
 with 403. Bad mode or out-of-range seconds is 422 `invalid_voting`.
 
-While a room is in majority mode the host's own vote buttons are disabled. Two ways to settle
-a round would be two sources of truth, and a host clicking through would leave the votes they
-asked the room for unread. 「結束回合」 is offered in both settings, since cutting a round
-short is useful whether or not one was going to end on its own.
+**The host votes as an ordinary player.** Their click is a wager, not a verdict: it is the
+same `POST .../bets` every participant sends, it joins them to the room and puts them on the
+leaderboard, and the round still ends on the clock or on 「結束回合」. So there is still one
+way to settle a round — the tally — and a host with taste no longer has to sit the game out.
+「結束回合」 is offered in both settings, since cutting a round short is useful whether or not
+one was going to end on its own.
+
+**The black box is a host-mode device and is not offered here.** It exists so guessers cannot
+copy each other in 猜喜好; in a majority room the counts are the rule the round is decided by,
+every participant already sees them on their own cards, and hiding them would hide the room
+from the person running it. `showVotes = blackBox || majority` is the single answer to "do the
+counts belong on screen", and the toggle button is not rendered in majority mode.
+
+**The round settings sit beside the clock**, behind a gear in the panel that shows the
+remaining time, and open the same settings step the mode was first chosen in. A host who wants
+to move from a 20-second round to manual is not looking for the invite link they already
+handed out.
+
+### The vote history
+
+`GET /api/v1/game-rooms/{serial}/history?anonymous_id=&game_serial=&limit=` answers the rounds
+the room has already decided, newest first: both elements, both counts, and `your_pick` — the
+element the caller wagered on, or 0 if they did not. Both screens show it; the host's own match
+history gains a line on the cards it can match, and the participant's page lists it under the
+standings.
+
+It is an **aggregate over `game_room_user_bets`, not a new table** — no migration. A settled
+round leaves one row per voter: winners carry `won_at` and their own `(winner_id, loser_id)`,
+losers carry `lost_at` and the pair flipped, so the two counts are `SUM(won_at IS NOT NULL)` and
+`SUM(lost_at IS NOT NULL)` over rows grouped by the round key *and the pairing*
+(`current_round, of_round, remain_elements` plus the ordered pair). The pairing is in the key
+because a restart replays the bracket into the same room, and two different matches numbered
+"round 1 of 16" must not merge into one row.
+
+The winning element reads as `COALESCE(MAX(CASE WHEN won_at IS NOT NULL THEN winner_id END),
+MAX(CASE WHEN lost_at IS NOT NULL THEN loser_id END))`. The fallback is not defensive: in a
+**host** room every voter can be wrong, and then no winning row exists to read the winner from.
+
+Because the rows are the room's, the history spans its whole life — including the bracket it
+was playing before a restart, which the invite link and the room serial also survived. Reading
+it never seats anyone: `anonymous_id` is matched against `game_room_users`, never inserted, so
+a lurker stays off the leaderboard. Limit defaults to 20 and is refused above 50 (422).
+
+The host re-reads it when the room opens, on the 15-second board poll, when `GameBetRank`
+arrives, when a round is settled and when the room follows a restart. A participant re-reads it
+whenever the pairing on screen changes, which is what a round ending looks like from their side
+no matter who or what ended it.
 
 ### The two taste boards
 
@@ -184,9 +228,12 @@ changed", and nothing in the UI offers the switch today.
   already played: the next refresh re-derives their totals under the new rule, so a room played
   before the deploy will move (its streak bonuses disappear and each round is re-paid by its
   split). Deploy between games rather than mid-bracket if that matters.
-- The host's votes poll now runs whenever the room is in majority mode, not only while the
-  black box is open — the same call carries the clock. The counts still only reach the screen
-  when the box is open.
+- The host's votes poll runs whenever the room is in majority mode, not only while the black
+  box is open — the same call carries the clock, and in this mode the counts are on screen
+  anyway.
+- **The history endpoint needs no migration and no new table**, and no cache: it reads
+  `game_room_user_bets` by `room_id` on the index it already has. It is polled once per settled
+  round per client, not per poll interval.
 
 ## How fast the pairing travels
 
@@ -249,5 +296,9 @@ the frontend bundle, an image, or the repository.
   why it slows to 20 seconds rather than stopping. A socket that dies without
   closing reports nothing — no error, no close event — and the poll is the only
   thing that turns a frozen room into a slightly stale one.
-- A participant sees per-candidate wager counts but no room total; the total and
-  the full tally are the host's black box.
+- In host mode a participant sees per-candidate wager counts but no room total; the
+  total and the full tally are the host's black box. In majority mode there is no box:
+  the counts decide the round, so everybody — the host included — sees the same ones.
+- The host's own pick is marked from memory, not from the server: a reload mid-round
+  loses the highlight. The wager itself stands, and the history shows which side it
+  was on once the round settles.
