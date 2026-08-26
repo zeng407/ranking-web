@@ -71,6 +71,9 @@
         <div id="main-region" class="col-12 col-xl-8 p-1 " v-cloak>
           @include('partial.home-carousel')
 
+          {{-- Optional GAM custom HTML campaign placement (300x250). --}}
+          @include('ads.gam_togawa_300x250')
+
           {{-- champions --}}
           <h4 class="d-flex my-1 ml-2">@{{ $t('home.new_champions') }}</h4>
           {{-- dummy champion, preserve for champion --}}

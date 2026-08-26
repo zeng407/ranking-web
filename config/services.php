@@ -59,6 +59,10 @@ return [
         'rank_page_ad_1_slot' => env('GOOGLE_AD_RANK_PAGE_AD_1_SLOT', ''),
         'rank_page_ad_2_slot' => env('GOOGLE_AD_RANK_PAGE_AD_2_SLOT', ''),
         'rank_page_sides' => env('GOOGLE_AD_RANK_PAGE_SIDES_SLOT', ''),
+        'togawa_html' => [
+            'enabled' => env('GOOGLE_AD_TOGAWA_HTML_ENABLED', false),
+            'ad_unit' => env('GOOGLE_AD_TOGAWA_HTML_AD_UNIT', ''),
+        ],
     ],
     'onead' => [
         'enabled' => env('ONEAD_ENABLED', false),
