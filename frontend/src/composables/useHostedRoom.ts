@@ -43,6 +43,32 @@ import { useRoundCountdown } from './useRoundCountdown'
 const STORAGE_PREFIX = 'gameroom_host_'
 
 /**
+ * The pointer that carries a room across a restart, keyed by post rather than by game.
+ *
+ * WHY A SECOND KEY. A restart from the result page is a navigation — /r/… back to /g/… —
+ * and the router view is keyed on the path, so the view REMOUNTS with a fresh composable.
+ * The rebind that moves the room is started by the instance being torn down and writes the
+ * new game's key only when the request comes back; the fresh instance reads that key
+ * immediately and finds nothing. Keyed by post, the pointer is readable before the rebind
+ * lands, and the mount can adopt the room and finish the move itself.
+ */
+const POST_STORAGE_PREFIX = 'gameroom_host_post_'
+
+/**
+ * How stale a carried room may be. A restart happens seconds after the pointer is written,
+ * so this is generous — it exists only so a room left open days ago cannot silently seat
+ * its old participants in a game started today.
+ */
+const CARRY_MAX_AGE_MS = 6 * 60 * 60 * 1000
+
+/** What the pointer holds: the room, and the game it was on when it was written. */
+interface CarriedRoom {
+  game: string
+  room: string
+  at: number
+}
+
+/**
  * How often the black box re-reads the tally. Five seconds, as the old UI used: the counts
  * move on every wager rather than on every settlement, so the leaderboard's broadcast says
  * nothing about them and there is nothing to be live off.
@@ -165,13 +191,23 @@ export function useHostedRoom(
    * shown an empty column until the host's first vote of the new game lands.
    */
   onScreen?: () => number[] | undefined,
+  /**
+   * The post the game belongs to, which is what a carried room is keyed on. Omitted, the
+   * room simply does not survive a remount — the per-game key still does its own work.
+   */
+  postSerial?: Ref<string>,
 ): UseHostedRoom {
   const serial = ref('')
   const status = ref<HostedRoomStatus>('closed')
   const board = ref<Leaderboard | null>(null)
   const votes = ref<RoomVotes | null>(null)
   const voting = ref<RoomVoting | null>(null)
-  const history = ref<RoundVotes[]>([])
+  // Rounds the server has counted, and rounds this page decided a moment ago and the
+  // server has not counted yet. See recordDecided: the wagers reach the server through the
+  // outbox, well after the round they settled is over.
+  const served = ref<RoundVotes[]>([])
+  const pending = ref<RoundVotes[]>([])
+  const history = computed(() => [...pending.value, ...served.value])
   const ownPick = ref<number | null>(null)
   // Not a ref: the opponent is only ever read to decide whether ownPick still describes the
   // pairing on screen, and nothing draws it.
@@ -222,6 +258,19 @@ export function useHostedRoom(
       void follow(previous, value)
       return
     }
+    // Nothing open here either, but this post has a room that was on another game a moment
+    // ago: this is that same restart, seen by a mount that never saw the game before it.
+    // Adopt the room and finish the move — rebinding is idempotent, so it does not matter
+    // whether the instance that was torn down already got its own rebind through.
+    const carried = value ? carriedRoom(postSerial?.value ?? '', value) : null
+    if (carried && !serial.value) {
+      stopWatching()
+      serial.value = carried.room
+      status.value = 'open'
+      startWatching()
+      void follow(carried.game, value)
+      return
+    }
     if (serial.value) {
       stopWatching()
       serial.value = ''
@@ -266,6 +315,9 @@ export function useHostedRoom(
     const room = serial.value
     // The old game's tally describes a match nobody is voting on any more.
     votes.value = null
+    // Rounds this page decided but never got to the server are the old bracket's, and the
+    // history is about to be re-read for the room as a whole.
+    pending.value = []
     ownPick.value = null
     // The clock too: the round it was counting down belongs to the game just left.
     countdown.reset()
@@ -279,12 +331,15 @@ export function useHostedRoom(
       serial.value = ''
       status.value = 'closed'
       clearStored(fromGameSerial)
+      // The pointer would offer this room to the next game of this post as well, and it
+      // would be refused again for the same reason.
+      clearCarried(postSerial?.value ?? '')
       return
     }
     // A further restart may have overtaken this one while the request was in flight; that
     // later call owns the room now, and this one must not write its key back.
     if (gameSerial.value !== toGameSerial || serial.value !== room) return
-    store(toGameSerial, room)
+    store(postSerial?.value ?? '', toGameSerial, room)
     clearStored(fromGameSerial)
     status.value = 'open'
     if (showVotes.value) void refreshVotes()
@@ -300,7 +355,7 @@ export function useHostedRoom(
     try {
       const room = await service.open(gameSerial.value, currentCandidates)
       serial.value = room.serial
-      store(gameSerial.value, room.serial)
+      store(postSerial?.value ?? '', gameSerial.value, room.serial)
       status.value = 'open'
       startWatching()
       // The room may already have a mode: opening is idempotent, so this is also the path
@@ -432,7 +487,13 @@ export function useHostedRoom(
   async function refreshHistory(): Promise<void> {
     if (!serial.value) return
     try {
-      history.value = await service.history(serial.value, gameSerial.value)
+      const rounds = await service.history(serial.value, gameSerial.value)
+      const counted = new Set(rounds.map(roundKey))
+      // A local row stands in for exactly one server row, so it goes the moment that row
+      // arrives. A round just settled is always among the newest, so the endpoint's limit
+      // cannot strand one here.
+      pending.value = pending.value.filter((round) => !counted.has(roundKey(round)))
+      served.value = rounds
     } catch {
       // See refreshBoard: the rounds already on screen are still true, and reading them
       // again is never urgent.
@@ -514,9 +575,43 @@ export function useHostedRoom(
     // side, so anything that does not match the pair on screen is treated as no votes.
     const forFirst = candidateVotes(tally, first)
     const forSecond = candidateVotes(tally, second)
-    if (forFirst > forSecond) return first
-    if (forSecond > forFirst) return second
-    return random() < 0.5 ? first : second
+    const winner = forFirst > forSecond ? first
+      : forSecond > forFirst ? second
+        : random() < 0.5 ? first : second
+    recordDecided(tally, winner, winner === first ? second : first)
+    return winner
+  }
+
+  /**
+   * Writes the round that was just decided into the history, from the tally that decided it.
+   *
+   * WHY NOT WAIT FOR THE SERVER. The wagers of a round reach the server through the vote
+   * outbox, which flushes more than a second after the round is over, and the aggregate can
+   * only report a round once they have. Read at settlement time it answers with everything
+   * BUT this round, so the card the host is looking at would stay blank until the next
+   * round settled and triggered another read. The numbers are already here — they are what
+   * the decision was made on — so the row is written now and replaced by the server's own
+   * when it catches up.
+   *
+   * Skipped when the tally is about another pairing: its counts belong to that one, and a
+   * 0-0 row would be a claim about this round rather than a report of it.
+   */
+  function recordDecided(tally: RoomVotes, winner: number, loser: number): void {
+    const pair = [tally.first_candidate, tally.second_candidate]
+    if (!pair.includes(winner) || !pair.includes(loser)) return
+    const round: RoundVotes = {
+      winner_id: winner,
+      loser_id: loser,
+      winner_votes: candidateVotes(tally, winner),
+      loser_votes: candidateVotes(tally, loser),
+      current_round: tally.current_round,
+      of_round: tally.of_round,
+      remain_elements: tally.remain_elements,
+      // The host's own wager, if they placed one. Same round, so ownPick still describes it.
+      your_pick: ownPick.value ?? 0,
+    }
+    const key = roundKey(round)
+    pending.value = [round, ...pending.value.filter((held) => roundKey(held) !== key)]
   }
 
   function forget(): void {
@@ -526,11 +621,13 @@ export function useHostedRoom(
     board.value = null
     votes.value = null
     voting.value = null
-    history.value = []
+    served.value = []
+    pending.value = []
     ownPick.value = null
     serial.value = ''
     status.value = 'closed'
     clearStored(gameSerial.value)
+    clearCarried(postSerial?.value ?? '')
   }
 
   return {
@@ -594,6 +691,14 @@ function candidateVotes(tally: RoomVotes, candidateID: number): number {
   return 0
 }
 
+/** One key for a decided round, whichever way round its pair is given. */
+function roundKey(round: RoundVotes): string {
+  const [low, high] = round.winner_id < round.loser_id
+    ? [round.winner_id, round.loser_id]
+    : [round.loser_id, round.winner_id]
+  return `${round.current_round}:${round.of_round}:${low}:${high}`
+}
+
 function storageKey(gameSerial: string): string {
   return STORAGE_PREFIX + gameSerial
 }
@@ -609,10 +714,50 @@ function storedRoomSerial(gameSerial: string): string {
   }
 }
 
-function store(gameSerial: string, roomSerial: string): void {
+function store(postSerial: string, gameSerial: string, roomSerial: string): void {
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.setItem(storageKey(gameSerial), roomSerial)
+    // The pointer a remount reads. Written from the same place, so the two cannot disagree
+    // about which room this host is running.
+    if (postSerial) {
+      localStorage.setItem(carryKey(postSerial), JSON.stringify(
+        { game: gameSerial, room: roomSerial, at: Date.now() } satisfies CarriedRoom))
+    }
+  } catch {
+    // See storedRoomSerial.
+  }
+}
+
+function carryKey(postSerial: string): string {
+  return POST_STORAGE_PREFIX + postSerial
+}
+
+/**
+ * The room this post was hosting on another game, if it is recent enough to be this host's
+ * restart. Null when the pointer is missing, unreadable, stale, or already names this game
+ * — the last one being the ordinary case, where the per-game key answers first.
+ */
+function carriedRoom(postSerial: string, gameSerial: string): CarriedRoom | null {
+  if (!postSerial || !gameSerial || typeof localStorage === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(carryKey(postSerial))
+    if (!raw) return null
+    const carried = JSON.parse(raw) as Partial<CarriedRoom>
+    if (typeof carried?.room !== 'string' || !carried.room) return null
+    if (typeof carried.game !== 'string' || !carried.game || carried.game === gameSerial) return null
+    if (typeof carried.at !== 'number' || Date.now() - carried.at > CARRY_MAX_AGE_MS) return null
+    return { game: carried.game, room: carried.room, at: carried.at }
+  } catch {
+    // Denied storage, or a value from an older format. Either way there is no room to carry.
+    return null
+  }
+}
+
+function clearCarried(postSerial: string): void {
+  if (!postSerial || typeof localStorage === 'undefined') return
+  try {
+    localStorage.removeItem(carryKey(postSerial))
   } catch {
     // See storedRoomSerial.
   }

@@ -186,6 +186,8 @@ const multiplayerDialog = ref<HTMLDialogElement | null>(null)
  * three steps are the whole of hosting.
  */
 const multiplayerStep = ref<'mode' | 'settings' | 'invite'>('mode')
+/** Where 確定 goes from the settings step; see openRoundSettings. */
+const settingsNext = ref<'invite' | 'close'>('close')
 /** Whether a majority room runs on a clock. False means the host ends every round by hand. */
 const roundTimed = ref(true)
 /** The countdown the host is about to set, in seconds. Clamped when it is sent. */
@@ -280,6 +282,9 @@ const hostedRoom = useHostedRoom(
     const displayed = visibleElements.value
     return displayed ? [displayed[0].id, displayed[1].id] : undefined
   },
+  // Restarting navigates /r/… back to /g/…, which remounts this view. The post is the only
+  // thing that survives that, so it is what the open room is carried across on.
+  postSerial,
 )
 /**
  * The standings to show the host. Empty until somebody joins.
@@ -973,11 +978,19 @@ async function chooseGuessPreferenceMode(): Promise<void> {
 async function chooseMajorityMode(): Promise<void> {
   await openGameRoom()
   if (!hostedRoom.hosting.value) return
-  openRoundSettings()
+  openRoundSettings('invite')
 }
 
-/** Shows the round settings, prefilled from what the room is running on now. */
-function openRoundSettings(): void {
+/**
+ * Shows the round settings, prefilled from what the room is running on now.
+ *
+ * `next` is where 確定 goes. The link belongs to setting the room up — first time through,
+ * mode then settings then invite — and nowhere else: a host who opened the gear beside the
+ * clock to change 20 秒 to 手動 asked to change one setting, not to be handed a link they
+ * already sent out.
+ */
+function openRoundSettings(next: 'invite' | 'close' = 'close'): void {
+  settingsNext.value = next
   const current = hostedRoom.voting.value
   roundTimed.value = !(current?.mode === 'majority' && current.round_seconds === 0)
   if (current && current.round_seconds > 0) roundSeconds.value = current.round_seconds
@@ -986,7 +999,7 @@ function openRoundSettings(): void {
 }
 
 /**
- * Writes the settings and moves on to the invite.
+ * Writes the settings, then either hands out the link or gets out of the way.
  *
  * The seconds are clamped rather than validated: the server refuses anything outside the
  * range, and a host who typed 3 meant "as short as it goes", not "fail".
@@ -1001,6 +1014,10 @@ async function confirmRoundSettings(): Promise<void> {
   try {
     await hostedRoom.setVoting('majority', seconds)
     roundSeconds.value = seconds || roundSeconds.value
+    if (settingsNext.value === 'close') {
+      closeMultiplayerDialog()
+      return
+    }
     multiplayerStep.value = 'invite'
     await renderRoomQRCode()
   } catch {
@@ -2092,7 +2109,7 @@ function preferredRankImage(report: RankReport): string | null {
                    room opened, and for a room that has no votes to report. -->
               <p v-if="item.roomRound" class="game-history-votes">
                 <b>{{ item.roomRound.winner_votes }}</b>
-                <span>{{ t('roomHistoryShare', { share: roundShare(item.roomRound), title: item.winner_title }) }}</span>
+                <span>{{ t('roomHistoryShare', { share: roundShare(item.roomRound) }) }}</span>
                 <b class="game-history-votes-loser">{{ item.roomRound.loser_votes }}</b>
               </p>
             </li>
@@ -2709,14 +2726,6 @@ function preferredRankImage(report: RankReport): string | null {
             @click="saveRoomQRCode"
           >
             {{ t('roomQrDownload') }}
-          </button>
-          <button
-            v-if="hostedRoom.majority.value"
-            class="button button-ghost"
-            type="button"
-            @click="openRoundSettings"
-          >
-            {{ t('roomRoundSettings') }}
           </button>
         </div>
       </section>

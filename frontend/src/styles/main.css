@@ -3986,6 +3986,9 @@ button.game-sync-indicator {
 
 .game-history ol {
   display: grid;
+  /* Grid items are min-width: auto by default, so one wide card would push the whole
+     panel past the column it sits in rather than being clipped inside it. */
+  min-width: 0;
   gap: 0.75rem;
   margin: 0.85rem 0;
   padding: 0;
@@ -4000,6 +4003,7 @@ button.game-sync-indicator {
 
 .game-history-card {
   display: grid;
+  min-width: 0;
   gap: 0.5rem;
   padding: 0.65rem;
   border: 1px solid rgb(255 255 255 / 10%);
@@ -4076,6 +4080,9 @@ button.game-sync-indicator {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* A long title is cut, and a long title with nothing to break on — one unbroken run of
+     40 characters — is broken anyway rather than measured as the panel's width. */
+  overflow-wrap: anywhere;
   white-space: nowrap;
   font-size: 0.67rem;
 }

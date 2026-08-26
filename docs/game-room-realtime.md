@@ -43,6 +43,23 @@ Wagers still open on the game the room left never settle — the host abandoned 
 bracket, so nothing will ever decide those rounds. Participants keep the score
 they had.
 
+**A restart from the result page is a remount, and the room has to survive that too.**
+Finishing a bracket navigates to `/r/…` and 再玩一次 navigates back to `/g/…`; the router view
+is keyed on the path, so the second navigation destroys the view and builds a new one on the
+new game. The rebind is fired by the instance being torn down and writes its
+`gameroom_host_<gameSerial>` key only when the request comes back, so the fresh instance would
+read that key, find nothing, and tell the host to set multiplayer mode up again — with their
+room open and their participants still in it.
+
+So the room is also written under `gameroom_host_post_<postSerial>`, with the game it was on
+and a timestamp. A mount that has no room for its own game reads that pointer, adopts the room
+before any request, and fires the rebind itself; rebinding a room that is already on the target
+game returns it rather than failing, so it does not matter how far the torn-down instance got.
+The pointer is ignored when it names another post, when it names this same game, and when it is
+more than six hours old — a restart happens seconds later, and a room left open this morning
+must not seat its old participants in a game started tonight. A refused rebind clears it, so a
+room this page cannot drive is not offered again on the next restart.
+
 ## What a reload does to the room
 
 A reload used to move the host's pairing and nobody else's. The resumed game re-picked the
@@ -130,7 +147,10 @@ counts belong on screen", and the toggle button is not rendered in majority mode
 **The round settings sit beside the clock**, behind a gear in the panel that shows the
 remaining time, and open the same settings step the mode was first chosen in. A host who wants
 to move from a 20-second round to manual is not looking for the invite link they already
-handed out.
+handed out, so 確定 there writes the settings and closes; the step only continues to the invite
+when it was reached by first choosing the mode, which happens once per room. For the same
+reason the invite step carries no settings button — the link is handed out from there and
+nothing else is.
 
 ### The vote history
 
@@ -156,6 +176,14 @@ Because the rows are the room's, the history spans its whole life — including 
 was playing before a restart, which the invite link and the room serial also survived. Reading
 it never seats anyone: `anonymous_id` is matched against `game_room_users`, never inserted, so
 a lurker stays off the leaderboard. Limit defaults to 20 and is refused above 50 (422).
+
+The host does not wait for that read to see the round they just settled. Their wagers reach
+the server through the vote outbox, which flushes over a second after the round is over, so an
+aggregate read at settlement time answers with every round *but* this one. The tally that
+decided the round is the same count, so the row is written locally from it — winner, loser, both
+counts, the round numbers, and the host's own pick — and dropped again as soon as a server read
+returns that same round (keyed on `current_round`, `of_round` and the unordered pair). A local
+row is a stand-in for exactly one server row, never an extra one.
 
 The host re-reads it when the room opens, on the 15-second board poll, when `GameBetRank`
 arrives, when a round is settled and when the room follows a restart. A participant re-reads it
@@ -282,6 +310,26 @@ next poll.
 
    `secure` defaults to whether the page itself is HTTPS, so a proxied `wss://`
    needs no extra setting.
+
+   `frontend/public/app-config.js` — the copy baked into the image — keeps `key: ''`, and
+   that is deliberate: the repository must not decide that an environment has Soketi, and a
+   deployment without one has to stay playable on the poll. A local stack turns the socket
+   on by mounting its own copy over the built one instead of editing the repo file:
+
+   ```yaml
+   # compose.local.yml, alongside compose.separated.yml and not committed
+   services:
+     frontend:
+       volumes:
+         - ./deploy/local/app-config.js:/usr/share/nginx/html/app-config.js:ro
+   ```
+
+   ```
+   docker compose -f compose.separated.yml -f compose.local.yml up -d frontend
+   ```
+
+   Without it the host's screen falls back to a 15-second board poll and a 5-second votes
+   poll, which is playable but makes the leaderboard and the counts look slow.
 
 The app **key** is a public client identifier and belongs in `app-config.js`. The
 app **secret** is not: it stays in the backend's environment and must never reach

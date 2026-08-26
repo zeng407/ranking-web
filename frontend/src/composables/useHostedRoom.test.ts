@@ -59,7 +59,8 @@ describe('useHostedRoom', () => {
   })
 
   // A page that opens on another game hosts nothing: the stored room belongs to the game it
-  // was opened for, and nothing here says this host ever ran it.
+  // was opened for, and nothing here says this host ever ran it. Nothing here is the point —
+  // a room only crosses to another game when the post it was carried on says so, below.
   it('does not carry a room into a different game', async () => {
     await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).open()
 
@@ -111,6 +112,76 @@ describe('useHostedRoom', () => {
     expect(room.inviteURL.value).toBe('')
     // And the old key is gone, so a reload does not resurrect it.
     expect(useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService()).serial.value).toBe('')
+  })
+
+  /*
+  THE RESTART AS A REMOUNT. Finishing a bracket navigates to the rank route, and 再玩一次
+  navigates back to the game route — the router view is keyed on the path, so the second
+  navigation destroys this composable and builds a new one on the new game. The rebind the
+  old instance fired is still in flight, so the new game's key has not been written yet, and
+  without the post pointer the fresh instance would report no room at all: the host would be
+  told to set multiplayer mode up again while their participants sat in the open room.
+  */
+  it('adopts the room its own post was hosting a moment ago', async () => {
+    await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService(), undefined, ref('post-1')).open()
+
+    const service = fakeService()
+    const room = useHostedRoom(ref('game-2'), ref('zh-tw'), service, () => [11, 22], ref('post-1'))
+    // Before any request: the host sees their room on the first frame of the new game.
+    expect(room.serial.value).toBe('abcdefgh')
+    expect(room.hosting.value).toBe(true)
+
+    await flush()
+    // And the move is finished from here, which is safe however far the torn-down instance
+    // got: rebinding a room that is already on the target game returns it rather than failing.
+    expect(service.rebind).toHaveBeenCalledWith('abcdefgh', 'game-1', 'game-2', [11, 22])
+    expect(useHostedRoom(ref('game-2'), ref('zh-tw'), fakeService()).serial.value).toBe('abcdefgh')
+    room.stopWatching()
+  })
+
+  // The pointer is for a restart, which happens seconds later. A room left open this morning
+  // must not seat its old participants in a game started tonight.
+  it('leaves a stale carried room alone', async () => {
+    localStorage.setItem('gameroom_host_post_post-1', JSON.stringify({
+      game: 'game-1', room: 'abcdefgh', at: Date.now() - 7 * 60 * 60 * 1000,
+    }))
+
+    const service = fakeService()
+    const room = useHostedRoom(ref('game-2'), ref('zh-tw'), service, undefined, ref('post-1'))
+    await flush()
+
+    expect(room.serial.value).toBe('')
+    expect(service.rebind).not.toHaveBeenCalled()
+  })
+
+  // Another post is another bracket. The room could not follow it even if it tried — the
+  // server refuses a game from a different post — so it is not offered.
+  it('does not carry a room onto another post', async () => {
+    await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService(), undefined, ref('post-1')).open()
+
+    const service = fakeService()
+    const room = useHostedRoom(ref('game-2'), ref('zh-tw'), service, undefined, ref('post-2'))
+    await flush()
+
+    expect(room.serial.value).toBe('')
+    expect(service.rebind).not.toHaveBeenCalled()
+  })
+
+  it('stops offering a carried room the server refused', async () => {
+    await useHostedRoom(ref('game-1'), ref('zh-tw'), fakeService(), undefined, ref('post-1')).open()
+
+    const refusing = fakeService({ rebind: vi.fn().mockRejectedValue(apiError(409)) })
+    const room = useHostedRoom(ref('game-2'), ref('zh-tw'), refusing, undefined, ref('post-1'))
+    await flush()
+    expect(room.serial.value).toBe('')
+
+    // The next game of this post must not be offered the same room again: it would be
+    // refused for the same reason, once per restart, for as long as the pointer lived.
+    const service = fakeService()
+    const later = useHostedRoom(ref('game-3'), ref('zh-tw'), service, undefined, ref('post-1'))
+    await flush()
+    expect(later.serial.value).toBe('')
+    expect(service.rebind).not.toHaveBeenCalled()
   })
 
   // Only when a room is actually open: a host who never opened one must not have a rebind
@@ -397,6 +468,92 @@ describe('useHostedRoom', () => {
     expect(room.blackBox.value).toBe(false)
     expect(room.showVotes.value).toBe(true)
     expect(room.votes.value?.second_candidate_votes).toBe(7)
+    room.stopWatching()
+  })
+
+  /*
+  The history at settlement time. The wagers of a round reach the server through the vote
+  outbox, which flushes more than a second after the round is over, so an aggregate read now
+  answers with every round BUT this one — and the card the host is looking at would stay
+  blank until the next round settled and triggered another read. The numbers are already
+  here: they are what the decision was made on.
+  */
+  it('writes the round it just decided into the history, without waiting for the server', async () => {
+    const service = fakeService({
+      votes: vi.fn().mockResolvedValue({
+        votes: {
+          first_candidate: 11,
+          second_candidate: 22,
+          first_candidate_votes: 2,
+          second_candidate_votes: 7,
+          remain_elements: 4,
+          total_votes: 9,
+          current_round: 3,
+          of_round: 4,
+        },
+        voting: { mode: 'majority', round_seconds: 10, seconds_left: 4 },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+    await room.placeBet(11, 22)
+
+    expect(await room.majorityWinner([11, 22])).toBe(22)
+    expect(room.history.value).toEqual([{
+      winner_id: 22,
+      loser_id: 11,
+      winner_votes: 7,
+      loser_votes: 2,
+      current_round: 3,
+      of_round: 4,
+      remain_elements: 4,
+      // The host wagered on the side that lost, and the row says so.
+      your_pick: 11,
+    }])
+    room.stopWatching()
+  })
+
+  it('gives the round back to the server\'s own count once it has one', async () => {
+    const history = vi.fn().mockResolvedValue([])
+    const service = fakeService({
+      history,
+      votes: vi.fn().mockResolvedValue({
+        votes: {
+          first_candidate: 11,
+          second_candidate: 22,
+          first_candidate_votes: 2,
+          second_candidate_votes: 7,
+          remain_elements: 2,
+          total_votes: 9,
+          current_round: 1,
+          of_round: 1,
+        },
+        voting: { mode: 'majority', round_seconds: 10, seconds_left: 4 },
+      }),
+    })
+    const room = useHostedRoom(ref('game-1'), ref('zh-tw'), service)
+    await room.open()
+    await flush()
+    await room.majorityWinner([11, 22])
+    expect(room.history.value).toHaveLength(1)
+
+    // The bets have landed, and the aggregate now counts votes this page never saw — the
+    // local row stands in for exactly this one, so it goes rather than doubling it up.
+    history.mockResolvedValue([{
+      winner_id: 22,
+      loser_id: 11,
+      winner_votes: 9,
+      loser_votes: 3,
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      your_pick: 0,
+    }])
+    await room.refreshHistory()
+
+    expect(room.history.value).toHaveLength(1)
+    expect(room.history.value[0]?.winner_votes).toBe(9)
     room.stopWatching()
   })
 

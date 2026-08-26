@@ -31,3 +31,7 @@ public/sitemap.xml
 /frontend/admin-dist/
 /backend/bin/
 /backend/coverage.out
+
+# Local-only compose overrides and the app-config they mount (see compose.local.yml).
+/compose.local.yml
+/deploy/local/

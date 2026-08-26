@@ -118,7 +118,6 @@ const historyRows = computed(() => room.history.value.map((round) => {
     // 0 when this browser did not wager on the round — one played before it joined, or
     // one it sat out.
     yourPick: round.your_pick,
-    yourPickTitle: round.your_pick === round.winner_id ? winnerTitle : loserTitle,
   }
 }))
 
@@ -378,10 +377,9 @@ watchEffect(() => {
               >{{ round.loserTitle }}</span>
             </p>
             <p class="room-history-share">
-              {{ say('roomHistoryShare', { share: round.share, title: round.winnerTitle }) }}
-              <em v-if="round.yourPick">
-                · {{ translate(locale, 'roomHistoryYourPick') }}：{{ round.yourPickTitle }}
-              </em>
+              {{ say('roomHistoryShare', { share: round.share }) }}
+              <!-- Which side, without naming it again: the pair above is already marked. -->
+              <em v-if="round.yourPick">· {{ translate(locale, 'roomHistoryYourPick') }}</em>
             </p>
           </li>
         </ol>

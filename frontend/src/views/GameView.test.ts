@@ -1192,11 +1192,22 @@ describe('GameView restart regression', () => {
     await flushPromises()
     expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('邀請朋友加入遊戲')
 
+    // The link step is for handing the link out and nothing else. The settings left it when
+    // they moved to the clock, and a second way in would only be a second thing to keep.
+    expect(wrapper.findAll('.game-room-invite-actions button')
+      .some((button) => button.text() === '回合設定')).toBe(false)
+
     // Beside the clock they change, rather than back through the invite dialog: a host who
     // wants a shorter round is not looking for the link they already handed out.
     await wrapper.get('.game-room-round-settings-button').trigger('click')
     await flushPromises()
     expect(wrapper.get('.game-multiplayer-dialog h2').text()).toBe('回合設定')
+
+    // And 確定 means confirmed: the settings were all that was asked for, so the dialog
+    // closes rather than showing the invite a second time.
+    await wrapper.get('.game-room-round-settings .button-primary').trigger('click')
+    await flushPromises()
+    expect((wrapper.get('.game-multiplayer-dialog').element as HTMLDialogElement).open).toBe(false)
 
     wrapper.unmount()
   })
