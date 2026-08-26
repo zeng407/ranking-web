@@ -274,7 +274,11 @@ watchEffect(() => {
           </div>
           <div><dt>{{ translate(locale, 'roomRank') }}</dt><dd>{{ room.player.value.rank || '—' }}</dd></div>
           <div><dt>{{ translate(locale, 'roomAccuracy') }}</dt><dd>{{ room.player.value.accuracy }}%</dd></div>
-          <div><dt>{{ translate(locale, 'roomCombo') }}</dt><dd>{{ room.player.value.combo }}</dd></div>
+          <!-- A taste score pays by how the room split, never by a streak, so the column
+               is zero here by construction and showing it would only invite the question. -->
+          <div v-if="!room.majority.value">
+            <dt>{{ translate(locale, 'roomCombo') }}</dt><dd>{{ room.player.value.combo }}</dd>
+          </div>
         </dl>
 
         <form class="room-rename" @submit.prevent="submitRename">

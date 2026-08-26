@@ -20,14 +20,20 @@ func DefaultScoring() Scoring {
 	return Scoring{DefaultScore: 1000, ComboScore: 10, WonScore: 10, LoseScore: -10}
 }
 
-// Bet is one wager, as stored. Score is already resolved: the settlement step
-// writes last_combo*ComboScore+WonScore or LoseScore into the row as an audit of what
-// that round paid when it settled — but the tally no longer reads it. See Tally for why
-// the streak has to be derived from the outcomes rather than trusted from the row.
+// Bet is one wager, as stored.
 type Bet struct {
 	ID int64
-	// LastCombo and Score are what the settlement wrote. Kept for audit and for the
-	// parity test against SettledScore; the totals are derived from Won and Settled.
+	// LastCombo and Score are what the settlement wrote.
+	//
+	// In a host-decided room they are an audit and nothing more: Score holds
+	// last_combo*ComboScore+WonScore or LoseScore, and the tally ignores both because the
+	// streak has to be derived from the outcomes rather than trusted from the row. See
+	// Tally.
+	//
+	// In a room that decides its own rounds, Score is the answer rather than a record of
+	// it. What a round pays there depends on how the whole room split, which no single
+	// player's rows can show, so the settlement resolves it once and writes it here. See
+	// MajorityPayout.
 	LastCombo int
 	Score     int
 	// Won is won_at IS NOT NULL. It implies Settled.
@@ -72,8 +78,12 @@ type Totals struct {
 // wagers still sitting inside a cursor were placed between August and December 2025,
 // there are none at all from February to June 2026, and one in July. Counting only
 // settled wagers also makes total_played mean what its name says.
-func Tally(bets []Bet, scoring Scoring) Totals {
+//
+// mode selects the room's scoring rules and must be the room's own vote_mode, because the
+// two modes pay for different things. See the majority branch below.
+func Tally(bets []Bet, scoring Scoring, mode string) Totals {
 	totals := Totals{Score: scoring.DefaultScore}
+	majority := mode == VoteModeMajority
 
 	// THE STREAK IS DERIVED HERE, NOT READ FROM THE ROW.
 	//
@@ -100,6 +110,28 @@ func Tally(bets []Bet, scoring Scoring) Totals {
 		totals.TotalPlayed++
 		if bet.Won {
 			totals.TotalCorrect++
+		}
+
+		// A ROOM THAT DECIDES ITS OWN ROUNDS PAYS FROM THE ROW, AND HAS NO COMBO.
+		//
+		// The magnitude of a majority round is MajorityPayout of how the room split, and
+		// the split is a fact about the round rather than about any one player — nothing
+		// in these wagers can reach it. So here the stored score is authoritative and the
+		// streak is not scored at all: agreeing with the room six times running does not
+		// make a player six times more mainstream than agreeing once, and the two taste
+		// boards are read off this score alone.
+		//
+		// Trusting a written column is the opposite of what the branch below does, for a
+		// reason that survives the comparison: last_combo is written when the wager is
+		// PLACED, from whatever had settled by then, while this score is written by the
+		// settlement itself from the rows it is settling. Re-deriving it could only
+		// arrive at the same number, if it could see the other players at all.
+		if majority {
+			totals.Score += bet.Score
+			continue
+		}
+
+		if bet.Won {
 			totals.Score += streak*scoring.ComboScore + scoring.WonScore
 			streak++
 			won = true
@@ -138,7 +170,8 @@ func AccuracyHundredths(correct, played int) int {
 	return int(numerator / (int64(played) * 2))
 }
 
-// SettledScore is the score the settlement writes into a wager row.
+// SettledScore is the score the settlement writes into a wager row in a host-decided
+// room.
 //
 // Mirrors the two DB::raw expressions in GameService::updateGameBet: a correct
 // wager earns last_combo * ComboScore + WonScore, an incorrect one takes the flat
@@ -148,4 +181,30 @@ func SettledScore(won bool, lastCombo int, scoring Scoring) int {
 		return scoring.LoseScore
 	}
 	return lastCombo*scoring.ComboScore + scoring.WonScore
+}
+
+// MajorityPayout is what one round pays each side when the room decided it: the winning
+// side gains it and the losing side loses the same amount.
+//
+//	WonScore * (1 + winnerVotes/totalVotes)
+//
+// So the usual WonScore, plus up to another WonScore for how one-sided the round was. A
+// coin-tossed tie splits 50/50 and pays 15; the 70% majority pays 17 and the 30% minority
+// loses 17; a unanimous round pays 20.
+//
+// Proportional because that is what the 大眾品味 board claims to measure. Siding with an
+// overwhelming crowd is more mainstream than siding with a bare one, and a flat ±WonScore
+// would score a 51/49 round and a 99/1 round identically.
+//
+// Integer arithmetic, rounded half away from zero, for the same reason as
+// AccuracyHundredths: the number crosses into SQL as a parameter and must not depend on
+// which side of the boundary computed it.
+//
+// totalVotes <= 0 pays nothing. A round nobody wagered on has no rows to write it to.
+func MajorityPayout(winnerVotes, totalVotes int, scoring Scoring) int {
+	if totalVotes <= 0 {
+		return 0
+	}
+	numerator := int64(scoring.WonScore)*int64(totalVotes+winnerVotes)*2 + int64(totalVotes)
+	return int(numerator / (int64(totalVotes) * 2))
 }

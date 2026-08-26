@@ -120,11 +120,35 @@ short is useful whether or not one was going to end on its own.
 
 ### The two taste boards
 
-Nothing about scoring changes for this mode, because the existing engine already says what it
-needs to. A wager on the side that wins pays `last_combo * 10 + 10` and a wager on the side
-that loses costs 10 (`Scoring`, from `config/setting.php`), and in a majority room the side
-that wins *is* the majority. So siding with the room adds to a player's score and going alone
-subtracts from it, with no new column and no second settlement path.
+A round the room decided pays by **how lopsided it was**, the same magnitude to both sides:
+
+```
+magnitude = round(bet_won_score * (1 + winner_votes / total_votes))
+```
+
+`bet_won_score` is 10, so the rule reads "the usual 10, plus up to another 10 for how one-sided
+the round was". A 50/50 round — which is what a coin-tossed tie is — pays ±15; 70/30 pays ±17;
+a unanimous round pays ±20. **No combo bonus**, in either direction: agreeing with the room six
+times running does not make a player six times more mainstream than agreeing once, and a flat
+±10 would score a 51/49 round and a 99/1 round identically. The 連勝 stat is hidden in a
+majority room because the column is zero there by construction.
+
+Host mode is untouched — there the score measures agreement with one person, the streak is part
+of that game, and the vote counts are not a rule at all.
+
+**The row's `score` is authoritative in this mode and derived in the other.** The magnitude is a
+fact about the *round*: it needs both sides' counts, which no single player's wagers can show,
+so `SettleBets` resolves it once and writes `+m` / `−m` into `game_room_user_bets.score`, and
+the tally sums that column instead of re-deriving it. Host mode does the opposite on purpose —
+it refuses to trust `last_combo` because that column is written when the wager is *placed*, from
+whatever had settled by then, which makes it a function of how fast the player clicked. The
+majority payout is written by the settlement itself, from the rows it is settling. Computing it
+in Go rather than in SQL keeps one rounding decision instead of two: the number reaches both
+statements as a parameter (see `MajorityPayout`, and `AccuracyHundredths` for what the
+alternative costs). Redelivery is still idempotent — the counts do not filter on `won_at`, so a
+second settle recomputes the same magnitude and rewrites the same numbers.
+
+No migration: `score` already exists and was already written on every settlement.
 
 That makes one score column readable from both ends, which is the two rankings the mode is
 named for:
@@ -143,6 +167,12 @@ would shift the whole board by one.
 A room the host decides keeps the single merged list it has always had — there the score
 measures agreement with one person's taste, which has only one direction worth reading.
 
+**Switching a room's mode re-scores its whole history.** Both paths are full recomputes from the
+wager rows, so a room moved to host mode re-derives every round under host rules, including
+rounds that were decided by vote — and one moved the other way sums a `score` column those
+earlier rounds wrote under the streak rule. That is the honest reading of "the room's rules
+changed", and nothing in the UI offers the switch today.
+
 ### Deploying it
 
 - **Run migration `00016_game_room_voting.sql`.** It adds `vote_mode`, `round_seconds` and
@@ -150,6 +180,10 @@ measures agreement with one person's taste, which has only one direction worth r
   the behaviour they already had, so the migration is safe to run ahead of the deploy.
 - Nothing new is needed from Soketi, the worker, or `app-config.js`: the countdown travels on
   the `GameRoomRound` frame that already exists, and on the poll behind it.
+- **The proportional payout needs no migration**, but it does re-score majority rooms that were
+  already played: the next refresh re-derives their totals under the new rule, so a room played
+  before the deploy will move (its streak bonuses disappear and each round is re-paid by its
+  split). Deploy between games rather than mid-bracket if that matters.
 - The host's votes poll now runs whenever the room is in majority mode, not only while the
   black box is open — the same call carries the clock. The counts still only reach the screen
   when the box is open.

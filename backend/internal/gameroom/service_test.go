@@ -22,10 +22,13 @@ type fakeRepository struct {
 
 	rooms map[string]Room
 
-	settled       []BetOutcome
-	recomputes    []int64
-	rankPasses    []int64
-	leaderboardOf int64
+	settled    []BetOutcome
+	recomputes []int64
+	// recomputedModes records the vote mode each recompute was asked to score by, which
+	// is the half of the room the id does not carry.
+	recomputedModes []string
+	rankPasses      []int64
+	leaderboardOf   int64
 
 	board Leaderboard
 
@@ -70,14 +73,15 @@ func (repository *fakeRepository) SettleBets(_ context.Context, outcome BetOutco
 	return SettleResult{Won: 2, Lost: 1, Discarded: 3}, nil
 }
 
-func (repository *fakeRepository) RecomputeTotals(_ context.Context, roomID int64) (int64, error) {
+func (repository *fakeRepository) RecomputeTotals(_ context.Context, room Room) (int64, error) {
 	repository.mu.Lock()
 	if repository.recomputeErr != nil {
 		err := repository.recomputeErr
 		repository.mu.Unlock()
 		return 0, err
 	}
-	repository.recomputes = append(repository.recomputes, roomID)
+	repository.recomputes = append(repository.recomputes, room.ID)
+	repository.recomputedModes = append(repository.recomputedModes, room.VoteMode)
 	hook := repository.recomputeHook
 	repository.mu.Unlock()
 
@@ -980,5 +984,27 @@ func TestRoundRetriesABroadcastFailure(t *testing.T) {
 	}
 	if jobs.IsPermanent(err) {
 		t.Errorf("error = %v, want it retryable", err)
+	}
+}
+
+// The room's rules have to reach the two places that apply them. Neither the settlement
+// nor the recompute can look the mode up for itself without the two of them being able to
+// disagree about which rules a round was paid by, so both are handed the room.
+func TestTheRoomsVoteModeReachesTheSettlementAndTheRecompute(t *testing.T) {
+	h := newHarness(t)
+	h.repository.rooms[testSerial] = Room{ID: 77, Serial: testSerial, VoteMode: VoteModeMajority}
+
+	if err := h.settle(t, 1); err != nil {
+		t.Fatalf("handleSettle() error = %v", err)
+	}
+	if err := h.refresh(t); err != nil {
+		t.Fatalf("handleRefresh() error = %v", err)
+	}
+
+	if got := h.repository.settled[0].VoteMode; got != VoteModeMajority {
+		t.Errorf("settled with vote mode %q, want %q", got, VoteModeMajority)
+	}
+	if got := h.repository.recomputedModes; len(got) != 1 || got[0] != VoteModeMajority {
+		t.Errorf("recomputed with %v, want one %q", got, VoteModeMajority)
 	}
 }

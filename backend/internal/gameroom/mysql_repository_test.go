@@ -143,7 +143,7 @@ func TestRecomputeTotalsMatchesTheTally(t *testing.T) {
 	for _, roomID := range parityRooms(t, database, 5) {
 		snapshotRoom(t, database, roomID)
 
-		if _, err := repository.RecomputeTotals(ctx, roomID); err != nil {
+		if _, err := repository.RecomputeTotals(ctx, Room{ID: roomID, VoteMode: VoteModeHost}); err != nil {
 			t.Fatalf("room %d: RecomputeTotals() error = %v", roomID, err)
 		}
 
@@ -158,7 +158,7 @@ func TestRecomputeTotalsMatchesTheTally(t *testing.T) {
 
 		compared := 0
 		for playerID, actual := range stored {
-			want := Tally(wagers[playerID], DefaultScoring())
+			want := Tally(wagers[playerID], DefaultScoring(), VoteModeHost)
 			if actual != want {
 				t.Fatalf("room %d player %d: stored %+v, Tally gives %+v", roomID, playerID, actual, want)
 			}
@@ -182,7 +182,7 @@ func TestRecomputeTotalsIsIdempotent(t *testing.T) {
 	roomID := parityRooms(t, database, 1)[0]
 	snapshotRoom(t, database, roomID)
 
-	if _, err := repository.RecomputeTotals(ctx, roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, Room{ID: roomID, VoteMode: VoteModeHost}); err != nil {
 		t.Fatalf("first RecomputeTotals() error = %v", err)
 	}
 	first, err := repository.StoredTotals(ctx, roomID)
@@ -190,7 +190,7 @@ func TestRecomputeTotalsIsIdempotent(t *testing.T) {
 		t.Fatalf("StoredTotals() error = %v", err)
 	}
 
-	if _, err := repository.RecomputeTotals(ctx, roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, Room{ID: roomID, VoteMode: VoteModeHost}); err != nil {
 		t.Fatalf("second RecomputeTotals() error = %v", err)
 	}
 	second, err := repository.StoredTotals(ctx, roomID)
@@ -353,22 +353,46 @@ func newSyntheticRoom(t *testing.T, database *sql.DB) syntheticRoom {
 		otherID:   elements[2],
 	}
 	for _, name := range []string{"winner", "loser", "abstainer"} {
-		playerResult, err := database.ExecContext(ctx,
-			`INSERT INTO game_room_users
-			 (game_room_id, anonymous_id, nickname, score, `+"`rank`"+`, accuracy, combo,
-			  total_played, total_correct, created_at, updated_at)
-			 VALUES (?, ?, ?, 0, 0, 0, 0, 0, 0, NOW(), NOW())`,
-			roomID, "anon-"+name+"-"+serial, name)
-		if err != nil {
-			t.Fatalf("insert player %s: %v", name, err)
-		}
-		playerID, err := playerResult.LastInsertId()
-		if err != nil {
-			t.Fatalf("player id for %s: %v", name, err)
-		}
-		room.playerIDs[name] = playerID
+		room.seat(t, database, name)
 	}
 	return room
+}
+
+// seat adds one participant. Separate from newSyntheticRoom because a majority round is
+// only interesting with more players than three.
+func (room syntheticRoom) seat(t *testing.T, database *sql.DB, name string) int64 {
+	t.Helper()
+	result, err := database.ExecContext(context.Background(),
+		`INSERT INTO game_room_users
+		 (game_room_id, anonymous_id, nickname, score, `+"`rank`"+`, accuracy, combo,
+		  total_played, total_correct, created_at, updated_at)
+		 VALUES (?, ?, ?, 0, 0, 0, 0, 0, 0, NOW(), NOW())`,
+		room.roomID, "anon-"+name+"-"+room.serial, name)
+	if err != nil {
+		t.Fatalf("insert player %s: %v", name, err)
+	}
+	playerID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatalf("player id for %s: %v", name, err)
+	}
+	room.playerIDs[name] = playerID
+	return playerID
+}
+
+// hostRoom is the fixture as the worker would have resolved it: the default rules.
+func (room syntheticRoom) hostRoom() Room {
+	return Room{ID: room.roomID, Serial: room.serial, VoteMode: VoteModeHost}
+}
+
+// majorityRoom switches the room to deciding its own rounds, in the database and in the
+// value the worker would have read.
+func (room syntheticRoom) majorityRoom(t *testing.T, database *sql.DB) Room {
+	t.Helper()
+	if _, err := database.ExecContext(context.Background(),
+		"UPDATE game_rooms SET vote_mode = ? WHERE id = ?", VoteModeMajority, room.roomID); err != nil {
+		t.Fatalf("switch room %d to majority: %v", room.roomID, err)
+	}
+	return Room{ID: room.roomID, Serial: room.serial, VoteMode: VoteModeMajority}
 }
 
 func (room syntheticRoom) placeBet(
@@ -439,7 +463,7 @@ func TestSettleThenRefreshProducesTheExpectedLeaderboard(t *testing.T) {
 		t.Fatalf("settled %+v, want one won, one lost, one discarded", settled)
 	}
 
-	if _, err := repository.RecomputeTotals(ctx, room.roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, room.hostRoom()); err != nil {
 		t.Fatalf("RecomputeTotals() error = %v", err)
 	}
 	if _, err := repository.AssignRanks(ctx, room.roomID); err != nil {
@@ -522,7 +546,7 @@ func TestSettleBetsIsIdempotent(t *testing.T) {
 	if _, err := repository.SettleBets(ctx, outcome); err != nil {
 		t.Fatalf("first SettleBets() error = %v", err)
 	}
-	if _, err := repository.RecomputeTotals(ctx, room.roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, room.hostRoom()); err != nil {
 		t.Fatalf("first RecomputeTotals() error = %v", err)
 	}
 	first, err := repository.StoredTotals(ctx, room.roomID)
@@ -533,7 +557,7 @@ func TestSettleBetsIsIdempotent(t *testing.T) {
 	if _, err := repository.SettleBets(ctx, outcome); err != nil {
 		t.Fatalf("second SettleBets() error = %v", err)
 	}
-	if _, err := repository.RecomputeTotals(ctx, room.roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, room.hostRoom()); err != nil {
 		t.Fatalf("second RecomputeTotals() error = %v", err)
 	}
 	second, err := repository.StoredTotals(ctx, room.roomID)
@@ -561,7 +585,7 @@ func TestRecomputeTotalsGivesNonBettorsTheStartingScore(t *testing.T) {
 	ctx := context.Background()
 
 	room := newSyntheticRoom(t, database)
-	if _, err := repository.RecomputeTotals(ctx, room.roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, room.hostRoom()); err != nil {
 		t.Fatalf("RecomputeTotals() error = %v", err)
 	}
 
@@ -610,7 +634,7 @@ func TestRecomputeTotalsIgnoresUnsettledWagers(t *testing.T) {
 	// Placed but never settled: no vote runs in this test.
 	room.placeBet(t, database, "winner", room.winnerID, room.loserID, 1, 4, 8, 3)
 
-	if _, err := repository.RecomputeTotals(ctx, room.roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, room.hostRoom()); err != nil {
 		t.Fatalf("RecomputeTotals() error = %v", err)
 	}
 
@@ -634,7 +658,7 @@ func TestRecomputeTotalsIgnoresUnsettledWagers(t *testing.T) {
 		t.Fatalf("the pending wager should still be readable, got %d rows",
 			len(wagers[room.playerIDs["winner"]]))
 	}
-	if oracle := Tally(wagers[room.playerIDs["winner"]], scoring); oracle != want {
+	if oracle := Tally(wagers[room.playerIDs["winner"]], scoring, VoteModeHost); oracle != want {
 		t.Fatalf("Tally gives %+v, want %+v", oracle, want)
 	}
 }
@@ -664,7 +688,7 @@ func TestRecomputeTotalsKeepsTheStreakAcrossAPendingWager(t *testing.T) {
 	// Then a wager on the next round, not yet decided.
 	room.placeBet(t, database, "winner", room.winnerID, room.loserID, 5, 4, 4, 0)
 
-	if _, err := repository.RecomputeTotals(ctx, room.roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, room.hostRoom()); err != nil {
 		t.Fatalf("RecomputeTotals() error = %v", err)
 	}
 	stored, err := repository.StoredTotals(ctx, room.roomID)
@@ -713,7 +737,7 @@ func TestTheComboBonusIgnoresWhenWagersWerePlaced(t *testing.T) {
 		}
 	}
 
-	if _, err := repository.RecomputeTotals(ctx, room.roomID); err != nil {
+	if _, err := repository.RecomputeTotals(ctx, room.hostRoom()); err != nil {
 		t.Fatalf("RecomputeTotals() error = %v", err)
 	}
 	stored, err := repository.StoredTotals(ctx, room.roomID)
@@ -854,5 +878,193 @@ func TestSettlingOutOfOrderDoesNotEatAnEarlierRoundsWager(t *testing.T) {
 	}
 	if settled != 2 {
 		t.Errorf("%d wagers settled, want both", settled)
+	}
+}
+
+// A round the ROOM decided pays by how the room split, the same magnitude either way.
+//
+// Seven of ten back the winning side, so the round pays 17 — the rule as the feature was
+// asked for. The majority ends on 1017 and the minority on 983, and the number is written
+// into the wager rows because nothing downstream can re-derive it: the split is a fact
+// about the round, not about any one player's wagers.
+func TestSettleInAMajorityRoomPaysBothSidesBySplit(t *testing.T) {
+	database := testDatabase(t)
+	scoring := DefaultScoring()
+	repository := NewMySQLRepository(database, scoring)
+	ctx := context.Background()
+
+	room := newSyntheticRoom(t, database)
+	majority := room.majorityRoom(t, database)
+
+	const (
+		currentRound = 3
+		ofRound      = 4
+		placedAt     = 8
+		afterVote    = 7
+		payout       = 17
+	)
+
+	var backers, dissenters []string
+	for index := 1; index <= 7; index++ {
+		name := fmt.Sprintf("majority-%d", index)
+		room.seat(t, database, name)
+		room.placeBet(t, database, name, room.winnerID, room.loserID,
+			currentRound, ofRound, placedAt, 0)
+		backers = append(backers, name)
+	}
+	for index := 1; index <= 3; index++ {
+		name := fmt.Sprintf("minority-%d", index)
+		room.seat(t, database, name)
+		room.placeBet(t, database, name, room.loserID, room.winnerID,
+			currentRound, ofRound, placedAt, 0)
+		dissenters = append(dissenters, name)
+	}
+
+	settled, err := repository.SettleBets(ctx, BetOutcome{
+		RoomID:         room.roomID,
+		WinnerID:       room.winnerID,
+		LoserID:        room.loserID,
+		CurrentRound:   currentRound,
+		OfRound:        ofRound,
+		RemainElements: afterVote,
+		VoteMode:       VoteModeMajority,
+	})
+	if err != nil {
+		t.Fatalf("SettleBets() error = %v", err)
+	}
+	if settled.Won != 7 || settled.Lost != 3 {
+		t.Fatalf("settled %+v, want seven won and three lost", settled)
+	}
+
+	// The rows carry the payout, both signs of it.
+	wagers, err := repository.BetsByPlayer(ctx, room.roomID)
+	if err != nil {
+		t.Fatalf("BetsByPlayer() error = %v", err)
+	}
+	for _, name := range backers {
+		rows := wagers[room.playerIDs[name]]
+		if len(rows) != 1 || rows[0].Score != payout {
+			t.Fatalf("%s wager rows = %+v, want one row scoring %d", name, rows, payout)
+		}
+	}
+	for _, name := range dissenters {
+		rows := wagers[room.playerIDs[name]]
+		if len(rows) != 1 || rows[0].Score != -payout {
+			t.Fatalf("%s wager rows = %+v, want one row scoring %d", name, rows, -payout)
+		}
+	}
+
+	if _, err := repository.RecomputeTotals(ctx, majority); err != nil {
+		t.Fatalf("RecomputeTotals() error = %v", err)
+	}
+	stored, err := repository.StoredTotals(ctx, room.roomID)
+	if err != nil {
+		t.Fatalf("StoredTotals() error = %v", err)
+	}
+
+	wantBacker := Totals{
+		Score: scoring.DefaultScore + payout, Combo: 0,
+		TotalPlayed: 1, TotalCorrect: 1, AccuracyHundredths: 10000,
+	}
+	wantDissenter := Totals{
+		Score: scoring.DefaultScore - payout, Combo: 0,
+		TotalPlayed: 1, TotalCorrect: 0, AccuracyHundredths: 0,
+	}
+	for _, name := range backers {
+		if got := stored[room.playerIDs[name]]; got != wantBacker {
+			t.Fatalf("%s got %+v, want %+v", name, got, wantBacker)
+		}
+	}
+	for _, name := range dissenters {
+		if got := stored[room.playerIDs[name]]; got != wantDissenter {
+			t.Fatalf("%s got %+v, want %+v", name, got, wantDissenter)
+		}
+	}
+	// The three seated by the fixture never wagered, so they hold the starting score —
+	// the LEFT JOIN survives in the majority statement too.
+	for _, name := range []string{"winner", "loser", "abstainer"} {
+		if got := stored[room.playerIDs[name]]; got.Score != scoring.DefaultScore {
+			t.Fatalf("%s never bet but got %+v", name, got)
+		}
+	}
+
+	// And the oracle agrees, which is what makes the statement and Tally one rule rather
+	// than two that match today.
+	for playerID, actual := range stored {
+		if want := Tally(wagers[playerID], scoring, VoteModeMajority); actual != want {
+			t.Fatalf("player %d: stored %+v, Tally gives %+v", playerID, actual, want)
+		}
+	}
+
+	// A redelivered settle recounts the same rows and writes the same magnitude, so
+	// nobody moves. The counts do not depend on won_at, which is what makes that true.
+	if _, err := repository.SettleBets(ctx, BetOutcome{
+		RoomID: room.roomID, WinnerID: room.winnerID, LoserID: room.loserID,
+		CurrentRound: currentRound, OfRound: ofRound, RemainElements: afterVote,
+		VoteMode: VoteModeMajority,
+	}); err != nil {
+		t.Fatalf("second SettleBets() error = %v", err)
+	}
+	if _, err := repository.RecomputeTotals(ctx, majority); err != nil {
+		t.Fatalf("second RecomputeTotals() error = %v", err)
+	}
+	again, err := repository.StoredTotals(ctx, room.roomID)
+	if err != nil {
+		t.Fatalf("StoredTotals() error = %v", err)
+	}
+	for playerID, before := range stored {
+		if again[playerID] != before {
+			t.Fatalf("player %d drifted on redelivery: %+v then %+v",
+				playerID, before, again[playerID])
+		}
+	}
+}
+
+// NO COMBO IN A MAJORITY ROOM. Two rounds on the winning side pay the same magnitude
+// twice, where host rules would have paid the second one a streak bonus.
+//
+// Two of three back the winner each round, which pays 17, so the taste score lands on
+// 1034 with the combo at zero. The same two outcomes under host rules give 1030 and a
+// combo of two — the numbers differ, so this cannot pass by accident.
+func TestMajorityRoomsPayNoComboBonus(t *testing.T) {
+	database := testDatabase(t)
+	scoring := DefaultScoring()
+	repository := NewMySQLRepository(database, scoring)
+	ctx := context.Background()
+
+	room := newSyntheticRoom(t, database)
+	majority := room.majorityRoom(t, database)
+	room.seat(t, database, "ally")
+
+	for round, remaining := 1, 8; round <= 2; round, remaining = round+1, remaining-1 {
+		room.placeBet(t, database, "winner", room.winnerID, room.loserID, round, 4, remaining, 0)
+		room.placeBet(t, database, "ally", room.winnerID, room.loserID, round, 4, remaining, 0)
+		room.placeBet(t, database, "loser", room.loserID, room.winnerID, round, 4, remaining, 0)
+		if _, err := repository.SettleBets(ctx, BetOutcome{
+			RoomID: room.roomID, WinnerID: room.winnerID, LoserID: room.loserID,
+			CurrentRound: round, OfRound: 4, RemainElements: remaining - 1,
+			VoteMode: VoteModeMajority,
+		}); err != nil {
+			t.Fatalf("settle round %d: %v", round, err)
+		}
+	}
+
+	if _, err := repository.RecomputeTotals(ctx, majority); err != nil {
+		t.Fatalf("RecomputeTotals() error = %v", err)
+	}
+	stored, err := repository.StoredTotals(ctx, room.roomID)
+	if err != nil {
+		t.Fatalf("StoredTotals() error = %v", err)
+	}
+
+	// 1000 + 17 + 17, and no streak.
+	want := Totals{Score: 1034, Combo: 0, TotalPlayed: 2, TotalCorrect: 2, AccuracyHundredths: 10000}
+	if got := stored[room.playerIDs["winner"]]; got != want {
+		t.Fatalf("got %+v, want %+v — a taste score pays no streak bonus", got, want)
+	}
+	// The minority pays the same magnitude twice: 1000 - 34.
+	wantLoser := Totals{Score: 966, Combo: 0, TotalPlayed: 2, TotalCorrect: 0, AccuracyHundredths: 0}
+	if got := stored[room.playerIDs["loser"]]; got != wantLoser {
+		t.Fatalf("the minority got %+v, want %+v", got, wantLoser)
 	}
 }

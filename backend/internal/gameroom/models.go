@@ -50,10 +50,15 @@ const (
 )
 
 // Room is the minimum a handler needs: the id for queries, the serial for the
-// broadcast channel and the lock key.
+// broadcast channel and the lock key, and the rules the room scores by.
 type Room struct {
 	ID     int64
 	Serial string
+	// VoteMode is the room's own game_rooms.vote_mode, VoteModeHost or
+	// VoteModeMajority. It decides what a round pays, so both the settlement and the
+	// recompute need it; see MajorityPayout. Empty means the column has not been read,
+	// which the scoring treats as VoteModeHost — the default every room already had.
+	VoteMode string
 }
 
 // BetOutcome is the round a vote just decided.
@@ -62,6 +67,11 @@ type Room struct {
 // carries. The wagers being settled were placed when one more element was still in
 // play, so the repository matches on RemainElements+1. Preserved from
 // GameService::updateGameBet, where the +1 is applied inline.
+//
+// VoteMode is the room's mode at the moment of settlement, which is the rule this round
+// is paid by: a host-decided round pays the streak bonus, a majority round pays by how
+// the room split. Carried on the round rather than looked up again so the two statements
+// inside one settlement cannot disagree about which rules they are applying.
 type BetOutcome struct {
 	RoomID         int64
 	WinnerID       int64
@@ -69,6 +79,7 @@ type BetOutcome struct {
 	CurrentRound   int
 	OfRound        int
 	RemainElements int
+	VoteMode       string
 }
 
 // SettleResult reports what one settlement changed, for the log.
@@ -90,8 +101,9 @@ type Repository interface {
 	// wagers that round left unresolved.
 	SettleBets(ctx context.Context, outcome BetOutcome) (SettleResult, error)
 	// RecomputeTotals rebuilds score, combo, accuracy and the played counters for
-	// every player in the room.
-	RecomputeTotals(ctx context.Context, roomID int64) (int64, error)
+	// every player in the room. It takes the whole Room rather than the id because how a
+	// round pays depends on the room's vote mode.
+	RecomputeTotals(ctx context.Context, room Room) (int64, error)
 	// AssignRanks numbers the room 1..N by score.
 	AssignRanks(ctx context.Context, roomID int64) (int64, error)
 	// Leaderboard reads the payload the room subscribes to.

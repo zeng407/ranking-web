@@ -2543,7 +2543,7 @@ function preferredRankImage(report: RankReport): string | null {
               <li>{{ t('roomModeMajorityTimer') }}</li>
               <li>{{ t('roomBoardPopular') }}</li>
               <li>{{ t('roomBoardUnique') }}</li>
-              <li>{{ t('roomModePoints') }}</li>
+              <li>{{ t('roomModeMajorityShare') }}</li>
             </ul>
           </button>
         </div>

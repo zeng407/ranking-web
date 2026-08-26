@@ -12,7 +12,7 @@ func TestTallySumsEverySettledWager(t *testing.T) {
 		{ID: 2, LastCombo: 1, Score: 20, Won: true, Settled: true},
 		{ID: 3, LastCombo: 2, Score: -10, Won: false, Settled: true},
 		{ID: 4, LastCombo: 0, Score: 10, Won: true, Settled: true},
-	}, scoring)
+	}, scoring, VoteModeHost)
 
 	if totals.Score != 1030 {
 		t.Errorf("Score = %d, want 1030 (1000 + 10 + 20 - 10 + 10)", totals.Score)
@@ -41,7 +41,7 @@ func TestTallyAbsorbsEveryWagerSettledSinceTheLastRun(t *testing.T) {
 	}
 
 	// Simulates twelve votes whose refreshes all collapsed into one run.
-	totals := Tally(bets, scoring)
+	totals := Tally(bets, scoring, VoteModeHost)
 	if totals.TotalPlayed != 12 {
 		t.Fatalf("TotalPlayed = %d, want 12; the recompute must not stop after one wager", totals.TotalPlayed)
 	}
@@ -65,8 +65,8 @@ func TestTallyIsIdempotent(t *testing.T) {
 		{ID: 1, Won: true, Settled: true},
 		{ID: 2, Won: false, Settled: true},
 	}
-	first := Tally(bets, scoring)
-	second := Tally(bets, scoring)
+	first := Tally(bets, scoring, VoteModeHost)
+	second := Tally(bets, scoring, VoteModeHost)
 	if first != second {
 		t.Fatalf("Tally is not idempotent: %+v then %+v", first, second)
 	}
@@ -84,7 +84,7 @@ func TestTallyComboFollowsTheNewestWager(t *testing.T) {
 		{ID: 3, Won: true, Settled: true},
 		{ID: 4, Won: true, Settled: true},
 		{ID: 5, Won: true, Settled: true},
-	}, scoring)
+	}, scoring, VoteModeHost)
 	if won.Combo != 4 {
 		t.Errorf("Combo after four consecutive wins = %d, want 4", won.Combo)
 	}
@@ -97,7 +97,7 @@ func TestTallyComboFollowsTheNewestWager(t *testing.T) {
 		{ID: 1, Won: true, Settled: true},
 		{ID: 2, Won: true, Settled: true},
 		{ID: 3, Won: false, Settled: true},
-	}, scoring)
+	}, scoring, VoteModeHost)
 	if lost.Combo != 0 {
 		t.Errorf("Combo after a loss = %d, want 0", lost.Combo)
 	}
@@ -105,7 +105,7 @@ func TestTallyComboFollowsTheNewestWager(t *testing.T) {
 
 func TestTallyWithNoWagersReturnsTheStartingScore(t *testing.T) {
 	scoring := DefaultScoring()
-	totals := Tally(nil, scoring)
+	totals := Tally(nil, scoring, VoteModeHost)
 	if totals.Score != scoring.DefaultScore {
 		t.Errorf("Score = %d, want %d", totals.Score, scoring.DefaultScore)
 	}
@@ -212,7 +212,7 @@ func TestTallyIgnoresUnsettledWagers(t *testing.T) {
 		{ID: 1, LastCombo: 0, Score: 10, Won: true, Settled: true},
 		// Placed, not yet decided.
 		{ID: 2, LastCombo: 1, Score: 0, Won: false, Settled: false},
-	}, scoring)
+	}, scoring, VoteModeHost)
 
 	if totals.TotalPlayed != 1 {
 		t.Errorf("TotalPlayed = %d, want 1: a pending wager has not been played", totals.TotalPlayed)
@@ -243,7 +243,7 @@ func TestTallyStreakIgnoresATrailingUnsettledWager(t *testing.T) {
 		{ID: 3, Won: true, Settled: true},
 		{ID: 4, Won: true, Settled: true},
 		{ID: 5, Won: false, Settled: false},
-	}, scoring)
+	}, scoring, VoteModeHost)
 
 	if totals.Combo != 4 {
 		t.Errorf("Combo = %d, want 4: a pending wager must not break the streak", totals.Combo)
@@ -258,10 +258,97 @@ func TestTallyWithOnlyUnsettledWagersIsAFreshPlayer(t *testing.T) {
 	totals := Tally([]Bet{
 		{ID: 1, LastCombo: 0, Score: 0, Won: false, Settled: false},
 		{ID: 2, LastCombo: 0, Score: 0, Won: false, Settled: false},
-	}, scoring)
+	}, scoring, VoteModeHost)
 
 	want := Totals{Score: scoring.DefaultScore}
 	if totals != want {
 		t.Errorf("got %+v, want %+v", totals, want)
+	}
+}
+
+// The payout curve for a room that decides its own rounds. WonScore is 10, so the
+// magnitude runs from 10 at a wipeout against the winning side to 20 at a unanimous
+// round, and the user-facing rule — a 70% majority pays 17 — is the middle of it.
+func TestMajorityPayoutScalesWithTheRoomsSplit(t *testing.T) {
+	scoring := DefaultScoring()
+	tests := []struct {
+		winner, total, want int
+		note                string
+	}{
+		{7, 10, 17, "70% majority, the rule as stated"},
+		{5, 10, 15, "an even split, which is what a coin-tossed tie is"},
+		{8, 10, 18, "80%"},
+		{9, 10, 19, "90%"},
+		{10, 10, 20, "unanimous"},
+		{0, 10, 10, "nobody backed the winning side, so only the flat part is paid"},
+		{2, 3, 17, "66.67% -> 16.67 -> 17"},
+		{1, 3, 13, "33.33% -> 13.33 -> 13"},
+		{3, 4, 18, "75% lands on 17.5 exactly and rounds away from zero"},
+		{15, 20, 18, "the same half, reached with more voters"},
+		{1, 1, 20, "one voter is a unanimous room"},
+		{0, 0, 0, "a round nobody wagered on pays nothing"},
+	}
+	for _, test := range tests {
+		if got := MajorityPayout(test.winner, test.total, scoring); got != test.want {
+			t.Errorf("MajorityPayout(%d, %d) = %d, want %d (%s)",
+				test.winner, test.total, got, test.want, test.note)
+		}
+	}
+}
+
+// In a majority room the row's score IS the payout, because the magnitude depends on how
+// the whole room split and no single player's wagers can show that. The streak is not
+// scored and not displayed.
+func TestTallyInAMajorityRoomSumsWhatTheRoundsPaid(t *testing.T) {
+	scoring := DefaultScoring()
+	totals := Tally([]Bet{
+		// A 70% majority, then a unanimous round this player was alone against, then a
+		// tie the coin toss went their way on.
+		{ID: 1, Score: 17, Won: true, Settled: true},
+		{ID: 2, Score: -20, Won: false, Settled: true},
+		// LastCombo is deliberately non-zero: two wins in a row pay no bonus here.
+		{ID: 3, LastCombo: 5, Score: 15, Won: true, Settled: true},
+		// Placed, not yet decided.
+		{ID: 4, Score: 0, Won: false, Settled: false},
+	}, scoring, VoteModeMajority)
+
+	if want := scoring.DefaultScore + 17 - 20 + 15; totals.Score != want {
+		t.Errorf("Score = %d, want %d (the sum of what each round paid)", totals.Score, want)
+	}
+	if totals.Combo != 0 {
+		t.Errorf("Combo = %d, want 0: a taste score has no streak bonus to display", totals.Combo)
+	}
+	if totals.TotalPlayed != 3 || totals.TotalCorrect != 2 {
+		t.Errorf("played/correct = %d/%d, want 3/2", totals.TotalPlayed, totals.TotalCorrect)
+	}
+	// 2 of 3, which reads as how often this player sided with the room.
+	if totals.AccuracyHundredths != 6667 {
+		t.Errorf("AccuracyHundredths = %d, want 6667", totals.AccuracyHundredths)
+	}
+}
+
+// The same wagers under the two modes must not agree, or the mode argument is being
+// ignored somewhere.
+func TestTallyReadsTheSameWagersDifferentlyByMode(t *testing.T) {
+	scoring := DefaultScoring()
+	bets := []Bet{
+		{ID: 1, LastCombo: 0, Score: 17, Won: true, Settled: true},
+		{ID: 2, LastCombo: 1, Score: 18, Won: true, Settled: true},
+	}
+
+	host := Tally(bets, scoring, VoteModeHost)
+	if want := scoring.DefaultScore + 10 + 20; host.Score != want {
+		t.Errorf("host Score = %d, want %d: derived from the outcomes", host.Score, want)
+	}
+	if host.Combo != 2 {
+		t.Errorf("host Combo = %d, want 2", host.Combo)
+	}
+
+	majority := Tally(bets, scoring, VoteModeMajority)
+	if want := scoring.DefaultScore + 17 + 18; majority.Score != want {
+		t.Errorf("majority Score = %d, want %d: read from the rows", majority.Score, want)
+	}
+	if majority.Combo != 0 {
+		t.Errorf("majority Combo = %d, want 0", majority.Combo)
 	}
 }

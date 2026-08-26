@@ -281,6 +281,7 @@ func (service *Service) handleSettle(ctx context.Context, message queue.Message)
 		CurrentRound:   payload.CurrentRound,
 		OfRound:        payload.OfRound,
 		RemainElements: payload.RemainElements,
+		VoteMode:       room.VoteMode,
 	})
 	if err != nil {
 		return err
@@ -347,7 +348,7 @@ func (service *Service) handleRefresh(ctx context.Context, message queue.Message
 	target := outstanding.Version
 
 	started := time.Now()
-	if _, err := service.repository.RecomputeTotals(ctx, room.ID); err != nil {
+	if _, err := service.repository.RecomputeTotals(ctx, room); err != nil {
 		return err
 	}
 	moved, err := service.repository.AssignRanks(ctx, room.ID)
