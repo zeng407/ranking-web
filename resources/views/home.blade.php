@@ -7,14 +7,14 @@
   @if (config('services.google_ad.enabled') && config('services.google_ad.home_page') && !is_skip_ad())
     {{-- Ads --}}
     @push('scripts')
-    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
-    <script>
+    <script data-cfasync="false" async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
+    <script data-cfasync="false">
       window.googletag = window.googletag || { cmd: [] };
 
       googletag.cmd.push(function() {
         googletag.setConfig({
           singleRequest: true,
-          collapseDiv: 'collapse'
+          collapseDiv: 'ON_NO_FILL'
         });
 
         // 2. 定義廣告版位
@@ -26,6 +26,7 @@
 
         // 3. 啟用服務
         googletag.enableServices();
+        window.__rankingWebGptServicesEnabled = true;
 
         // 4. 定時刷新廣告（refresh 會在容器就緒時自動處理，無須在此處強行呼叫 display）
         setInterval(function() {

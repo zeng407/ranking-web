@@ -12,15 +12,15 @@
   @if (config('services.google_ad.enabled') &&
           (config('services.google_ad.rank_page') || config('services.google_ad.togawa_html.enabled')) &&
           !is_skip_ad())
-  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
+  <script data-cfasync="false" async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
   @endif
   @if (config('services.google_ad.enabled') && config('services.google_ad.rank_page') && !is_skip_ad())
-  <script>
+  <script data-cfasync="false">
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
         googletag.setConfig({
           singleRequest: true,
-          collapseDiv: true
+          collapseDiv: 'ON_NO_FILL'
         });
 
         var mapping = googletag.sizeMapping()
@@ -33,6 +33,7 @@
                 .addService(googletag.pubads());
 
         googletag.enableServices();
+        window.__rankingWebGptServicesEnabled = true;
       });
   </script>
   @endif
@@ -111,9 +112,13 @@
             <!-- /23307026516/rank_page_top -->
             <div class="d-flex justify-content-center my-3 w-100 overflow-hidden">
               <div id='div-gpt-ad-1782518224225-0' style='width: 100%; max-width: 100%; min-width: 300px; min-height: 31px; display: block;'>
-                <script>
-                  window.addEventListener('load', function() {
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1782518224225-0'); });
+                <script data-cfasync="false">
+                  window.googletag = window.googletag || { cmd: [] };
+                  googletag.cmd.push(function() {
+                    var slotElement = document.getElementById('div-gpt-ad-1782518224225-0');
+                    if (slotElement) {
+                      googletag.display(slotElement);
+                    }
                   });
                 </script>
               </div>
