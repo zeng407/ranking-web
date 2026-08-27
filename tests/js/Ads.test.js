@@ -36,8 +36,10 @@ describe('GAM custom ad integration', () => {
 
     assert.match(
       gameView,
-      /<div v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250'\)/
+      /<div v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250', \['deferDisplay' => true\]\)/
     );
+    assert.match(partial, /ranking:display-togawa-ad/);
+    assert.match(partial, /var displayRequested = !deferDisplay/);
   });
 
   test('home page never refreshes the commented-out slot1', () => {
