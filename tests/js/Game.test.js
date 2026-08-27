@@ -172,7 +172,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     assert.deepEqual(dispatchedEvents, []);
     assert.equal(typeof nextTickCallback, 'function');
     nextTickCallback();
-    assert.deepEqual(dispatchedEvents, ['ranking:display-togawa-ad']);
+    assert.deepEqual(dispatchedEvents, ['ranking:game-ads-ready']);
   });
 
   test('persists an in-flight batch before HTTP and acknowledges only that snapshot', async () => {

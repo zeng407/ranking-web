@@ -113,12 +113,14 @@
               <div id='div-gpt-ad-1782518224225-0' style='width: 100%; max-width: 100%; min-width: 300px; min-height: 31px; display: block;'>
                 <script data-cfasync="false">
                   window.googletag = window.googletag || { cmd: [] };
-                  googletag.cmd.push(function() {
-                    var slotElement = document.getElementById('div-gpt-ad-1782518224225-0');
-                    if (slotElement) {
-                      googletag.display(slotElement);
-                    }
-                  });
+                  window.addEventListener('ranking:rank-ads-ready', function() {
+                    googletag.cmd.push(function() {
+                      var slotElement = document.getElementById('div-gpt-ad-1782518224225-0');
+                      if (slotElement) {
+                        googletag.display('div-gpt-ad-1782518224225-0');
+                      }
+                    });
+                  }, { once: true });
                 </script>
               </div>
             </div>
@@ -126,7 +128,7 @@
 
             @if (!$post->is_censored)
               {{-- Optional GAM custom HTML campaign placement (300x250). --}}
-              @include('ads.gam_togawa_300x250')
+              @include('ads.gam_togawa_300x250', ['displayEvent' => 'ranking:rank-ads-ready'])
             @endif
 
             {{-- Title & Description --}}
