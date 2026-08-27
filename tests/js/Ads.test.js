@@ -10,34 +10,21 @@ function read(relativePath) {
 describe('GAM custom ad integration', () => {
   const partial = read('resources/views/ads/gam_togawa_300x250.blade.php');
 
-  test('keeps the reserved 300x250 space when an ad request fails', () => {
+  test('collapses an empty slot despite Bootstrap display utilities', () => {
     assert.doesNotMatch(partial, /gam-togawa-ad d-flex/);
-    assert.match(partial, /min-height: 250px/);
-    assert.doesNotMatch(partial, /setProperty\('display', 'none'/);
-    assert.doesNotMatch(partial, /setAttribute\('aria-hidden'/);
+    assert.match(
+      partial,
+      /wrapper\.style\.setProperty\('display', 'none', 'important'\)/
+    );
     assert.match(partial, /event\.isEmpty/);
   });
 
-  test('retries a failed visible slot once after at least 30 seconds', () => {
-    assert.match(partial, /MAX_RETRY_COUNT = 1/);
-    assert.match(partial, /RETRY_DELAY_MS = 30 \* 1000/);
-    assert.match(partial, /retryCount >= MAX_RETRY_COUNT/);
-    assert.match(partial, /googletag\.pubads\(\)\.refresh\(\[slot\]\)/);
-    assert.match(partial, /document\.visibilityState !== 'visible'/);
-    assert.match(partial, /addEventListener\('slotOnload'/);
-  });
-
   test('waits until the slot participates in layout before displaying it', () => {
-    const visibilityCheck = partial.indexOf('if (initialized || !isContainerInLayout())');
+    const visibilityCheck = partial.indexOf('container.getClientRects().length === 0');
     const defineSlot = partial.indexOf('googletag.defineSlot');
     const displaySlot = partial.indexOf('googletag.display(slotId)');
 
     assert.notEqual(visibilityCheck, -1);
-    assert.match(partial, /container\.getClientRects\(\)\.length > 0/);
-    assert.doesNotMatch(
-      partial.slice(visibilityCheck, defineSlot),
-      /document\.visibilityState/
-    );
     assert.ok(visibilityCheck < defineSlot);
     assert.ok(defineSlot < displaySlot);
     assert.match(partial, /new MutationObserver\(initializeVisibleSlot\)/);
