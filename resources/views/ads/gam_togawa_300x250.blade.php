@@ -35,10 +35,9 @@
           return;
         }
 
-        function isContainerVisible() {
+        function isContainerInLayout() {
           return container.isConnected &&
-            container.getClientRects().length > 0 &&
-            document.visibilityState === 'visible';
+            container.getClientRects().length > 0;
         }
 
         function scheduleRetry(slot) {
@@ -53,7 +52,7 @@
           window.setTimeout(function() {
             retryScheduled = false;
 
-            if (!isContainerVisible()) {
+            if (!isContainerInLayout() || document.visibilityState !== 'visible') {
               return;
             }
 
@@ -65,7 +64,7 @@
         }
 
         function initializeVisibleSlot() {
-          if (initialized || !isContainerVisible()) {
+          if (initialized || !isContainerInLayout()) {
             return false;
           }
 

@@ -23,17 +23,21 @@ describe('GAM custom ad integration', () => {
     assert.match(partial, /RETRY_DELAY_MS = 30 \* 1000/);
     assert.match(partial, /retryCount >= MAX_RETRY_COUNT/);
     assert.match(partial, /googletag\.pubads\(\)\.refresh\(\[slot\]\)/);
-    assert.match(partial, /document\.visibilityState === 'visible'/);
+    assert.match(partial, /document\.visibilityState !== 'visible'/);
     assert.match(partial, /addEventListener\('slotOnload'/);
   });
 
   test('waits until the slot participates in layout before displaying it', () => {
-    const visibilityCheck = partial.indexOf('if (initialized || !isContainerVisible())');
+    const visibilityCheck = partial.indexOf('if (initialized || !isContainerInLayout())');
     const defineSlot = partial.indexOf('googletag.defineSlot');
     const displaySlot = partial.indexOf('googletag.display(slotId)');
 
     assert.notEqual(visibilityCheck, -1);
     assert.match(partial, /container\.getClientRects\(\)\.length > 0/);
+    assert.doesNotMatch(
+      partial.slice(visibilityCheck, defineSlot),
+      /document\.visibilityState/
+    );
     assert.ok(visibilityCheck < defineSlot);
     assert.ok(defineSlot < displaySlot);
     assert.match(partial, /new MutationObserver\(initializeVisibleSlot\)/);
