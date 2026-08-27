@@ -22,49 +22,15 @@
         var container = document.getElementById(slotId);
         var initialized = false;
         var visibilityObserver = null;
-        var creativeLoadTimer = null;
-        var retryScheduled = false;
-        var retryCount = 0;
-        var creativeLoaded = false;
-        var lastRequestAt = 0;
-        var MAX_RETRY_COUNT = 1;
-        var RETRY_DELAY_MS = 30 * 1000;
-        var CREATIVE_LOAD_TIMEOUT_MS = 10 * 1000;
 
         if (!container) {
           return;
         }
 
-        function isContainerInLayout() {
-          return container.isConnected &&
-            container.getClientRects().length > 0;
-        }
-
-        function scheduleRetry(slot) {
-          if (retryScheduled || retryCount >= MAX_RETRY_COUNT) {
-            return;
-          }
-
-          retryScheduled = true;
-          var elapsed = Date.now() - lastRequestAt;
-          var delay = Math.max(0, RETRY_DELAY_MS - elapsed);
-
-          window.setTimeout(function() {
-            retryScheduled = false;
-
-            if (!isContainerInLayout() || document.visibilityState !== 'visible') {
-              return;
-            }
-
-            retryCount += 1;
-            creativeLoaded = false;
-            lastRequestAt = Date.now();
-            googletag.pubads().refresh([slot]);
-          }, delay);
-        }
+        var wrapper = container.closest('.gam-togawa-ad');
 
         function initializeVisibleSlot() {
-          if (initialized || !isContainerInLayout()) {
+          if (initialized || !container.isConnected || container.getClientRects().length === 0) {
             return false;
           }
 
@@ -81,31 +47,10 @@
 
           slot.addService(googletag.pubads());
           googletag.pubads().addEventListener('slotRenderEnded', function(event) {
-            if (event.slot !== slot) {
-              return;
+            if (event.slot === slot && event.isEmpty && wrapper) {
+              wrapper.style.setProperty('display', 'none', 'important');
+              wrapper.setAttribute('aria-hidden', 'true');
             }
-
-            window.clearTimeout(creativeLoadTimer);
-
-            if (event.isEmpty) {
-              scheduleRetry(slot);
-              return;
-            }
-
-            creativeLoaded = false;
-            creativeLoadTimer = window.setTimeout(function() {
-              if (!creativeLoaded) {
-                scheduleRetry(slot);
-              }
-            }, CREATIVE_LOAD_TIMEOUT_MS);
-          });
-          googletag.pubads().addEventListener('slotOnload', function(event) {
-            if (event.slot !== slot) {
-              return;
-            }
-
-            creativeLoaded = true;
-            window.clearTimeout(creativeLoadTimer);
           });
 
           if (!window.__rankingWebGptServicesEnabled) {
@@ -113,7 +58,6 @@
             window.__rankingWebGptServicesEnabled = true;
           }
 
-          lastRequestAt = Date.now();
           googletag.display(slotId);
           return true;
         }
