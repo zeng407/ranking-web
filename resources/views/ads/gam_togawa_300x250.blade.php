@@ -22,15 +22,50 @@
         var container = document.getElementById(slotId);
         var initialized = false;
         var visibilityObserver = null;
+        var creativeLoadTimer = null;
+        var retryScheduled = false;
+        var retryCount = 0;
+        var creativeLoaded = false;
+        var lastRequestAt = 0;
+        var MAX_RETRY_COUNT = 1;
+        var RETRY_DELAY_MS = 30 * 1000;
+        var CREATIVE_LOAD_TIMEOUT_MS = 10 * 1000;
 
         if (!container) {
           return;
         }
 
-        var wrapper = container.closest('.gam-togawa-ad');
+        function isContainerVisible() {
+          return container.isConnected &&
+            container.getClientRects().length > 0 &&
+            document.visibilityState === 'visible';
+        }
+
+        function scheduleRetry(slot) {
+          if (retryScheduled || retryCount >= MAX_RETRY_COUNT) {
+            return;
+          }
+
+          retryScheduled = true;
+          var elapsed = Date.now() - lastRequestAt;
+          var delay = Math.max(0, RETRY_DELAY_MS - elapsed);
+
+          window.setTimeout(function() {
+            retryScheduled = false;
+
+            if (!isContainerVisible()) {
+              return;
+            }
+
+            retryCount += 1;
+            creativeLoaded = false;
+            lastRequestAt = Date.now();
+            googletag.pubads().refresh([slot]);
+          }, delay);
+        }
 
         function initializeVisibleSlot() {
-          if (initialized || !container.isConnected || container.getClientRects().length === 0) {
+          if (initialized || !isContainerVisible()) {
             return false;
           }
 
@@ -47,10 +82,31 @@
 
           slot.addService(googletag.pubads());
           googletag.pubads().addEventListener('slotRenderEnded', function(event) {
-            if (event.slot === slot && event.isEmpty && wrapper) {
-              wrapper.style.setProperty('display', 'none', 'important');
-              wrapper.setAttribute('aria-hidden', 'true');
+            if (event.slot !== slot) {
+              return;
             }
+
+            window.clearTimeout(creativeLoadTimer);
+
+            if (event.isEmpty) {
+              scheduleRetry(slot);
+              return;
+            }
+
+            creativeLoaded = false;
+            creativeLoadTimer = window.setTimeout(function() {
+              if (!creativeLoaded) {
+                scheduleRetry(slot);
+              }
+            }, CREATIVE_LOAD_TIMEOUT_MS);
+          });
+          googletag.pubads().addEventListener('slotOnload', function(event) {
+            if (event.slot !== slot) {
+              return;
+            }
+
+            creativeLoaded = true;
+            window.clearTimeout(creativeLoadTimer);
           });
 
           if (!window.__rankingWebGptServicesEnabled) {
@@ -58,6 +114,7 @@
             window.__rankingWebGptServicesEnabled = true;
           }
 
+          lastRequestAt = Date.now();
           googletag.display(slotId);
           return true;
         }
