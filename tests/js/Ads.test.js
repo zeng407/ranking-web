@@ -19,16 +19,16 @@ describe('GAM custom ad integration', () => {
     assert.match(partial, /event\.isEmpty/);
   });
 
-  test('waits until the slot participates in layout before displaying it', () => {
-    const visibilityCheck = partial.indexOf('container.getClientRects().length === 0');
+  test('defines and displays the custom slot directly without a visibility observer', () => {
+    const containerLookup = partial.indexOf('document.getElementById(slotId)');
     const defineSlot = partial.indexOf('googletag.defineSlot');
     const displaySlot = partial.indexOf('googletag.display(slotId)');
 
-    assert.notEqual(visibilityCheck, -1);
-    assert.ok(visibilityCheck < defineSlot);
+    assert.notEqual(containerLookup, -1);
+    assert.ok(containerLookup < defineSlot);
     assert.ok(defineSlot < displaySlot);
-    assert.match(partial, /new MutationObserver\(initializeVisibleSlot\)/);
-    assert.match(partial, /attributeFilter: \['class', 'style', 'v-cloak'\]/);
+    assert.doesNotMatch(partial, /MutationObserver/);
+    assert.doesNotMatch(partial, /getClientRects/);
   });
 
   test('game page keeps the custom slot behind its game-ready visibility condition', () => {
