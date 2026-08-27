@@ -28,11 +28,7 @@
         googletag.enableServices();
         window.__rankingWebGptServicesEnabled = true;
 
-        // 4. 定時刷新廣告（refresh 會在容器就緒時自動處理，無須在此處強行呼叫 display）
-        setInterval(function() {
-          googletag.pubads().refresh([slot1]);
-        }, 30 * 1000);
-
+        // 4. 定時刷新已定義的右側廣告。
         setInterval(function() {
           googletag.pubads().refresh([slot2]);
         }, 30 * 1000);
