@@ -19,7 +19,6 @@
     window.googletag = window.googletag || {cmd: []};
     googletag.cmd.push(function() {
         googletag.setConfig({
-          singleRequest: true,
           collapseDiv: 'ON_NO_FILL'
         });
 

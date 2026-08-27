@@ -46,4 +46,13 @@ describe('GAM custom ad integration', () => {
     assert.doesNotMatch(homeView, /refresh\(\[slot1\]\)/);
     assert.match(homeView, /refresh\(\[slot2\]\)/);
   });
+
+  test('rank page keeps independently displayed slots out of SRA', () => {
+    const rankView = read('resources/views/game/rank.blade.php');
+
+    assert.doesNotMatch(rankView, /singleRequest\s*:\s*true/);
+    assert.match(rankView, /collapseDiv\s*:\s*'ON_NO_FILL'/);
+    assert.match(rankView, /googletag\.display\(slotElement\)/);
+    assert.match(rankView, /@include\('ads\.gam_togawa_300x250'\)/);
+  });
 });
