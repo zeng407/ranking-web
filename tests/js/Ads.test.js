@@ -31,15 +31,12 @@ describe('GAM custom ad integration', () => {
     assert.doesNotMatch(partial, /getClientRects/);
   });
 
-  test('game page keeps the custom slot behind its game-ready visibility condition', () => {
+  test('game page displays the custom slot directly like the home page', () => {
     const gameView = read('resources/views/game/show.blade.php');
 
-    assert.match(
-      gameView,
-      /<div v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250', \['displayEvent' => 'ranking:game-ads-ready'\]\)/
-    );
-    assert.match(partial, /window\.addEventListener\(displayEvent, requestDisplay/);
-    assert.match(partial, /var displayRequested = !displayEvent/);
+    assert.match(gameView, /@include\('ads\.gam_togawa_300x250'\)/);
+    assert.doesNotMatch(gameView, /v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250'/);
+    assert.doesNotMatch(gameView, /ranking:game-ads-ready/);
   });
 
   test('home page never refreshes the commented-out slot1', () => {
@@ -54,11 +51,8 @@ describe('GAM custom ad integration', () => {
 
     assert.doesNotMatch(rankView, /singleRequest\s*:\s*true/);
     assert.match(rankView, /collapseDiv\s*:\s*'ON_NO_FILL'/);
-    assert.match(rankView, /ranking:rank-ads-ready/);
+    assert.doesNotMatch(rankView, /ranking:rank-ads-ready/);
     assert.match(rankView, /googletag\.display\('div-gpt-ad-1782518224225-0'\)/);
-    assert.match(
-      rankView,
-      /@include\('ads\.gam_togawa_300x250', \['displayEvent' => 'ranking:rank-ads-ready'\]\)/
-    );
+    assert.match(rankView, /@include\('ads\.gam_togawa_300x250'\)/);
   });
 });
