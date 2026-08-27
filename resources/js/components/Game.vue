@@ -2344,7 +2344,7 @@ export default {
       }
 
       const displayAd = () => {
-        window.dispatchEvent(new Event('ranking:display-togawa-ad'));
+        window.dispatchEvent(new Event('ranking:game-ads-ready'));
       };
 
       if (typeof this.$nextTick === 'function') {

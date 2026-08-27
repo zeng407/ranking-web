@@ -36,10 +36,10 @@ describe('GAM custom ad integration', () => {
 
     assert.match(
       gameView,
-      /<div v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250', \['deferDisplay' => true\]\)/
+      /<div v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250', \['displayEvent' => 'ranking:game-ads-ready'\]\)/
     );
-    assert.match(partial, /ranking:display-togawa-ad/);
-    assert.match(partial, /var displayRequested = !deferDisplay/);
+    assert.match(partial, /window\.addEventListener\(displayEvent, requestDisplay/);
+    assert.match(partial, /var displayRequested = !displayEvent/);
   });
 
   test('home page never refreshes the commented-out slot1', () => {
@@ -54,7 +54,11 @@ describe('GAM custom ad integration', () => {
 
     assert.doesNotMatch(rankView, /singleRequest\s*:\s*true/);
     assert.match(rankView, /collapseDiv\s*:\s*'ON_NO_FILL'/);
-    assert.match(rankView, /googletag\.display\(slotElement\)/);
-    assert.match(rankView, /@include\('ads\.gam_togawa_300x250'\)/);
+    assert.match(rankView, /ranking:rank-ads-ready/);
+    assert.match(rankView, /googletag\.display\('div-gpt-ad-1782518224225-0'\)/);
+    assert.match(
+      rankView,
+      /@include\('ads\.gam_togawa_300x250', \['displayEvent' => 'ranking:rank-ads-ready'\]\)/
+    );
   });
 });

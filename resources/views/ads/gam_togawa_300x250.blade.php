@@ -1,7 +1,7 @@
 @php
   $togawaAdUnit = config('services.google_ad.togawa_html.ad_unit');
   $togawaSlotId = 'div-gpt-ad-togawa-300x250';
-  $deferTogawaDisplay = $deferDisplay ?? false;
+  $togawaDisplayEvent = $displayEvent ?? null;
 @endphp
 
 @if (config('services.google_ad.enabled') &&
@@ -20,8 +20,8 @@
       window.googletag = window.googletag || { cmd: [] };
       (function() {
         var slotId = @json($togawaSlotId);
-        var deferDisplay = @json($deferTogawaDisplay);
-        var displayRequested = !deferDisplay;
+        var displayEvent = @json($togawaDisplayEvent);
+        var displayRequested = !displayEvent;
         var displaySlot = null;
 
         function requestDisplay() {
@@ -31,8 +31,8 @@
           }
         }
 
-        if (deferDisplay) {
-          window.addEventListener('ranking:display-togawa-ad', requestDisplay, { once: true });
+        if (displayEvent) {
+          window.addEventListener(displayEvent, requestDisplay, { once: true });
         }
 
         googletag.cmd.push(function() {

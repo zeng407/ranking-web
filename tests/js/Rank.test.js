@@ -66,6 +66,30 @@ describe('Rank.vue local results', { concurrency: false }, () => {
   beforeEach(() => {
     global.localStorage = createMemoryStorage();
     global.sessionStorage = createMemoryStorage();
+    delete global.window;
+  });
+
+  test('requests rank ads only after Vue finishes rendering the component', () => {
+    const dispatchedEvents = [];
+    let nextTickCallback = null;
+    global.window = {
+      dispatchEvent(event) {
+        dispatchedEvents.push(event.type);
+      },
+    };
+
+    const vm = createRankVm({
+      $nextTick(callback) {
+        nextTickCallback = callback;
+      },
+    });
+
+    vm.requestRankAdsDisplay();
+
+    assert.deepEqual(dispatchedEvents, []);
+    assert.equal(typeof nextTickCallback, 'function');
+    nextTickCallback();
+    assert.deepEqual(dispatchedEvents, ['ranking:rank-ads-ready']);
   });
 
   test('loads the dedicated completed result before the legacy game state', () => {

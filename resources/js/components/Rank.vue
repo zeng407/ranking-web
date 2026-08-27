@@ -20,6 +20,7 @@ export default {
     this.initChart();
     this.enableTooltip();
     window.addEventListener('scroll', this.handleScroll);
+    this.requestRankAdsDisplay();
   },
   beforeDestroy() {
     window.removeEventListener('scroll', this.handleScroll);
@@ -159,6 +160,21 @@ export default {
     },
   },
   methods: {
+    requestRankAdsDisplay() {
+      if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') {
+        return;
+      }
+
+      const displayAds = () => {
+        window.dispatchEvent(new Event('ranking:rank-ads-ready'));
+      };
+
+      if (typeof this.$nextTick === 'function') {
+        this.$nextTick(displayAds);
+      } else {
+        displayAds();
+      }
+    },
     loadRankFromLocal() {
       // 本地完成的結果使用獨立 key，避免為了顯示排行榜而保留一局「未完成」的遊戲。
       // gamestate 作為舊資料與進行中遊戲的相容 fallback。
