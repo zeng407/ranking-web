@@ -3601,12 +3601,32 @@ export default {
         }
       } catch (e) { }
     },
+    loadTogawaAd() {
+      if (!this.game || typeof window === 'undefined' || !window.googletag) {
+        return;
+      }
+
+      window.googletag.cmd = window.googletag.cmd || [];
+      window.googletag.cmd.push(() => {
+        const slotId = 'div-gpt-ad-togawa-300x250';
+        const container = document.getElementById(slotId);
+
+        if (!container || container.dataset.gptDisplayed === 'true') {
+          return;
+        }
+
+        window.googletag.display(slotId);
+        container.dataset.gptDisplayed = 'true';
+      });
+    },
     startAdRefreshTimer() {
       if (this.adRefreshInterval !== null) return;
 
       // 第一個對戰畫面出現時只載入廣告，不做重新掛載；之後固定每 30 秒刷新。
       const loadInitialAds = () => {
-        if (this.game) this.loadGoogleAds();
+        if (!this.game) return;
+        this.loadTogawaAd();
+        this.loadGoogleAds();
       };
       if (typeof this.$nextTick === 'function') {
         this.$nextTick(loadInitialAds);
