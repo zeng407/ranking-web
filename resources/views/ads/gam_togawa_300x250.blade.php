@@ -1,6 +1,7 @@
 @php
   $togawaAdUnit = config('services.google_ad.togawa_html.ad_unit');
   $togawaSlotId = 'div-gpt-ad-togawa-300x250';
+  $deferTogawaDisplay = $deferDisplay ?? false;
 @endphp
 
 @if (config('services.google_ad.enabled') &&
@@ -17,36 +18,62 @@
   @push('scripts')
     <script data-cfasync="false">
       window.googletag = window.googletag || { cmd: [] };
-      googletag.cmd.push(function() {
+      (function() {
         var slotId = @json($togawaSlotId);
-        var container = document.getElementById(slotId);
+        var deferDisplay = @json($deferTogawaDisplay);
+        var displayRequested = !deferDisplay;
+        var displaySlot = null;
 
-        if (!container) {
-          return;
+        function requestDisplay() {
+          displayRequested = true;
+          if (displaySlot) {
+            displaySlot();
+          }
         }
 
-        var wrapper = container.closest('.gam-togawa-ad');
-        var slot = googletag.defineSlot(@json($togawaAdUnit), [300, 250], slotId);
-
-        if (!slot) {
-          return;
+        if (deferDisplay) {
+          window.addEventListener('ranking:display-togawa-ad', requestDisplay, { once: true });
         }
 
-        slot.addService(googletag.pubads());
-        googletag.pubads().addEventListener('slotRenderEnded', function(event) {
-          if (event.slot === slot && event.isEmpty && wrapper) {
-            wrapper.style.setProperty('display', 'none', 'important');
-            wrapper.setAttribute('aria-hidden', 'true');
+        googletag.cmd.push(function() {
+          var container = document.getElementById(slotId);
+
+          if (!container) {
+            return;
+          }
+
+          var wrapper = container.closest('.gam-togawa-ad');
+          var slot = googletag.defineSlot(@json($togawaAdUnit), [300, 250], slotId);
+
+          if (!slot) {
+            return;
+          }
+
+          slot.addService(googletag.pubads());
+          googletag.pubads().addEventListener('slotRenderEnded', function(event) {
+            if (event.slot === slot && event.isEmpty && wrapper) {
+              wrapper.style.setProperty('display', 'none', 'important');
+              wrapper.setAttribute('aria-hidden', 'true');
+            }
+          });
+
+          if (!window.__rankingWebGptServicesEnabled) {
+            googletag.enableServices();
+            window.__rankingWebGptServicesEnabled = true;
+          }
+
+          displaySlot = function() {
+            if (!displaySlot.displayed) {
+              displaySlot.displayed = true;
+              googletag.display(slotId);
+            }
+          };
+
+          if (displayRequested) {
+            displaySlot();
           }
         });
-
-        if (!window.__rankingWebGptServicesEnabled) {
-          googletag.enableServices();
-          window.__rankingWebGptServicesEnabled = true;
-        }
-
-        googletag.display(slotId);
-      });
+      })();
     </script>
   @endpush
 @endif

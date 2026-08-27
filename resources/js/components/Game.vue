@@ -2322,6 +2322,7 @@ export default {
 
       // 更新主要遊戲物件 (這一刻，UI 才會跟著變動)
       this.game = game;
+      this.requestTogawaAdDisplay();
 
       if (this.game.current_round == 1 || this.currentRemainElement == false) {
         this.currentRemainElement = this.game.remain_elements;
@@ -2336,6 +2337,21 @@ export default {
       this.re = this.game.elements[1];
       // console.log("Left Element:", this.le);
       // console.log("Right Element:", this.re);
+    },
+    requestTogawaAdDisplay() {
+      if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') {
+        return;
+      }
+
+      const displayAd = () => {
+        window.dispatchEvent(new Event('ranking:display-togawa-ad'));
+      };
+
+      if (typeof this.$nextTick === 'function') {
+        this.$nextTick(displayAd);
+      } else {
+        displayAd();
+      }
     },
     handleNextRoundError(data, error) {
       if (error.response.status === 429) {

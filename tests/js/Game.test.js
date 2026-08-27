@@ -142,7 +142,37 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     global.sessionStorage = createMemoryStorage();
     global.axios = undefined;
     global.$ = () => ({ modal() {} });
+    delete global.window;
     swalCalls.length = 0;
+  });
+
+  test('requests the deferred custom ad after Vue renders an active game', () => {
+    const dispatchedEvents = [];
+    let nextTickCallback = null;
+    global.window = {
+      dispatchEvent(event) {
+        dispatchedEvents.push(event.type);
+      },
+    };
+
+    const vm = createGameVm({
+      $nextTick(callback) {
+        nextTickCallback = callback;
+      },
+    });
+
+    vm.updateGame({
+      current_round: 1,
+      of_round: 1,
+      remain_elements: 2,
+      total_elements: 2,
+      elements: vm.localElements,
+    });
+
+    assert.deepEqual(dispatchedEvents, []);
+    assert.equal(typeof nextTickCallback, 'function');
+    nextTickCallback();
+    assert.deepEqual(dispatchedEvents, ['ranking:display-togawa-ad']);
   });
 
   test('persists an in-flight batch before HTTP and acknowledges only that snapshot', async () => {
