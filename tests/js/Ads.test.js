@@ -31,12 +31,16 @@ describe('GAM custom ad integration', () => {
     assert.doesNotMatch(partial, /getClientRects/);
   });
 
-  test('game page displays the custom slot directly like the home page', () => {
+  test('game page defers the custom slot until a game has started', () => {
     const gameView = read('resources/views/game/show.blade.php');
 
-    assert.match(gameView, /@include\('ads\.gam_togawa_300x250'\)/);
-    assert.doesNotMatch(gameView, /v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250'/);
+    assert.match(
+      gameView,
+      /v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250', \['deferDisplay' => true\]\)/
+    );
     assert.doesNotMatch(gameView, /ranking:game-ads-ready/);
+    assert.match(partial, /\$togawaDeferDisplay = \$deferDisplay \?\? false/);
+    assert.match(partial, /@if \(!\$togawaDeferDisplay\)\s*googletag\.display\(slotId\)/);
   });
 
   test('home page never refreshes the commented-out slot1', () => {

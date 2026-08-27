@@ -87,7 +87,9 @@
       </div>
 
       @if (!$post->is_censored)
-        @include('ads.gam_togawa_300x250')
+        <div v-show="game && !creatingGame && !finishingGame">
+          @include('ads.gam_togawa_300x250', ['deferDisplay' => true])
+        </div>
       @endif
 
       @if (

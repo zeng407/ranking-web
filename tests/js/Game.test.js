@@ -376,6 +376,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     let intervalDelay;
     let clearIntervalValue;
     let loadCount = 0;
+    let togawaLoadCount = 0;
     let reloadCount = 0;
 
     t.mock.method(global, 'setInterval', (callback, delay) => {
@@ -396,6 +397,9 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     vm.loadGoogleAds = () => {
       loadCount++;
     };
+    vm.loadTogawaAd = () => {
+      togawaLoadCount++;
+    };
     vm.reloadGoogleAds = () => {
       reloadCount++;
     };
@@ -406,6 +410,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
 
     assert.equal(intervalDelay, 30000);
     assert.equal(loadCount, 1, 'The initial ad is loaded only once');
+    assert.equal(togawaLoadCount, 1, 'The custom GAM ad is loaded with the first game screen');
     assert.equal(reloadCount, 0, 'Starting another round must not refresh the ad');
 
     intervalCallback();
@@ -415,6 +420,50 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     vm.stopAdRefreshTimer();
     assert.equal(clearIntervalValue, 123);
     assert.equal(vm.adRefreshInterval, null);
+  });
+
+  test('displays the deferred custom GAM slot once after the game starts', t => {
+    const originalWindow = global.window;
+    const originalDocument = global.document;
+    const container = { dataset: {} };
+    let displayCount = 0;
+
+    t.after(() => {
+      if (originalWindow === undefined) delete global.window;
+      else global.window = originalWindow;
+      if (originalDocument === undefined) delete global.document;
+      else global.document = originalDocument;
+    });
+
+    global.document = {
+      getElementById(id) {
+        return id === 'div-gpt-ad-togawa-300x250' ? container : null;
+      },
+    };
+    global.window = {
+      googletag: {
+        cmd: {
+          push(callback) {
+            callback();
+          },
+        },
+        display(id) {
+          assert.equal(id, 'div-gpt-ad-togawa-300x250');
+          displayCount++;
+        },
+      },
+    };
+
+    const vm = createGameVm({ game: null });
+    vm.loadTogawaAd();
+    assert.equal(displayCount, 0, 'The slot is not displayed before a game exists');
+
+    vm.game = { current_round: 1 };
+    vm.loadTogawaAd();
+    vm.loadTogawaAd();
+
+    assert.equal(displayCount, 1);
+    assert.equal(container.dataset.gptDisplayed, 'true');
   });
 
   test('submitting a room bet does not refresh ads', async () => {
