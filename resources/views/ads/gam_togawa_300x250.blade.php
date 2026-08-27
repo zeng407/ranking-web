@@ -20,57 +20,32 @@
       googletag.cmd.push(function() {
         var slotId = @json($togawaSlotId);
         var container = document.getElementById(slotId);
-        var initialized = false;
-        var visibilityObserver = null;
 
         if (!container) {
           return;
         }
 
         var wrapper = container.closest('.gam-togawa-ad');
+        var slot = googletag.defineSlot(@json($togawaAdUnit), [300, 250], slotId);
 
-        function initializeVisibleSlot() {
-          if (initialized || !container.isConnected || container.getClientRects().length === 0) {
-            return false;
-          }
-
-          var slot = googletag.defineSlot(@json($togawaAdUnit), [300, 250], slotId);
-
-          if (!slot) {
-            return false;
-          }
-
-          initialized = true;
-          if (visibilityObserver) {
-            visibilityObserver.disconnect();
-          }
-
-          slot.addService(googletag.pubads());
-          googletag.pubads().addEventListener('slotRenderEnded', function(event) {
-            if (event.slot === slot && event.isEmpty && wrapper) {
-              wrapper.style.setProperty('display', 'none', 'important');
-              wrapper.setAttribute('aria-hidden', 'true');
-            }
-          });
-
-          if (!window.__rankingWebGptServicesEnabled) {
-            googletag.enableServices();
-            window.__rankingWebGptServicesEnabled = true;
-          }
-
-          googletag.display(slotId);
-          return true;
+        if (!slot) {
+          return;
         }
 
-        if (!initializeVisibleSlot()) {
-          visibilityObserver = new MutationObserver(initializeVisibleSlot);
-          visibilityObserver.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class', 'style', 'v-cloak'],
-            subtree: true
-          });
-          window.addEventListener('load', initializeVisibleSlot, { once: true });
+        slot.addService(googletag.pubads());
+        googletag.pubads().addEventListener('slotRenderEnded', function(event) {
+          if (event.slot === slot && event.isEmpty && wrapper) {
+            wrapper.style.setProperty('display', 'none', 'important');
+            wrapper.setAttribute('aria-hidden', 'true');
+          }
+        });
+
+        if (!window.__rankingWebGptServicesEnabled) {
+          googletag.enableServices();
+          window.__rankingWebGptServicesEnabled = true;
         }
+
+        googletag.display(slotId);
       });
     </script>
   @endpush
