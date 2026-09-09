@@ -5,6 +5,7 @@ import Chart from 'chart.js/auto';
 import ICountUp from 'vue-countup-v2';
 import 'chartjs-adapter-moment';
 import Vue from 'vue';
+import observeTogawaAds from '../responsiveTogawaAds';
 
 export default {
   components: {
@@ -12,6 +13,12 @@ export default {
     ICountUp
   },
   mounted() {
+    this.$nextTick(() => {
+      window.googletag = window.googletag || { cmd: [] };
+      this.togawaObserver = observeTogawaAds(
+        this.$el.querySelector('#rank-togawa-ad-grid'), 'rank', window.googletag
+      );
+    });
     if(this.hasGameRoom){
       this.loadGameRoomRanks();
     }
@@ -22,6 +29,7 @@ export default {
     window.addEventListener('scroll', this.handleScroll);
   },
   beforeDestroy() {
+    if (this.togawaObserver) this.togawaObserver.disconnect();
     window.removeEventListener('scroll', this.handleScroll);
   },
   data() {

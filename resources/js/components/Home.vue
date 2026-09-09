@@ -2,11 +2,18 @@
 import masonry from 'masonry-layout';
 import moment from 'moment';
 import Vue from 'vue';
+import observeTogawaAds from '../responsiveTogawaAds';
 
 const mobileScreenWidth = 991;
 export default {
   name: 'home',
   mounted() {
+    this.$nextTick(() => {
+      window.googletag = window.googletag || { cmd: [] };
+      this.togawaObserver = observeTogawaAds(
+        this.$el.querySelector('#home-togawa-ad-grid'), 'home', window.googletag
+      );
+    });
     this.registerScrollEvent();
     this.registerInitSearch();
     this.initSorter();
@@ -19,6 +26,9 @@ export default {
     window.addEventListener('resize', this.updateMobileScreen);
     history.scrollRestoration = 'manual'; // Disable automatic scroll restoration
 
+  },
+  beforeDestroy() {
+    if (this.togawaObserver) this.togawaObserver.disconnect();
   },
   props: {
     indexPostsEndpoint: {
