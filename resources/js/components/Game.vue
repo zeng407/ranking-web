@@ -2,6 +2,7 @@
 import Swal from "sweetalert2";
 import ICountUp from 'vue-countup-v2';
 import QRCode from 'qrcode';
+import observeTogawaAds, { applyTogawaLayout } from '../responsiveTogawaAds';
 
 
 const MD_WIDTH_SIZE = 576;
@@ -15,8 +16,6 @@ const GAME_TAB_HEARTBEAT_MS = 5000;
 const GAME_TAB_LEASE_TTL_MS = 120000; // 容忍背景分頁 timer throttling；正常關閉會立即 release
 const GAME_TAB_MONITOR_MS = 5000;
 const AD_REFRESH_INTERVAL_MS = 30000;
-const TOGAWA_AD_SLOT_WIDTH = 300;
-const TOGAWA_AD_SLOT_GAP = 16;
 
 function createLocalWriterId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -47,9 +46,19 @@ export default {
     // 發動儲存 BatchVotes (離線模式)
     window.addEventListener('beforeunload', this.handleBeforeUnload);
     this.setupGameTabCoordination();
+    // The grid sits behind v-show, so window resize alone misses the moment it
+    // becomes visible; ResizeObserver catches that and every container-only change.
+    this.$nextTick(() => {
+      window.googletag = window.googletag || { cmd: [] };
+      this.togawaObserver = observeTogawaAds(
+        document.getElementById('game-togawa-ad-grid'), 'game', window.googletag,
+        { displayFirstSlot: true }
+      );
+    });
   },
 
   beforeDestroy() {
+    if (this.togawaObserver) this.togawaObserver.disconnect();
     this.stopTimer();
     this.stopAdRefreshTimer();
     window.removeEventListener('beforeunload', this.handleBeforeUnload);
@@ -3608,40 +3617,10 @@ export default {
         return;
       }
 
-      const grid = document.getElementById('game-togawa-ad-grid');
-      if (!grid) {
-        return;
-      }
-
-      const slotWrappers = Array.from(grid.querySelectorAll('.game-togawa-ad-slot'));
-      const visibleCount = Math.max(1, Math.min(
-        slotWrappers.length,
-        Math.floor((grid.clientWidth + TOGAWA_AD_SLOT_GAP) /
-          (TOGAWA_AD_SLOT_WIDTH + TOGAWA_AD_SLOT_GAP))
-      ));
-
-      grid.style.gridTemplateColumns = `repeat(${visibleCount}, ${TOGAWA_AD_SLOT_WIDTH}px)`;
-
-      slotWrappers.forEach((wrapper, index) => {
-        const shouldShow = index < visibleCount;
-        wrapper.style.display = shouldShow ? '' : 'none';
-
-        if (!shouldShow) {
-          return;
-        }
-
-        const slotId = wrapper.dataset.gameTogawaSlot;
-        const container = document.getElementById(slotId);
-        if (!container || container.dataset.gptRequested === 'true') {
-          return;
-        }
-
-        container.dataset.gptRequested = 'true';
-        window.googletag.cmd = window.googletag.cmd || [];
-        window.googletag.cmd.push(() => {
-          window.googletag.display(slotId);
-        });
-      });
+      applyTogawaLayout(
+        document.getElementById('game-togawa-ad-grid'), 'game', window.googletag,
+        { displayFirstSlot: true }
+      );
     },
     startAdRefreshTimer() {
       if (this.adRefreshInterval !== null) return;

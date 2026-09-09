@@ -12,6 +12,13 @@ const Swal = {
   },
 };
 
+function loadTogawaModule() {
+  const source = fs.readFileSync(path.resolve(__dirname, '../../resources/js/responsiveTogawaAds.js'), 'utf8')
+    .replace(/^export default function observeTogawaAds/m, 'function observeTogawaAds')
+    .replace(/^export /gm, '');
+  return new Function(`${source}\nreturn { observeTogawaAds, applyTogawaLayout };`)();
+}
+
 function loadGameComponent() {
   const gamePath = path.resolve(__dirname, '../../resources/js/components/Game.vue');
   const source = fs.readFileSync(gamePath, 'utf8');
@@ -29,9 +36,12 @@ function loadGameComponent() {
     'Swal',
     'ICountUp',
     'QRCode',
+    'observeTogawaAds',
+    'applyTogawaLayout',
     `${script}\n//# sourceURL=Game.vue`
   );
-  evaluate(gameModule, gameModule.exports, Swal, {}, {});
+  const togawa = loadTogawaModule();
+  evaluate(gameModule, gameModule.exports, Swal, {}, {}, togawa.observeTogawaAds, togawa.applyTogawaLayout);
   return gameModule.exports;
 }
 
@@ -430,13 +440,16 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
       'div-gpt-ad-togawa-300x250-2',
       'div-gpt-ad-togawa-300x250-3',
     ];
-    const containers = Object.fromEntries(slotIds.map(id => [id, { dataset: {} }]));
     const wrappers = slotIds.map(id => ({
-      dataset: { gameTogawaSlot: id },
+      dataset: {},
       style: {},
+      getAttribute(name) {
+        return name === 'data-game-togawa-slot' ? id : null;
+      },
     }));
     const grid = {
       clientWidth: 950,
+      isConnected: true,
       style: {},
       querySelectorAll() {
         return wrappers;
@@ -453,8 +466,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
 
     global.document = {
       getElementById(id) {
-        if (id === 'game-togawa-ad-grid') return grid;
-        return containers[id] || null;
+        return id === 'game-togawa-ad-grid' ? grid : null;
       },
     };
     global.window = {
@@ -479,15 +491,18 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     vm.loadTogawaAds();
 
     assert.deepEqual(displayedSlots, slotIds);
-    assert.equal(grid.style.gridTemplateColumns, 'repeat(3, 300px)');
     assert.deepEqual(wrappers.map(wrapper => wrapper.style.display), ['', '', '']);
-    slotIds.forEach(id => assert.equal(containers[id].dataset.gptRequested, 'true'));
+    wrappers.forEach(wrapper => assert.equal(wrapper.dataset.gptRequested, 'true'));
 
     grid.clientWidth = 700;
     vm.loadTogawaAds();
 
     assert.deepEqual(displayedSlots, slotIds, 'Already displayed slots are not requested again');
-    assert.equal(grid.style.gridTemplateColumns, 'repeat(2, 300px)');
+    assert.deepEqual(wrappers.map(wrapper => wrapper.style.display), ['', '', 'none']);
+
+    // A hidden grid (v-show) must not collapse the row it already laid out.
+    grid.clientWidth = 0;
+    vm.loadTogawaAds();
     assert.deepEqual(wrappers.map(wrapper => wrapper.style.display), ['', '', 'none']);
   });
 

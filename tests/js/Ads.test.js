@@ -61,9 +61,6 @@ describe('GAM custom ad integration', () => {
     assert.match(homeView, /id="home-togawa-ad-grid"/);
     assert.match(homeView, /div-gpt-ad-togawa-300x250-2/);
     assert.match(homeView, /div-gpt-ad-togawa-300x250-3/);
-    assert.match(homeView, /Math\.floor\(\(grid\.clientWidth \+ slotGap\) \/ \(slotWidth \+ slotGap\)\)/);
-    assert.match(homeView, /googletag\.display\(wrapper\.dataset\.homeTogawaSlot\)/);
-    assert.match(homeView, /wrapper\.dataset\.gptRequested === 'true'/);
   });
 
   test('rank page keeps independently displayed slots out of SRA', () => {
@@ -77,8 +74,5 @@ describe('GAM custom ad integration', () => {
     assert.match(rankView, /id="rank-togawa-ad-grid"/);
     assert.match(rankView, /div-gpt-ad-togawa-300x250-2/);
     assert.match(rankView, /div-gpt-ad-togawa-300x250-3/);
-    assert.match(rankView, /Math\.floor\(\(grid\.clientWidth \+ slotGap\) \/ \(slotWidth \+ slotGap\)\)/);
-    assert.match(rankView, /googletag\.display\(wrapper\.dataset\.rankTogawaSlot\)/);
-    assert.match(rankView, /wrapper\.dataset\.gptRequested === 'true'/);
   });
 });
