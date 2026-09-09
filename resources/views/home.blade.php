@@ -68,8 +68,80 @@
         <div id="main-region" class="col-12 col-xl-8 p-1 " v-cloak>
           @include('partial.home-carousel')
 
-          {{-- Optional GAM custom HTML campaign placement (300x250). --}}
-          @include('ads.gam_togawa_300x250')
+          {{-- Optional GAM custom HTML campaign placements (300x250). --}}
+          @if (config('services.google_ad.enabled') &&
+                  config('services.google_ad.togawa_html.enabled') &&
+                  config('services.google_ad.togawa_html.ad_unit') &&
+                  !is_skip_ad())
+            <div id="home-togawa-ad-grid"
+              style="display: grid; grid-template-columns: 300px; gap: 16px; justify-content: center; align-items: start;">
+              <div class="home-togawa-ad-slot" data-home-togawa-slot="div-gpt-ad-togawa-300x250">
+                @include('ads.gam_togawa_300x250')
+              </div>
+              <div class="home-togawa-ad-slot" data-home-togawa-slot="div-gpt-ad-togawa-300x250-2"
+                style="display: none;">
+                @include('ads.gam_togawa_300x250', [
+                    'slotId' => 'div-gpt-ad-togawa-300x250-2',
+                    'deferDisplay' => true,
+                ])
+              </div>
+              <div class="home-togawa-ad-slot" data-home-togawa-slot="div-gpt-ad-togawa-300x250-3"
+                style="display: none;">
+                @include('ads.gam_togawa_300x250', [
+                    'slotId' => 'div-gpt-ad-togawa-300x250-3',
+                    'deferDisplay' => true,
+                ])
+              </div>
+            </div>
+
+            @push('scripts')
+              <script data-cfasync="false">
+                (function() {
+                  var slotWidth = 300;
+                  var slotGap = 16;
+
+                  function updateHomeTogawaAds() {
+                    var mainRegion = document.getElementById('main-region');
+                    var grid = document.getElementById('home-togawa-ad-grid');
+
+                    if (!mainRegion || !grid) {
+                      return;
+                    }
+
+                    var slotWrappers = Array.prototype.slice.call(
+                      grid.querySelectorAll('.home-togawa-ad-slot')
+                    );
+                    var visibleCount = Math.max(1, Math.min(
+                      slotWrappers.length,
+                      Math.floor((grid.clientWidth + slotGap) / (slotWidth + slotGap))
+                    ));
+
+                    grid.style.gridTemplateColumns = 'repeat(' + visibleCount + ', ' + slotWidth + 'px)';
+
+                    slotWrappers.forEach(function(wrapper, index) {
+                      var shouldShow = index < visibleCount;
+                      wrapper.style.display = shouldShow ? '' : 'none';
+
+                      if (!shouldShow || index === 0 || wrapper.dataset.gptRequested === 'true') {
+                        return;
+                      }
+
+                      wrapper.dataset.gptRequested = 'true';
+                      window.googletag = window.googletag || { cmd: [] };
+                      googletag.cmd.push(function() {
+                        googletag.display(wrapper.dataset.homeTogawaSlot);
+                      });
+                    });
+                  }
+
+                  document.addEventListener('DOMContentLoaded', function() {
+                    updateHomeTogawaAds();
+                    window.addEventListener('resize', updateHomeTogawaAds);
+                  }, { once: true });
+                })();
+              </script>
+            @endpush
+          @endif
 
           {{-- champions --}}
           <h4 class="d-flex my-1 ml-2">@{{ $t('home.new_champions') }}</h4>

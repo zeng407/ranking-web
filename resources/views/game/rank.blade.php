@@ -67,7 +67,7 @@
         </div>
 
         {{-- main part --}}
-        <div class="col-12 col-lg-8">
+        <div id="rank-main-region" class="col-12 col-lg-8">
           @if (!$embed)
 
             {{-- Top buttons --}}
@@ -121,9 +121,80 @@
             </div>
             @endif
 
-            @if (!$post->is_censored)
-              {{-- Optional GAM custom HTML campaign placement (300x250). --}}
-              @include('ads.gam_togawa_300x250')
+            @if (!$post->is_censored &&
+                    config('services.google_ad.enabled') &&
+                    config('services.google_ad.togawa_html.enabled') &&
+                    config('services.google_ad.togawa_html.ad_unit') &&
+                    !is_skip_ad())
+              {{-- Optional GAM custom HTML campaign placements (300x250). --}}
+              <div id="rank-togawa-ad-grid"
+                style="display: grid; grid-template-columns: 300px; gap: 16px; justify-content: center; align-items: start;">
+                <div class="rank-togawa-ad-slot" data-rank-togawa-slot="div-gpt-ad-togawa-300x250">
+                  @include('ads.gam_togawa_300x250')
+                </div>
+                <div class="rank-togawa-ad-slot" data-rank-togawa-slot="div-gpt-ad-togawa-300x250-2"
+                  style="display: none;">
+                  @include('ads.gam_togawa_300x250', [
+                      'slotId' => 'div-gpt-ad-togawa-300x250-2',
+                      'deferDisplay' => true,
+                  ])
+                </div>
+                <div class="rank-togawa-ad-slot" data-rank-togawa-slot="div-gpt-ad-togawa-300x250-3"
+                  style="display: none;">
+                  @include('ads.gam_togawa_300x250', [
+                      'slotId' => 'div-gpt-ad-togawa-300x250-3',
+                      'deferDisplay' => true,
+                  ])
+                </div>
+              </div>
+
+              @push('scripts')
+                <script data-cfasync="false">
+                  (function() {
+                    var slotWidth = 300;
+                    var slotGap = 16;
+
+                    function updateRankTogawaAds() {
+                      var mainRegion = document.getElementById('rank-main-region');
+                      var grid = document.getElementById('rank-togawa-ad-grid');
+
+                      if (!mainRegion || !grid) {
+                        return;
+                      }
+
+                      var slotWrappers = Array.prototype.slice.call(
+                        grid.querySelectorAll('.rank-togawa-ad-slot')
+                      );
+                      var visibleCount = Math.max(1, Math.min(
+                        slotWrappers.length,
+                        Math.floor((grid.clientWidth + slotGap) / (slotWidth + slotGap))
+                      ));
+
+                      grid.style.gridTemplateColumns = 'repeat(' + visibleCount + ', ' + slotWidth + 'px)';
+
+                      slotWrappers.forEach(function(wrapper, index) {
+                        var shouldShow = index < visibleCount;
+                        wrapper.style.display = shouldShow ? '' : 'none';
+
+                        if (!shouldShow || index === 0 || wrapper.dataset.gptRequested === 'true') {
+                          return;
+                        }
+
+                        wrapper.dataset.gptRequested = 'true';
+                        window.googletag = window.googletag || { cmd: [] };
+                        googletag.cmd.push(function() {
+                          googletag.display(wrapper.dataset.rankTogawaSlot);
+                        });
+                      });
+                    }
+
+                    document.addEventListener('DOMContentLoaded', function() {
+                      updateRankTogawaAds();
+                      window.addEventListener('resize', updateRankTogawaAds);
+                    }, { once: true });
+                  })();
+                </script>
+              @endpush
             @endif
 
             {{-- Title & Description --}}

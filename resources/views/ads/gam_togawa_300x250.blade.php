@@ -1,6 +1,6 @@
 @php
   $togawaAdUnit = config('services.google_ad.togawa_html.ad_unit');
-  $togawaSlotId = 'div-gpt-ad-togawa-300x250';
+  $togawaSlotId = $slotId ?? 'div-gpt-ad-togawa-300x250';
   $togawaDeferDisplay = $deferDisplay ?? false;
 @endphp
 

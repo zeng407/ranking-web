@@ -31,13 +31,18 @@ describe('GAM custom ad integration', () => {
     assert.doesNotMatch(partial, /getClientRects/);
   });
 
+  test('supports unique slot IDs for multiple placements on the same page', () => {
+    assert.match(partial, /\$togawaSlotId = \$slotId \?\? 'div-gpt-ad-togawa-300x250'/);
+    assert.match(partial, /id="\{\{ \$togawaSlotId \}\}"/);
+  });
+
   test('game page defers the custom slot until a game has started', () => {
     const gameView = read('resources/views/game/show.blade.php');
 
-    assert.match(
-      gameView,
-      /v-show="game && !creatingGame && !finishingGame">\s*@include\('ads\.gam_togawa_300x250', \['deferDisplay' => true\]\)/
-    );
+    assert.match(gameView, /id="game-togawa-ad-grid" v-show="game && !creatingGame && !finishingGame"/);
+    assert.match(gameView, /div-gpt-ad-togawa-300x250-2/);
+    assert.match(gameView, /div-gpt-ad-togawa-300x250-3/);
+    assert.match(gameView, /data-game-togawa-slot="div-gpt-ad-togawa-300x250"/);
     assert.doesNotMatch(gameView, /ranking:game-ads-ready/);
     assert.match(partial, /\$togawaDeferDisplay = \$deferDisplay \?\? false/);
     assert.match(partial, /@if \(!\$togawaDeferDisplay\)\s*googletag\.display\(slotId\)/);
@@ -50,6 +55,17 @@ describe('GAM custom ad integration', () => {
     assert.match(homeView, /refresh\(\[slot2\]\)/);
   });
 
+  test('home page displays up to three custom slots according to main-region width', () => {
+    const homeView = read('resources/views/home.blade.php');
+
+    assert.match(homeView, /id="home-togawa-ad-grid"/);
+    assert.match(homeView, /div-gpt-ad-togawa-300x250-2/);
+    assert.match(homeView, /div-gpt-ad-togawa-300x250-3/);
+    assert.match(homeView, /Math\.floor\(\(grid\.clientWidth \+ slotGap\) \/ \(slotWidth \+ slotGap\)\)/);
+    assert.match(homeView, /googletag\.display\(wrapper\.dataset\.homeTogawaSlot\)/);
+    assert.match(homeView, /wrapper\.dataset\.gptRequested === 'true'/);
+  });
+
   test('rank page keeps independently displayed slots out of SRA', () => {
     const rankView = read('resources/views/game/rank.blade.php');
 
@@ -57,6 +73,12 @@ describe('GAM custom ad integration', () => {
     assert.match(rankView, /collapseDiv\s*:\s*'ON_NO_FILL'/);
     assert.doesNotMatch(rankView, /ranking:rank-ads-ready/);
     assert.match(rankView, /googletag\.display\('div-gpt-ad-1782518224225-0'\)/);
-    assert.match(rankView, /@include\('ads\.gam_togawa_300x250'\)/);
+    assert.match(rankView, /id="rank-main-region"/);
+    assert.match(rankView, /id="rank-togawa-ad-grid"/);
+    assert.match(rankView, /div-gpt-ad-togawa-300x250-2/);
+    assert.match(rankView, /div-gpt-ad-togawa-300x250-3/);
+    assert.match(rankView, /Math\.floor\(\(grid\.clientWidth \+ slotGap\) \/ \(slotWidth \+ slotGap\)\)/);
+    assert.match(rankView, /googletag\.display\(wrapper\.dataset\.rankTogawaSlot\)/);
+    assert.match(rankView, /wrapper\.dataset\.gptRequested === 'true'/);
   });
 });
