@@ -87,8 +87,25 @@
       </div>
 
       @if (!$post->is_censored)
-        <div v-show="game && !creatingGame && !finishingGame">
-          @include('ads.gam_togawa_300x250', ['deferDisplay' => true])
+        <div id="game-togawa-ad-grid" v-show="game && !creatingGame && !finishingGame"
+          style="display: grid; grid-template-columns: 300px; gap: 16px; justify-content: center; align-items: start;">
+          <div class="game-togawa-ad-slot" data-game-togawa-slot="div-gpt-ad-togawa-300x250">
+            @include('ads.gam_togawa_300x250', ['deferDisplay' => true])
+          </div>
+          <div class="game-togawa-ad-slot" data-game-togawa-slot="div-gpt-ad-togawa-300x250-2"
+            style="display: none;">
+            @include('ads.gam_togawa_300x250', [
+                'slotId' => 'div-gpt-ad-togawa-300x250-2',
+                'deferDisplay' => true,
+            ])
+          </div>
+          <div class="game-togawa-ad-slot" data-game-togawa-slot="div-gpt-ad-togawa-300x250-3"
+            style="display: none;">
+            @include('ads.gam_togawa_300x250', [
+                'slotId' => 'div-gpt-ad-togawa-300x250-3',
+                'deferDisplay' => true,
+            ])
+          </div>
         </div>
       @endif
 

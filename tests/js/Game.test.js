@@ -397,7 +397,7 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     vm.loadGoogleAds = () => {
       loadCount++;
     };
-    vm.loadTogawaAd = () => {
+    vm.loadTogawaAds = () => {
       togawaLoadCount++;
     };
     vm.reloadGoogleAds = () => {
@@ -422,11 +422,27 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     assert.equal(vm.adRefreshInterval, null);
   });
 
-  test('displays the deferred custom GAM slot once after the game starts', t => {
+  test('displays up to three deferred custom GAM slots after the game starts', t => {
     const originalWindow = global.window;
     const originalDocument = global.document;
-    const container = { dataset: {} };
-    let displayCount = 0;
+    const slotIds = [
+      'div-gpt-ad-togawa-300x250',
+      'div-gpt-ad-togawa-300x250-2',
+      'div-gpt-ad-togawa-300x250-3',
+    ];
+    const containers = Object.fromEntries(slotIds.map(id => [id, { dataset: {} }]));
+    const wrappers = slotIds.map(id => ({
+      dataset: { gameTogawaSlot: id },
+      style: {},
+    }));
+    const grid = {
+      clientWidth: 950,
+      style: {},
+      querySelectorAll() {
+        return wrappers;
+      },
+    };
+    const displayedSlots = [];
 
     t.after(() => {
       if (originalWindow === undefined) delete global.window;
@@ -437,7 +453,8 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
 
     global.document = {
       getElementById(id) {
-        return id === 'div-gpt-ad-togawa-300x250' ? container : null;
+        if (id === 'game-togawa-ad-grid') return grid;
+        return containers[id] || null;
       },
     };
     global.window = {
@@ -448,22 +465,30 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
           },
         },
         display(id) {
-          assert.equal(id, 'div-gpt-ad-togawa-300x250');
-          displayCount++;
+          displayedSlots.push(id);
         },
       },
     };
 
     const vm = createGameVm({ game: null });
-    vm.loadTogawaAd();
-    assert.equal(displayCount, 0, 'The slot is not displayed before a game exists');
+    vm.loadTogawaAds();
+    assert.deepEqual(displayedSlots, [], 'Slots are not displayed before a game exists');
 
     vm.game = { current_round: 1 };
-    vm.loadTogawaAd();
-    vm.loadTogawaAd();
+    vm.loadTogawaAds();
+    vm.loadTogawaAds();
 
-    assert.equal(displayCount, 1);
-    assert.equal(container.dataset.gptDisplayed, 'true');
+    assert.deepEqual(displayedSlots, slotIds);
+    assert.equal(grid.style.gridTemplateColumns, 'repeat(3, 300px)');
+    assert.deepEqual(wrappers.map(wrapper => wrapper.style.display), ['', '', '']);
+    slotIds.forEach(id => assert.equal(containers[id].dataset.gptRequested, 'true'));
+
+    grid.clientWidth = 700;
+    vm.loadTogawaAds();
+
+    assert.deepEqual(displayedSlots, slotIds, 'Already displayed slots are not requested again');
+    assert.equal(grid.style.gridTemplateColumns, 'repeat(2, 300px)');
+    assert.deepEqual(wrappers.map(wrapper => wrapper.style.display), ['', '', 'none']);
   });
 
   test('submitting a room bet does not refresh ads', async () => {
