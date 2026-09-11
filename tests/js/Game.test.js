@@ -155,6 +155,52 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     swalCalls.length = 0;
   });
 
+  test('restores the vote-time scroll position after the next options render', () => {
+    const originalWindow = global.window;
+    const originalDocument = global.document;
+    const scrollCalls = [];
+    let renderCallback;
+
+    global.window = {
+      scrollX: 7,
+      scrollY: 486,
+      scrollTo(left, top) {
+        scrollCalls.push([left, top]);
+      },
+    };
+    global.document = {
+      body: { scrollTop: 0 },
+      documentElement: { scrollTop: 0 },
+      scrollingElement: { scrollTop: 0 },
+    };
+
+    try {
+      const vm = createGameVm({
+        $nextTick(callback) {
+          renderCallback = callback;
+        },
+      });
+
+      vm.rememberScrollPosition();
+      assert.equal(vm.rememberedScrollPosition, 486);
+
+      window.scrollY = 0;
+      vm.scrollToLastPosition();
+
+      assert.deepEqual(scrollCalls, []);
+      assert.equal(typeof renderCallback, 'function');
+
+      renderCallback();
+      assert.deepEqual(scrollCalls, [[7, 486]]);
+      assert.equal(vm.rememberedScrollPosition, null);
+    } finally {
+      if (originalWindow === undefined) delete global.window;
+      else global.window = originalWindow;
+      if (originalDocument === undefined) delete global.document;
+      else global.document = originalDocument;
+    }
+  });
+
   test('persists an in-flight batch before HTTP and acknowledges only that snapshot', async () => {
     const request = deferred();
     let requestData;
