@@ -363,6 +363,16 @@ export default {
     isFixedGameHeight() {
       return this.isMobileScreen && !this.isBetGameClient;
     },
+    gamePlaygroundStyle() {
+      const gameHeight = `${this.gameBodyHeight}px`;
+      return {
+        height: this.isFixedGameHeight ? gameHeight : "auto",
+        // Desktop media is temporarily removed while the next round loads.
+        // Keep its space reserved so tall (for example 4K) viewports do not
+        // make the document shorter and clamp the current scroll position.
+        minHeight: gameHeight,
+      };
+    },
     isGameVoteReadOnly() {
       return this.isGameTabReadOnly
         && !this.localBranchId

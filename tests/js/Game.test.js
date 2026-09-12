@@ -201,6 +201,18 @@ describe('Game.vue batch vote', { concurrency: false }, () => {
     }
   });
 
+  test('keeps the 4K desktop playground height reserved between rounds', () => {
+    const style = Game.computed.gamePlaygroundStyle.call({
+      gameBodyHeight: 1495,
+      isFixedGameHeight: false,
+    });
+
+    assert.deepEqual(style, {
+      height: 'auto',
+      minHeight: '1495px',
+    });
+  });
+
   test('persists an in-flight batch before HTTP and acknowledges only that snapshot', async () => {
     const request = deferred();
     let requestData;

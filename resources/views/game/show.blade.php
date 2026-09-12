@@ -335,7 +335,7 @@
           {{-- playground --}}
           <div class="row overflow-hidden user-select-none"
             v-if="game && !finishingGame && (!gameRoom || !gameRoom.is_game_completed)"
-            :style="{ 'height': (isFixedGameHeight ? (gameBodyHeight + 'px') : 'auto') }">
+            :style="gamePlaygroundStyle">
             <!--left part-->
             <div class="col-12 col-sm-6 pr-sm-1 mb-2 mb-sm-0" id="left-part">
               <transition name="slide-in-left">
