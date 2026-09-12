@@ -2270,7 +2270,6 @@ export default {
         .then(() => {
           if (resetAnimation) {
             this.resetPlayerPosition();
-            // this.scrollToLastPosition();
             this.resetPlayingStatus();
             // destroy viwer
             if (this.$refs.rightViewer) {
@@ -2283,6 +2282,7 @@ export default {
             this.isDataLoading = false;
             setTimeout(() => {
               this.showAllPlayers();
+              this.scrollToLastPosition();
               this.doPlay(this.le, this.isLeftPlaying, "left");
               this.doPlay(this.re, this.isRightPlaying, "right");
             }, 300);
@@ -2414,7 +2414,7 @@ export default {
     },
     leftWin(event) {
       if (!this.ensureGameTabWriteAccess()) return;
-      this.rememberedScrollPosition = document.documentElement.scrollTop;
+      this.rememberScrollPosition();
       this.isVoting = true;
       let sendWinnerData = () => {
         if (this.isBetGameClient) {
@@ -2534,7 +2534,7 @@ export default {
     },
     rightWin(event) {
       if (!this.ensureGameTabWriteAccess()) return;
-      this.rememberedScrollPosition = document.documentElement.scrollTop;
+      this.rememberScrollPosition();
       this.isVoting = true;
       let sendWinnerData = () => {
         if (this.isBetGameClient) {
@@ -2684,9 +2684,27 @@ export default {
       $("#rounds-session").css("opacity", "0");
       $(".game-image-container img").css("object-fit", "contain");
     },
+    rememberScrollPosition() {
+      const scrollingElement = document.scrollingElement || document.documentElement || document.body;
+      this.rememberedScrollPosition = typeof window.scrollY === "number"
+        ? window.scrollY
+        : scrollingElement.scrollTop;
+    },
     scrollToLastPosition() {
       if (this.rememberedScrollPosition !== null) {
-        window.scrollTo(0, this.rememberedScrollPosition);
+        const scrollPosition = this.rememberedScrollPosition;
+        this.rememberedScrollPosition = null;
+        const restore = () => {
+          window.scrollTo(window.scrollX || 0, scrollPosition);
+        };
+
+        // animationShow* 會重新建立選項 DOM；等 Vue 完成渲染後再還原，
+        // 避免頁面高度尚未恢復時被瀏覽器限制到頂端。
+        if (typeof this.$nextTick === "function") {
+          this.$nextTick(restore);
+        } else {
+          restore();
+        }
       }
     },
     pauseAllVideo() {
