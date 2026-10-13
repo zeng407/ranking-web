@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Events\PostDeleted;
 use App\Events\PostUpdated;
 use App\Helper\CacheService;
+use App\Models\PublicPost;
 use Illuminate\Events\Dispatcher;
 use App\Events\PostCreated;
 
@@ -27,7 +28,21 @@ class PostUpdateTimestampSubscriber
 
     public function onPostUpdated(PostUpdated $event): void
     {
-        logger('[PostUpdateTimestampSubscriber] onPostUpdated', ['post' => $event->getPost()->id]);
+        $post = $event->getPost();
+        logger('[PostUpdateTimestampSubscriber] onPostUpdated', ['post' => $post->id]);
+
+        if ($post->wasChanged('is_censored')) {
+            if ($post->is_censored) {
+                $publicPost = PublicPost::where('post_id', $post->id)->first();
+                if ($publicPost) {
+                    $publicPost->data = array_replace($publicPost->data ?? [], ['is_censored' => true]);
+                    $publicPost->save();
+                }
+            }
+
+            CacheService::pullPostResourceByPostId($post->id);
+        }
+
         CacheService::rememberPostUpdatedTimestamp(true);
         CacheService::pullPublicPostFreshCache();
     }

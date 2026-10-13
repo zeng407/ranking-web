@@ -40,6 +40,11 @@
     "edit_post.tab.element": "Media",
     "edit_post.tab.rank": "Rank",
     "edit_post.info.play_game_hint": "At least 2 materials must be uploaded.",
+    "edit_post.content_rating": "Content rating",
+    "edit_post.content_rating.normal": "General content",
+    "edit_post.content_rating.restricted": "Restricted content",
+    "edit_post.content_rating.irreversible": "Once marked as restricted, this vote cannot be changed back to general content.",
+    "edit_post.content_rating.warning": "If restricted content is not marked as restricted, the site administrator may delete the vote without prior notice.",
 
     "edit_post.info.head": "The Vote Information",
     "edit_post.info.start": "Start",

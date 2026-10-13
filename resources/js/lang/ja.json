@@ -45,6 +45,11 @@
     "edit_post.tab.element": "メディア",
     "edit_post.tab.rank": "ランク",
     "edit_post.info.play_game_hint": "最低限2つの素材をアップロードする必要があります。",
+    "edit_post.content_rating": "コンテンツ区分",
+    "edit_post.content_rating.normal": "一般コンテンツ",
+    "edit_post.content_rating.restricted": "年齢制限付きコンテンツ",
+    "edit_post.content_rating.irreversible": "一度年齢制限付きに設定すると、一般コンテンツには戻せません。",
+    "edit_post.content_rating.warning": "年齢制限付きの内容を設定せずに投稿した場合、管理者は事前の通知なく投票を削除することがあります。",
 
     "edit_post.info.head": "投票情報",
     "edit_post.info.start": "開始",

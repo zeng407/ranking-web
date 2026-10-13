@@ -16,6 +16,8 @@ use App\Events\PostDeleted;
 use App\Models\Comment;
 use App\Services\Builders\CommentBuilder;
 use App\Services\Traits\HasRepository;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Ramsey\Uuid\Uuid;
 
 class PostService
@@ -55,8 +57,20 @@ class PostService
 
     public function update(Post $post, array $data)
     {
-        $post->update($data);
-        $post->post_policy()->update(data_get($data, 'policy', []));
+        $post = DB::transaction(function () use ($post, $data) {
+            $currentPost = Post::whereKey($post->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($currentPost->is_censored && array_key_exists('is_censored', $data) && !$data['is_censored']) {
+                throw ValidationException::withMessages([
+                    'is_censored' => __('Restricted content cannot be changed back to normal content.'),
+                ]);
+            }
+
+            $currentPost->update($data);
+            $currentPost->post_policy()->update(data_get($data, 'policy', []));
+
+            return $currentPost;
+        });
 
         event(new PostUpdated($post));
 

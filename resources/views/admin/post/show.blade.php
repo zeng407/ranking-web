@@ -78,9 +78,10 @@
                                         <input type="radio" id="is_censored" name="is_censored" value="1" @if ($post->is_censored) checked @endif>
                                       </label>
                                       <label class="btn btn-outline-dark" for="is_not_censored">否
-                                        <input type="radio" id="is_not_censored" name="is_censored" value="0" @if (!$post->is_censored) checked @endif>
+                                        <input type="radio" id="is_not_censored" name="is_censored" value="0" @if (!$post->is_censored) checked @else disabled @endif>
                                       </label>
                                     </div>
+                                    <small class="form-text text-muted">設定為限制級後無法改回一般內容。</small>
                                   </div>
                               </div>
 
