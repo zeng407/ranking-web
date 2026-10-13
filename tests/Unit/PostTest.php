@@ -7,7 +7,9 @@ use App\Enums\PostAccessPolicy;
 use App\Models\Element;
 use App\Models\Post;
 use App\Models\PostPolicy;
+use App\Models\PublicPost;
 use App\Models\User;
+use App\Services\PostService;
 use App\Services\YoutubeService;
 use Google\Service\YouTube\AccessPolicy;
 use Google\Service\YouTube\Thumbnail;
@@ -19,6 +21,8 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 use Google\Service\YouTube;
 
 use Tests\TestCase;
@@ -112,6 +116,72 @@ class PostTest extends TestCase
         $this->assertEquals($post->description, 'rand description');
         $this->assertEquals($post->post_policy->access_policy, PostAccessPolicy::PUBLIC);
         $this->assertEquals($post->post_policy->password, null);
+    }
+
+    public function test_owner_can_mark_post_as_restricted_but_cannot_reverse_it()
+    {
+        $user = User::factory()->has(
+            Post::factory()->has(PostPolicy::factory()->public(), 'post_policy')
+        )->create();
+        $this->be($user);
+
+        $post = $user->posts()->first();
+        $publicPost = PublicPost::create([
+            'post_id' => $post->id,
+            'title' => $post->title,
+            'description' => $post->description,
+            'tags' => '[]',
+            'data' => ['is_censored' => false],
+        ]);
+        Cache::put('post_resource_' . $post->id, ['is_censored' => false], 3600);
+        $endpoint = route('api.post.update', $post->serial);
+        $body = [
+            'title' => 'Restricted vote',
+            'description' => 'A description',
+            'policy' => ['access_policy' => PostAccessPolicy::PUBLIC],
+        ];
+
+        $this->getJson(route('api.post.show', $post->serial))
+            ->assertOk()
+            ->assertJsonPath('data.is_censored', false);
+
+        $this->putJson($endpoint, $body + ['is_censored' => true])
+            ->assertOk()
+            ->assertJsonPath('data.is_censored', true);
+        $this->assertTrue($publicPost->fresh()->data['is_censored']);
+        $this->assertFalse(Cache::has('post_resource_' . $post->id));
+
+        $this->putJson($endpoint, $body + ['is_censored' => false])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('is_censored');
+
+        $this->putJson($endpoint, array_merge($body, ['title' => 'Updated restricted vote']))
+            ->assertOk()
+            ->assertJsonPath('data.is_censored', true);
+
+        $this->assertTrue($post->fresh()->is_censored);
+        $this->assertSame('Updated restricted vote', $post->fresh()->title);
+    }
+
+    public function test_stale_post_instance_cannot_remove_restricted_status_in_service()
+    {
+        $post = Post::factory()->has(PostPolicy::factory()->public(), 'post_policy')->create();
+        $stalePost = Post::findOrFail($post->id);
+
+        $post->update(['is_censored' => true]);
+
+        try {
+            app(PostService::class)->update($stalePost, [
+                'title' => 'Should not save',
+                'is_censored' => false,
+            ]);
+            $this->fail('A restricted post must not be changed back to normal.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('is_censored', $exception->errors());
+        }
+
+        $this->assertTrue($post->fresh()->is_censored);
+        $this->assertNotSame('Should not save', $post->fresh()->title);
     }
 
     public function test_create_image_element()

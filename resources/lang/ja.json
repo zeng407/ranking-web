@@ -46,6 +46,7 @@
     "Update Password": "パスワードを更新",
     "Can be modified later": "後で変更可能です",
     "Share": "共有",
+    "Restricted content cannot be changed back to normal content.": "年齢制限付きに設定した内容は、一般コンテンツに戻せません。",
     "Email already exists.": "このメールアドレスは既に登録されています",
     "Login & Register with Google": "Googleでログイン/登録",
     "Please reset your password.": "パスワードをリセットしてください",

@@ -28,6 +28,7 @@ class MyPostResource extends JsonResource
             'title' => $this->title,
             'serial' => $this->serial,
             'description' => $this->description,
+            'is_censored' => $this->is_censored,
             'policy' => $this->post_policy->access_policy,
             'play_count' => $this->getAllPlayedCount(),
             'last_week_play_count' => $this->getLastWeekPlayedCount(),

@@ -140,6 +140,30 @@
                     </div>
                   </div>
                 </div>
+                <!-- 內容分級 -->
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group">
+                      <label class="col-form-label-lg">{{ $t('edit_post.content_rating') }}</label>
+                      <div>
+                        <label class="btn btn-outline-dark mr-2" for="post-content-normal">
+                          <input type="radio" id="post-content-normal" v-model="post.is_censored" :value="false"
+                            :disabled="!isEditing || loading['SAVING_POST'] || (keep_post && keep_post.is_censored)">
+                          {{ $t('edit_post.content_rating.normal') }}
+                        </label>
+                        <label class="btn btn-outline-dark" for="post-content-restricted">
+                          <input type="radio" id="post-content-restricted" v-model="post.is_censored" :value="true"
+                            :disabled="!isEditing || loading['SAVING_POST'] || (keep_post && keep_post.is_censored)">
+                          {{ $t('edit_post.content_rating.restricted') }}
+                        </label>
+                      </div>
+                      <small class="form-text text-muted">{{ $t('edit_post.content_rating.irreversible') }}</small>
+                      <div class="alert alert-warning mt-2" role="alert">
+                        {{ $t('edit_post.content_rating.warning') }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <!-- 標籤 -->
                 <div class="row">
                   <div class="col-6">
@@ -849,6 +873,7 @@ export default {
       post: {
         title: '',
         description: '',
+        is_censored: false,
         policy: '',
         password: '',
         tags: [],
@@ -1006,6 +1031,7 @@ export default {
       const data = {
         title: this.post.title,
         description: this.post.description,
+        is_censored: this.post.is_censored,
         policy: {
           access_policy: this.post.policy,
           password: this.post.password

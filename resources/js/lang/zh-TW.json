@@ -47,6 +47,11 @@
     "edit_post.tab.rank": "排行",
     "edit_post.tab.comments": "留言",
     "edit_post.info.play_game_hint": "至少上傳2個素材才能開始投票",
+    "edit_post.content_rating": "內容分級",
+    "edit_post.content_rating.normal": "一般內容",
+    "edit_post.content_rating.restricted": "限制級內容",
+    "edit_post.content_rating.irreversible": "設定為限制級後無法改回一般內容。",
+    "edit_post.content_rating.warning": "若內容為限制級卻未設定為限制級內容，站長發現後可不另行通知，直接刪除此投票。",
 
     "edit_post.info.head": "基本資訊",
     "edit_post.info.start": "開始投票",

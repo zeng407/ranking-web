@@ -131,6 +131,7 @@ class MyPostController extends Controller
                 Rule::in([PostAccessPolicy::PUBLIC , PostAccessPolicy::PRIVATE, PostAccessPolicy::PASSWORD])
             ],
             'policy.password' => ['sometimes', 'string', 'max:255'],
+            'is_censored' => ['sometimes', 'boolean'],
             'tags' => ['sometimes', 'array', 'between:0,' . config('setting.post_max_tags')],
             'tags.*' => ['sometimes', 'string', 'max:' . config('setting.tag_name_size')],
         ]);

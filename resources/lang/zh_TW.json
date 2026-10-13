@@ -56,6 +56,7 @@
     "Update Password": "更新密碼",
     "Can be modified later": "可在之後修改",
     "Share": "分享",
+    "Restricted content cannot be changed back to normal content.": "限制級內容設定後，無法改回一般內容。",
     "home.posts": "殘酷二選一",
     "home.start": "開始投票",
     "home.rank": "排行榜",

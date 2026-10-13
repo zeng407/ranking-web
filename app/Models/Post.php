@@ -31,6 +31,10 @@ class Post extends Model
         'is_censored'
     ];
 
+    protected $casts = [
+        'is_censored' => 'boolean',
+    ];
+
     /**
      * relations
      */
